@@ -22,7 +22,14 @@
     "desktop:build": "pnpm --filter @multi-agent-desk/desktop tauri build --no-bundle",
     "scaffold:check": "npm run scaffold:structure && npm run go:fmt-check && npm run go:test && npm run web:check && npm run desktop:fmt-check && npm run desktop:check",
     "scaffold:build": "npm run go:build && npm run web:build && npm run desktop:build",
-    "scaffold:verify": "npm run scaffold:check && npm run scaffold:build"
+    "scaffold:verify": "npm run scaffold:check && npm run scaffold:build",
+    "ci:actions": "node scripts/ci/verify-actions.mjs",
+    "ci:codeowners": "node scripts/ci/verify-codeowners.mjs",
+    "ci:links": "node scripts/ci/check-local-links.mjs",
+    "ci:licenses": "node scripts/ci/verify-licenses.mjs",
+    "ci:fixtures": "node scripts/ci/test-gates.mjs",
+    "ci:static": "npm run ci:actions && npm run ci:codeowners",
+    "ci:verify": "npm run ci:static && npm run ci:fixtures && npm run ci:links && npm run ci:licenses"
   },
   "engines": {
     "node": ">=24 <25",

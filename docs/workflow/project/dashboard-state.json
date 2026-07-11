@@ -3,9 +3,9 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0",
-  "current_status": "Phase 0 · 4/5 单元已 SHIPPED；phase0-monorepo-scaffold 本机 macOS green（0039e28，未 push/merge）；Linux/Windows CI unknown",
+  "current_status": "Phase 0 · 4/5 单元已 SHIPPED；phase0-ci-governance P1 READY_FOR_VERIFY；全部远端 Actions/protection 证据 unknown",
   "current_owner": "project-system",
-  "next_action": "feature-plan phase0-ci-governance；建立三平台 CI、license/DCO/link/project gates",
+  "next_action": "independent feature-verify phase0-ci-governance P1",
   "manual_updated_at": "2026-07-11",
   "manual_updated_by": "operator-directed ship session (refresh recorded in phase0-monorepo-scaffold Work Log)",
   "status_rows": [
@@ -103,8 +103,8 @@
   ],
   "focus": [
     {
-      "slug": "phase0-monorepo-scaffold",
-      "expected_status": "SHIPPED"
+      "slug": "phase0-ci-governance",
+      "expected_status": "READY_FOR_VERIFY"
     }
   ]
 }
