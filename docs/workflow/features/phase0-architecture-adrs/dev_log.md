@@ -9,11 +9,11 @@
 | Title | `Phase 0 — first ADR batch and research log` |
 | Owner Module | `project-system` |
 | Impacted Modules | `none` |
-| Current Phase | `P1` |
-| Status | `READY_TO_SHIP` |
-| Executor | `Codex as independent feature-verify` |
+| Current Phase | `SHIP` |
+| Status | `SHIPPED` |
+| Executor | `Codex as ship` |
 | Updated | `2026-07-11` |
-| Suggested Next | `ship` |
+| Suggested Next | `phase0-repository-layout P2 or phase0-threat-model while waiting` |
 | Branch / Worktree | `codex/project-system/phase0-architecture-adrs @ agent-deck-worktrees/phase0-architecture-adrs` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none` |
@@ -35,6 +35,7 @@
 | 2026-07-11 | P1 | pending-certainty inspection | pass: no supported-version claim; compatibility gates pending; Windows Spikes DRAFT/not started; research ledger empty | `RESEARCH_LOG.md`, `PROVIDER_COMPATIBILITY.md` |
 | 2026-07-11 | P1 Windows | Windows acceptance: deferred (no local Windows machine) | no Windows runtime claim or Spike execution; DRAFT gates preserved | compatibility placeholder |
 | 2026-07-11 | P1 independent verify | project verification, diff check, ADR count/section/link script, index/pending/Windows-gate/scope inspection | pass; durable CI link checker remains `unknown` | `docs/reviews/phase0-architecture-adrs/2026-07-11-feature-verify.md` |
+| 2026-07-11 | ship | branch/diff/untracked/DCO/docs/gates/rollback audit; `npm run project:verify` after commit `136f38b` | pass; verified implementation committed; no push, merge, tag, publish, or Windows Spike action | commit `136f38b` |
 
 ## Risks and Blockers
 
@@ -51,3 +52,4 @@
 | 2026-07-11 | Codex as feature-build | Created and indexed ADR 0001–0008 plus truthful research/compatibility scaffolds; marked all Provider/auth/key/Windows/E2EE specifics pending their exact Spikes and left all Windows Spikes DRAFT | ADR batch, index, `RESEARCH_LOG.md`, `PROVIDER_COMPATIBILITY.md`, this file | `READY_FOR_VERIFY`; durable CI link checker remains `unknown` | feature-verify P1 |
 | 2026-07-11 | Codex as independent feature-verify | Independently verified the complete ADR batch, links, pending evidence semantics, security/Provider boundaries, Windows DRAFT gates, and scope | `docs/reviews/phase0-architecture-adrs/2026-07-11-feature-verify.md`, this file | `READY_TO_SHIP` | ship (operator pre-authorized for this goal; no push/merge) |
 | 2026-07-11 | operator-directed writer | Refreshed dashboard focus and manual status to the independently persisted `READY_TO_SHIP` verdict | `docs/workflow/project/dashboard-state.json`, this file | focus aligned | ship |
+| 2026-07-11 | Codex as ship | Shipped the locally committed, independently verified documentation unit under goal pre-authorization; exact diff and DCO audited; project verification green on clean commit; no remote action performed | commit `136f38b`; this receipt | `SHIPPED` | continue Phase 0; durable CI link gate remains owned by phase0-ci-governance |
