@@ -3,11 +3,11 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0",
-  "current_status": "Phase 0 · phase0-repository-layout P2 已独立验证，状态 READY_TO_SHIP；目录已为 multi-agent-desk",
+  "current_status": "Phase 0 · phase0-repository-layout 已 SHIPPED（cc309f9；目录 multi-agent-desk；未 push/merge）",
   "current_owner": "project-system",
-  "next_action": "ship phase0-repository-layout（不 push/merge）",
+  "next_action": "feature-plan phase0-monorepo-scaffold；整合已 SHIPPED 的 architecture/threat 文档分支到后继 feature branch",
   "manual_updated_at": "2026-07-11",
-  "manual_updated_by": "operator-directed feature-plan session (refresh recorded in phase0-repository-layout Work Log)",
+  "manual_updated_by": "operator-directed ship session (refresh recorded in phase0-repository-layout Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "phase0-repository-layout",
-      "expected_status": "READY_TO_SHIP"
+      "expected_status": "SHIPPED"
     }
   ]
 }

@@ -9,11 +9,11 @@
 | Title | `Phase 0 — repository identity and root governance files` |
 | Owner Module | `project-system` |
 | Impacted Modules | `none` |
-| Current Phase | `P2` |
-| Status | `READY_TO_SHIP` |
-| Executor | `Codex as independent feature-verify` |
+| Current Phase | `SHIP` |
+| Status | `SHIPPED` |
+| Executor | `Codex as ship` |
 | Updated | `2026-07-11` |
-| Suggested Next | `ship` |
+| Suggested Next | `feature-plan phase0-monorepo-scaffold` |
 | Branch / Worktree | `codex/project-system/phase0-repository-layout @ /Users/jinlong/Desktop/jinlong_project/multi-agent-desk` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none` |
@@ -41,6 +41,7 @@
 | 2026-07-11 | P2 | `git worktree repair` for architecture/threat linked worktrees, then `git status -sb` and `git rev-parse --git-common-dir` in each | repair reported broken old `.git` pointers and fixed them; both branches clean and common dir is new main `.git` | command output |
 | 2026-07-11 | P2 | `git remote get-url origin`; `git worktree list --porcelain`; `npm run project:verify` | pass: real SSH origin is `git@github.com:jinlong17/multi-agent-desk.git`; three worktrees canonical; project verification green | command output |
 | 2026-07-11 | P2 independent verify | old/new path assertions; exact origin; worktree topology; clean linked-worktree status/common-dir assertions; `npm run project:verify && git diff --check` | pass; repair proven effective; only expected state files dirty before verdict | `docs/reviews/phase0-repository-layout/2026-07-11-feature-verify-p2.md` |
+| 2026-07-11 | ship | clean new-path branch/diff/untracked/DCO/docs/path/origin/worktree/rollback audit; `npm run project:verify` after commit `cc309f9` | pass; no GitHub setting, push, merge, tag, or remote mutation | commit `cc309f9` |
 
 ## Risks and Blockers
 
@@ -60,3 +61,4 @@
 | 2026-07-11 | Codex as feature-build | With explicit operator maintenance-window authorization, renamed the local checkout to `multi-agent-desk`, repaired both linked-worktree pointers, verified real origin/path/topology, and ran project verification; no GitHub setting, push, or merge performed | filesystem identity; this file; dashboard-state.json | `READY_FOR_VERIFY` | feature-verify P2 |
 | 2026-07-11 | Codex as independent feature-verify | Independently verified canonical path/origin, old-path removal, all three worktree branches/commits, linked common-dir repair, clean linked status, project checks, and scope | `docs/reviews/phase0-repository-layout/2026-07-11-feature-verify-p2.md`, this file | `READY_TO_SHIP` | ship (goal pre-authorized; no push/merge) |
 | 2026-07-11 | operator-directed writer | Refreshed dashboard focus and manual status to the independently persisted P2 `READY_TO_SHIP` verdict | `docs/workflow/project/dashboard-state.json`, this file | focus aligned | ship |
+| 2026-07-11 | Codex as ship | Shipped the locally committed repository identity/governance unit under goal pre-authorization; both phases independently verified; canonical directory/origin proven; no remote action performed | commits `ff4c2ad`, `cc309f9`; this receipt | `SHIPPED` | feature-plan phase0-monorepo-scaffold |
