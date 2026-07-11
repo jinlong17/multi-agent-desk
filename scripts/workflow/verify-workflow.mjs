@@ -87,9 +87,16 @@ assert(!edges.some(edge => edge.current === "BLOCKED"), "BLOCKED must not appear
 // Required entry edges per workflow.
 const hasEdge = (wf, current, writer, next) =>
   edges.some(edge => edge.workflow === wf && edge.current === current && edge.writer === writer && edge.next.includes(next));
+const hasExactEdge = (wf, current, writer, next) =>
+  edges.some(edge => edge.workflow === wf && edge.current === current && edge.writer === writer &&
+    setEqual(new Set(edge.next), new Set(next)));
 assert(hasEdge("FEATURE_DEV", "DRAFT", "feature-plan", "NEEDS_REVIEW"), "missing entry edge (FEATURE_DEV, DRAFT, feature-plan -> NEEDS_REVIEW)");
 assert(hasEdge("BUGFIX", "DRAFT", "bug-diagnose", "DIAGNOSED"), "missing entry edge (BUGFIX, DRAFT, bug-diagnose -> DIAGNOSED)");
 assert(hasEdge("SPIKE", "DRAFT", "feature-plan", "SPIKE_READY"), "missing entry edge (SPIKE, DRAFT, feature-plan -> SPIKE_READY)");
+assert(hasExactEdge("FEATURE_DEV", "READY_TO_SHIP", "security-review", ["ACCEPTED", "REVISE", "BLOCKED"]),
+  "missing gated edge (FEATURE_DEV, READY_TO_SHIP, security-review -> ACCEPTED | REVISE | BLOCKED)");
+assert(hasExactEdge("FEATURE_DEV", "ACCEPTED", "ship", ["SHIPPED", "BLOCKED"]),
+  "missing gated edge (FEATURE_DEV, ACCEPTED, ship -> SHIPPED | BLOCKED)");
 
 // Spike REVISE must loop back into the spike pipeline, never the feature pipeline.
 const spikeRevise = edges.filter(edge => edge.workflow === "SPIKE" && edge.current === "REVISE");

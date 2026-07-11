@@ -4,9 +4,13 @@ MultiAgentDesk is a terminal-first, self-hostable workspace for managing AI
 coding-agent profiles, sessions, usage, devices, and explicitly authorized
 credential grants across local machines and remote servers.
 
-The product is currently in Phase 0. The reviewed architecture baseline is
+The product is currently in Phase 0 and is not yet a usable application. The reviewed architecture baseline is
 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md); product code has
 not started.
+
+MultiAgentDesk is local-first and self-hostable. It does not automate account
+rotation, bypass quotas or rate limits, proxy Provider requests, scrape browser
+cookies, or silently switch credentials during a Session.
 
 ## Development system
 
@@ -49,3 +53,12 @@ judgment with generated Git, document, Agent, and Skill facts.
 See `AGENTS.md`, `CLAUDE.md`, and `docs/workflow/project/workflow.md` for the
 full contract. Merge, push, Ship, release, and risk acceptance always require
 explicit human authorization.
+
+## Governance and security
+
+- Contributions follow [`CONTRIBUTING.md`](CONTRIBUTING.md) and require a DCO
+  sign-off; this project does not use a CLA.
+- Report vulnerabilities using [`SECURITY.md`](SECURITY.md), not a public issue.
+- The project is licensed under [Apache-2.0](LICENSE). Third-party attribution
+  and research rules are recorded in
+  [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

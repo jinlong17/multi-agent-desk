@@ -65,7 +65,7 @@ for (const target of focus) {
   const log = state.feature_logs.find(item => item.slug === target.slug);
   assert(log, `manual focus names unknown feature ${target.slug}`);
   assert(log.status === target.expected_status,
-    `manual focus for ${target.slug} expects ${target.expected_status} but its dev_log says ${log.status}; refresh dashboard-state.json (operator or next writer role)`);
+    `manual focus for ${target.slug} expects ${target.expected_status} but its dev_log says ${log.status}; refresh dashboard-state.json in an operator-directed writer session and record it in the target Work Log`);
 }
 assert(!/token_value|access_token|refresh_token|cookie_value|session_secret/i.test(generated), "generated dashboard state may contain a secret-bearing field");
 

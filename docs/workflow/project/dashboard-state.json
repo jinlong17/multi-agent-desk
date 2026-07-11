@@ -3,11 +3,11 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0",
-  "current_status": "Phase 0 · lifecycle-readiness 已 SHIPPED（a9a6907，分支 codex/project-system/lifecycle-readiness，未 push/merge）；Phase 0 = 5 Feature，Phase 0.5 = 7 Spike；产品代码尚未启动",
+  "current_status": "Phase 0 · phase0-repository-layout P1 已独立验证为 VERIFIED；P2 仅剩本地目录重命名维护窗口",
   "current_owner": "project-system",
-  "next_action": "人工决定 merge/push；然后 feature-plan phase0-repository-layout（phase0-architecture-adrs / phase0-threat-model 可并行）",
+  "next_action": "等待 operator 授权本地目录重命名维护窗口，然后 feature-build P2",
   "manual_updated_at": "2026-07-11",
-  "manual_updated_by": "operator-directed feature-plan session (refresh recorded in lifecycle-readiness Work Log)",
+  "manual_updated_by": "operator-directed feature-plan session (refresh recorded in phase0-repository-layout Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
@@ -103,8 +103,8 @@
   ],
   "focus": [
     {
-      "slug": "lifecycle-readiness",
-      "expected_status": "SHIPPED"
+      "slug": "phase0-repository-layout",
+      "expected_status": "VERIFIED"
     }
   ]
 }
