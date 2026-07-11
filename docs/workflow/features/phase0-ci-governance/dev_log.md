@@ -9,11 +9,11 @@
 | Title | `Phase 0 — CI and remote governance` |
 | Owner Module | `project-system` |
 | Impacted Modules | `none` |
-| Current Phase | `FEATURE_BUILD_P1` |
-| Status | `READY_FOR_VERIFY` |
-| Executor | `Codex as feature-build` |
+| Current Phase | `FEATURE_VERIFY_P1` |
+| Status | `VERIFIED` |
+| Executor | `Codex as independent feature-verify` |
 | Updated | `2026-07-11` |
-| Suggested Next | `feature-verify P1` |
+| Suggested Next | `feature-build P2 after explicit operator authorization` |
 | Branch / Worktree | `codex/project-system/phase0-ci-governance @ agent-deck-worktrees/phase0-ci-governance` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none` |
@@ -23,7 +23,7 @@
 
 | Phase | Scope | Dependencies | Acceptance | Status |
 |---|---|---|---|---|
-| P1 local CI contracts + gates | read-only 3-platform workflows, exact required job names, CODEOWNERS generator, DCO/local-link/license validators and negative fixtures | shipped scaffold | static contracts and positive/negative local evidence | `READY_FOR_VERIFY` |
+| P1 local CI contracts + gates | read-only 3-platform workflows, exact required job names, CODEOWNERS generator, DCO/local-link/license validators and negative fixtures | shipped scaffold | static contracts and positive/negative local evidence | `VERIFIED` |
 | P2 remote Actions + governance | authorized push/test PR, clean and GPL-fail Actions runs, strict main protection, Actions/release-permission audit and readback | P1 verified; explicit operator authorization | seven checks proven; remote rules/permissions match and receipt persisted | `PLANNED` |
 
 ## Evidence Ledger
@@ -34,6 +34,7 @@
 | 2026-07-11 | P1 build | Ruby 2.6 `YAML.safe_load` on both workflows | pass | `.github/workflows/*.yml` |
 | 2026-07-11 | P1 build | `npm run scaffold:verify` | fail at `gofmt`: local Go toolchain absent; remaining scaffold checks unknown in this run | command output retained in task |
 | 2026-07-11 | P1 build | `npm run project:verify`; `git diff --check` | pass | generated dashboard state; working tree |
+| 2026-07-11 | P1 verify | offline frozen install; `npm run ci:verify`; DCO range; YAML parse; temporary `go-licenses v2.0.1`; pinned-Go `npm run scaffold:verify`; `npm run project:verify`; conflict/diff scans | pass; GitHub runner and remote evidence remain unknown | `docs/reviews/phase0-ci-governance/2026-07-11-feature-verify-p1.md` |
 
 ## Risks and Blockers
 
@@ -53,3 +54,5 @@
 | 2026-07-11 | operator-directed writer | Refreshed dashboard focus and manual status to the independently persisted `APPROVED` verdict | `docs/workflow/project/dashboard-state.json`, this file | focus aligned | feature-build P1 |
 | 2026-07-11 | Codex as feature-build | Built only approved P1: read-only SHA-pinned Linux/macOS/Windows workflows with seven stable check names; registry-derived CODEOWNERS; DCO, local-link, pnpm/Cargo SPDX and Go license gates; deterministic positive/negative fixtures; retained missing-local-Go scaffold failure and made no remote change | `.github/`, `scripts/ci/`, `package.json`, this file | `READY_FOR_VERIFY`; runner evidence remains unknown | feature-verify P1 |
 | 2026-07-11 | operator-directed writer | Refreshed dashboard focus and manual status to the P1 build handoff; remote Actions and protection state remain unknown | `docs/workflow/project/dashboard-state.json`, this file | focus aligned | feature-verify P1 |
+| 2026-07-11 | Codex as independent feature-verify | Independently verified workflow syntax/contracts/pins, CODEOWNERS, positive/negative DCO/link/SPDX/policy fixtures, actual pnpm/Cargo inventory, signed P1 range, pinned Go license scanner, full macOS scaffold regression, project integrity, and Windows Spike deferral; made no implementation or dashboard write | `docs/reviews/phase0-ci-governance/2026-07-11-feature-verify-p1.md`, this file | `VERIFIED`; all remote evidence unknown | feature-build P2 after explicit operator authorization |
+| 2026-07-11 | operator-directed writer | Refreshed dashboard focus and manual status to the independently persisted P1 `VERIFIED` verdict; retained P2 remote authorization as next action | `docs/workflow/project/dashboard-state.json`, this file | focus aligned | request explicit P2 remote authorization |

@@ -3,9 +3,9 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0",
-  "current_status": "Phase 0 · 4/5 单元已 SHIPPED；phase0-ci-governance P1 READY_FOR_VERIFY；全部远端 Actions/protection 证据 unknown",
+  "current_status": "Phase 0 · 4/5 单元已 SHIPPED；phase0-ci-governance P1 VERIFIED；P2 等待远端人工授权",
   "current_owner": "project-system",
-  "next_action": "independent feature-verify phase0-ci-governance P1",
+  "next_action": "operator authorization for phase0-ci-governance P2 push/test PR and remote settings",
   "manual_updated_at": "2026-07-11",
   "manual_updated_by": "operator-directed ship session (refresh recorded in phase0-monorepo-scaffold Work Log)",
   "status_rows": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "phase0-ci-governance",
-      "expected_status": "READY_FOR_VERIFY"
+      "expected_status": "VERIFIED"
     }
   ]
 }
