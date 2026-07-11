@@ -3,11 +3,11 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0",
-  "current_status": "Phase 0 · phase0-repository-layout P1 已独立验证为 VERIFIED；P2 仅剩本地目录重命名维护窗口",
+  "current_status": "Phase 0 · phase0-repository-layout P2 等待目录维护窗口；phase0-architecture-adrs 已 READY_TO_SHIP",
   "current_owner": "project-system",
-  "next_action": "等待 operator 授权本地目录重命名维护窗口，然后 feature-build P2",
+  "next_action": "ship phase0-architecture-adrs（不 push/merge）；repository-layout P2 继续等待 operator",
   "manual_updated_at": "2026-07-11",
-  "manual_updated_by": "operator-directed feature-plan session (refresh recorded in phase0-repository-layout Work Log)",
+  "manual_updated_by": "operator-directed feature-plan session (refresh recorded in phase0-architecture-adrs Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
@@ -103,8 +103,8 @@
   ],
   "focus": [
     {
-      "slug": "phase0-repository-layout",
-      "expected_status": "VERIFIED"
+      "slug": "phase0-architecture-adrs",
+      "expected_status": "READY_TO_SHIP"
     }
   ]
 }
