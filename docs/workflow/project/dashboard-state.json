@@ -3,11 +3,11 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0",
-  "current_status": "Phase 0 · 前置 3 个单元已 SHIPPED 并整合；phase0-monorepo-scaffold 已 READY_TO_SHIP（macOS green；Linux/Windows CI unknown）",
+  "current_status": "Phase 0 · 4/5 单元已 SHIPPED；phase0-monorepo-scaffold 本机 macOS green（0039e28，未 push/merge）；Linux/Windows CI unknown",
   "current_owner": "project-system",
-  "next_action": "ship phase0-monorepo-scaffold（不 push/merge）；随后 feature-plan phase0-ci-governance",
+  "next_action": "feature-plan phase0-ci-governance；建立三平台 CI、license/DCO/link/project gates",
   "manual_updated_at": "2026-07-11",
-  "manual_updated_by": "operator-directed integration session (refresh recorded in phase0-monorepo-scaffold Work Log)",
+  "manual_updated_by": "operator-directed ship session (refresh recorded in phase0-monorepo-scaffold Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "phase0-monorepo-scaffold",
-      "expected_status": "READY_TO_SHIP"
+      "expected_status": "SHIPPED"
     }
   ]
 }

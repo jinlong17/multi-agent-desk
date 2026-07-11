@@ -9,11 +9,11 @@
 | Title | `Phase 0 — monorepo empty skeleton` |
 | Owner Module | `project-system` |
 | Impacted Modules | `core, provider, control-plane, web, desktop, security` (empty dirs) |
-| Current Phase | `P2` |
-| Status | `READY_TO_SHIP` |
-| Executor | `Codex as independent feature-verify` |
+| Current Phase | `SHIP` |
+| Status | `SHIPPED` |
+| Executor | `Codex as ship` |
 | Updated | `2026-07-11` |
-| Suggested Next | `ship` |
+| Suggested Next | `feature-plan phase0-ci-governance` |
 | Branch / Worktree | `codex/project-system/phase0-monorepo-scaffold @ agent-deck-worktrees/phase0-monorepo-scaffold` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none` |
@@ -57,6 +57,7 @@
 | 2026-07-11 | P2 platforms | Linux build/unit; Windows CI build/unit | `unknown` — not run; owned by phase0-ci-governance | open evidence |
 | 2026-07-11 | P2 Windows interaction | Windows acceptance: deferred (no local Windows machine) | open gate, not pass; no ConPTY/Named Pipe/sidecar interaction | goal boundary |
 | 2026-07-11 | P2 independent verify | offline frozen install; `just verify`; locked Cargo test; license assertions; release artifact; project/diff checks; failure-history, scope, and Windows-state audit | pass for local macOS scaffold; Linux/Windows CI unknown; Windows interaction deferred | `docs/reviews/phase0-monorepo-scaffold/2026-07-11-feature-verify-p2.md` |
+| 2026-07-11 | ship | clean branch/untracked/DCO/exact-diff/docs/lock/license/gate/rollback audit; `npm run project:verify` after P1 `3671d60` and P2 `0039e28` | pass; Linux/Windows CI stays unknown; no push/main merge/tag/risk acceptance | commits `3671d60`, `0039e28` |
 
 ## Risks and Blockers
 
@@ -82,3 +83,4 @@
 | 2026-07-11 | Codex as feature-build | Built P2 lockfiles/orchestration and actual macOS empty builds; preserved four failed iterations and applied evidence-backed recovery; proved frozen/offline repeats, just wrappers, Cargo test, release artifact, and license inventory; did not claim Linux/Windows CI or interactive Windows acceptance | lockfiles, notices, icon/config/scripts, this file | `READY_FOR_VERIFY`; Linux/Windows CI unknown, Windows interaction deferred | feature-verify P2 |
 | 2026-07-11 | Codex as independent feature-verify | Independently reran frozen/offline dependency resolution, complete just/root verification, Cargo tests, license and artifact assertions; audited failure history, scope, and open platform evidence | `docs/reviews/phase0-monorepo-scaffold/2026-07-11-feature-verify-p2.md`, this file | `READY_TO_SHIP`; cross-platform proof remains for CI feature | ship |
 | 2026-07-11 | operator-directed writer | Refreshed dashboard focus and manual status to the independently persisted final `READY_TO_SHIP` verdict | `docs/workflow/project/dashboard-state.json`, this file | focus aligned | ship |
+| 2026-07-11 | Codex as ship | Shipped the locally committed two-phase scaffold under goal pre-authorization after independent verification; exact §17 tree, macOS empty builds, frozen lockfiles, notices, and evidence fidelity audited; cross-platform proof explicitly handed to CI feature | commits `3671d60`, `0039e28`; this receipt | `SHIPPED` | feature-plan phase0-ci-governance |
