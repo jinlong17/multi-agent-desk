@@ -10,11 +10,11 @@
 | Owner Module | `project-system` |
 | Impacted Modules | `core, provider, control-plane, web, desktop, security` (docs/registry only) |
 | Current Phase | `P3 security-gate execution paths and dashboard truth` |
-| Status | `READY_TO_SHIP` |
-| Executor | `Claude Code (Fable 5) as feature-verify` |
-| Updated | `2026-07-11 11:45 -0700` |
-| Suggested Next | `ship (human gate)` |
-| Branch / Worktree | `main (operator kept single branch for governance fix)` |
+| Status | `SHIPPED` |
+| Executor | `Claude Code (Fable 5) as ship (operator authorized)` |
+| Updated | `2026-07-11 12:10 -0700` |
+| Suggested Next | `feature-plan for phase0-repository-layout` |
+| Branch / Worktree | `codex/project-system/lifecycle-readiness (commit a9a6907; merge to main is a human gate)` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none` |
 | Security Gate | `none (no trust-boundary change)` |
@@ -25,7 +25,7 @@
 |---|---|---|---|---|
 | P1 governance hardening | ADR 0009 + verdict writers + spike closure + phase breakdown + semantic verifier | 2026-07-10 REVISE review | brief acceptance criteria; `npm run project:verify` passes | superseded by R2 review — `REVISE` |
 | P2 state machine closure and semantic verifier v2 | workflow-typed edge table, bug_log template, spike REVISE loop, spike security gates, single-owner splits, verifier v2, dashboard focus binding | R2 review (2026-07-10-feature-review-r2.md) | test.md acceptance matrix incl. 8 new + 1 modified rows; `npm run project:verify` passes | superseded by R3 review — `REVISE` |
-| P3 security-gate execution paths and dashboard truth | FEATURE_DEV gated ship path, gate-selected transition enforcement + full SOP keywords, Windows PTY/IPC re-split, single dashboard authority + truthful static fallback, successor-reference cleanup | R3 review (2026-07-11-feature-review.md) | test.md acceptance matrix incl. 7 new + 1 modified P3 rows; `npm run project:verify` passes | `READY_TO_SHIP` |
+| P3 security-gate execution paths and dashboard truth | FEATURE_DEV gated ship path, gate-selected transition enforcement + full SOP keywords, Windows PTY/IPC re-split, single dashboard authority + truthful static fallback, successor-reference cleanup | R3 review (2026-07-11-feature-review.md) | test.md acceptance matrix incl. 7 new + 1 modified P3 rows; `npm run project:verify` passes | `SHIPPED` (a9a6907) |
 
 ## Evidence Ledger
 
@@ -79,3 +79,4 @@
 | 2026-07-11 11:00 -0700 | Claude Code (Fable 5) as feature-build | P3 built per plan + N1–N7: gated FEATURE_DEV ship path (2 READY_TO_SHIP rows + ACCEPTED row + prose, §2 diagram, AGENTS.md lifecycle line — N1), security-review role feature-gate duty + ship Next Step, verdict tokens unchanged (N2), registry feature pipeline + security-review, verifier v3 Suggested-Next legality (N3) + gate linkage with prefix classes (N4) + `remote[ -]control|trust boundar` keywords on Title+Hypothesis only (N5), index.html fallback sweep incl. cockpit/borrowed/skills/checklist lines + contract arrays (N6), Windows re-split spike-windows-conpty (provider) / spike-windows-named-pipe-ipc (core) from spike_log at DRAFT, no briefs per workflow.md §6 spike contract, old dir removed (N7), dashboard blacklist + canonical-token checks, one authority rule across AGENTS.md/dev-dashboard.md/FILE_STRUCTURE.md, reference cleanup (adr README, repo-layout brief, lifecycle brief counts); focus refresh to READY_FOR_VERIFY recorded here (operator-directed) | workflow.md, AGENTS.md, registry.json, security-review role, verify-workflow.mjs, verify-static.mjs, index.html, dev-dashboard.md, FILE_STRUCTURE.md, 2 spike dirs, 3 reference docs, dashboard-state.json | `READY_FOR_VERIFY` | feature-verify |
 | 2026-07-11 11:45 -0700 | Claude Code (Fable 5) as feature-verify (independent session; verdict self-persisted) | P3 verified against design R3 items 1–5, notes N1–N7, and test.md P3 matrix: project:verify pass (edges=20), 5 independent negative injections caught with specific messages (cp/cmp restore, green after), gated ship path/verifier v3/re-split/authority rule/fallback/reference cleanup/scope/process all confirmed; F1 (no hard edge asserts, lazily caught) and F2 (hint phrasing) recorded non-blocking; final phase — post-verdict stale focus is by design, operator refreshes dashboard-state.json | `docs/reviews/lifecycle-readiness/2026-07-11-feature-verify-p3.md` | `READY_TO_SHIP` | ship (human gate) |
 | 2026-07-11 11:55 -0700 | operator-directed close-out (Claude Code) | Focus refreshed to READY_TO_SHIP; Phase Plan P3 row aligned; F1/F2 follow-ups recorded in Risks (deferred, no post-verify patching) | `dashboard-state.json`, this file | `npm run project:verify` green | ship (human gate) |
+| 2026-07-11 12:10 -0700 | Claude Code (Fable 5) as ship (operator authorized in chat) | Shipped: branch codex/project-system/lifecycle-readiness created from main@342be57; 62 files committed as a9a6907 (exact staged set audited, all governance scope); project:verify green pre- and post-commit; push/merge NOT performed (separate human gates) | commit `a9a6907` | `SHIPPED` | feature-plan for phase0-repository-layout |
