@@ -509,7 +509,7 @@
           <div class="cockpit-grid">
             <article class="cockpit-item is-primary"><div class="cockpit-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></svg></div><div><span>现在做什么</span><strong id="currentWorkValue">Phase 0 · 仓库与治理基线</strong><small>目录/remote、monorepo、CI、ADR、Threat Model、DCO</small></div></article>
             <article class="cockpit-item"><div class="cockpit-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="18" r="2"/><path d="M8 6h5a3 3 0 0 1 3 3v7M6 8v10h10"/></svg></div><div><span>在哪条线</span><strong id="currentBranchValue">main → codex/&lt;area&gt;/&lt;feature&gt;</strong><small>先按模块分类；并行 writer 使用独立 branch/worktree</small></div></article>
-            <article class="cockpit-item"><div class="cockpit-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M8 9l-4 3 4 3M16 9l4 3-4 3M14 5l-4 14"/></svg></div><div><span>用哪个入口</span><strong>intake → plan → review → build → verify → ship</strong><small>Review / Verify 默认只读；Ship 需要人工触发</small></div></article>
+            <article class="cockpit-item"><div class="cockpit-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M8 9l-4 3 4 3M16 9l4 3-4 3M14 5l-4 14"/></svg></div><div><span>用哪个入口</span><strong>intake → plan → review → build → verify → (gated security-review) → ship</strong><small>Review / Verify 是裁决 Writer，只写 verdict 记录与 dev_log；Ship 需要人工触发</small></div></article>
             <article class="cockpit-item"><div class="cockpit-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 5h16v14H4zM8 9h8M8 13h5"/></svg></div><div><span>做到什么状态</span><strong id="currentStateValue">Plan v0.2 已审查 · 代码未启动</strong><small>人工状态 + 自动仓库事实</small></div></article>
           </div>
 
@@ -592,7 +592,7 @@
             <article class="doc-row"><b>工作流文件结构</b><code>docs/workflow/FILE_STRUCTURE.md</code><p>权威源、生成镜像、人工状态和机器快照的完整目录与编辑责任。</p></article>
             <article class="doc-row"><b>参考项目</b><code>/Users/jinlong/Desktop/jinlong_project/XAI_Desktop</code><p>借鉴 workflow、dashboard authority model、Skill/Agent registry 和人工门禁。</p></article>
           </div>
-          <div class="surface borrowed-patterns"><h3>从 XAI_Desktop 借鉴但不复制业务状态的模式</h3><ul><li>4 问驾驶舱：现在做什么 / 在哪条线 / 用哪个入口 / 做到什么状态。</li><li>文档是共享状态，不靠聊天上下文；Handoff 保持结构化和可复制。</li><li>Review/Verify 默认只读，writer 不与 reviewer 同时修改同一文件。</li><li>机器事实与人工判断分离：看板读取和提醒，但不自动决定优先级、风险接受和 Ship。</li><li>Skill/Agent 注册表展示用途、输入、输出、工作流、维护状态和镜像状态。</li><li>一个数据域只有一个 Owner；看板中的其它位置只能做 Mirror 或 Shared Widget。</li></ul></div>
+          <div class="surface borrowed-patterns"><h3>从 XAI_Desktop 借鉴但不复制业务状态的模式</h3><ul><li>4 问驾驶舱：现在做什么 / 在哪条线 / 用哪个入口 / 做到什么状态。</li><li>文档是共享状态，不靠聊天上下文；Handoff 保持结构化和可复制。</li><li>Review/Verify 是裁决 Writer：只写 verdict 记录和 dev_log 状态，从不修改 plan/实现文件。</li><li>机器事实与人工判断分离：看板读取和提醒，但不自动决定优先级、风险接受和 Ship。</li><li>Skill/Agent 注册表展示用途、输入、输出、工作流、维护状态和镜像状态。</li><li>一个数据域只有一个 Owner；看板中的其它位置只能做 Mirror 或 Shared Widget。</li></ul></div>
           <div class="footer">MultiAgentDesk 本地开发看板 · manual state + generated facts · Plan v0.2</div>
         </section>
       </div>
@@ -620,30 +620,31 @@
         steps:[
           {name:'intake / brief', mode:'可写 Skill', desc:'规范化需求、模块归属、范围与非目标。', items:['写 Feature Brief','确定 canonical name','列出验收'], footer:'输出：brief + planner handoff'},
           {name:'feature-plan', mode:'可写 Agent', desc:'调研、契约、Phase 切分与风险门禁。', items:['design / api / test','冻结假设','写 NEEDS_REVIEW'], footer:'状态：NEEDS_REVIEW'},
-          {name:'feature-review', mode:'只读 Agent', readonly:true, desc:'独立审查计划、安全、范围和可执行性。', items:['不修 writer 文件','写 blocker','APPROVE / REVISE'], footer:'状态：APPROVED 或回 plan'},
+          {name:'feature-review', mode:'裁决 Writer', readonly:true, desc:'独立审查计划，并自行落盘 verdict：审查记录 + dev_log 状态。', items:['不修 plan/实现文件','写审查记录','更新 dev_log + Work Log'], footer:'状态：APPROVED / REVISE / BLOCKED'},
           {name:'feature-build', mode:'单一 Writer', desc:'每次只实现一个 Phase，并写证据。', items:['检查 dirty files','精确写 scope','测试 + scoped commit'], footer:'状态：READY_FOR_VERIFY'},
-          {name:'feature-verify', mode:'只读 Agent', readonly:true, desc:'由不同工具复核代码、测试和边界。', items:['重跑命令','检查回归','记录 PASS/BLOCKED'], footer:'状态：READY_TO_SHIP'},
+          {name:'feature-verify', mode:'裁决 Writer', readonly:true, desc:'独立验证一个 Phase，并自行落盘 verdict：验证记录 + dev_log 状态。', items:['重跑命令','检查回归','更新 dev_log + Work Log'], footer:'状态：VERIFIED / READY_TO_SHIP / BLOCKED'},
+          {name:'security-review', mode:'裁决 Writer', readonly:true, desc:'Security Gate 开启的 Feature 在 READY_TO_SHIP 必须先通过安全审查。', items:['信任边界与残余风险','ACCEPTED 置 gate resolved','REVISE 回 feature-plan'], footer:'状态：ACCEPTED / REVISE / BLOCKED'},
           {name:'ship', mode:'人工门禁', human:true, desc:'只在人工触发后做最终范围、文档和发布检查。', items:['精确 stage','确认 branch/remote','commit/push/release'], footer:'状态：SHIPPED'}
         ],
-        contract:[['NEEDS_REVIEW','feature-review'],['APPROVED','feature-build'],['READY_FOR_VERIFY','feature-verify'],['BLOCKED','原 writer/fix role'],['READY_TO_SHIP','ship（人工触发）']]
+        contract:[['NEEDS_REVIEW','feature-review'],['APPROVED','feature-build'],['READY_FOR_VERIFY','feature-verify'],['READY_TO_SHIP（门禁开）','security-review'],['ACCEPTED','ship（人工触发）'],['READY_TO_SHIP（无门禁）','ship（人工触发）'],['BLOCKED','blocker 指名的清除角色']]
       },
       bug: {
         steps:[
-          {name:'bug-diagnose', mode:'可写 Agent', desc:'复现、证据、根因和最小修复范围。', items:['稳定复现','定位根因','定义回归测试'], footer:'状态：FIX_READY'},
-          {name:'bug-fix', mode:'单一 Writer', desc:'只修根因，不顺手重构无关区域。', items:['最小 patch','补回归测试','记录命令'], footer:'状态：FIX_READY_FOR_VERIFY'},
-          {name:'bug-verify', mode:'只读 Agent', readonly:true, desc:'独立复现原问题并验证没有回归。', items:['原复现失败','新测试通过','边界检查'], footer:'状态：READY_TO_SHIP'},
+          {name:'bug-diagnose', mode:'可写 Agent', desc:'复现、证据、根因和最小修复范围。', items:['稳定复现','定位根因','定义回归测试'], footer:'状态：DIAGNOSED'},
+          {name:'bug-fix', mode:'单一 Writer', desc:'只修根因，不顺手重构无关区域。', items:['最小 patch','补回归测试','记录命令'], footer:'状态：READY_FOR_VERIFY'},
+          {name:'bug-verify', mode:'裁决 Writer', readonly:true, desc:'独立复现原问题并自行落盘 verdict。', items:['原复现失败','新测试通过','更新 dev_log + Work Log'], footer:'状态：READY_TO_SHIP / BLOCKED'},
           {name:'ship', mode:'人工门禁', human:true, desc:'核对精确文件和发布范围。', items:['status/diff audit','scoped commit','push after approval'], footer:'状态：SHIPPED'}
         ],
-        contract:[['FIX_READY','bug-fix'],['FIX_READY_FOR_VERIFY','bug-verify'],['BLOCKED','bug-fix'],['READY_TO_SHIP','ship（人工触发）']]
+        contract:[['DRAFT','bug-diagnose'],['DIAGNOSED','bug-fix'],['READY_FOR_VERIFY','bug-verify'],['READY_TO_SHIP','ship（人工触发）'],['BLOCKED','blocker 指名的清除角色']]
       },
       spike: {
         steps:[
-          {name:'spike-intake', mode:'可写 Skill', desc:'把未知假设改写为可证伪问题。', items:['成功/失败判据','环境矩阵','时间盒'], footer:'输出：Spike brief'},
-          {name:'provider-spike', mode:'证据 Writer', desc:'运行最小原型，不直接做生产实现。', items:['记录版本','保存命令/输出','成立或失败'], footer:'输出：evidence report'},
-          {name:'security-review', mode:'只读 Agent', readonly:true, desc:'复核假设、威胁和 fallback 是否充分。', items:['证据可信度','攻击路径','残余风险'], footer:'状态：ACCEPT / REVISE'},
-          {name:'decision / ADR', mode:'可写 Agent', desc:'把证据转成支持矩阵与不可逆决策。', items:['ADR','Compatibility Matrix','更新 Plan gate'], footer:'状态：GATE_RESOLVED'}
+          {name:'feature-plan（spike intake）', mode:'可写 Agent', desc:'把未知假设改写为可证伪问题，实例化 spike_log。', items:['成功/失败判据','环境矩阵 + 时间盒','凭据/密钥/auth/远程控制/信任边界 → 开 Security Gate'], footer:'状态：SPIKE_READY'},
+          {name:'provider-spike', mode:'证据 Writer', desc:'运行最小原型，不直接做生产实现。', items:['记录版本','保存命令/输出','成立或失败'], footer:'状态：EVIDENCE_READY / INCONCLUSIVE'},
+          {name:'security-review', mode:'裁决 Writer', readonly:true, desc:'Security Gate 开启时是 EVIDENCE_READY 唯一合法写入者。', items:['证据可信度','攻击路径','残余风险'], footer:'状态：ACCEPTED / REVISE / BLOCKED'},
+          {name:'feature-plan（decision）', mode:'可写 Agent', desc:'把证据转成支持矩阵与不可逆决策。', items:['ADR','Compatibility Matrix','REVISE 回 SPIKE_READY'], footer:'状态：GATE_RESOLVED'}
         ],
-        contract:[['SPIKE_READY','provider-spike'],['EVIDENCE_READY','security-review'],['REVISE','provider-spike'],['ACCEPTED','ADR + compatibility update']]
+        contract:[['SPIKE_READY','provider-spike'],['EVIDENCE_READY（门禁开）','security-review'],['EVIDENCE_READY（无门禁）','feature-plan decision'],['ACCEPTED','feature-plan → GATE_RESOLVED'],['REVISE','feature-plan → SPIKE_READY'],['INCONCLUSIVE','feature-plan → SPIKE_READY / BLOCKED']]
       }
     };
 
@@ -654,11 +655,11 @@
       {name:'e2ee-protocol-review', kind:'skill', status:'proposed', scenario:'检查 pin、attestation、AAD、replay、撤销与测试向量。', io:'Protocol spec → security verdict'},
       {name:'mad-dashboard-sync', kind:'skill', status:'proposed', scenario:'进入开发后刷新 branch、dirty、test、agent registry 和 release evidence。', io:'repo facts → generated snapshot'},
       {name:'feature-plan', kind:'agent', status:'baseline', scenario:'写 design/api/test/dev_log 与 Phase 计划，状态进入 NEEDS_REVIEW。', io:'Brief + repo → reviewed plan candidate'},
-      {name:'feature-review', kind:'agent', status:'baseline', scenario:'只读审查计划、契约、测试和安全门禁。', io:'Plan → APPROVED / REVISE'},
+      {name:'feature-review', kind:'agent', status:'baseline', scenario:'独立审查计划、契约、测试和安全门禁，并自行落盘 verdict。', io:'Plan → APPROVED / REVISE / BLOCKED'},
       {name:'feature-build', kind:'agent', status:'baseline', scenario:'一个 Phase 一个 writer；实现、测试、更新文档与 scoped commit。', io:'Approved phase → implementation evidence'},
-      {name:'feature-verify', kind:'agent', status:'baseline', scenario:'不同工具只读验证功能、安全、测试与兼容性。', io:'Build receipt → PASS / BLOCKED'},
+      {name:'feature-verify', kind:'agent', status:'baseline', scenario:'不同工具独立验证功能、安全、测试与兼容性，并自行落盘 verdict。', io:'Build receipt → VERIFIED / READY_TO_SHIP / BLOCKED'},
       {name:'provider-spike', kind:'agent', status:'proposed', scenario:'时间盒验证 Provider 外部行为，不写生产功能。', io:'Hypothesis → evidence + fallback'},
-      {name:'security-review', kind:'agent', status:'proposed', scenario:'独立审查 E2EE、Vault、Credential Grant 与威胁模型。', io:'Security change → findings + gate'},
+      {name:'security-review', kind:'agent', status:'proposed', scenario:'独立审查 E2EE、Vault、Credential Grant 与威胁模型；门禁 Feature/Spike 的唯一放行者。', io:'Security change → ACCEPTED / REVISE / BLOCKED'},
       {name:'ship', kind:'agent', status:'baseline', scenario:'人工触发的最终范围、分支、文档、测试和发布门禁。', io:'READY_TO_SHIP → release receipt'}
     ];
 
@@ -676,7 +677,7 @@
     const checklistItems = [
       ['Phase 0/1 可以开始','它们不依赖尚未验证的 Provider/E2EE 假设。'],
       ['Phase 0.5 是证据门禁','Spike 不是旁支研究，而是 Phase 2/3/4b/5 的阻塞输入。'],
-      ['Review / Verify 默认只读','发现问题写回状态与证据，由 writer 或 fix role 修改。'],
+      ['Review / Verify 是裁决 Writer','只写 verdict 记录与 dev_log 状态；plan/实现文件由 writer 或 fix role 修改。'],
       ['Passkey ≠ Device Key','登录 Control Plane 不代表能解密远程终端。'],
       ['Session ≠ Attachment','Provider 进程状态和客户端连接/控制权分开建模。'],
       ['Ship 需要人工触发','测试通过也不会让看板自动决定发布。']

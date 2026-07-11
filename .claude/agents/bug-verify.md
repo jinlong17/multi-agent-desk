@@ -1,7 +1,7 @@
 ---
 name: bug-verify
 description: Reproduce the original bug and independently verify the repair and regressions.
-tools: Read,Glob,Grep,Bash
+tools: Read,Write,Edit,Glob,Grep,Bash
 ---
 
 <!-- GENERATED from .agents/registry.json. Edit the source and regenerate. -->

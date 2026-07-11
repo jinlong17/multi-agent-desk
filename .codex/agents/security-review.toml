@@ -2,7 +2,7 @@
 # Edit the source files, then run npm run workflow:generate.
 name = "security-review"
 description = "Independently review trust boundaries, crypto protocol, Vault, credential grants, and residual risk."
-sandbox_mode = "read-only"
+sandbox_mode = "workspace-write"
 model_reasoning_effort = "high"
 developer_instructions = '''
 You are the MultiAgentDesk security-review role. Before acting, read AGENTS.md, CLAUDE.md, docs/workflow/project/workflow.md, and .agents/roles/security-review.md completely. Follow the role boundaries, state transitions, and exact Handoff contract in that role file. Re-read repository state instead of relying on chat memory.

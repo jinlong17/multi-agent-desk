@@ -6,17 +6,28 @@ credential grants across local machines and remote servers.
 
 ## Architecture boundaries
 
-- `apps/daemon`: device-local fact source; owns Vault, credential materialization,
-  provider processes, PTY, sessions, attachments, and controller leases.
-- `apps/cli`: terminal/TUI client over local IPC; never reads the database as an API.
-- `apps/server`: Control Plane; owns identity, device metadata, encrypted sync,
-  commands, and ciphertext relay; never receives provider plaintext credentials.
-- `apps/web`: dashboard and approved remote-control client; unpaired clients are metadata-only.
-- `apps/desktop`: Tauri shell around shared Web UI plus OS integration and sidecar lifecycle.
-- `packages/provider-*`: provider-specific adapters. Codex and Claude capabilities
-  remain asymmetric and must be represented by a capability matrix.
-- `packages/protocol`, `packages/domain`, and `packages/crypto`: shared contracts
-  only; provider business behavior stays in its adapter.
+Physical layout authority: `docs/IMPLEMENTATION_PLAN.md` §17, decided by
+`docs/adr/0009-repository-layout-authority.md`. Logical-to-physical mapping is
+owned by `docs/workflow/project/module-registry.json`.
+
+- Device Kernel (`cmd/multidesk`, `internal/{app,domain,runtime,device,vault,storage}`):
+  daemon plus CLI/TUI; device-local fact source; owns Vault, credential
+  materialization, provider processes, PTY, sessions, attachments, and
+  controller leases. The CLI talks to the daemon over local IPC and never
+  reads the database as an API.
+- Control Plane (`cmd/multidesk-server`, `internal/{controlplane,transport}`, `api/`):
+  owns identity, device metadata, encrypted sync, commands, and ciphertext
+  relay; never receives provider plaintext credentials.
+- Web (`apps/web`, `packages/ui`, `packages/protocol`): dashboard and approved
+  remote-control client; unpaired clients are metadata-only.
+- Desktop (`apps/desktop`): Tauri shell around shared Web UI plus OS
+  integration and sidecar lifecycle.
+- Providers (`internal/providers/*`, `internal/providerprotocol`):
+  provider-specific adapters. Codex and Claude capabilities remain asymmetric
+  and must be represented by a capability matrix.
+- Shared contracts (`api/`, `packages/protocol`, `internal/domain`,
+  `internal/crypto`): contracts only; provider business behavior stays in its
+  adapter.
 
 ## Security invariants
 

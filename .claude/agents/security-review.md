@@ -1,7 +1,7 @@
 ---
 name: security-review
 description: Independently review trust boundaries, crypto protocol, Vault, credential grants, and residual risk.
-tools: Read,Glob,Grep,Bash,WebSearch,WebFetch
+tools: Read,Write,Edit,Glob,Grep,Bash,WebSearch,WebFetch
 ---
 
 <!-- GENERATED from .agents/registry.json. Edit the source and regenerate. -->

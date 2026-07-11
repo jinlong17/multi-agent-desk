@@ -6,6 +6,7 @@
 |---|---|
 | Workflow | `FEATURE_DEV` |
 | Target | `<slug>` |
+| Title | `<title>` |
 | Owner Module | `<module>` |
 | Impacted Modules | `<modules or none>` |
 | Current Phase | `PLAN` |

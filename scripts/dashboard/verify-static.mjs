@@ -45,6 +45,28 @@ assert(Array.isArray(state.modules) && state.modules.length === 7, "module regis
 assert(state.skill_agent_registry.summary.complete_agent_mirrors === state.skill_agent_registry.summary.agents, "agent runtime mirrors are incomplete");
 assert(state.skill_agent_registry.summary.complete_skill_mirrors === state.skill_agent_registry.summary.skills, "skill runtime mirrors are incomplete");
 assert(state.required_docs.every(doc => doc.exists), "one or more required dashboard documents are missing");
+assert(Array.isArray(state.feature_logs), "feature_logs must be an array");
+for (const log of state.feature_logs) {
+  assert(log.status !== "MISSING_DEV_LOG", `feature directory ${log.slug} has no dev_log.md`);
+  ["title", "owner_module", "phase", "status", "executor", "updated", "suggested_next"].forEach(field => {
+    assert(log[field] && log[field] !== "unknown", `feature ${log.slug} dev_log.md is missing Status Panel field ${field}`);
+  });
+}
+// Static fallback must use canonical workflow semantics.
+["FIX_READY", "spike-intake", "只读"].forEach(token => {
+  assert(!html.includes(token), `dashboard static fallback contains stale token "${token}"`);
+});
+["DIAGNOSED", "READY_FOR_VERIFY", "SPIKE_READY", "GATE_RESOLVED", "ACCEPTED"].forEach(token => {
+  assert(html.includes(token), `dashboard static fallback missing canonical status ${token}`);
+});
+const focus = state.manual?.focus;
+assert(Array.isArray(focus) && focus.length > 0, "manual focus must bind at least one {slug, expected_status} target");
+for (const target of focus) {
+  const log = state.feature_logs.find(item => item.slug === target.slug);
+  assert(log, `manual focus names unknown feature ${target.slug}`);
+  assert(log.status === target.expected_status,
+    `manual focus for ${target.slug} expects ${target.expected_status} but its dev_log says ${log.status}; refresh dashboard-state.json (operator or next writer role)`);
+}
 assert(!/token_value|access_token|refresh_token|cookie_value|session_secret/i.test(generated), "generated dashboard state may contain a secret-bearing field");
 
 console.log(`verified dashboard: branch=${state.git.branch}, dirty=${state.git.dirty.total}, phases=${state.manual.phases.length}, agents=${state.skill_agent_registry.summary.agents}, skills=${state.skill_agent_registry.summary.skills}`);

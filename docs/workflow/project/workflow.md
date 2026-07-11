@@ -4,7 +4,9 @@
 
 1. Classify every task into one owning module before editing.
 2. Persist state in files; chat is not continuity.
-3. One writer owns one phase. Reviewers and verifiers remain read-only.
+3. One writer owns one phase. Review and verify roles never modify plan or
+   implementation files; they persist exactly their own verdict record
+   (see §3, "Verdict writers").
 4. Build one phase, verify it, then continue.
 5. Provider and security assumptions require reproducible Spike evidence.
 6. Ship, push, merge, deploy, risk acceptance, and priority are human gates.
@@ -20,14 +22,16 @@ mad-feature-brief
   -> feature-review (APPROVED | REVISE)
   -> feature-build, one phase (READY_FOR_VERIFY)
   -> feature-verify (VERIFIED | READY_TO_SHIP | BLOCKED)
-  -> next feature-build phase or ship
+  -> next feature-build phase, or:
+  -> security-review when the Security Gate is open (ACCEPTED | REVISE | BLOCKED)
   -> ship (SHIPPED | BLOCKED)
 ```
 
 ### Bugfix
 
 ```text
-bug-diagnose (DIAGNOSED)
+bug intake: copy docs/workflow/templates/bug_log.md (DRAFT)
+  -> bug-diagnose (DIAGNOSED)
   -> bug-fix (READY_FOR_VERIFY)
   -> bug-verify (READY_TO_SHIP | BLOCKED)
   -> ship
@@ -36,29 +40,77 @@ bug-diagnose (DIAGNOSED)
 ### Spike
 
 ```text
-spike intake (SPIKE_READY)
+feature-plan spike intake (SPIKE_READY)
   -> provider-spike (EVIDENCE_READY | INCONCLUSIVE)
-  -> security-review when trust/credential/crypto is affected
-  -> feature-plan / ADR / compatibility matrix (GATE_RESOLVED)
+  -> security-review when trust/credential/crypto is affected (ACCEPTED | REVISE | BLOCKED)
+  -> feature-plan records the decision: ADR / compatibility matrix (GATE_RESOLVED)
+  -> on REVISE: feature-plan re-scopes and re-enters SPIKE_READY (never NEEDS_REVIEW)
 ```
+
+`feature-plan` owns both ends of a spike: intake (instantiate the spike log
+from `docs/workflow/templates/spike_log.md`, freeze the falsifiable hypothesis
+and time-box, set `SPIKE_READY`) and the decision (record the ADR or
+`PROVIDER_COMPATIBILITY.md` entry, set `GATE_RESOLVED`). When no security gate
+is open, `EVIDENCE_READY` goes directly to the `feature-plan` decision.
 
 ## 3. State machine
 
-| Current | Role allowed to write next | Next statuses |
-|---|---|---|
-| `DRAFT` | `feature-plan` | `NEEDS_REVIEW` |
-| `NEEDS_REVIEW` | reviewer is read-only; planner writes only after `REVISE` | `APPROVED`, `REVISE`, `BLOCKED` |
-| `REVISE` | `feature-plan` | `NEEDS_REVIEW` |
-| `APPROVED` | `feature-build` | `READY_FOR_VERIFY`, `BLOCKED` |
-| `READY_FOR_VERIFY` | verifier is read-only | `VERIFIED`, `READY_TO_SHIP`, `BLOCKED` |
-| `VERIFIED` | `feature-build` for next approved phase | `READY_FOR_VERIFY` |
-| `READY_TO_SHIP` | `ship`, only with human authorization | `SHIPPED`, `BLOCKED` |
-| `DIAGNOSED` | `bug-fix` | `READY_FOR_VERIFY`, `BLOCKED` |
-| `SPIKE_READY` | `provider-spike` | `EVIDENCE_READY`, `INCONCLUSIVE`, `BLOCKED` |
-| `EVIDENCE_READY` | reviewer is read-only; planner/ADR writer records decision | `GATE_RESOLVED`, `REVISE`, `BLOCKED` |
+Every transition is one edge `(Workflow, Current, Writer, Next)`. The table is
+machine-parsed by `scripts/workflow/verify-workflow.mjs`; keep the four-column
+shape and exactly one writer role per row.
 
-`BLOCKED` must name a reproducible condition and the role that can clear it.
-Only the owner may set manual priority or accept residual risk.
+| Workflow | Current | Writer | Next |
+|---|---|---|---|
+| `FEATURE_DEV` | `DRAFT` | `feature-plan` | `NEEDS_REVIEW` |
+| `FEATURE_DEV` | `NEEDS_REVIEW` | `feature-review` | `APPROVED`, `REVISE`, `BLOCKED` |
+| `FEATURE_DEV` | `REVISE` | `feature-plan` | `NEEDS_REVIEW`, `BLOCKED` |
+| `FEATURE_DEV` | `APPROVED` | `feature-build` | `READY_FOR_VERIFY`, `BLOCKED` |
+| `FEATURE_DEV` | `READY_FOR_VERIFY` | `feature-verify` | `VERIFIED`, `READY_TO_SHIP`, `BLOCKED` |
+| `FEATURE_DEV` | `VERIFIED` | `feature-build` for the next approved phase | `READY_FOR_VERIFY`, `BLOCKED` |
+| `FEATURE_DEV` | `READY_TO_SHIP` | `security-review` | `ACCEPTED`, `REVISE`, `BLOCKED` |
+| `FEATURE_DEV` | `READY_TO_SHIP` | `ship` with human authorization | `SHIPPED`, `BLOCKED` |
+| `FEATURE_DEV` | `ACCEPTED` | `ship` with human authorization | `SHIPPED`, `BLOCKED` |
+| `BUGFIX` | `DRAFT` | `bug-diagnose` | `DIAGNOSED`, `BLOCKED` |
+| `BUGFIX` | `DIAGNOSED` | `bug-fix` | `READY_FOR_VERIFY`, `BLOCKED` |
+| `BUGFIX` | `READY_FOR_VERIFY` | `bug-verify` | `READY_TO_SHIP`, `BLOCKED` |
+| `BUGFIX` | `READY_TO_SHIP` | `ship` with human authorization | `SHIPPED`, `BLOCKED` |
+| `SPIKE` | `DRAFT` | `feature-plan` spike intake | `SPIKE_READY`, `BLOCKED` |
+| `SPIKE` | `SPIKE_READY` | `provider-spike` | `EVIDENCE_READY`, `INCONCLUSIVE`, `BLOCKED` |
+| `SPIKE` | `EVIDENCE_READY` | `security-review` | `ACCEPTED`, `REVISE`, `BLOCKED` |
+| `SPIKE` | `EVIDENCE_READY` | `feature-plan` | `GATE_RESOLVED`, `BLOCKED` |
+| `SPIKE` | `ACCEPTED` | `feature-plan` | `GATE_RESOLVED` |
+| `SPIKE` | `REVISE` | `feature-plan` | `SPIKE_READY`, `BLOCKED` |
+| `SPIKE` | `INCONCLUSIVE` | `feature-plan` | `SPIKE_READY`, `BLOCKED` |
+
+The two `SPIKE` / `EVIDENCE_READY` rows are mutually exclusive: when the
+spike's Security Gate is open, only `security-review` may write; only when no
+security gate is open does `feature-plan` record the decision directly.
+
+The two `FEATURE_DEV` / `READY_TO_SHIP` rows are mutually exclusive in the
+same way: when the feature's Security Gate is open, only `security-review`
+may write — `ACCEPTED` sets the gate to `resolved` and hands the unit to
+`ship`; a security `REVISE` returns through the normal
+`(FEATURE_DEV, REVISE, feature-plan)` edge. Only when the gate is `none` or
+`resolved` may `ship` write directly from `READY_TO_SHIP`.
+
+A spike returned to `REVISE` re-enters `SPIKE_READY` after `feature-plan`
+applies the reviewer findings to the hypothesis, criteria, or time-box; a
+spike never enters `NEEDS_REVIEW`.
+
+`BLOCKED` is terminal-until-cleared and never appears as a `Current` row: it
+is not a fixed edge. It must name a reproducible condition and the role that
+can clear it.
+
+Verdict writers. `feature-review`, `feature-verify`, `bug-verify`, and
+`security-review` must not modify plan or implementation files. Each persists
+its own verdict atomically in one step: update the target `dev_log.md` Status
+Panel, append one Work Log row, and write its report under
+`docs/reviews/<slug>/`. No other write is permitted for these roles.
+
+The clearing role resolves the condition, appends a Work Log row with
+evidence, and restores the last non-blocked status; it may not skip forward
+past states that were never reached. Only the owner may set manual priority or
+accept residual risk.
 
 ## 4. Feature state contract
 
@@ -94,6 +146,28 @@ docs/workflow/features/<slug>/api.md
 docs/workflow/features/<slug>/test.md
 docs/workflow/features/<slug>/dev_log.md
 ```
+
+Bug work requires:
+
+```text
+docs/workflow/features/<slug>/dev_log.md   (from docs/workflow/templates/bug_log.md)
+```
+
+plus reproduction and regression evidence in its Evidence Ledger.
+
+Spike work requires:
+
+```text
+docs/workflow/features/<slug>/dev_log.md   (from docs/workflow/templates/spike_log.md)
+docs/spikes/<provider-or-area>/...         (reproducible evidence)
+```
+
+plus the ADR or `PROVIDER_COMPATIBILITY.md` entry recorded at `GATE_RESOLVED`.
+Per SOP_SPIKE rule 5, a spike touching credentials, keys, auth, remote
+control, or trust boundaries must declare an open Security Gate at intake.
+
+Verdict writers store review and verification reports as
+`docs/reviews/<slug>/<date>-<role>.md`.
 
 Security-sensitive decisions additionally update the threat model and ADR.
 Provider claims additionally update `docs/PROVIDER_COMPATIBILITY.md` after the

@@ -22,18 +22,23 @@ specifies another branch.
 
 ## Document-driven lifecycle
 
-- Feature: `intake -> feature-plan -> feature-review -> feature-build -> feature-verify -> ship`
+- Feature: `intake -> feature-plan -> feature-review -> feature-build -> feature-verify -> security-review (when gated) -> ship`
 - Bug: `bug-diagnose -> bug-fix -> bug-verify -> ship`
-- Spike: `spike-intake -> provider-spike -> security-review -> decision`
+- Spike: `feature-plan intake -> provider-spike -> security-review (when gated) -> feature-plan decision`
 - `feature-build` and `bug-fix` are writers. One writer owns one phase at a time.
-- Review and verify roles are read-only. They record findings; they do not repair writer files.
+- Review and verify roles are verdict writers: they never modify plan or
+  implementation files, and they persist their own verdict — target
+  `dev_log.md` Status Panel, one Work Log row, and a report under
+  `docs/reviews/<slug>/`. No other writes.
 - `ship` requires an explicit human request. Tests never authorize push or release.
 - A build run completes one approved phase, updates evidence, and stops for verification.
 
 ## State authority
 
-`docs/workflow/features/<slug>/dev_log.md` is the resumable state authority for
-a feature or bug. Maintain its Status Panel and append-only Work Log on every
+`docs/workflow/features/<slug>/dev_log.md` is the resumable state authority
+for a feature, bug, or spike (features use
+`docs/workflow/templates/dev_log.md`, bugs `bug_log.md`, spikes
+`spike_log.md`). Maintain its Status Panel and append-only Work Log on every
 workflow transition. Chat history is never the state authority.
 
 Allowed status transitions are defined in
@@ -56,3 +61,10 @@ verbatim so it remains copyable across Codex and Claude Code.
 The dashboard may read branch, commit, dirty files, registries, docs, and
 feature logs. It must not decide priority, accept risk, create branches, merge,
 push, or mark a release shipped.
+
+`dashboard-state.json` is operator judgment and carries a `focus` array
+binding that judgment to concrete feature statuses (`{slug,
+expected_status}`); `dashboard:verify` fails when a binding is stale. One
+authority rule: the operator owns this file; a refresh may be executed by an
+operator-directed writer session, which must record the refresh in the
+target unit's Work Log; verdict writers never touch it.

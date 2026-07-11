@@ -1,7 +1,7 @@
 ---
 name: feature-verify
 description: Independently verify a completed feature phase without editing implementation files.
-tools: Read,Glob,Grep,Bash
+tools: Read,Write,Edit,Glob,Grep,Bash
 ---
 
 <!-- GENERATED from .agents/registry.json. Edit the source and regenerate. -->

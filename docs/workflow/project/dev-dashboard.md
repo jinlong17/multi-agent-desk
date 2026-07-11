@@ -16,8 +16,11 @@
 
 The dashboard uses three classes of data:
 
-1. **Manual judgment** — phase status, priority, next action, accepted risk.
-   Only humans update `dashboard-state.json`.
+1. **Manual judgment** — phase status, priority, next action, accepted risk,
+   and the `focus` bindings. `dashboard-state.json` is operator judgment: a
+   refresh may be executed by an operator-directed writer session, which must
+   record the refresh in the target unit's Work Log; verdict writers never
+   touch this file.
 2. **Machine facts** — branch, commit, dirty files, existing docs, agent/skill
    mirrors, feature logs. The generator owns these fields.
 3. **Derived display** — counts and summaries calculated from the first two.

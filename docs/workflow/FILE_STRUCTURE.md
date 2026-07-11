@@ -48,7 +48,7 @@ multi-agent-desk/
 | `.codex/agents/`, `.claude/agents/` | No; regenerate | workflow generator |
 | `.codex/skills/` | Yes | Skill author |
 | `.claude/skills/` | No; regenerate | workflow generator |
-| `dashboard-state.json` | Yes, for human judgment only | operator |
+| `dashboard-state.json` | Yes, for human judgment only | operator; refresh executable by an operator-directed writer session (recorded in the target Work Log); never a verdict writer |
 | `state.generated.js` | No; regenerate | dashboard generator |
 | `features/<slug>/dev_log.md` | Yes, by current workflow writer | feature workflow |
 | dashboard HTML | Yes, presentation only | project-system |

@@ -1,13 +1,14 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "state_owner": "architecture",
+  "layout_authority": "docs/adr/0009-repository-layout-authority.md",
   "modules": [
-    {"key":"core","title":"Device Kernel","owns":["apps/daemon","apps/cli","packages/domain","packages/protocol","packages/storage"],"signals":["daemon","CLI","TUI","IPC","SQLite","Session","Attachment","ControllerLease"],"branch":"codex/core/<feature>","gates":[]},
-    {"key":"provider","title":"Provider Adapters","owns":["packages/provider-codex","packages/provider-claude","packages/provider-sdk"],"signals":["Codex","Claude Code","app-server","PTY","ConPTY","auth","usage","compatibility"],"branch":"codex/provider/<feature>","gates":["Phase 0.5 evidence"]},
-    {"key":"control-plane","title":"Control Plane","owns":["apps/server"],"signals":["Passkey","device directory","metadata sync","command API","ciphertext relay","WebSocket"],"branch":"codex/control-plane/<feature>","gates":["Phase 4a contract"]},
-    {"key":"web","title":"Web / PWA","owns":["apps/web","packages/ui"],"signals":["dashboard","browser","remote terminal","approval UI","Web Device Key","PWA"],"branch":"codex/web/<feature>","gates":["Phase 4b E2EE"]},
+    {"key":"core","title":"Device Kernel","owns":["cmd/multidesk","internal/app","internal/domain","internal/runtime","internal/device","internal/vault","internal/storage","migrations/device"],"signals":["daemon","CLI","TUI","IPC","SQLite","Session","Attachment","ControllerLease","Vault runtime"],"branch":"codex/core/<feature>","gates":[]},
+    {"key":"provider","title":"Provider Adapters","owns":["internal/providers","internal/providerprotocol"],"signals":["Codex","Claude Code","app-server","PTY","ConPTY","auth","usage","compatibility"],"branch":"codex/provider/<feature>","gates":["Phase 0.5 evidence"]},
+    {"key":"control-plane","title":"Control Plane","owns":["cmd/multidesk-server","internal/controlplane","internal/transport","api","migrations/server"],"signals":["Passkey","device directory","metadata sync","command API","ciphertext relay","WebSocket"],"branch":"codex/control-plane/<feature>","gates":["Phase 4a contract"]},
+    {"key":"web","title":"Web / PWA","owns":["apps/web","packages/ui","packages/protocol"],"signals":["dashboard","browser","remote terminal","approval UI","Web Device Key","PWA"],"branch":"codex/web/<feature>","gates":["Phase 4b E2EE"]},
     {"key":"desktop","title":"Desktop Shell","owns":["apps/desktop"],"signals":["Tauri","macOS","Windows","Keychain","sidecar","tray","deep link","notarization"],"branch":"codex/desktop/<feature>","gates":["platform acceptance"]},
-    {"key":"security","title":"Security and Credential Grants","owns":["packages/crypto","docs/security","docs/threat-model"],"signals":["Vault","E2EE","attestation","pinning","credential grant","revocation","threat model"],"branch":"codex/security/<feature>","gates":["independent security review","test vectors"]},
-    {"key":"project-system","title":"Project System","owns":[".agents",".codex",".claude","docs/workflow","docs/prototypes/dev-dashboard","scripts/dashboard","scripts/workflow"],"signals":["plan","workflow","Agent","Skill","dashboard","CI","governance","ADR"],"branch":"codex/project-system/<feature>","gates":["workflow and dashboard verification"]}
+    {"key":"security","title":"Security and Credential Grants","owns":["internal/crypto","docs/security","docs/THREAT_MODEL.md"],"signals":["Vault crypto","E2EE","attestation","pinning","credential grant","revocation","threat model"],"branch":"codex/security/<feature>","gates":["independent security review","test vectors"]},
+    {"key":"project-system","title":"Project System","owns":[".agents",".codex",".claude",".github","docs/adr","docs/workflow","docs/prototypes/dev-dashboard","scripts/dashboard","scripts/workflow"],"signals":["plan","workflow","Agent","Skill","dashboard","CI","governance","ADR"],"branch":"codex/project-system/<feature>","gates":["workflow and dashboard verification"]}
   ]
 }
