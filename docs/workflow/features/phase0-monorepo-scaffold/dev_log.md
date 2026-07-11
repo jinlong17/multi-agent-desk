@@ -39,3 +39,4 @@
 | Time | Executor | Action | Files/commit | Result | Next |
 |---|---|---|---|---|---|
 | 2026-07-10 20:56 -0700 | Claude Code (Fable 5), lifecycle-readiness build | Unit created from Phase 0 breakdown | this file + brief | `DRAFT` | feature-plan |
+| 2026-07-11 | operator-directed integration writer | Created the successor feature branch from shipped repository-layout and integrated the shipped architecture/threat branch; resolved the sole dashboard manual-state conflict to truthful 3/5 Phase 0 status while retaining focus on repository-layout SHIPPED until feature-plan transition | merge inputs and `dashboard-state.json`; this file | integration ready; no main merge/push | feature-plan |

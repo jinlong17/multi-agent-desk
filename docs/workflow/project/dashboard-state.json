@@ -3,11 +3,11 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0",
-  "current_status": "Phase 0 · phase0-repository-layout 已 SHIPPED（cc309f9；目录 multi-agent-desk；未 push/merge）",
+  "current_status": "Phase 0 · repository-layout、architecture ADRs、threat model 均已 SHIPPED；后继 scaffold 分支已整合三者（未 push/merge main）",
   "current_owner": "project-system",
-  "next_action": "feature-plan phase0-monorepo-scaffold；整合已 SHIPPED 的 architecture/threat 文档分支到后继 feature branch",
+  "next_action": "feature-plan phase0-monorepo-scaffold",
   "manual_updated_at": "2026-07-11",
-  "manual_updated_by": "operator-directed ship session (refresh recorded in phase0-repository-layout Work Log)",
+  "manual_updated_by": "operator-directed integration session (refresh recorded in phase0-monorepo-scaffold Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
@@ -23,7 +23,7 @@
     },
     {
       "label": "做到什么状态",
-      "value": "Plan v0.2 已审查；P3 已构建待验证；Phase 0/0.5 共 12 个工作单元"
+      "value": "Phase 0 已 SHIPPED 3/5：repository-layout、architecture ADRs、threat model；scaffold 下一步"
     }
   ],
   "phases": [
