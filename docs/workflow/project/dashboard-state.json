@@ -3,9 +3,9 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0",
-  "current_status": "Phase 0 · repository-layout、architecture ADRs、threat model 均已 SHIPPED；后继 scaffold 分支已整合三者（未 push/merge main）",
+  "current_status": "Phase 0 · 前置 3 个单元已 SHIPPED 并整合；phase0-monorepo-scaffold P1 已 VERIFIED",
   "current_owner": "project-system",
-  "next_action": "feature-plan phase0-monorepo-scaffold",
+  "next_action": "feature-build phase0-monorepo-scaffold P2 lockfiles + empty builds",
   "manual_updated_at": "2026-07-11",
   "manual_updated_by": "operator-directed integration session (refresh recorded in phase0-monorepo-scaffold Work Log)",
   "status_rows": [
@@ -103,8 +103,8 @@
   ],
   "focus": [
     {
-      "slug": "phase0-repository-layout",
-      "expected_status": "SHIPPED"
+      "slug": "phase0-monorepo-scaffold",
+      "expected_status": "VERIFIED"
     }
   ]
 }
