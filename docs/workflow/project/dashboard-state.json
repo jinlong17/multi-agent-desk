@@ -3,9 +3,9 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0",
-  "current_status": "Phase 0 · phase0-repository-layout P1 已独立验证为 VERIFIED；P2 仅剩本地目录重命名维护窗口",
+  "current_status": "Phase 0 · phase0-repository-layout P2 已独立验证，状态 READY_TO_SHIP；目录已为 multi-agent-desk",
   "current_owner": "project-system",
-  "next_action": "等待 operator 授权本地目录重命名维护窗口，然后 feature-build P2",
+  "next_action": "ship phase0-repository-layout（不 push/merge）",
   "manual_updated_at": "2026-07-11",
   "manual_updated_by": "operator-directed feature-plan session (refresh recorded in phase0-repository-layout Work Log)",
   "status_rows": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "phase0-repository-layout",
-      "expected_status": "VERIFIED"
+      "expected_status": "READY_TO_SHIP"
     }
   ]
 }

@@ -9,12 +9,12 @@
 | Title | `Phase 0 — repository identity and root governance files` |
 | Owner Module | `project-system` |
 | Impacted Modules | `none` |
-| Current Phase | `P1` |
-| Status | `VERIFIED` |
+| Current Phase | `P2` |
+| Status | `READY_TO_SHIP` |
 | Executor | `Codex as independent feature-verify` |
 | Updated | `2026-07-11` |
-| Suggested Next | `feature-build` |
-| Branch / Worktree | `codex/project-system/phase0-repository-layout` |
+| Suggested Next | `ship` |
+| Branch / Worktree | `codex/project-system/phase0-repository-layout @ /Users/jinlong/Desktop/jinlong_project/multi-agent-desk` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none` |
 | Security Gate | `none` |
@@ -24,7 +24,7 @@
 | Phase | Scope | Dependencies | Acceptance | Status |
 |---|---|---|---|---|
 | P1 governance + verifier follow-ups | LICENSE, CONTRIBUTING, SECURITY, NOTICES, README; lifecycle F1/F2 | ADR 0009 | root contracts, F1 negative tests, F2 wording, project verification | `VERIFIED` |
-| P2 repository identity window | local directory rename and verified origin transition | P1; operator maintenance window; prepared GitHub repository | canonical path and real origin verified; project verification | `PLANNED` |
+| P2 repository identity window | local directory rename and verified origin transition | P1; operator maintenance window; prepared GitHub repository | canonical path and real origin verified; linked worktrees repaired; project verification | `VERIFIED` |
 
 ## Evidence Ledger
 
@@ -37,6 +37,10 @@
 | 2026-07-11 | P1 F2 | inspect stale-focus error text | pass: names operator-directed writer session and target Work Log | `scripts/dashboard/verify-static.mjs` |
 | 2026-07-11 | P1 Windows | Windows acceptance | not applicable to this documentation/verifier phase | plan boundary |
 | 2026-07-11 | P1 independent verify | `npm run project:verify && git diff --check`; local link scan; root-policy markers; F1/F2 source and build-receipt inspection; scope/origin check | pass for P1; durable CI link checker remains `unknown`; origin already names multi-agent-desk; directory still agent-deck | `docs/reviews/phase0-repository-layout/2026-07-11-feature-verify.md` |
+| 2026-07-11 | P2 | operator explicitly authorized directory maintenance window; moved checkout to `/Users/jinlong/Desktop/jinlong_project/multi-agent-desk` | pass: basename `multi-agent-desk`; old path removed | filesystem and command output |
+| 2026-07-11 | P2 | `git worktree repair` for architecture/threat linked worktrees, then `git status -sb` and `git rev-parse --git-common-dir` in each | repair reported broken old `.git` pointers and fixed them; both branches clean and common dir is new main `.git` | command output |
+| 2026-07-11 | P2 | `git remote get-url origin`; `git worktree list --porcelain`; `npm run project:verify` | pass: real SSH origin is `git@github.com:jinlong17/multi-agent-desk.git`; three worktrees canonical; project verification green | command output |
+| 2026-07-11 | P2 independent verify | old/new path assertions; exact origin; worktree topology; clean linked-worktree status/common-dir assertions; `npm run project:verify && git diff --check` | pass; repair proven effective; only expected state files dirty before verdict | `docs/reviews/phase0-repository-layout/2026-07-11-feature-verify-p2.md` |
 
 ## Risks and Blockers
 
@@ -53,3 +57,6 @@
 | 2026-07-11 | Codex as feature-build | Built only approved P1: completed root governance set, refreshed README, hard-asserted both F1 gated edges with independent negative evidence, and corrected F2 authority hint; directory, origin, GitHub settings, push, and merge untouched | root docs, `scripts/workflow/verify-workflow.mjs`, `scripts/dashboard/verify-static.mjs`, this file | `READY_FOR_VERIFY`; durable CI link check remains `unknown` until phase0-ci-governance | feature-verify P1 |
 | 2026-07-11 | Codex as independent feature-verify | Independently reran P1 checks and inspected acceptance, scope, security, compatibility, and evidence fidelity; P1 passes with CI link gate still explicitly unknown; P2 remains | `docs/reviews/phase0-repository-layout/2026-07-11-feature-verify.md`, this file | `VERIFIED` | feature-build P2 after operator maintenance-window authorization |
 | 2026-07-11 | operator-directed writer | Refreshed dashboard focus and manual status to the independently persisted P1 `VERIFIED` verdict | `docs/workflow/project/dashboard-state.json`, this file | focus aligned | await P2 maintenance-window authorization |
+| 2026-07-11 | Codex as feature-build | With explicit operator maintenance-window authorization, renamed the local checkout to `multi-agent-desk`, repaired both linked-worktree pointers, verified real origin/path/topology, and ran project verification; no GitHub setting, push, or merge performed | filesystem identity; this file; dashboard-state.json | `READY_FOR_VERIFY` | feature-verify P2 |
+| 2026-07-11 | Codex as independent feature-verify | Independently verified canonical path/origin, old-path removal, all three worktree branches/commits, linked common-dir repair, clean linked status, project checks, and scope | `docs/reviews/phase0-repository-layout/2026-07-11-feature-verify-p2.md`, this file | `READY_TO_SHIP` | ship (goal pre-authorized; no push/merge) |
+| 2026-07-11 | operator-directed writer | Refreshed dashboard focus and manual status to the independently persisted P2 `READY_TO_SHIP` verdict | `docs/workflow/project/dashboard-state.json`, this file | focus aligned | ship |
