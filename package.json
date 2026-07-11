@@ -1,0 +1,17 @@
+{
+  "name": "multi-agent-desk",
+  "private": true,
+  "version": "0.0.0",
+  "description": "A unified workspace for AI coding agents, profiles, sessions, and usage.",
+  "scripts": {
+    "workflow:generate": "node scripts/workflow/generate-agent-mirrors.mjs",
+    "workflow:verify": "node scripts/workflow/verify-workflow.mjs",
+    "dashboard": "node scripts/dashboard/generate-state.mjs",
+    "dashboard:verify": "node scripts/dashboard/verify-static.mjs",
+    "dashboard:serve": "node scripts/dashboard/serve.mjs",
+    "project:verify": "npm run workflow:verify && npm run dashboard && npm run dashboard:verify"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

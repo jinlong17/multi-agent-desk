@@ -1,0 +1,13 @@
+.DS_Store
+node_modules/
+dist/
+coverage/
+*.log
+.env
+.env.*
+!.env.example
+
+# Local dashboard facts and visual QA artifacts are regenerated per machine.
+docs/prototypes/dev-dashboard/state.generated.js
+docs/prototypes/dev-dashboard/assets/concept-reference.png
+docs/prototypes/dev-dashboard/assets/render-*.png

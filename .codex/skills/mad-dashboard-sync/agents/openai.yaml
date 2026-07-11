@@ -1,0 +1,4 @@
+interface:
+  display_name: "MultiAgentDesk Dashboard Sync"
+  short_description: "Refresh and verify the local workflow development dashboard"
+  default_prompt: "Use $mad-dashboard-sync to refresh generated repository facts and verify the MultiAgentDesk development dashboard."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "MultiAgentDesk Module Classify"
+  short_description: "Classify work into one owning module and route it safely"
+  default_prompt: "Use $mad-module-classify to classify this requirement and return the owning module, impacts, branch, and workflow."

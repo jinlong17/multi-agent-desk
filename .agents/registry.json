@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "state_owner": "project-system",
+  "workflows": {
+    "feature": ["feature-plan", "feature-review", "feature-build", "feature-verify", "ship"],
+    "bugfix": ["bug-diagnose", "bug-fix", "bug-verify", "ship"],
+    "spike": ["provider-spike", "security-review"]
+  },
+  "agents": [
+    {"name":"feature-plan","description":"Create or revise a decision-complete feature plan and feature state documents.","mode":"writer","sandbox":"workspace-write","tools":"Read,Write,Edit,Glob,Grep,WebSearch,WebFetch","input":"approved feature brief or revision findings","output":"design/api/test/dev_log with NEEDS_REVIEW"},
+    {"name":"feature-review","description":"Independently review a feature plan, contracts, risks, and executable phase gates.","mode":"read-only","sandbox":"read-only","tools":"Read,Glob,Grep,WebSearch,WebFetch","input":"planning artifacts","output":"APPROVED or REVISE findings"},
+    {"name":"feature-build","description":"Implement exactly one approved feature phase and record scoped evidence.","mode":"writer","sandbox":"workspace-write","tools":"Read,Write,Edit,Glob,Grep,Bash","input":"APPROVED phase","output":"READY_FOR_VERIFY evidence"},
+    {"name":"feature-verify","description":"Independently verify a completed feature phase without editing implementation files.","mode":"read-only","sandbox":"read-only","tools":"Read,Glob,Grep,Bash","input":"build receipt","output":"VERIFIED, BLOCKED, or READY_TO_SHIP"},
+    {"name":"bug-diagnose","description":"Reproduce a bug and identify evidence-backed root cause and minimal repair scope.","mode":"diagnostic-writer","sandbox":"workspace-write","tools":"Read,Write,Edit,Glob,Grep,Bash","input":"bug report","output":"DIAGNOSED evidence"},
+    {"name":"bug-fix","description":"Apply the smallest root-cause fix and add regression coverage.","mode":"writer","sandbox":"workspace-write","tools":"Read,Write,Edit,Glob,Grep,Bash","input":"DIAGNOSED bug","output":"READY_FOR_VERIFY evidence"},
+    {"name":"bug-verify","description":"Reproduce the original bug and independently verify the repair and regressions.","mode":"read-only","sandbox":"read-only","tools":"Read,Glob,Grep,Bash","input":"bug-fix receipt","output":"VERIFIED or BLOCKED"},
+    {"name":"provider-spike","description":"Time-box external Provider assumptions and produce reproducible compatibility evidence.","mode":"evidence-writer","sandbox":"workspace-write","tools":"Read,Write,Edit,Glob,Grep,Bash,WebSearch,WebFetch","input":"falsifiable hypothesis","output":"EVIDENCE_READY report and fallback"},
+    {"name":"security-review","description":"Independently review trust boundaries, crypto protocol, Vault, credential grants, and residual risk.","mode":"read-only","sandbox":"read-only","tools":"Read,Glob,Grep,Bash,WebSearch,WebFetch","input":"security-sensitive design or evidence","output":"ACCEPTED, REVISE, or BLOCKED"},
+    {"name":"ship","description":"Run the human-triggered final scope, test, documentation, branch, and release gate.","mode":"release-writer","sandbox":"workspace-write","tools":"Read,Write,Edit,Glob,Grep,Bash","input":"READY_TO_SHIP plus explicit approval","output":"SHIPPED receipt or BLOCKED"}
+  ],
+  "skills": [
+    {"name":"mad-module-classify","source":".codex/skills/mad-module-classify/SKILL.md","purpose":"route one task to one owning module"},
+    {"name":"mad-feature-brief","source":".codex/skills/mad-feature-brief/SKILL.md","purpose":"normalize a request into a reviewable brief"},
+    {"name":"mad-dashboard-sync","source":".codex/skills/mad-dashboard-sync/SKILL.md","purpose":"refresh and verify machine dashboard facts"}
+  ]
+}

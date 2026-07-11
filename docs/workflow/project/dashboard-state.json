@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "state_owner": "project-system",
+  "plan_version": "v0.2",
+  "current_phase": "0",
+  "current_status": "Phase 0 · 工作流与开发看板基线已建立；产品代码尚未启动",
+  "current_owner": "project-system",
+  "next_action": "在独立维护窗口把本地目录 agent-deck 重命名为 multi-agent-desk，然后建立 Go + pnpm + Tauri monorepo 空骨架和 CI",
+  "manual_updated_at": "2026-07-10",
+  "manual_updated_by": "operator-directed Codex implementation",
+  "status_rows": [
+    {"label":"现在做什么","value":"Phase 0 · 完成仓库、治理、工作流、CI 与架构决策基线"},
+    {"label":"在哪条线","value":"main → codex/<module>/<feature>；并行 writer 使用独立 worktree"},
+    {"label":"用哪个入口","value":"classify → brief → plan → review → build → verify → ship"},
+    {"label":"做到什么状态","value":"Plan v0.2 已审查；工作流/看板已落地；产品代码未启动"}
+  ],
+  "phases": [
+    {"id":"0","title":"仓库与治理基线","state":"in_progress","depends":"Plan v0.2","gate":"monorepo 空构建和治理检查通过"},
+    {"id":"0.5","title":"Provider & Security Spikes","state":"planned","depends":"Phase 0","gate":"外部假设有可复现证据与 fallback"},
+    {"id":"1","title":"Device Kernel","state":"planned","depends":"Phase 0","gate":"Fake Session 跨平台闭环"},
+    {"id":"2","title":"Codex Vertical Slice","state":"gated","depends":"Phase 1 + Codex spikes","gate":"真实 Codex attach/approval/resume"},
+    {"id":"3","title":"Claude Vertical Slice","state":"gated","depends":"Phase 1 + Claude spikes","gate":"真实 Claude PTY attach/control/reconnect"},
+    {"id":"4a","title":"Control Plane Core","state":"planned","depends":"Phase 1","gate":"身份、设备、同步、异步命令通过"},
+    {"id":"4b","title":"E2EE Realtime + Web","state":"gated","depends":"Phase 4a + E2EE spikes","gate":"未配对客户端不能解密"},
+    {"id":"5","title":"Credential Grant + macOS","state":"gated","depends":"Phase 4b","gate":"显式目标设备授权与换钥攻击测试"},
+    {"id":"6","title":"发布与加固","state":"planned","depends":"稳定验收","gate":"无未处理 Critical/High；Windows Desktop 仍 Experimental"}
+  ],
+  "human_gates": ["priority","risk acceptance","phase completion","branch creation","merge","push","ship","release"]
+}
