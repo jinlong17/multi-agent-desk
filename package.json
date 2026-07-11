@@ -18,7 +18,7 @@
     "web:check": "pnpm --recursive --filter \"!@multi-agent-desk/desktop\" --if-present run check",
     "web:build": "pnpm --recursive --filter \"!@multi-agent-desk/desktop\" --if-present run build",
     "desktop:fmt-check": "cargo fmt --manifest-path apps/desktop/src-tauri/Cargo.toml --check",
-    "desktop:check": "cargo check --locked --manifest-path apps/desktop/src-tauri/Cargo.toml",
+    "desktop:check": "pnpm --filter @multi-agent-desk/web build && cargo check --locked --manifest-path apps/desktop/src-tauri/Cargo.toml",
     "desktop:build": "pnpm --filter @multi-agent-desk/desktop tauri build --no-bundle",
     "scaffold:check": "npm run scaffold:structure && npm run go:fmt-check && npm run go:test && npm run web:check && npm run desktop:fmt-check && npm run desktop:check",
     "scaffold:build": "npm run go:build && npm run web:build && npm run desktop:build",

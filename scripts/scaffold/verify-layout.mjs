@@ -15,15 +15,18 @@ const requiredDirectories = [
   "docs/adr", "docs/reviews"
 ];
 const requiredFiles = [
-  "go.mod", "package.json", "pnpm-workspace.yaml", ".go-version",
+  "go.mod", "package.json", "pnpm-workspace.yaml", "pnpm-lock.yaml", ".go-version",
   ".node-version", "rust-toolchain.toml", "justfile",
   "cmd/multidesk/main.go", "cmd/multidesk-server/main.go",
   "apps/web/package.json", "apps/web/tsconfig.json", "apps/web/index.html",
   "apps/web/src/main.ts", "apps/desktop/package.json",
-  "apps/desktop/src-tauri/Cargo.toml", "apps/desktop/src-tauri/build.rs",
+  "apps/desktop/src-tauri/Cargo.toml", "apps/desktop/src-tauri/Cargo.lock",
+  "apps/desktop/src-tauri/build.rs",
   "apps/desktop/src-tauri/src/main.rs",
   "apps/desktop/src-tauri/tauri.conf.json",
   "apps/desktop/src-tauri/capabilities/default.json",
+  "apps/desktop/src-tauri/icons/icon.svg",
+  "apps/desktop/src-tauri/icons/icon.png",
   "packages/ui/package.json", "packages/ui/tsconfig.json", "packages/ui/src/index.ts",
   "packages/protocol/package.json", "packages/protocol/tsconfig.json", "packages/protocol/src/index.ts",
   "packages/config/package.json", "packages/config/tsconfig.json", "packages/config/src/index.ts",
@@ -32,7 +35,7 @@ const requiredFiles = [
   "deploy/docker/README.md", "deploy/docker-compose.yml",
   "docs/ARCHITECTURE.md", "docs/DATA_MODEL.md", "docs/PROVIDER_ADAPTER.md",
   "docs/THREAT_MODEL.md", "docs/PROVIDER_COMPATIBILITY.md",
-  "docs/RESEARCH_LOG.md", "docs/ROADMAP.md",
+  "docs/RESEARCH_LOG.md", "docs/ROADMAP.md", "THIRD_PARTY_NOTICES.md",
   "scripts/scaffold/check-go-format.mjs", "scripts/scaffold/verify-layout.mjs"
 ];
 const forbiddenPaths = ["apps/daemon", "apps/cli", "apps/server"];

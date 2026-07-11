@@ -3,9 +3,9 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0",
-  "current_status": "Phase 0 · 前置 3 个单元已 SHIPPED 并整合；phase0-monorepo-scaffold P1 已 VERIFIED",
+  "current_status": "Phase 0 · 前置 3 个单元已 SHIPPED 并整合；phase0-monorepo-scaffold 已 READY_TO_SHIP（macOS green；Linux/Windows CI unknown）",
   "current_owner": "project-system",
-  "next_action": "feature-build phase0-monorepo-scaffold P2 lockfiles + empty builds",
+  "next_action": "ship phase0-monorepo-scaffold（不 push/merge）；随后 feature-plan phase0-ci-governance",
   "manual_updated_at": "2026-07-11",
   "manual_updated_by": "operator-directed integration session (refresh recorded in phase0-monorepo-scaffold Work Log)",
   "status_rows": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "phase0-monorepo-scaffold",
-      "expected_status": "VERIFIED"
+      "expected_status": "READY_TO_SHIP"
     }
   ]
 }
