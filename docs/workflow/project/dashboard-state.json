@@ -3,11 +3,11 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0",
-  "current_status": "Phase 0 · architecture ADRs 已 SHIPPED；repository-layout P2 等待目录维护窗口；phase0-threat-model security-review 已 ACCEPTED",
+  "current_status": "Phase 0 · architecture ADRs 与 threat model 已 SHIPPED（threat c2a0157；未 push/merge）；repository-layout P2 等待目录维护窗口",
   "current_owner": "project-system",
-  "next_action": "ship phase0-threat-model（不 push/merge）；repository-layout P2 继续等待 operator",
+  "next_action": "等待 repository-layout P2 目录维护窗口；之后按序推进 monorepo scaffold",
   "manual_updated_at": "2026-07-11",
-  "manual_updated_by": "operator-directed feature-plan session (refresh recorded in phase0-threat-model Work Log)",
+  "manual_updated_by": "operator-directed ship session (refresh recorded in phase0-threat-model Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "phase0-threat-model",
-      "expected_status": "ACCEPTED"
+      "expected_status": "SHIPPED"
     }
   ]
 }

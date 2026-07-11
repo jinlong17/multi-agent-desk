@@ -9,11 +9,11 @@
 | Title | `Phase 0 — threat model initial version` |
 | Owner Module | `security` |
 | Impacted Modules | `project-system` |
-| Current Phase | `SECURITY_REVIEW` |
-| Status | `ACCEPTED` |
-| Executor | `Codex as independent security-review` |
+| Current Phase | `SHIP` |
+| Status | `SHIPPED` |
+| Executor | `Codex as ship` |
 | Updated | `2026-07-11` |
-| Suggested Next | `ship` |
+| Suggested Next | `phase0-repository-layout P2 or phase0-monorepo-scaffold after dependency integration` |
 | Branch / Worktree | `codex/security/phase0-threat-model @ agent-deck-worktrees/phase0-threat-model` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none` |
@@ -35,6 +35,7 @@
 | 2026-07-11 | P1 | evidence-state inspection | pass: no verified runtime mitigation; all controls accepted-design/planned/pending/deferred as supported by current evidence | `docs/THREAT_MODEL.md` |
 | 2026-07-11 | P1 Windows | Windows acceptance: deferred (no local Windows machine) | open gate, not pass; three Windows Spikes DRAFT/not started | `docs/THREAT_MODEL.md` §8 |
 | 2026-07-11 | P1 independent verify | project verification, diff check, structure/link script, exact Spike/DRAFT checks, invariant/evidence/residual-risk/scope inspection | pass for documentation phase; Security Gate remains open; runtime/crypto/Provider/Windows evidence remains pending/deferred | `docs/reviews/phase0-threat-model/2026-07-11-feature-verify.md` |
+| 2026-07-11 | ship | clean branch/diff/untracked/DCO/docs/gate/rollback audit; `npm run project:verify` after commit `c2a0157` | pass; Security Gate resolved by ACCEPTED review; no push/merge/tag/runtime-risk acceptance | commit `c2a0157` |
 
 ## Risks and Blockers
 
@@ -53,3 +54,4 @@
 | 2026-07-11 | operator-directed writer | Refreshed dashboard focus and manual status to the independently persisted `READY_TO_SHIP` verdict; retained open Security Gate | `docs/workflow/project/dashboard-state.json`, this file | focus aligned | security-review |
 | 2026-07-11 | Codex as independent security-review | Independently reviewed trust anchors/pinning, attestation, replay/AAD, Vault/materialization, grants/revocation, IPC/lease, Provider/Web/audit/availability/supply-chain boundaries, evidence honesty, Windows deferral, and residual risk | `docs/reviews/phase0-threat-model/2026-07-11-security-review.md`, this file | `ACCEPTED`; Security Gate resolved; no runtime or residual-risk acceptance implied | ship |
 | 2026-07-11 | operator-directed writer | Refreshed dashboard focus and manual status to the independently persisted `ACCEPTED` security verdict | `docs/workflow/project/dashboard-state.json`, this file | focus aligned; Security Gate resolved | ship |
+| 2026-07-11 | Codex as ship | Shipped the locally committed threat-model documentation unit under goal pre-authorization after independent feature verification and security-review ACCEPTED; no remote action or residual-risk acceptance performed | commit `c2a0157`; this receipt | `SHIPPED` | continue Phase 0; pending/Windows gates remain open in their owning units |
