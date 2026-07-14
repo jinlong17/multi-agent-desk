@@ -188,3 +188,23 @@ P2 evidence.
 The operator-approved single-account rule above supersedes that merge-path
 requirement. The historical blocked state is retained as evidence and is not
 rewritten as a pass.
+
+## Authorized merge and DCO follow-up
+
+At `2026-07-14 12:01 -0700`, ship preflight proved final PR head `b70e258`, all
+seven successful checks, exact single-account protection, and a clean worktree.
+GitHub rejected the requested rebase merge with `This branch can't be rebased`.
+The ship role then used the enabled squash strategy with a signed commit body.
+PR #1 merged at `2026-07-14T19:01:44Z` as
+`ba6909449de53db604eaa25c8d7b1f9726446503`; its tree is byte-for-byte equal to
+the verified PR head, and its parent is the prior `main` head `928a290`.
+
+The first `main` Governance run
+[`29360235017`](https://github.com/jinlong17/multi-agent-desk/actions/runs/29360235017)
+retained `license-gate` and `link-check` success but failed `dco`. The exact
+failure was not a missing trailer: live config still named feature-only policy
+commit `ff4c2ad`, which is not an ancestor of the squashed `main` commit. The
+original writer re-anchored the policy to signed `main` commit `ba69094` and
+removed three exceptions whose original commits were also absent after the
+squash. This failure remains failed until the correction passes both PR and
+`main` push checks.

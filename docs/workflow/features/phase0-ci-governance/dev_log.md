@@ -10,10 +10,10 @@
 | Owner Module | `project-system` |
 | Impacted Modules | `none` |
 | Current Phase | `FEATURE_VERIFY_P2` |
-| Status | `READY_TO_SHIP` |
-| Executor | `Codex as independent feature-verify` |
+| Status | `READY_FOR_VERIFY` |
+| Executor | `Codex as original feature-build writer` |
 | Updated | `2026-07-14` |
-| Suggested Next | `ship verifies head 36dfe6f and performs the explicitly authorized linear merge of PR #1` |
+| Suggested Next | `independent feature-verify audits the signed main DCO anchor and correction PR checks` |
 | Branch / Worktree | `codex/project-system/phase0-ci-governance @ agent-deck-worktrees/phase0-ci-governance` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none` |
@@ -24,7 +24,7 @@
 | Phase | Scope | Dependencies | Acceptance | Status |
 |---|---|---|---|---|
 | P1 local CI contracts + gates | read-only 3-platform workflows, exact required job names, CODEOWNERS generator, DCO/local-link/license validators and negative fixtures | shipped scaffold | static contracts and positive/negative local evidence | `VERIFIED` |
-| P2 remote Actions + governance | authorized push/test PR, clean and GPL-fail Actions runs, strict main protection, Actions/release-permission audit and readback | P1 verified; explicit operator authorization | seven checks proven; remote rules/permissions match and receipt persisted | `READY_TO_SHIP` |
+| P2 remote Actions + governance | authorized push/test PR, clean and GPL-fail Actions runs, strict main protection, Actions/release-permission audit and readback | P1 verified; explicit operator authorization | seven checks proven; remote rules/permissions match and receipt persisted | `READY_FOR_VERIFY` |
 
 ## Evidence Ledger
 
@@ -47,6 +47,7 @@
 | 2026-07-14 11:30 -0700 | P2 independent feature-verify | offline frozen install; workflow/dashboard; CI contracts/fixtures/links/licenses; DCO; complete Go/Web/Tauri scaffold regression; authenticated GPL/clean runs, Actions settings, protection, PR, CODEOWNERS and official GitHub review semantics | all P2 technical criteria pass; final verdict `BLOCKED` because sole base-branch CODEOWNER `@jinlong17` is also PR author and GitHub forbids self-approval, leaving no qualifying review path for PR #1; post-verdict dashboard refresh is correctly deferred to an operator-directed writer | `docs/reviews/phase0-ci-governance/2026-07-14-feature-verify-p2.md` |
 | 2026-07-14 11:48 -0700 | P2 operator exception and blocker clearance | operator explicitly accepted one-account/no-review governance and authorized direct `main`; authenticated PUT changed only approval count `1 -> 0` and CODEOWNER requirement `true -> false`; independent GET retained seven strict checks, admin enforcement, conversation resolution, linear history, and force-push/delete prohibitions | PR #1 changed from `BLOCKED` / `REVIEW_REQUIRED` to `MERGEABLE` / `CLEAN`; prior verifier blocker resolved and last non-blocked state restored | `remote-receipt.md`; live GitHub protection/PR readback |
 | 2026-07-14 11:55 -0700 | P2 independent single-account feature-verify | authenticated PR/protection/Actions readback; current CI `29359454753` and Governance `29359454802`; offline pnpm 10.23.0 install; workflow/dashboard; CI contracts/fixtures/links/licenses; DCO; Go/Web/Cargo/Tauri full scaffold regression | all seven current-head checks and all local checks pass; PR is `MERGEABLE` / `CLEAN`; operator exception matches exactly; no blocking finding | `docs/reviews/phase0-ci-governance/2026-07-14-feature-verify-p2-single-account.md` |
+| 2026-07-14 12:04 -0700 | P2 post-merge DCO diagnosis and correction | PR #1 merge receipt; tree equality; main Governance `29360235017` failed log; `git merge-base --is-ancestor ff4c2ad ba69094`; re-anchor policy to signed `ba69094` and remove non-main exceptions | merge succeeded, but ship completion remains unproven until corrected PR and main push DCO both pass; last verified workflow state restored | `remote-receipt.md`; `scripts/ci/dco-grandfathered.json` |
 
 ## Risks and Blockers
 
@@ -65,6 +66,9 @@
   metadata, while the seven checks and non-review protections remain enforced.
 - The pre-mutation value of the full-length Action SHA setting was not persisted,
   so exact rollback parity for that one setting remains unknown.
+- The first post-merge Governance run `29360235017` failed because the DCO
+  policy anchor was a feature-only SHA removed by squash. The correction is
+  implemented but remains pending independent PR and `main` verification.
 
 ## Work Log (append only)
 
@@ -88,3 +92,4 @@
 | 2026-07-14 11:48 -0700 | Codex as original feature-build writer and operator-directed dashboard writer | Applied the operator's highest-priority single-account/no-review exception, changed only the review subset of `main` protection, independently read back the preserved safeguards, cleared the reproducible identity blocker to its last non-blocked state, and refreshed dashboard judgment | `design.md`, `test.md`, `remote-receipt.md`, this file, `docs/workflow/project/dashboard-state.json`, generated dashboard state | `READY_FOR_VERIFY`; PR #1 is `MERGEABLE` / `CLEAN` before the pending evidence push | independent feature-verify audits the updated head and live rule |
 | 2026-07-14 11:55 -0700 | Codex as independent feature-verify | Verified the exact updated branch/PR head, seven successful remote checks, operator-approved protection subset, least-privilege Actions settings, retained GPL-negative evidence, and the complete local Go/Web/Tauri scaffold without modifying implementation, plan, dashboard, or remote state | `docs/reviews/phase0-ci-governance/2026-07-14-feature-verify-p2-single-account.md`, this file | `READY_TO_SHIP`; no blocking finding, single-account review risk explicitly accepted by operator | ship verifies the same head and performs the authorized linear merge |
 | 2026-07-14 11:56 -0700 | operator-directed writer | Refreshed dashboard manual judgment and focus to the independently persisted `READY_TO_SHIP` verdict without changing the verdict or remote state | `docs/workflow/project/dashboard-state.json`, this file, generated dashboard state | focus aligned; final evidence commit still requires current-head checks before merge | push final evidence head, wait seven checks, then authorized ship |
+| 2026-07-14 12:04 -0700 | Codex as original feature-build writer and operator-directed dashboard writer | Retained the successful PR #1 merge, diagnosed the failed `main` DCO ancestor check, re-anchored policy to the signed squash commit, removed obsolete non-main exceptions, documented the missing topology invariant, restored the last verified state, and refreshed dashboard focus | `scripts/ci/dco-grandfathered.json`, `design.md`, `test.md`, `remote-receipt.md`, this file, `docs/workflow/project/dashboard-state.json`, generated dashboard state | `READY_FOR_VERIFY`; main Governance failure retained, correction not yet accepted | verify locally, push correction PR, require seven green checks, then independent feature-verify |

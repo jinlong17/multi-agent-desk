@@ -34,6 +34,9 @@ through P1. Static YAML validation is not runner evidence.
 6. Confirm default token permissions read and PR approval false; no release
    permission/workflow exists.
 7. Run `npm run project:verify` after every state/dashboard transition.
+8. Confirm the configured DCO policy effective commit is signed and an ancestor
+   of the target `main` history. After a squash bootstrap, re-anchor it to the
+   signed squash commit and remove exceptions whose commits are not in `main`.
 
 If remote APIs are unavailable, permissions insufficient, a check never
 materializes, or a runner fails, record the exact state and return BLOCKED or
