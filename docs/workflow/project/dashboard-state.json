@@ -3,11 +3,11 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0",
-  "current_status": "Phase 0 · 4/5 单元已 SHIPPED；phase0-ci-governance P2 BLOCKED（私有仓库保护需要 GitHub Pro 或公开仓库）",
+  "current_status": "Phase 0 · 4/5 单元已 SHIPPED；phase0-ci-governance P2 READY_FOR_VERIFY",
   "current_owner": "project-system",
-  "next_action": "operator chooses public repository or GitHub Pro/private-repo protection; then resume P2 exact main rule apply/readback before any merge",
+  "next_action": "independent feature-verify audits P2 runs, Actions permissions, exact main protection readback and CODEOWNER approval feasibility",
   "manual_updated_at": "2026-07-14",
-  "manual_updated_by": "operator-directed feature-build P2 authenticated GitHub readback (refresh recorded in phase0-ci-governance Work Log)",
+  "manual_updated_by": "operator-directed feature-build P2 protection completion (refresh recorded in phase0-ci-governance Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
@@ -23,7 +23,7 @@
     },
     {
       "label": "做到什么状态",
-      "value": "Phase 0 已 SHIPPED 4/5；CI P2 的 GPL 负向与三平台七检查已闭环，但当前 GitHub 方案无法为私有仓库启用 main 保护"
+      "value": "Phase 0 已 SHIPPED 4/5；CI P2 的 GPL 负向、三平台七检查、Actions 权限和严格 main 保护均已完成，等待独立验证"
     }
   ],
   "phases": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "phase0-ci-governance",
-      "expected_status": "BLOCKED"
+      "expected_status": "READY_FOR_VERIFY"
     }
   ]
 }

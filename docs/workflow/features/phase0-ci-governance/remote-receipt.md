@@ -1,10 +1,10 @@
 # Phase 0 P2 remote governance receipt
 
-> Status: `BLOCKED`
+> Status: `READY_FOR_VERIFY`
 > Repository: `jinlong17/multi-agent-desk`
 > Branch: `codex/project-system/phase0-ci-governance`
 > Pull request: [#1](https://github.com/jinlong17/multi-agent-desk/pull/1)
-> Last updated: `2026-07-14 02:00 -0700`
+> Last updated: `2026-07-14 02:32 -0700`
 
 This is a sanitized, append-only-oriented P2 evidence record. It contains no
 tokens, cookies, authorization headers, secrets, or environment contents.
@@ -20,7 +20,8 @@ Fields marked `pending` or `unknown` are not accepted as pass.
 | Remote actor | `jinlong17` in the authenticated GitHub session | observed |
 | Authenticated API | `gh api user` = `jinlong17`; repository permission = `ADMIN`; token scopes include `repo` and `workflow` | proven with a real API call |
 | Local evidence branch | contains unpushed documentation receipts ahead of the remote PR head | retained locally because feature-build role does not push |
-| Merge | not performed | prohibited while the required protection contract is unavailable |
+| Repository visibility | operator changed repository from private to public; authenticated readback returns `PUBLIC` | plan/visibility blocker cleared by operator |
+| Merge | not performed | P2 stops at an unmerged test PR; merge remains a later ship gate |
 
 ## Actions evidence
 
@@ -36,13 +37,14 @@ readback, not from the merge ref or local checks.
 
 ## Repository settings readback
 
-Authenticated API readback at `2026-07-14 02:00 -0700`:
+Authenticated API readback after operator visibility change and authorized rule
+mutation at `2026-07-14 02:32 -0700`:
 
 ```json
 {
   "repository": {
-    "private": true,
-    "visibility": "private",
+    "private": false,
+    "visibility": "public",
     "viewer_permission": "ADMIN"
   },
   "actions": {
@@ -53,35 +55,56 @@ Authenticated API readback at `2026-07-14 02:00 -0700`:
     "can_approve_pull_request_reviews": false,
     "active_workflows": ["CI", "Governance"]
   },
-  "main_branch_protection": "HTTP 403: upgrade to GitHub Pro or make this repository public",
-  "repository_rulesets": "HTTP 403: upgrade to GitHub Pro or make this repository public"
+  "main_branch_protection": {
+    "required_status_checks": {
+      "strict": true,
+      "contexts": [
+        "project-verify",
+        "build-ubuntu",
+        "build-macos",
+        "build-windows",
+        "license-gate",
+        "dco",
+        "link-check"
+      ]
+    },
+    "enforce_admins": true,
+    "required_pull_request_reviews": {
+      "dismiss_stale_reviews": true,
+      "require_code_owner_reviews": true,
+      "required_approving_review_count": 1,
+      "require_last_push_approval": false
+    },
+    "restrictions": null,
+    "required_linear_history": true,
+    "required_conversation_resolution": true,
+    "allow_force_pushes": false,
+    "allow_deletions": false,
+    "block_creations": false,
+    "lock_branch": false,
+    "allow_fork_syncing": false
+  }
 }
 ```
 
 - Actions defaults meet the required read-only token and no-approval contract.
 - Only the read-only CI and Governance workflows exist; no release or deployment
   workflow exists.
-- The fork-PR approval endpoint returns 422 because it is not applicable to
-  private repositories.
-- Both branch protection and repository rulesets are unavailable for this
-  private repository on the current GitHub plan. The exact required `main`
-  rule therefore cannot be applied or read back under the current plan/state.
+- The first mutation response and a separate authenticated GET returned the
+  same protection subset shown above.
+- No push restriction list is configured; all required review/check/admin and
+  history safeguards are enforced independently of push restrictions.
 - The pre-mutation value for `require_full_length_action_sha` was not
   persisted. It remains `unknown`; rollback parity cannot be claimed.
 
-## Required rule blocked by GitHub plan
+## Required rule applied and read back
 
 `main` must require the exact checks `project-verify`, `build-ubuntu`,
 `build-macos`, `build-windows`, `license-gate`, `dco`, and `link-check`, plus
 strict up-to-date branches, one approval, CODEOWNER review, stale-review
 dismissal, conversation resolution, linear history, admin enforcement, and
-disabled force-push/deletion. No weaker rule is accepted.
-
-Authenticated calls to both `/branches/main/protection` and `/rulesets` return
-HTTP 403 with GitHub's explicit remedy: upgrade to GitHub Pro or make the
-repository public. Per the approved P2 design, this is an operator-choice gate;
-feature-build must not weaken the rule, change visibility, buy a plan, or merge
-without that choice.
+disabled force-push/deletion. The authenticated readback matches every required
+field and exact check name; no weaker rule was substituted.
 
 ## Reproducible blocker
 
@@ -105,12 +128,18 @@ two-second retry timed out. Therefore reinstall did not clear the authenticated
 readback blocker, and no GitHub result or setting is inferred from local
 installation health.
 
-Authenticated `gh` access now clears the browser-readback blocker and proves
-the clean/GPL results plus Actions settings. The remaining blocker is solely
-the GitHub plan/repository-visibility gate above.
+Authenticated `gh` access cleared the browser-readback blocker. The operator's
+public-visibility change cleared the GitHub-plan blocker. The authorized
+protection mutation and independent GET now satisfy the remaining P2 remote
+configuration criterion.
 
-Clearing role: the operator chooses either to make the repository public or to
-enable a GitHub plan that supports protection for this private repository.
-Feature-build can then apply and read back the exact rule. Merge remains a
-separate human gate and must not occur until the protection criterion is
-proven.
+## Post-protection PR state
+
+PR #1 retains seven successful checks and is structurally `MERGEABLE`, while
+GitHub reports `BLOCKED` / `REVIEW_REQUIRED` because the newly enforced review
+rule has no approval. The generated CODEOWNERS file currently assigns all paths
+only to `@jinlong17`, who is also the PR author. This is not a P2 build failure:
+it proves the rule is active, and P2 intentionally uses an unmerged test PR. It
+is a real later ship gate; merge must not be attempted until an eligible
+CODEOWNER approval path exists and the independent feature verifier accepts the
+P2 evidence.

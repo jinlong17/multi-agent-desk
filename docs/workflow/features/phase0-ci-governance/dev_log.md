@@ -10,10 +10,10 @@
 | Owner Module | `project-system` |
 | Impacted Modules | `none` |
 | Current Phase | `FEATURE_BUILD_P2` |
-| Status | `BLOCKED` |
+| Status | `READY_FOR_VERIFY` |
 | Executor | `Codex as feature-build` |
 | Updated | `2026-07-14` |
-| Suggested Next | `operator chooses public repository or GitHub Pro/private-repo protection; then feature-build applies and reads back the exact main rule before any merge` |
+| Suggested Next | `independent feature-verify audits P2 remote runs, Actions permissions, exact main protection readback, and CODEOWNER approval feasibility` |
 | Branch / Worktree | `codex/project-system/phase0-ci-governance @ agent-deck-worktrees/phase0-ci-governance` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none` |
@@ -24,7 +24,7 @@
 | Phase | Scope | Dependencies | Acceptance | Status |
 |---|---|---|---|---|
 | P1 local CI contracts + gates | read-only 3-platform workflows, exact required job names, CODEOWNERS generator, DCO/local-link/license validators and negative fixtures | shipped scaffold | static contracts and positive/negative local evidence | `VERIFIED` |
-| P2 remote Actions + governance | authorized push/test PR, clean and GPL-fail Actions runs, strict main protection, Actions/release-permission audit and readback | P1 verified; explicit operator authorization | seven checks proven; remote rules/permissions match and receipt persisted | `BLOCKED` |
+| P2 remote Actions + governance | authorized push/test PR, clean and GPL-fail Actions runs, strict main protection, Actions/release-permission audit and readback | P1 verified; explicit operator authorization | seven checks proven; remote rules/permissions match and receipt persisted | `READY_FOR_VERIFY` |
 
 ## Evidence Ledger
 
@@ -42,19 +42,23 @@
 | 2026-07-14 01:32 -0700 | P2 post-reinstall browser diagnostics | Chrome 150 running; extension 1.2.27203.26575 installed/enabled in selected Default profile; native host and allowed origin correct; controlled-tab listing retried once after two seconds | local install health passed, but both post-reinstall control calls timed out; no remote evidence inferred | `remote-receipt.md` |
 | 2026-07-14 02:00 -0700 | P2 authenticated API readback | real `gh api user` and ADMIN repository read; check-runs/runs for GPL head `0bce526` and clean head `22e2240`; Actions permissions/workflows; protection and rulesets endpoints | GPL `license-gate` failure proven in run `29315247924`; clean seven checks proven in runs `29315826964`/`29315826965`; Actions read-only/no-approval proven; both protection surfaces return plan-required HTTP 403 | `remote-receipt.md` |
 | 2026-07-14 02:03 -0700 | P2 local receipt verification | workflow generate/verify; dashboard generate/verify; `ci:verify` and `ci:static`; direct leaf action/CODEOWNERS/fixture/link/license checks; DCO range; `git diff --check` | workflow/dashboard pass; aggregate npm wrappers could not start because local `npm` is absent; all equivalent leaf checks pass (`checks=7`, `actions=15`, Markdown=135, pnpm groups=5, Cargo packages=418); DCO pass for 24 commits with three exact grandfathered exceptions | command output retained in task |
+| 2026-07-14 02:32 -0700 | P2 authorized protection mutation/readback | operator made repository public and separately confirmed exact `main` protection; authenticated PUT followed by independent GET; post-rule PR/check/review readback | exact seven strict checks, one approval, CODEOWNER review, stale dismissal, conversations, linear history, admin enforcement, no force-push/delete all match; PR remains seven-check green and `MERGEABLE` but is `BLOCKED` / `REVIEW_REQUIRED` as the rule requires | `remote-receipt.md` |
+| 2026-07-14 02:34 -0700 | P2 transition verification | workflow/dashboard generation and verification; leaf CI contracts/fixtures/links/licenses; DCO; diff check; protection and PR re-read | first workflow verification correctly rejected a Suggested Next phrase containing `ship` from `READY_FOR_VERIFY`; phrase corrected to feature-verify-only guidance, then all local checks passed and remote readback remained exact | command output retained in task |
 
 ## Risks and Blockers
 
-- Remote settings and merge remain explicit human gates.
+- Merge remains a separate explicit human gate after independent verification.
 - The local machine currently lacks Go/gofmt. The combined scaffold rerun failed
   at that prerequisite; no downstream scaffold result is inferred.
 - GPL-negative and clean-recovery GitHub Actions evidence is now proven through
   authenticated API readback; the superseded GPL CI Windows job was cancelled
   and is retained as cancelled, not pass.
 - Authenticated `gh` access clears the Chrome/browser evidence blocker.
-- The repository is private and the current GitHub plan returns HTTP 403 for
-  both branch protection and rulesets, requiring GitHub Pro or public
-  visibility. The approved design forbids a weaker substitute.
+- The repository is now public by operator choice; exact `main` protection is
+  applied and independently read back.
+- CODEOWNERS currently names only PR author `@jinlong17`. GitHub correctly
+  reports `REVIEW_REQUIRED`; a later ship run needs an eligible CODEOWNER
+  approval path and must not weaken or bypass protection.
 - The pre-mutation value of the full-length Action SHA setting was not persisted,
   so exact rollback parity for that one setting remains unknown.
 
@@ -74,3 +78,4 @@
 | 2026-07-14 01:11 -0700 | Codex as feature-build P2 and operator-directed dashboard writer | Used the operator-authorized fresh-window recovery exactly once, retained the failed connection as evidence, and refreshed the dashboard next action without weakening the remote acceptance criteria | `remote-receipt.md`, this file, `docs/workflow/project/dashboard-state.json`, generated dashboard state | remains `BLOCKED`; Chrome troubleshooting requires plugin reinstall | operator reinstalls the Chrome plugin and confirms ready, or supplies authenticated GitHub API/CLI access |
 | 2026-07-14 01:32 -0700 | Codex as feature-build P2 and operator-directed dashboard writer | Verified the post-reinstall Chrome, extension, selected profile, native-host manifest, and allowed origin; retried the documented lightweight connection once after two seconds; retained the timeout as evidence and refreshed only the blocked next action | `remote-receipt.md`, this file, `docs/workflow/project/dashboard-state.json`, generated dashboard state | remains `BLOCKED`; installation health is proven but authenticated tab control still fails | operator fully restarts Chrome and the ChatGPT/Codex desktop host, or supplies authenticated GitHub API/CLI access |
 | 2026-07-14 02:00 -0700 | Codex as feature-build P2 and operator-directed dashboard writer | Verified `gh` authentication end to end, cleared the browser-readback condition, persisted GPL/clean run IDs and exact conclusions, read back Actions permissions/workflow inventory, and queried both protection surfaces without weakening criteria | `remote-receipt.md`, this file, `docs/workflow/project/dashboard-state.json`, generated dashboard state | remains `BLOCKED`; GitHub returns plan-required HTTP 403 for protection/rulesets on this private repository | operator chooses public visibility or a GitHub plan supporting private-repository protection; then resume P2 before merge |
+| 2026-07-14 02:32 -0700 | Codex as feature-build P2 and operator-directed dashboard writer | After the operator made the repository public and confirmed the exact mutation, applied strict `main` protection, read it back independently, checked live PR/check/review state, persisted the remote receipt, and refreshed dashboard focus without merging or pushing | `remote-receipt.md`, this file, `docs/workflow/project/dashboard-state.json`, generated dashboard state | `READY_FOR_VERIFY`; all P2 build criteria proven, with CODEOWNER approval retained as a later ship gate | independent feature-verify P2 |
