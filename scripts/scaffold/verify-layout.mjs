@@ -27,6 +27,7 @@ const requiredFiles = [
   "apps/desktop/src-tauri/capabilities/default.json",
   "apps/desktop/src-tauri/icons/icon.svg",
   "apps/desktop/src-tauri/icons/icon.png",
+  "apps/desktop/src-tauri/icons/icon.ico",
   "packages/ui/package.json", "packages/ui/tsconfig.json", "packages/ui/src/index.ts",
   "packages/protocol/package.json", "packages/protocol/tsconfig.json", "packages/protocol/src/index.ts",
   "packages/config/package.json", "packages/config/tsconfig.json", "packages/config/src/index.ts",
