@@ -3,11 +3,11 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0",
-  "current_status": "Phase 0 · 4/5 单元已 SHIPPED；phase0-ci-governance P2 BLOCKED（唯一 CODEOWNER 与 PR 作者相同）",
+  "current_status": "Phase 0 · 4/5 单元已 SHIPPED；phase0-ci-governance P2 READY_FOR_VERIFY（单账号/no-review 例外已应用）",
   "current_owner": "project-system",
-  "next_action": "operator supplies a distinct GitHub identity with write permission to author a replacement PR; otherwise feature-plan reviews a bootstrap exception",
+  "next_action": "independent feature-verify audits the operator-approved single-account rule, updated PR head, and seven required checks",
   "manual_updated_at": "2026-07-14",
-  "manual_updated_by": "operator-directed feature-verify P2 BLOCKED verdict sync (refresh recorded in phase0-ci-governance Work Log)",
+  "manual_updated_by": "operator-directed single-account blocker clearance (refresh recorded in phase0-ci-governance Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
@@ -23,7 +23,7 @@
     },
     {
       "label": "做到什么状态",
-      "value": "Phase 0 已 SHIPPED 4/5；CI P2 技术验收全部通过，但 PR #1 没有可满足 CODEOWNER 审批的身份路径"
+      "value": "Phase 0 已 SHIPPED 4/5；CI P2 技术验收通过，单账号/no-review 例外已应用并等待更新后独立验证"
     }
   ],
   "phases": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "phase0-ci-governance",
-      "expected_status": "BLOCKED"
+      "expected_status": "READY_FOR_VERIFY"
     }
   ]
 }

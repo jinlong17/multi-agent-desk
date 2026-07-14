@@ -10,10 +10,10 @@
 | Owner Module | `project-system` |
 | Impacted Modules | `none` |
 | Current Phase | `FEATURE_VERIFY_P2` |
-| Status | `BLOCKED` |
-| Executor | `Codex as independent feature-verify` |
+| Status | `READY_FOR_VERIFY` |
+| Executor | `Codex as original feature-build writer` |
 | Updated | `2026-07-14` |
-| Suggested Next | `operator supplies a distinct eligible GitHub identity to author a replacement PR; otherwise feature-plan must review a bootstrap exception before the original writer clears BLOCKED` |
+| Suggested Next | `independent feature-verify audits the operator-approved single-account rule, current PR head, and seven required checks` |
 | Branch / Worktree | `codex/project-system/phase0-ci-governance @ agent-deck-worktrees/phase0-ci-governance` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none` |
@@ -45,6 +45,7 @@
 | 2026-07-14 02:32 -0700 | P2 authorized protection mutation/readback | operator made repository public and separately confirmed exact `main` protection; authenticated PUT followed by independent GET; post-rule PR/check/review readback | exact seven strict checks, one approval, CODEOWNER review, stale dismissal, conversations, linear history, admin enforcement, no force-push/delete all match; PR remains seven-check green and `MERGEABLE` but is `BLOCKED` / `REVIEW_REQUIRED` as the rule requires | `remote-receipt.md` |
 | 2026-07-14 02:34 -0700 | P2 transition verification | workflow/dashboard generation and verification; leaf CI contracts/fixtures/links/licenses; DCO; diff check; protection and PR re-read | first workflow verification correctly rejected a Suggested Next phrase containing `ship` from `READY_FOR_VERIFY`; phrase corrected to feature-verify-only guidance, then all local checks passed and remote readback remained exact | command output retained in task |
 | 2026-07-14 11:30 -0700 | P2 independent feature-verify | offline frozen install; workflow/dashboard; CI contracts/fixtures/links/licenses; DCO; complete Go/Web/Tauri scaffold regression; authenticated GPL/clean runs, Actions settings, protection, PR, CODEOWNERS and official GitHub review semantics | all P2 technical criteria pass; final verdict `BLOCKED` because sole base-branch CODEOWNER `@jinlong17` is also PR author and GitHub forbids self-approval, leaving no qualifying review path for PR #1; post-verdict dashboard refresh is correctly deferred to an operator-directed writer | `docs/reviews/phase0-ci-governance/2026-07-14-feature-verify-p2.md` |
+| 2026-07-14 11:48 -0700 | P2 operator exception and blocker clearance | operator explicitly accepted one-account/no-review governance and authorized direct `main`; authenticated PUT changed only approval count `1 -> 0` and CODEOWNER requirement `true -> false`; independent GET retained seven strict checks, admin enforcement, conversation resolution, linear history, and force-push/delete prohibitions | PR #1 changed from `BLOCKED` / `REVIEW_REQUIRED` to `MERGEABLE` / `CLEAN`; prior verifier blocker resolved and last non-blocked state restored | `remote-receipt.md`; live GitHub protection/PR readback |
 
 ## Risks and Blockers
 
@@ -57,9 +58,9 @@
 - Authenticated `gh` access clears the Chrome/browser evidence blocker.
 - The repository is now public by operator choice; exact `main` protection is
   applied and independently read back.
-- CODEOWNERS currently names only PR author `@jinlong17`. GitHub correctly
-  reports `REVIEW_REQUIRED`; a later ship run needs an eligible CODEOWNER
-  approval path and must not weaken or bypass protection.
+- CODEOWNERS names only `@jinlong17`; the operator explicitly accepted the
+  single-account/no-review policy on 2026-07-14. CODEOWNERS remains ownership
+  metadata, while the seven checks and non-review protections remain enforced.
 - The pre-mutation value of the full-length Action SHA setting was not persisted,
   so exact rollback parity for that one setting remains unknown.
 
@@ -82,3 +83,4 @@
 | 2026-07-14 02:32 -0700 | Codex as feature-build P2 and operator-directed dashboard writer | After the operator made the repository public and confirmed the exact mutation, applied strict `main` protection, read it back independently, checked live PR/check/review state, persisted the remote receipt, and refreshed dashboard focus without merging or pushing | `remote-receipt.md`, this file, `docs/workflow/project/dashboard-state.json`, generated dashboard state | `READY_FOR_VERIFY`; all P2 build criteria proven, with CODEOWNER approval retained as a later ship gate | independent feature-verify P2 |
 | 2026-07-14 11:30 -0700 | Codex as independent feature-verify | Re-ran the full local and remote P2 acceptance matrix, confirmed every technical criterion, checked the live protected PR against base-branch CODEOWNERS and official GitHub review semantics, and persisted this verdict without changing implementation, plan, dashboard, or remote state | `docs/reviews/phase0-ci-governance/2026-07-14-feature-verify-p2.md`, this file | `BLOCKED`; PR #1 has no satisfiable CODEOWNER approval because its sole owner is also its author | operator provides a distinct eligible PR author, or feature-plan reviews a bootstrap exception; original writer then clears BLOCKED |
 | 2026-07-14 11:34 -0700 | operator-directed writer | Refreshed the dashboard to the independently persisted `BLOCKED` verdict and queried collaborators, invitations, and requested reviewers | `docs/workflow/project/dashboard-state.json`, this file, generated dashboard state | focus aligned; `jinlong17` is the only collaborator and administrator, with no pending invitation or requested reviewer | operator provides a distinct eligible PR author, or feature-plan reviews a bootstrap exception |
+| 2026-07-14 11:48 -0700 | Codex as original feature-build writer and operator-directed dashboard writer | Applied the operator's highest-priority single-account/no-review exception, changed only the review subset of `main` protection, independently read back the preserved safeguards, cleared the reproducible identity blocker to its last non-blocked state, and refreshed dashboard judgment | `design.md`, `test.md`, `remote-receipt.md`, this file, `docs/workflow/project/dashboard-state.json`, generated dashboard state | `READY_FOR_VERIFY`; PR #1 is `MERGEABLE` / `CLEAN` before the pending evidence push | independent feature-verify audits the updated head and live rule |

@@ -97,7 +97,7 @@ mutation at `2026-07-14 02:32 -0700`:
 - The pre-mutation value for `require_full_length_action_sha` was not
   persisted. It remains `unknown`; rollback parity cannot be claimed.
 
-## Required rule applied and read back
+## Initial strict review rule applied and read back (superseded)
 
 `main` must require the exact checks `project-verify`, `build-ubuntu`,
 `build-macos`, `build-windows`, `license-gate`, `dco`, and `link-check`, plus
@@ -105,6 +105,47 @@ strict up-to-date branches, one approval, CODEOWNER review, stale-review
 dismissal, conversation resolution, linear history, admin enforcement, and
 disabled force-push/deletion. The authenticated readback matches every required
 field and exact check name; no weaker rule was substituted.
+
+## Operator-approved single-account rule
+
+At `2026-07-14 11:48 -0700`, the operator explicitly stated that one account is
+sufficient, no review is required, direct completion into `main` is allowed,
+and this is the highest priority. The original writer therefore changed only
+the pull-request review subset and immediately performed an independent GET.
+
+```json
+{
+  "required_status_checks": {
+    "strict": true,
+    "contexts": [
+      "project-verify",
+      "build-ubuntu",
+      "build-macos",
+      "build-windows",
+      "license-gate",
+      "dco",
+      "link-check"
+    ]
+  },
+  "enforce_admins": true,
+  "required_pull_request_reviews": {
+    "dismiss_stale_reviews": true,
+    "require_code_owner_reviews": false,
+    "required_approving_review_count": 0,
+    "require_last_push_approval": false
+  },
+  "required_conversation_resolution": true,
+  "required_linear_history": true,
+  "allow_force_pushes": false,
+  "allow_deletions": false
+}
+```
+
+The seven required checks and every non-review safeguard remained unchanged.
+After the mutation, PR #1 changed from `BLOCKED` / `REVIEW_REQUIRED` to
+`MERGEABLE` / `CLEAN` with no review decision. This resolves the single-owner
+CODEOWNER deadlock without disabling CI, admin enforcement, conversation
+resolution, linear history, or destructive-update protections.
 
 ## Reproducible blocker
 
@@ -133,7 +174,7 @@ public-visibility change cleared the GitHub-plan blocker. The authorized
 protection mutation and independent GET now satisfy the remaining P2 remote
 configuration criterion.
 
-## Post-protection PR state
+## Historical post-protection PR state (superseded)
 
 PR #1 retains seven successful checks and is structurally `MERGEABLE`, while
 GitHub reports `BLOCKED` / `REVIEW_REQUIRED` because the newly enforced review
@@ -143,3 +184,7 @@ it proves the rule is active, and P2 intentionally uses an unmerged test PR. It
 is a real later ship gate; merge must not be attempted until an eligible
 CODEOWNER approval path exists and the independent feature verifier accepts the
 P2 evidence.
+
+The operator-approved single-account rule above supersedes that merge-path
+requirement. The historical blocked state is retained as evidence and is not
+rewritten as a pass.

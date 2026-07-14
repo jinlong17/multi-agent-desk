@@ -67,17 +67,22 @@ GitHub settings. It will:
    GPL-3.0-only, record the failed run, then remove it and require green rerun;
 4. configure/audit `main` branch protection with strict required checks:
    `project-verify`, `build-ubuntu`, `build-macos`, `build-windows`,
-   `license-gate`, `dco`, `link-check`; require one approving review,
-   CODEOWNER review, stale-review dismissal, conversation resolution, linear
-   history, and enforcement for admins; force pushes/deletions disabled;
+   `license-gate`, `dco`, `link-check`; for this operator-owned single-account
+   repository require zero approving reviews and do not require CODEOWNER
+   review, while retaining conversation resolution, linear history,
+   enforcement for admins, and disabled force pushes/deletions. CODEOWNERS
+   remains deterministic ownership/routing metadata rather than a merge gate;
 5. set default workflow token permissions to read-only and disallow Actions
    from approving pull requests; no release/deployment write permission;
 6. query the remote configuration back and persist sanitized evidence.
 
 If the GitHub plan/repository cannot enforce a proposed setting, P2 returns
 BLOCKED for operator choice; it does not silently weaken protection or accept
-risk. Push, PR creation, protection mutation, and permission mutation remain
-separate explicit human authorization even though local commits are allowed.
+risk. The operator explicitly accepted the single-account/no-review policy on
+2026-07-14 and authorized direct `main` completion as the highest priority.
+Push, PR creation, protection mutation, and permission mutation otherwise
+remain separate explicit human authorization even though local commits are
+allowed.
 
 ## Failure, security, and rollback
 
@@ -86,4 +91,3 @@ are distinguished from broken local links but still do not become pass.
 Actions are read-only; fork PRs receive no secrets. P1 rollback removes local
 workflows/scripts. P2 rollback restores the recorded prior GitHub settings and
 closes the unmerged test PR/branch only with operator authorization.
-

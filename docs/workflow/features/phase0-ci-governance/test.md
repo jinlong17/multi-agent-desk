@@ -27,8 +27,10 @@ through P1. Static YAML validation is not runner evidence.
    record its run URL/log conclusion. Remove fixture; require green rerun.
 4. Query branch protection and Actions permissions before mutation. Apply only
    the operator-approved exact configuration, then query back and compare.
-5. Confirm required checks are strict, names unique, review/CODEOWNER/admin/
-   conversation/linear-history rules match, and force push/delete are false.
+5. Confirm required checks are strict and names unique; approving-review count
+   is zero and CODEOWNER review is disabled for the operator-approved
+   single-account policy; admin/conversation/linear-history rules remain
+   enabled, and force push/delete remain false.
 6. Confirm default token permissions read and PR approval false; no release
    permission/workflow exists.
 7. Run `npm run project:verify` after every state/dashboard transition.
@@ -46,4 +48,3 @@ READY_FOR_VERIFY only as the workflow allows; never infer success.
 - Google go-licenses v2 README: unknown/forbidden/allowed license checking.
 - lycheeverse/lychee-action v2 README: fail-on-error link checking and SHA pin
   recommendation.
-
