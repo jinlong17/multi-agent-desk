@@ -3,11 +3,11 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0",
-  "current_status": "Phase 0 · 4/5 单元已 SHIPPED；phase0-ci-governance P2 READY_FOR_VERIFY（post-squash DCO anchor 修复）",
+  "current_status": "Phase 0 · 4/5 单元已 SHIPPED；phase0-ci-governance P2 READY_TO_SHIP（post-squash DCO anchor 已验证）",
   "current_owner": "project-system",
-  "next_action": "independent feature-verify audits the signed main DCO anchor and correction PR checks",
+  "next_action": "ship merges correction PR #2 and requires successful main push checks before recording SHIPPED",
   "manual_updated_at": "2026-07-14",
-  "manual_updated_by": "operator-directed post-merge DCO correction sync (refresh recorded in phase0-ci-governance Work Log)",
+  "manual_updated_by": "operator-directed DCO correction READY_TO_SHIP sync (refresh recorded in phase0-ci-governance Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
@@ -23,7 +23,7 @@
     },
     {
       "label": "做到什么状态",
-      "value": "Phase 0 已 SHIPPED 4/5；PR #1 已合并，post-squash DCO anchor 修复等待独立验证"
+      "value": "Phase 0 已 SHIPPED 4/5；PR #1 已合并，DCO anchor 修复七项检查通过并等待已授权合并"
     }
   ],
   "phases": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "phase0-ci-governance",
-      "expected_status": "READY_FOR_VERIFY"
+      "expected_status": "READY_TO_SHIP"
     }
   ]
 }
