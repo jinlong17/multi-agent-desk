@@ -11,14 +11,14 @@
 | Impacted Modules | `core, desktop` |
 | Hypothesis | `ConPTY can host a full-screen provider TUI reliably: render, resize, scrollback replay, and clean teardown behave correctly for long interactive sessions` |
 | Time-box | `3 days` |
-| Current Phase | `EVIDENCE` |
-| Status | `EVIDENCE_READY` |
+| Current Phase | `DECISION` |
+| Status | `GATE_RESOLVED` |
 | Executor | `Codex (GPT-5)` |
-| Updated | `2026-07-14 16:51 -0700` |
-| Suggested Next | `feature-plan decision` |
+| Updated | `2026-07-14 16:55 -0700` |
+| Suggested Next | `Phase 1 PTY abstraction and Phase 3 Windows provider acceptance` |
 | Security Gate | `none (no credentials in scope)` |
 | Evidence Path | `docs/spikes/windows/` |
-| Decision Record | `pending — PROVIDER_COMPATIBILITY.md + platform matrix entry` |
+| Decision Record | `docs/adr/0012-windows-conpty-pty-backend.md + docs/PROVIDER_COMPATIBILITY.md + platform matrix` |
 
 ## Success and failure criteria
 
@@ -64,3 +64,4 @@ later platform-acceptance lane.
 | 2026-07-11 09:20 -0700 | Claude Code (Fable 5), lifecycle-readiness P3 build | Spike created by R3 single-owner re-split of spike-windows-pty-ipc (ConPTY/PTY → provider per module-registry signals) | this file | `DRAFT` | feature-plan |
 | 2026-07-14 16:40 -0700 | Codex (GPT-5), feature-plan spike intake | Classified ConPTY under the sole `provider` owner; froze native-API probe scope, 15-second interactive stress, resize observation, transcript replay, and bounded teardown criteria; refreshed the operator-directed dashboard snapshot | this file; `docs/workflow/project/dashboard-state.json`; `docs/prototypes/dev-dashboard/state.generated.js`; `codex/provider/spike-windows-conpty` | `SPIKE_READY`; `project:verify` passed; no credentials or trust boundary in scope | provider-spike |
 | 2026-07-14 16:51 -0700 | Codex (GPT-5), provider-spike | Ran native ConPTY evidence on Windows x64; retained the failed inherited-handle attempt, corrected child console binding, then captured a passing 15-second result and refreshed the dashboard | probe/workflow; `docs/spikes/windows/conpty-result.json`; `docs/spikes/windows/2026-07-14-windows-conpty-spike.md`; this file; dashboard state | `EVIDENCE_READY`; hypothesis supported within recorded limits | feature-plan decision |
+| 2026-07-14 16:55 -0700 | Codex (GPT-5), feature-plan decision | Selected native ConPTY, documented stream-binding/drain/replay obligations, updated compatibility and the platform plan, corrected the stale E2EE compatibility row, and refreshed the dashboard | ADR 0012; ADR index/0004; `docs/PROVIDER_COMPATIBILITY.md`; `docs/IMPLEMENTATION_PLAN.md`; this file; dashboard state | `GATE_RESOLVED`; Windows 11 real-provider acceptance explicitly retained | Phase 1/3 implementation |

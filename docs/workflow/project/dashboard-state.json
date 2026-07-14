@@ -3,15 +3,15 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0.5",
-  "current_status": "Phase 0.5 · Windows ConPTY 证据已就绪，等待平台决策",
+  "current_status": "Phase 0.5 · Windows ConPTY 已 GATE_RESOLVED",
   "current_owner": "provider",
-  "next_action": "record the ConPTY platform decision, then proceed to the Windows Named Pipe IPC spike",
+  "next_action": "proceed to the Windows Named Pipe IPC spike; retain Windows 11 real-provider acceptance for Phase 3/release",
   "manual_updated_at": "2026-07-14",
   "manual_updated_by": "operator-authorized direct-main Windows Spike execution (recorded in spike-windows-conpty Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 0.5 · 收口 ConPTY 决策并进入 Named Pipe IPC"
+      "value": "Phase 0.5 · 进入 Windows Named Pipe IPC 实证"
     },
     {
       "label": "在哪条线",
@@ -23,7 +23,7 @@
     },
     {
       "label": "做到什么状态",
-      "value": "ConPTY EVIDENCE_READY：Windows x64 原生传输通过；Windows 11 UI 验收仍待发布前执行"
+      "value": "ConPTY GATE_RESOLVED：原生后端已选定；Windows 11 真实 Provider 验收保留"
     }
   ],
   "phases": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "spike-windows-conpty",
-      "expected_status": "EVIDENCE_READY"
+      "expected_status": "GATE_RESOLVED"
     }
   ]
 }
