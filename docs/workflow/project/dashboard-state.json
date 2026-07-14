@@ -3,15 +3,15 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0.5",
-  "current_status": "Phase 0.5 · Windows ConPTY Spike 已进入 SPIKE_READY",
+  "current_status": "Phase 0.5 · Windows ConPTY 证据已就绪，等待平台决策",
   "current_owner": "provider",
-  "next_action": "run the native ConPTY full-screen, resize, replay, and teardown probe on windows-latest",
+  "next_action": "record the ConPTY platform decision, then proceed to the Windows Named Pipe IPC spike",
   "manual_updated_at": "2026-07-14",
   "manual_updated_by": "operator-authorized direct-main Windows Spike execution (recorded in spike-windows-conpty Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 0.5 · 执行 Windows ConPTY 原生 API 实证"
+      "value": "Phase 0.5 · 收口 ConPTY 决策并进入 Named Pipe IPC"
     },
     {
       "label": "在哪条线",
@@ -23,7 +23,7 @@
     },
     {
       "label": "做到什么状态",
-      "value": "ConPTY 已完成 intake；目标是 EVIDENCE_READY 后记录平台决策"
+      "value": "ConPTY EVIDENCE_READY：Windows x64 原生传输通过；Windows 11 UI 验收仍待发布前执行"
     }
   ],
   "phases": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "spike-windows-conpty",
-      "expected_status": "SPIKE_READY"
+      "expected_status": "EVIDENCE_READY"
     }
   ]
 }
