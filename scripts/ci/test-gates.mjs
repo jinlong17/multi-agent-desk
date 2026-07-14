@@ -14,6 +14,8 @@ const dco = "scripts/ci/verify-dco.mjs";
 run([dco, "--fixture", "scripts/ci/fixtures/dco-pass.json"], 0, /verified DCO/);
 run([dco, "--fixture", "scripts/ci/fixtures/dco-missing.json"], 1, /DCO missing or malformed/);
 run([dco, "--fixture", "scripts/ci/fixtures/dco-malformed.json"], 1, /DCO missing or malformed/);
+run([dco, "--fixture", "scripts/ci/fixtures/dco-grandfathered-pass.json"], 0, /grandfathered=1/);
+run([dco, "--fixture", "scripts/ci/fixtures/dco-grandfathered-mismatch.json"], 1, /DCO missing or malformed/);
 
 const licenses = "scripts/ci/verify-licenses.mjs";
 run([licenses, "--fixture", "scripts/ci/fixtures/licenses-clean.json"], 0, /verified licenses/);

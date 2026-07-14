@@ -89,6 +89,7 @@ jobs:
             --max-retries 2
             --exclude-loopback
             --exclude-path node_modules
+            --exclude-path scripts/ci/fixtures/links
             --exclude-path apps/desktop/src-tauri/target
             './**/*.md'
           fail: true

@@ -1,0 +1,15 @@
+{
+  "commits": [
+    {
+      "sha": "2222222222222222222222222222222222222222",
+      "message": "chore: unsigned commit after policy"
+    }
+  ],
+  "grandfathered": [
+    {
+      "sha": "2222222222222222222222222222222222222222",
+      "subject": "chore: different subject",
+      "reason": "A mismatched subject must not bypass DCO."
+    }
+  ]
+}
