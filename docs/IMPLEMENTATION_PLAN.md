@@ -746,13 +746,15 @@ CredentialBundle 仅包含：
 
 ### 12.4 实时会话加密
 
-- 每个 Session 生成独立随机 Session Key。
-- Session Key 分别包装给每个被授权客户端设备。
-- Payload 使用 XChaCha20-Poly1305。
-- AEAD AAD 固定绑定 `version || messageId || deviceId || sessionId || streamId || kind || direction || sequence || sentAt`，任何路由元数据篡改都导致解密失败。
-- Envelope 元数据带 sequence、timestamp 和 nonce；timestamp 允许 ±5 分钟时钟偏移，只作为辅助校验，防重放以 direction-scoped sequence 和 nonce 去重为准。
-- 重复 sequence、重复 nonce 或超出窗口且不能通过 sequence 证明连续性的消息被拒绝；部署文档要求设备同步 NTP。
-- Device 被撤销时，所有曾向其包装 Session Key 的活动 Session 立即轮换 Key，并只重新包装给仍有效的客户端。
+- 按 ADR 0011，每个 `(sessionId, hostDeviceId, peerDeviceId, keyEpoch)` 生成不同的 32 字节随机 Pairwise Root；禁止多个 Peer 共享或互相派生 Root。
+- Pairwise Root 使用 RFC 9180 HPKE Auth mode（X25519 + HKDF-SHA-256 + ChaCha20-Poly1305）只包装给对应 Peer；接收端从本地 pin 读取发送方公钥，Server 公钥目录不是信任锚。
+- Host 对多个 Peer 分别加密 fan-out；不以共享 group key 换取单份密文。
+- 每个 Pair 按 source、target、direction、stream、session 和 epoch 使用 HKDF-SHA-256 派生独立 traffic key 与 nonce prefix；Payload 使用 XChaCha20-Poly1305。
+- `sequence` 与 `keyEpoch` 使用无前导零的十进制字符串；nonce 固定为 `noncePrefix || uint64be(sequence)`。接收端必须重算并逐字节比对，错配返回 `nonce_sequence_mismatch`。
+- AEAD AAD 固定绑定 `version || messageId || sourceDeviceId || targetDeviceId || sessionId || streamId || kind || direction || sequence || sentAt || keyEpoch || nonce`，任何路由元数据篡改都导致解密失败。
+- timestamp 允许 ±5 分钟时钟偏移且只作为辅助校验；防重放以 pair/direction/stream/epoch scoped sequence 和持久化 1024 位窗口为准。
+- 重复、过旧 sequence 或状态回滚歧义被拒绝；歧义时轮换 Pair epoch，禁止在同一 traffic key 下重置 sequence。
+- Device 被撤销时，关闭其 WSS、拒绝该身份、tombstone/轮换受影响 Pair 并失效 Lease；其他 Peer Root 保持独立。撤销不承诺擦除已复制明文。
 - Server 只读取路由元数据和密文长度。
 
 ### 12.5 Web/Desktop 客户端密钥
@@ -764,10 +766,10 @@ Web 客户端流程：
 1. 首次 Passkey 登录后在浏览器本地生成 Ed25519/X25519 设备密钥。
 2. 优先使用 WebCrypto 非可导出密钥；若目标浏览器不支持，则使用 libsodium-wasm 生成密钥，并由 IndexedDB 中非可导出的 AES-GCM wrapping key 加密私钥。
 3. 若浏览器连非可导出的 AES wrapping key 都无法可靠保存，则该浏览器只能查看元数据，不允许远程终端、审批或 Credential Grant。
-4. Web Device 必须经已有 Pinned Device 批准后才能收到 Session Key；新浏览器只完成 Passkey 登录时仍无解密权限。
+4. Web Device 必须经已有 Pinned Device 批准后才能收到只属于该 Host↔Web Device 的 Pairwise Root；新浏览器只完成 Passkey 登录时仍无解密权限。
 5. 纯 Web Device 不能成为初始 E2EE 信任根。Bootstrap Ceremony 必须同时登记一台具有 OS Vault 的 Daemon/Desktop 作为初始 Trust Anchor，由它批准首个 Web Device。
 6. 清除站点数据视为丢失设备私钥，必须创建新 Device ID 并重新配对。
-7. 撤销 Web Device 后关闭其 WSS、轮换相关 Session Key，并拒绝该 Device ID 的新连接。
+7. 撤销 Web Device 后关闭其 WSS、tombstone/轮换相关 Pairwise Root，并拒绝该 Device ID 的新连接。
 
 Desktop 使用相同设备协议，但私钥保存在 OS Keychain/Credential Manager。Phase 0.5 必须完成 Chrome/Edge、Safari 和 Firefox 当前版本的密钥存储 PoC；不满足上述安全路径的浏览器明确降级为 metadata-only。
 
@@ -820,13 +822,16 @@ GET    /v1/version
 {
   "version": 1,
   "messageId": "uuidv7",
-  "deviceId": "uuidv7",
+  "sourceDeviceId": "uuidv7",
+  "targetDeviceId": "uuidv7",
   "sessionId": "uuidv7",
   "streamId": "terminal|events|approvals|control",
   "kind": "string",
   "direction": "device_to_client|client_to_device",
-  "sequence": 123,
+  "sequence": "123",
+  "keyEpoch": "1",
   "sentAt": "RFC3339",
+  "nonce": "base64url-24-bytes",
   "encryptedPayload": "base64url"
 }
 ```
@@ -854,7 +859,8 @@ device.presence
 
 传输规则：
 
-- `sequence` 在 `(sessionId, streamId, direction, senderDeviceId)` 范围内独立单调递增。
+- `sequence` 在 `(sessionId, sourceDeviceId, targetDeviceId, streamId, direction, keyEpoch)` 范围内独立单调递增，并在 ACK 前持久化 replay state。
+- 接收端从本地 Pairwise Root 重算 traffic key 与 nonce；Header nonce 与 `noncePrefix || uint64be(sequence)` 不一致时在 AEAD open 前拒绝。
 - `encryptedPayload` 解码前最大 256 KiB；超限帧直接拒绝并记录指标。
 - Relay 为每个订阅客户端维护有界出站队列；慢消费者超限时只断开该客户端，不阻塞 Daemon 或其他订阅者。
 - 每条连接有消息数和字节数限流；超过阈值返回稳定关闭码。
@@ -989,9 +995,9 @@ sync_tombstones
 - Web Session 使用 Secure、HttpOnly、SameSite Cookie。
 - 修改操作要求 CSRF 防护。
 - Device 操作要求设备连接凭证 + challenge signature。
-- 被撤销设备不能新建连接、读取新配置或收到新 Session Key。
+- 被撤销设备不能新建连接、读取新配置或收到新的 Pairwise Root。
 - 已打开的 WSS 在撤销后立即关闭。
-- 撤销时按 §12.4 轮换所有受影响活动 Session Key；旧 Key 不能解密撤销后的新帧。
+- 撤销时按 §12.4 tombstone/轮换所有受影响 Pair；旧 Root 不能解密撤销后的新帧或其他 Peer 的帧。
 - 终端输入、Resize 和 Approval 响应要求有效 ControllerLease；observer 只有读取权限。
 
 ## 17. 仓库设计
@@ -1176,7 +1182,7 @@ multi-agent-desk/
 交付：
 
 - Web Device Key 生命周期和 metadata-only 降级。
-- Session Key 包装、撤销轮换、AEAD AAD、WSS flow control 和 replay。
+- Pairwise Root 的 HPKE Auth 包装、撤销轮换、AEAD AAD、nonce 重算、WSS flow control 和 replay。
 - xterm.js Terminal、Approval、ControllerLease UI。
 
 出口：新浏览器只登录 Passkey 时不能解密；经已有设备批准后可控制 Linux Codex/Claude Session；撤销后旧 Key 无法解密新帧；Server DB/日志无 Provider 或终端明文。
@@ -1257,7 +1263,7 @@ multi-agent-desk/
 - WSS 消息 sequence/nonce 重放。
 - WS 乱序、重复、超 256 KiB 帧、慢消费者和连接限流。
 - 被撤销 Device 重连。
-- 撤销 Device 后旧 Session Key 无法解密新帧。
+- 撤销 Device 后旧 Pairwise Root 无法解密新帧；Peer A Root 不能解密或伪造 Peer B 帧。
 - 新 Web Device 在批准前无法解密，清除站点数据后必须重新配对。
 - XSS、CSRF、CSP 和第三方脚本检查。
 - Runtime Home 权限检查。
@@ -1340,7 +1346,7 @@ MultiAgentDesk 不 Fork 现有项目，建立独立统一内核。
 | Provider 私有行为变化 | High | 官方接口优先、Adapter 隔离、fixture 与版本门禁 |
 | Claude 缺少官方订阅额度 API | Medium | 来源标签、本地估算、不宣称官方额度 |
 | 远程服务器被攻破 | Critical | 最小授权、独立 CredentialInstance、可撤销、明确残余风险 |
-| Web XSS 导致会话密钥泄漏 | High | 严格 CSP、无第三方脚本、依赖审计、短生命周期 Session Key |
+| Web XSS 导致 Pairwise Root 泄漏 | High | 严格 CSP、无第三方脚本、依赖审计、短生命周期 Pair epoch；明确 active-origin 残余风险 |
 | Control Plane 换钥攻击 | Critical | 带外指纹、本地 Key Pin、密钥变更强制重新配对 |
 | 并发 Token 刷新破坏 Vault | Critical | 单一 materialization writer、credentialRevision CAS、Provider Spike |
 | 浏览器无法安全保存 Device Key | High | WebCrypto/libsodium fallback；不满足条件时 metadata-only |
@@ -1369,7 +1375,7 @@ MultiAgentDesk 不 Fork 现有项目，建立独立统一内核。
 13. README、部署、开发、安全、威胁模型和 Provider Adapter 文档完成。
 14. 所有第三方复用已记录且许可证兼容。
 15. 没有未处理的 Critical/High 安全缺陷。
-16. Control Plane 替换设备公钥时 Credential Grant 必须失败；撤销设备后旧 Session Key 不能解密新消息。
+16. Control Plane 替换设备公钥时 Credential Grant 必须失败；撤销设备后旧 Pairwise Root 不能解密新消息，Peer A Root 不能认证 Peer B 消息。
 17. 同一 CredentialInstance 并发 Session、刷新和 Daemon 崩溃不会把旧凭据覆盖回 Vault。
 
 ## 26. v0.1 之后

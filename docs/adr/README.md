@@ -19,10 +19,13 @@ ADR 0001–0008 are reserved for the first batch defined in
 | [0008](0008-config-sync-separated-from-credential-grants.md) | Configuration sync is separate from credential grants | Accepted |
 | [0009](0009-repository-layout-authority.md) | Repository layout authority | Accepted |
 | [0010](0010-browser-device-key-storage-modes.md) | Browser device key storage modes | Accepted |
+| [0011](0011-pairwise-e2ee-session-protocol.md) | Pairwise E2EE session protocol | Accepted |
 
 ADR 0001–0008 accept only the broad Plan v0.2 boundaries. Their
 `Spike-gated details` sections are authoritative markers for decisions that
 remain pending reproducible Phase 0.5 evidence.
 
-ADR 0010 is the first Phase 0.5 evidence-backed decision. It resolves browser
-key storage compatibility only; it does not resolve the E2EE protocol gate.
+ADR 0010 and ADR 0011 are Phase 0.5 evidence-backed decisions. ADR 0010
+resolves browser key storage compatibility; ADR 0011 resolves the E2EE protocol
+candidate with per-peer roots and cross-language vectors. Neither ADR claims
+that Phase 4b production code is implemented.
