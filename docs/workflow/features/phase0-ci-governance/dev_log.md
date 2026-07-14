@@ -13,7 +13,7 @@
 | Status | `BLOCKED` |
 | Executor | `Codex as feature-build` |
 | Updated | `2026-07-14` |
-| Suggested Next | `operator authorizes a fresh Chrome window or authenticated GitHub API/CLI, then feature-build resumes P2` |
+| Suggested Next | `operator reinstalls the Chrome plugin and confirms ready, or provides authenticated GitHub API/CLI; then feature-build resumes P2` |
 | Branch / Worktree | `codex/project-system/phase0-ci-governance @ agent-deck-worktrees/phase0-ci-governance` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none` |
@@ -38,6 +38,7 @@
 | 2026-07-14 | P2 remote build | PR #1 and remote refs; intermediate Actions runs `29314251246`/`29314251259` and `29314803988`/`29314804058`; GPL head `6811788`; recovery head `22e2240`; Actions/settings readback | intermediate Linux/macOS/governance checks passed and two Windows defects were fixed; final clean/GPL run IDs and strict `main` rule remain unproven | `remote-receipt.md` |
 | 2026-07-14 | P2 local recheck | workflow/dashboard generators and verifiers; Actions/CODEOWNERS/fixtures/links; DCO range; pnpm 10.23.0 + Cargo license inventory; `git diff --check` | pass: checks=7, actions=15, Markdown=134, pnpm groups=5, Cargo packages=418, commits=21 with three exact pre-policy exceptions | command output retained in task; `remote-receipt.md` |
 | 2026-07-14 | P2 blocker reproduction | Chrome running, extension installed/enabled, native host valid; browser-client `openTabs()` retried twice | connection timed out; operator approval required by browser recovery policy before opening a fresh window | `remote-receipt.md` |
+| 2026-07-14 01:11 -0700 | P2 authorized browser recovery | operator-authorized fresh Chrome window; two-second wait; one permitted reconnect and `openTabs()` retry | retry timed out; Chrome troubleshooting now requires plugin reinstall and forbids alternate automation fallback | `remote-receipt.md` |
 
 ## Risks and Blockers
 
@@ -48,6 +49,8 @@
   at that prerequisite; no downstream scaffold result is inferred.
 - The final GPL-negative and clean-recovery Actions run IDs/results are unknown
   until authenticated GitHub readback is restored.
+- The operator-authorized fresh-window recovery failed on its single permitted
+  retry; the Chrome plugin must now be reinstalled before browser work resumes.
 - `main` has no proven protection rule. Applying and reading back the exact rule
   remains mandatory; the rule may also expose a second-approver operational
   requirement for this single-owner repository.
@@ -67,3 +70,4 @@
 | 2026-07-11 | Codex as independent feature-verify | Independently verified workflow syntax/contracts/pins, CODEOWNERS, positive/negative DCO/link/SPDX/policy fixtures, actual pnpm/Cargo inventory, signed P1 range, pinned Go license scanner, full macOS scaffold regression, project integrity, and Windows Spike deferral; made no implementation or dashboard write | `docs/reviews/phase0-ci-governance/2026-07-11-feature-verify-p1.md`, this file | `VERIFIED`; all remote evidence unknown | feature-build P2 after explicit operator authorization |
 | 2026-07-11 | operator-directed writer | Refreshed dashboard focus and manual status to the independently persisted P1 `VERIFIED` verdict; retained P2 remote authorization as next action | `docs/workflow/project/dashboard-state.json`, this file | focus aligned | request explicit P2 remote authorization |
 | 2026-07-14 00:59 -0700 | Codex as feature-build P2 and operator-directed dashboard writer | Pushed/opened PR #1, retained two Windows runner failures and fixes, exercised GPL/recovery heads, read back least-privilege Actions settings, reproduced the authenticated-browser connection failure, persisted a sanitized partial receipt, and refreshed dashboard focus without inferring final remote success | `remote-receipt.md`, this file, `docs/workflow/project/dashboard-state.json`, generated dashboard state | `BLOCKED`; final seven-check/GPL evidence and strict `main` protection remain unknown | operator authorizes a fresh Chrome window or supplies authenticated GitHub API/CLI access; resume feature-build P2 |
+| 2026-07-14 01:11 -0700 | Codex as feature-build P2 and operator-directed dashboard writer | Used the operator-authorized fresh-window recovery exactly once, retained the failed connection as evidence, and refreshed the dashboard next action without weakening the remote acceptance criteria | `remote-receipt.md`, this file, `docs/workflow/project/dashboard-state.json`, generated dashboard state | remains `BLOCKED`; Chrome troubleshooting requires plugin reinstall | operator reinstalls the Chrome plugin and confirms ready, or supplies authenticated GitHub API/CLI access |

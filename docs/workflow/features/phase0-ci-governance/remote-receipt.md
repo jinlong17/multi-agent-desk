@@ -4,7 +4,7 @@
 > Repository: `jinlong17/multi-agent-desk`
 > Branch: `codex/project-system/phase0-ci-governance`
 > Pull request: [#1](https://github.com/jinlong17/multi-agent-desk/pull/1)
-> Last updated: `2026-07-14 00:59 -0700`
+> Last updated: `2026-07-14 01:11 -0700`
 
 This is a sanitized, append-only-oriented P2 evidence record. It contains no
 tokens, cookies, authorization headers, secrets, or environment contents.
@@ -72,13 +72,19 @@ disabled force-push/deletion. No weaker rule is accepted.
 ## Reproducible blocker
 
 Chrome, the ChatGPT Chrome Extension, and the native-host manifest all pass
-their installation checks, but two browser-client `openTabs()` attempts timed
-out. The recovery procedure requires operator approval to open a fresh Chrome
-window. Without an authenticated readback, the final clean/GPL run results and
+their installation checks, but two initial browser-client `openTabs()` attempts
+timed out. At `2026-07-14 01:11 -0700`, the operator authorized the documented
+recovery: a fresh Chrome window was opened for the selected profile, the client
+waited two seconds, reconnected once, and retried `openTabs()`. That sole retry
+also timed out. The Chrome troubleshooting contract now requires reinstalling
+the Chrome plugin from the ChatGPT/Codex plugin UI; it forbids fallback through
+scripts, cookies, browser storage, or another automation surface.
+
+Without an authenticated readback, the final clean/GPL run results and
 repository rule cannot be proved or changed safely.
 
-Clearing role: the operator authorizes opening a fresh Chrome window (or
-provides another authenticated GitHub API/CLI surface). Feature-build then
-completes readback, performs separately confirmed merge/settings actions,
-updates this receipt, and returns `READY_FOR_VERIFY` only if every P2 criterion
-is proven.
+Clearing role: the operator reinstalls the Chrome plugin from the ChatGPT/Codex
+plugin UI and confirms it is ready (or provides another authenticated GitHub
+API/CLI surface). Feature-build then completes readback, performs separately
+confirmed merge/settings actions, updates this receipt, and returns
+`READY_FOR_VERIFY` only if every P2 criterion is proven.
