@@ -1,21 +1,5 @@
 {
   "schema_version": 1,
-  "policy_effective_commit": "ff4c2ad700250f9f05d2a185ec71b7e214db13b5",
-  "exceptions": [
-    {
-      "sha": "342be57c0a5d3eddab57e53746554f8c67ba9be5",
-      "subject": "chore(project-system): establish workflow and development dashboard",
-      "reason": "Commit predates the signed DCO policy effective commit."
-    },
-    {
-      "sha": "a9a690764a7dc97932dc5002125f5aa09889d56e",
-      "subject": "feat(project-system): close lifecycle-readiness governance loop (P1-P3)",
-      "reason": "Commit predates the signed DCO policy effective commit."
-    },
-    {
-      "sha": "e3be1b48a05fa701db556bc40a381fe7c11b8487",
-      "subject": "chore(project-system): record lifecycle-readiness ship receipt (a9a6907)",
-      "reason": "Commit predates the signed DCO policy effective commit."
-    }
-  ]
+  "policy_effective_commit": "ba6909449de53db604eaa25c8d7b1f9726446503",
+  "exceptions": []
 }

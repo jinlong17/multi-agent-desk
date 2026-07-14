@@ -38,7 +38,9 @@ dispatch. Concurrency cancels superseded branch/PR runs.
   explicit generator input/default (`@jinlong17`), not a second module map.
 - `verify-dco.mjs` requires a `Signed-off-by: Name <email>` trailer in every
   commit in the supplied Git range. Fixture mode proves signed pass and missing
-  or malformed sign-off fail.
+  or malformed sign-off fail. The live policy effective commit must be a signed
+  ancestor already present in the target `main` history; an unmerged feature
+  SHA is not a durable policy anchor across squash integration.
 - `check-local-links.mjs` parses Markdown links, ignores code fences and remote
   URLs, resolves anchors/files, and fails missing local targets/anchors.
 - `verify-licenses.mjs` evaluates pnpm and Cargo SPDX expressions: unknown,
