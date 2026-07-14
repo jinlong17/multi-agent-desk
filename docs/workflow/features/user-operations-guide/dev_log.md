@@ -9,11 +9,11 @@
 | Title | `面向用户的操作手册与看板入口` |
 | Owner Module | `project-system` |
 | Impacted Modules | `core`, `provider`, `control-plane`, `web`, `desktop`, `security` |
-| Current Phase | `P1` |
-| Status | `READY_TO_SHIP` |
-| Executor | `Codex (GPT-5) as feature-verify` |
-| Updated | `2026-07-14 15:20 PDT` |
-| Suggested Next | `ship (human authorization required)` |
+| Current Phase | `SHIP` |
+| Status | `SHIPPED` |
+| Executor | `Codex (GPT-5) as ship` |
+| Updated | `2026-07-14 15:27 PDT` |
+| Suggested Next | `none (push/merge require separate human authorization)` |
 | Branch / Worktree | `codex/project-system/user-operations-guide @ /Users/jinlong/Desktop/jinlong_project/multi-agent-desk` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none (claims remain gated by owning spikes)` |
@@ -23,7 +23,7 @@
 
 | Phase | Scope | Dependencies | Acceptance | Status |
 |---|---|---|---|---|
-| P1 | Canonical pre-release user guide; README and implementation-plan discovery; dashboard required-doc/static entry/verifier; generated state | Reviewed Plan v0.2; live Phase 0 status; approved feature plan | Guide is truthful and task-complete; links resolve; dashboard negative assertion and repository verification pass | `READY_FOR_VERIFY` |
+| P1 | Canonical pre-release user guide; README and implementation-plan discovery; dashboard required-doc/static entry/verifier; generated state | Reviewed Plan v0.2; live Phase 0 status; approved feature plan | Guide is truthful and task-complete; links resolve; dashboard negative assertion and repository verification pass | `SHIPPED` (`9285341`) |
 
 ## Evidence Ledger
 
@@ -39,6 +39,7 @@
 | 2026-07-14 15:20 PDT | P1 VERIFY | `git diff --check`; bundled-Node direct `verify-workflow.mjs` and `verify-static.mjs` | pass: no whitespace errors; 10 agents, 3 skills, 17 docs, 20 edges, 15 statuses; dashboard 9 phases and current Git facts valid | `docs/reviews/user-operations-guide/2026-07-14-feature-verify.md` |
 | 2026-07-14 15:20 PDT | P1 VERIFY | bundled-Node Markdown link scanner and in-memory required-doc mutations | pass: 8 files, 0 broken links; positive guide fact accepted; missing and empty guide facts rejected | `docs/reviews/user-operations-guide/2026-07-14-feature-verify.md` |
 | 2026-07-14 15:20 PDT | P1 VERIFY | isolated temporary-clone equivalents for `workflow:generate`, `workflow:verify`, `dashboard`, and `dashboard:verify` | pass: mirrors generate cleanly; workflow and dashboard verification pass without modifying protected generated state in this worktree | `docs/reviews/user-operations-guide/2026-07-14-feature-verify.md` |
+| 2026-07-14 15:27 PDT | SHIP | branch/remote/exact diff/untracked/DCO/docs/license/security-gate/version/release-receipt/rollback audit; content commit `9285341` | pass: 13 exact feature files committed with DCO sign-off; docs-only change adds no dependency/license or product version; no secrets; gates `none`; rollback is file-local revert; `.agents/skills/` excluded; no push/merge/tag/publish/deploy | commit `9285341` and this Ship receipt |
 
 ## Risks and Blockers
 
@@ -56,3 +57,4 @@
 | 2026-07-14 15:01 PDT | Codex (GPT-5) as feature-build | Implemented approved P1 only: canonical Chinese pre-release guide, README/plan discovery, dashboard required-doc/static card/non-empty verifier, generated-state refresh, link/negative/repository/browser checks | `docs/USER_GUIDE.md`; `README.md`; `docs/IMPLEMENTATION_PLAN.md`; `docs/prototypes/dev-dashboard/index.html`; `scripts/dashboard/{generate-state,verify-static}.mjs`; this log | `READY_FOR_VERIFY`; all scoped automated checks pass, screenshot evidence unavailable due in-app capture timeout | independent `feature-verify` |
 | 2026-07-14 15:20 PDT | Codex (GPT-5) as feature-verify | Independently inspected the P1 diff and build receipt; reran whitespace, link, required-doc negative, workflow, and dashboard checks, including the full generator chain in an isolated temporary clone | `docs/reviews/user-operations-guide/2026-07-14-feature-verify.md`; this log | `READY_TO_SHIP`; all final-phase acceptance criteria pass and no findings remain | `ship` only with explicit human authorization |
 | 2026-07-14 15:22 PDT | Codex root as operator-directed writer | Refreshed generated dashboard facts after the final verification transition; preserved operator-owned priority, phase, risk, focus, Ship, and release judgment | `docs/prototypes/dev-dashboard/state.generated.js`; this log | dashboard now reads `user-operations-guide` as `READY_TO_SHIP`; static verification passes | await explicit human Ship request |
+| 2026-07-14 15:27 PDT | Codex (GPT-5) as ship | Operator explicitly requested Ship; audited exact scope and committed the independently verified user-guide feature with DCO sign-off, then recorded this release receipt after commit success | commit `9285341`; this log | `SHIPPED`; local commit only, with no push, merge, tag, publish, deploy, release, priority, or risk mutation | none; remote actions require separate human authorization |
