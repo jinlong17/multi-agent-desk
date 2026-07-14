@@ -3,11 +3,11 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0",
-  "current_status": "Phase 0 · 4/5 单元已 SHIPPED；phase0-ci-governance P1 VERIFIED；P2 等待远端人工授权",
+  "current_status": "Phase 0 · 4/5 单元已 SHIPPED；phase0-ci-governance P2 BLOCKED（GitHub 远端读回连接）",
   "current_owner": "project-system",
-  "next_action": "operator authorization for phase0-ci-governance P2 push/test PR and remote settings",
-  "manual_updated_at": "2026-07-11",
-  "manual_updated_by": "operator-directed ship session (refresh recorded in phase0-monorepo-scaffold Work Log)",
+  "next_action": "operator authorizes a fresh Chrome window or authenticated GitHub API/CLI; then resume P2 final run readback, merge and strict main protection",
+  "manual_updated_at": "2026-07-14",
+  "manual_updated_by": "operator-directed feature-build P2 blocker record (refresh recorded in phase0-ci-governance Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
@@ -23,7 +23,7 @@
     },
     {
       "label": "做到什么状态",
-      "value": "Phase 0 已 SHIPPED 3/5：repository-layout、architecture ADRs、threat model；scaffold 下一步"
+      "value": "Phase 0 已 SHIPPED 4/5；CI P2 已有 PR/跨平台修复证据，但最终远端读回与 main 保护尚未闭环"
     }
   ],
   "phases": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "phase0-ci-governance",
-      "expected_status": "VERIFIED"
+      "expected_status": "BLOCKED"
     }
   ]
 }
