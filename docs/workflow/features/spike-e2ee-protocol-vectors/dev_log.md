@@ -9,21 +9,26 @@
 | Title | `E2EE protocol spec and cross-language test vectors` |
 | Owner Module | `security` |
 | Impacted Modules | `control-plane, web, core` |
-| Hypothesis | `The E2EE protocol spec (pinning, attestation, AAD binding, session keys, revocation rotation) can be implemented in both Go and TypeScript passing one shared test-vector set, and survives one independent cryptographic review` |
+| Hypothesis | `The E2EE protocol spec can use a distinct random pairwise root per Host↔Peer, retain pinning/attestation/AAD/replay/revocation guarantees, reject cross-peer impersonation and nonce/sequence mismatch, pass one shared Go/TypeScript vector set, and survive the security-review role` |
 | Time-box | `2 weeks; automated independent security role review accepted by operator, no human review required` |
-| Current Phase | `FEATURE_PLAN` |
-| Status | `REVISE` |
-| Executor | `Codex (GPT-5), security-review` |
-| Updated | `2026-07-14 16:16 -0700` |
-| Suggested Next | `feature-plan` |
-| Security Gate | `open — REVISE: shared session root permits cross-recipient impersonation` |
+| Current Phase | `PROVIDER_SPIKE` |
+| Status | `SPIKE_READY` |
+| Executor | `Codex (GPT-5), feature-plan` |
+| Updated | `2026-07-14 16:18 -0700` |
+| Suggested Next | `provider-spike` |
+| Security Gate | `open — revised pairwise-root candidate requires another security review` |
 | Evidence Path | `docs/spikes/e2ee/` |
 | Decision Record | `pending — E2EE protocol ADR` |
 
 ## Success and failure criteria
 
-- Supported when: identical vectors pass in Go and TypeScript and the independent review returns ACCEPTED.
-- Falsified when: implementations diverge on any vector or the review finds a protocol-level flaw.
+- Supported when: identical vectors pass in Go and TypeScript, Peer A cannot
+  open or forge Peer B traffic, a nonce inconsistent with the canonical
+  sequence is rejected, revocation rotates the affected pair, and the
+  security-review role returns ACCEPTED.
+- Falsified when: any implementation/platform diverges, either new negative
+  case is accepted, a shared root remains accessible to multiple peers, or the
+  review finds another protocol-level flaw.
 
 ## Environment
 
@@ -66,3 +71,4 @@ defer Phase 4b remote control rather than weaken the protocol.
 | 2026-07-14 15:59 -0700 | Codex (GPT-5), feature-plan | Classified owner as `security`; froze the cross-language vector hypothesis, pinned toolchain expectations, retained the open cryptographic security gate, and recorded operator waiver of human review without waiving the security-review role | this file | `SPIKE_READY` | provider-spike |
 | 2026-07-14 16:14 -0700 | Codex (GPT-5), provider-spike | Specified the v1 candidate, implemented independent Go and TypeScript vector runners, compared exact outputs, ran negative cases, and reproduced the result on Linux/macOS/Windows | `1b8286d`; `docs/spikes/e2ee/`; Actions `29375412822` | `EVIDENCE_READY` | security-review |
 | 2026-07-14 16:16 -0700 | Codex (GPT-5), security-review | Reviewed trust boundaries, HPKE/AAD/replay/rotation semantics, and cross-platform evidence; found shared-root cross-recipient impersonation and missing mandatory nonce recomputation | `docs/reviews/spike-e2ee-protocol-vectors/2026-07-14-security-review.md` | `REVISE` | feature-plan re-scope |
+| 2026-07-14 16:18 -0700 | Codex (GPT-5), feature-plan | Re-scoped the candidate to a distinct random pairwise root per Host↔Peer and added cross-peer impersonation plus nonce/sequence mismatch acceptance criteria | this file | `SPIKE_READY` | provider-spike |
