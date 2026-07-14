@@ -16,6 +16,14 @@ MultiAgentDesk is local-first and self-hostable. It does not automate account
 rotation, bypass quotas or rate limits, proxy Provider requests, scrape browser
 cookies, or silently switch credentials during a Session.
 
+## User documentation
+
+See the [pre-release user operations guide](docs/USER_GUIDE.md) for the planned
+install-to-session workflow, device pairing, credential grants, revocation,
+offline behavior, and troubleshooting. The guide distinguishes commands that
+can be run today from v0.1 product commands that remain gated by implementation
+and verification.
+
 ## Development system
 
 ```text

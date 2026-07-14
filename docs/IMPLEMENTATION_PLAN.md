@@ -1117,6 +1117,7 @@ multi-agent-desk/
 | 文档 | 内容 |
 |---|---|
 | `README.md` | 定位、快速开始、截图、支持矩阵 |
+| `docs/USER_GUIDE.md` | 用户安装、初始化、账号/Profile、会话、设备配对、凭据授权/撤销和排障；发布前明确标记规划能力 |
 | `PRODUCT.md` | 用户、场景、非目标和产品原则 |
 | `ARCHITECTURE.md` | 组件、数据流、部署图 |
 | `DATA_MODEL.md` | 领域模型、数据库和状态机 |

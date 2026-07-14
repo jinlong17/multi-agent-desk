@@ -60,6 +60,7 @@ const agentRegistry = readJson(agentPath);
 const dirty = dirtyFiles();
 const requiredDocs = [
   requiredDoc("docs/IMPLEMENTATION_PLAN.md", "Implementation Plan"),
+  requiredDoc("docs/USER_GUIDE.md", "User operations guide"),
   requiredDoc("docs/workflow/project/workflow.md", "Workflow policy"),
   requiredDoc("docs/workflow/project/dev-dashboard.md", "Dashboard contract"),
   requiredDoc("docs/workflow/project/module-registry.json", "Module registry"),

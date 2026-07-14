@@ -44,7 +44,11 @@ assert(Array.isArray(state.manual?.phases) && state.manual.phases.length >= 8, "
 assert(Array.isArray(state.modules) && state.modules.length === 7, "module registry must contain seven owning modules");
 assert(state.skill_agent_registry.summary.complete_agent_mirrors === state.skill_agent_registry.summary.agents, "agent runtime mirrors are incomplete");
 assert(state.skill_agent_registry.summary.complete_skill_mirrors === state.skill_agent_registry.summary.skills, "skill runtime mirrors are incomplete");
-assert(state.required_docs.every(doc => doc.exists), "one or more required dashboard documents are missing");
+assert(
+  state.required_docs.every(doc => doc.exists && doc.bytes > 0),
+  "one or more required dashboard documents are missing or empty"
+);
+assert(html.includes("docs/USER_GUIDE.md"), "dashboard static fallback is missing the user operations guide");
 assert(Array.isArray(state.feature_logs), "feature_logs must be an array");
 for (const log of state.feature_logs) {
   assert(log.status !== "MISSING_DEV_LOG", `feature directory ${log.slug} has no dev_log.md`);
