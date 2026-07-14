@@ -23,13 +23,15 @@ const hpkeSuiteName = "DHKEM(X25519,HKDF-SHA256)/HKDF-SHA256/ChaCha20Poly1305/Au
 type vectorInput struct {
 	SchemaVersion int `json:"schemaVersion"`
 	Seeds         struct {
-		ApproverEd25519    string `json:"approverEd25519"`
-		SubjectEd25519     string `json:"subjectEd25519"`
-		SourceX25519IKM    string `json:"sourceX25519Ikm"`
-		TargetX25519IKM    string `json:"targetX25519Ikm"`
-		EphemeralX25519IKM string `json:"ephemeralX25519Ikm"`
-		SessionKeyEpoch1   string `json:"sessionKeyEpoch1"`
-		SessionKeyEpoch2   string `json:"sessionKeyEpoch2"`
+		ApproverEd25519         string `json:"approverEd25519"`
+		SubjectEd25519          string `json:"subjectEd25519"`
+		SourceX25519IKM         string `json:"sourceX25519Ikm"`
+		TargetX25519IKM         string `json:"targetX25519Ikm"`
+		EphemeralX25519IKM      string `json:"ephemeralX25519Ikm"`
+		PairwiseRootPeerAEpoch1 string `json:"pairwiseRootPeerAEpoch1"`
+		PairwiseRootPeerAEpoch2 string `json:"pairwiseRootPeerAEpoch2"`
+		PeerBX25519IKM          string `json:"peerBX25519Ikm"`
+		PairwiseRootPeerBEpoch1 string `json:"pairwiseRootPeerBEpoch1"`
 	} `json:"seeds"`
 	Attestation struct {
 		ApproverDeviceID string   `json:"approverDeviceId"`
@@ -56,6 +58,13 @@ type vectorInput struct {
 		Sequence  string `json:"sequence"`
 		StreamID  string `json:"streamId"`
 	} `json:"payload"`
+	PeerB struct {
+		DeviceID  string `json:"deviceId"`
+		MessageID string `json:"messageId"`
+		Plaintext string `json:"plaintextHex"`
+		SentAt    string `json:"sentAt"`
+		Sequence  string `json:"sequence"`
+	} `json:"peerB"`
 	Rotation struct {
 		KeyEpoch  string `json:"keyEpoch"`
 		MessageID string `json:"messageId"`
@@ -200,8 +209,10 @@ func run(input vectorInput) (map[string]any, error) {
 	scheme := hpke.KEM_X25519_HKDF_SHA256.Scheme()
 	sourcePublic, sourcePrivate := scheme.DeriveKeyPair(mustHex(input.Seeds.SourceX25519IKM))
 	targetPublic, targetPrivate := scheme.DeriveKeyPair(mustHex(input.Seeds.TargetX25519IKM))
+	peerBPublic, _ := scheme.DeriveKeyPair(mustHex(input.Seeds.PeerBX25519IKM))
 	sourcePublicRaw := rawPublic(sourcePublic)
 	targetPublicRaw := rawPublic(targetPublic)
+	peerBPublicRaw := rawPublic(peerBPublic)
 
 	attestation := map[string]any{
 		"approverDeviceId":   input.Attestation.ApproverDeviceID,
@@ -266,8 +277,8 @@ func run(input vectorInput) (map[string]any, error) {
 	wrapHeader["enc"] = b64url(enc)
 	wrapHeader["hpkeSuite"] = hpkeSuiteName
 	wrapAAD := canonical(wrapHeader)
-	sessionKey1 := mustHex(input.Seeds.SessionKeyEpoch1)
-	wrappedKey, err := sealer.Seal(sessionKey1, wrapAAD)
+	pairwiseRootPeerA1 := mustHex(input.Seeds.PairwiseRootPeerAEpoch1)
+	wrappedKey, err := sealer.Seal(pairwiseRootPeerA1, wrapAAD)
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +294,7 @@ func run(input vectorInput) (map[string]any, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !bytes.Equal(recoveredKey, sessionKey1) {
+	if !bytes.Equal(recoveredKey, pairwiseRootPeerA1) {
 		return nil, errors.New("HPKE recovered key mismatch")
 	}
 	mutatedWrapHeader := make(map[string]any, len(wrapHeader))
@@ -308,7 +319,7 @@ func run(input vectorInput) (map[string]any, error) {
 	}
 
 	trafficKey1, noncePrefix1, trafficContext1 := deriveTraffic(
-		sessionKey1,
+		pairwiseRootPeerA1,
 		input.KeyWrap.SessionID,
 		input.Payload.KeyEpoch,
 		input.Attestation.ApproverDeviceID,
@@ -350,6 +361,93 @@ func run(input vectorInput) (map[string]any, error) {
 	mutatedPayloadHeader["kind"] = "approval_request"
 	_, err = openX(trafficKey1, nonce1, payloadCiphertext, canonical(mutatedPayloadHeader))
 	payloadAADMutationRejected := err != nil
+	badNonce := makeNonce(noncePrefix1, "101")
+	badNonceHeader := make(map[string]any, len(payloadHeader))
+	for key, value := range payloadHeader {
+		badNonceHeader[key] = value
+	}
+	badNonceHeader["nonce"] = b64url(badNonce)
+	badNonceAAD := canonical(badNonceHeader)
+	badNonceCiphertext := payloadAEAD.Seal(nil, badNonce, payloadPlaintext, badNonceAAD)
+	_, err = openX(trafficKey1, nonce1, badNonceCiphertext, badNonceAAD)
+	nonceSequenceMismatchRejected := !bytes.Equal(badNonce, nonce1) && err != nil
+
+	pairwiseRootPeerB1 := mustHex(input.Seeds.PairwiseRootPeerBEpoch1)
+	peerBTrafficKey, peerBNoncePrefix, peerBTrafficContext := deriveTraffic(
+		pairwiseRootPeerB1,
+		input.KeyWrap.SessionID,
+		input.Payload.KeyEpoch,
+		input.Attestation.ApproverDeviceID,
+		input.PeerB.DeviceID,
+		input.Payload.Direction,
+		input.Payload.StreamID,
+	)
+	peerBNonce := makeNonce(peerBNoncePrefix, input.PeerB.Sequence)
+	peerBHeader := map[string]any{
+		"direction":      input.Payload.Direction,
+		"keyEpoch":       input.Payload.KeyEpoch,
+		"kind":           input.Payload.Kind,
+		"messageId":      input.PeerB.MessageID,
+		"nonce":          b64url(peerBNonce),
+		"sentAt":         input.PeerB.SentAt,
+		"sequence":       input.PeerB.Sequence,
+		"sessionId":      input.KeyWrap.SessionID,
+		"sourceDeviceId": input.Attestation.ApproverDeviceID,
+		"streamId":       input.Payload.StreamID,
+		"targetDeviceId": input.PeerB.DeviceID,
+		"type":           "session_envelope",
+		"version":        1,
+	}
+	peerBAAD := canonical(peerBHeader)
+	peerBPlaintext := mustHex(input.PeerB.Plaintext)
+	peerBAEAD, _ := chacha20poly1305.NewX(peerBTrafficKey)
+	peerBCiphertext := peerBAEAD.Seal(nil, peerBNonce, peerBPlaintext, peerBAAD)
+	_, err = openX(trafficKey1, peerBNonce, peerBCiphertext, peerBAAD)
+	peerAOpenPeerBRejected := err != nil
+
+	forgeDirection := "client_to_device"
+	forgeStream := "control"
+	forgeSequence := "1"
+	attackerKey, attackerNoncePrefix, _ := deriveTraffic(
+		pairwiseRootPeerA1,
+		input.KeyWrap.SessionID,
+		input.Payload.KeyEpoch,
+		input.PeerB.DeviceID,
+		input.Attestation.ApproverDeviceID,
+		forgeDirection,
+		forgeStream,
+	)
+	expectedPeerBKey, expectedPeerBNoncePrefix, _ := deriveTraffic(
+		pairwiseRootPeerB1,
+		input.KeyWrap.SessionID,
+		input.Payload.KeyEpoch,
+		input.PeerB.DeviceID,
+		input.Attestation.ApproverDeviceID,
+		forgeDirection,
+		forgeStream,
+	)
+	attackerNonce := makeNonce(attackerNoncePrefix, forgeSequence)
+	expectedPeerBNonce := makeNonce(expectedPeerBNoncePrefix, forgeSequence)
+	forgeHeader := map[string]any{
+		"direction":      forgeDirection,
+		"keyEpoch":       input.Payload.KeyEpoch,
+		"kind":           "control_input",
+		"messageId":      "018f47d2-7c11-7d3f-a9b8-1f6d83de3004",
+		"nonce":          b64url(attackerNonce),
+		"sentAt":         input.PeerB.SentAt,
+		"sequence":       forgeSequence,
+		"sessionId":      input.KeyWrap.SessionID,
+		"sourceDeviceId": input.PeerB.DeviceID,
+		"streamId":       forgeStream,
+		"targetDeviceId": input.Attestation.ApproverDeviceID,
+		"type":           "session_envelope",
+		"version":        1,
+	}
+	forgeAAD := canonical(forgeHeader)
+	attackerAEAD, _ := chacha20poly1305.NewX(attackerKey)
+	forgeCiphertext := attackerAEAD.Seal(nil, attackerNonce, []byte("forged control"), forgeAAD)
+	_, err = openX(expectedPeerBKey, expectedPeerBNonce, forgeCiphertext, forgeAAD)
+	peerAForgeryRejected := !bytes.Equal(attackerNonce, expectedPeerBNonce) && err != nil
 
 	replay := replayWindow{}
 	replaySequence := []uint64{100, 98, 99, 100, 36}
@@ -362,9 +460,9 @@ func run(input vectorInput) (map[string]any, error) {
 		}
 	}
 
-	sessionKey2 := mustHex(input.Seeds.SessionKeyEpoch2)
+	pairwiseRootPeerA2 := mustHex(input.Seeds.PairwiseRootPeerAEpoch2)
 	trafficKey2, noncePrefix2, trafficContext2 := deriveTraffic(
-		sessionKey2,
+		pairwiseRootPeerA2,
 		input.KeyWrap.SessionID,
 		input.Rotation.KeyEpoch,
 		input.Attestation.ApproverDeviceID,
@@ -418,15 +516,27 @@ func run(input vectorInput) (map[string]any, error) {
 			"wrongPinnedSenderRejected": wrongPinnedSenderRejected,
 		},
 		"payload": map[string]any{
-			"aad":                 string(payloadAAD),
-			"aadMutationRejected": payloadAADMutationRejected,
-			"ciphertext":          b64url(payloadCiphertext),
-			"nonce":               b64url(nonce1),
-			"replaySequence":      []string{"100", "98", "99", "100", "36"},
-			"replayVerdicts":      replayVerdicts,
-			"roundTrip":           true,
-			"trafficContext":      string(trafficContext1),
-			"trafficKey":          b64url(trafficKey1),
+			"aad":                           string(payloadAAD),
+			"aadMutationRejected":           payloadAADMutationRejected,
+			"ciphertext":                    b64url(payloadCiphertext),
+			"nonce":                         b64url(nonce1),
+			"nonceSequenceMismatchRejected": nonceSequenceMismatchRejected,
+			"replaySequence":                []string{"100", "98", "99", "100", "36"},
+			"replayVerdicts":                replayVerdicts,
+			"roundTrip":                     true,
+			"trafficContext":                string(trafficContext1),
+			"trafficKey":                    b64url(trafficKey1),
+		},
+		"crossPeer": map[string]any{
+			"forgeAAD":                   string(forgeAAD),
+			"forgeCiphertext":            b64url(forgeCiphertext),
+			"peerAForPeerBOpenRejected":  peerAOpenPeerBRejected,
+			"peerAForPeerBForgeRejected": peerAForgeryRejected,
+			"peerBAAD":                   string(peerBAAD),
+			"peerBCiphertext":            b64url(peerBCiphertext),
+			"peerBExchangePublicKey":     b64url(peerBPublicRaw),
+			"peerBTrafficContext":        string(peerBTrafficContext),
+			"peerBTrafficKey":            b64url(peerBTrafficKey),
 		},
 		"pin": map[string]any{
 			"digest":      b64url(pinDigest),

@@ -43,7 +43,7 @@ The following invariants are mandatory:
 
 The protocol uses HPKE rather than a project-specific X25519/HKDF wrapping
 construction. HPKE Auth mode authenticates possession of the locally pinned
-source X25519 private key while encrypting a fresh session root key to the
+source X25519 private key while encrypting a fresh pairwise root key to one
 target X25519 public key. Session traffic uses XChaCha20-Poly1305 because its
 extended nonce construction is available in both selected implementation
 stacks and already matches the implementation plan.
@@ -144,11 +144,18 @@ help locate candidates but never satisfy this check.
 The initial trust anchor must be a Daemon/Desktop device with an OS-backed
 Vault. A pure browser cannot bootstrap the trust graph by itself.
 
-## 5. Session root key and HPKE wrap
+## 5. Pairwise root key and HPKE wrap
 
-A session owner generates a uniformly random 32-byte `sessionRootKey` for each
-`sessionId` and `keyEpoch`. It creates one HPKE Auth-mode wrap per approved
-recipient that has `session.decrypt` capability.
+A session host generates a different uniformly random 32-byte
+`pairwiseRootKey` for every
+`(sessionId, hostDeviceId, peerDeviceId, keyEpoch)`. A root is never shared by
+two peers. The host creates one HPKE Auth-mode wrap for the approved peer when
+that peer has `session.decrypt` capability.
+
+The host encrypts fan-out content separately for each peer. This bounded
+per-peer cost is intentional: a peer that learns its own pairwise root cannot
+derive another peer's traffic keys, impersonate that peer, or bypass
+device-scoped capability and ControllerLease checks.
 
 The base wrap context is:
 
@@ -186,7 +193,8 @@ After HPKE setup returns `enc`, AAD is JCS of the base context plus:
 }
 ```
 
-The plaintext is exactly the 32-byte session root key. The receiver must:
+The plaintext is exactly the 32-byte pairwise root key for the source/target
+pair. The receiver must:
 
 1. reject a revoked source or target before decryption;
 2. load the target private key and source public key from local state;
@@ -194,7 +202,8 @@ The plaintext is exactly the 32-byte session root key. The receiver must:
 4. validate purpose, audience, epoch, expiry, wrap ID, and capabilities;
 5. reject a reused wrap ID;
 6. open HPKE in Auth mode; and
-7. persist the accepted key and replay state atomically.
+7. require that no other peer record references the same root identity; and
+8. persist the accepted key and replay state atomically.
 
 Key wraps expire after at most ten minutes. A retry creates a new `wrapId` and
 fresh HPKE encapsulation. The relay may cache only ciphertext and routing
@@ -202,7 +211,7 @@ metadata until expiry.
 
 ## 6. Traffic keys and nonces
 
-Each direction and stream derives independent material from the session root
+Each direction and stream derives independent material from the pairwise root
 key. The context is JCS of:
 
 ```json
@@ -232,23 +241,26 @@ info = frame(
   JCS(trafficContext)
 )
 
-material = HKDF-SHA256(sessionRootKey, salt, info, 48)
+material = HKDF-SHA256(pairwiseRootKey, salt, info, 48)
 trafficKey = material[0:32]
 noncePrefix = material[32:48]
 nonce = noncePrefix || uint64be(sequence)
 ```
 
 This creates a deterministic 24-byte XChaCha nonce that is unique while the
-sequence is unique. The derivation context isolates source, target, direction,
-stream, session, and key epoch. A sender must durably reserve the next sequence
-before emitting ciphertext. If state may have rolled back, it rotates the
-session key epoch instead of guessing or reusing a sequence.
+sequence is unique. The pairwise root prevents one peer from deriving another
+peer's context. The derivation context further isolates source, target,
+direction, stream, session, and key epoch. A sender must durably reserve the
+next sequence before emitting ciphertext. If state may have rolled back, it
+rotates the affected pair's key epoch instead of guessing or reusing a
+sequence.
 
-Mandatory rotation occurs when a recipient is revoked, a device key changes,
-sequence persistence is ambiguous, or a sequence would overflow. A
-conservative policy rollover may also occur after 24 hours or `2^32`
-envelopes. Rotation creates a fresh random root key; deriving epoch 2 from the
-epoch 1 root is forbidden.
+Mandatory pairwise rotation or termination occurs when a peer is revoked, a
+device key changes, sequence persistence is ambiguous, or a sequence would
+overflow. A conservative policy rollover may also occur after 24 hours or
+`2^32` envelopes. Rotation creates a fresh random pairwise root; deriving epoch
+2 from the epoch 1 root is forbidden. Unaffected peer roots are not exposed or
+reused during another peer's rotation.
 
 ## 7. Protected WebSocket envelope
 
@@ -271,6 +283,11 @@ The authenticated header is:
   "version": 1
 }
 ```
+
+The receiver recomputes `noncePrefix` and `nonce` from its pairwise root,
+canonical traffic context, and parsed sequence. It must reject a byte mismatch
+with `nonce_sequence_mismatch` before AEAD open; the transmitted `nonce` is not
+an authority for nonce choice.
 
 `ciphertext = XChaCha20Poly1305.Seal(trafficKey, nonce, plaintext,
 JCS(header))` in combined ciphertext/tag form. Every field above is AAD-bound.
@@ -320,17 +337,19 @@ When a device is revoked:
 1. the Control Plane rejects and closes that Device ID's WSS connections;
 2. senders stop creating wraps for it and drop queued ciphertext addressed to
    it;
-3. every active session that wrapped a root key to it creates a fresh random
-   root key and increments `keyEpoch`;
-4. the new root key is wrapped only to still-approved recipients;
-5. all directions/streams derive new traffic keys and restart sequences at
-   zero under the new epoch; and
+3. every affected Host↔Peer pair increments `keyEpoch`, tombstones the old
+   pair, and destroys or quarantines its old root;
+4. a re-enrolled replacement peer receives a fresh random pairwise root under
+   its new identity; roots for other peers remain independent and unchanged;
+5. all directions/streams of the affected pair derive new traffic keys and
+   restart sequences at zero under the new epoch; and
 6. audit records contain identifiers, epoch changes, and decisions only.
 
-Recipients reject a lower epoch after accepting a newer epoch. Old keys may
-decrypt previously captured old-epoch ciphertext, but they must fail on every
-new-epoch frame. Revocation does not claim remote deletion of plaintext,
-credentials, or already exported session keys.
+Peers reject a lower pair epoch after accepting a newer epoch. An old pairwise
+root may decrypt previously captured old-epoch ciphertext for that pair, but it
+must fail on every new-epoch frame and on every other peer's frame. Revocation
+does not claim remote deletion of plaintext, credentials, or already exported
+pairwise roots.
 
 ## 10. Failure behavior
 
@@ -346,11 +365,12 @@ The following conditions fail closed with stable, non-secret error codes:
 - `sequence_replayed`
 - `sequence_too_old`
 - `sequence_state_ambiguous`
+- `nonce_sequence_mismatch`
 - `aad_authentication_failed`
 - `cipher_suite_unsupported`
 
 Errors, traces, diagnostics, and audit events must not include private keys,
-session root keys, traffic keys, plaintext, AAD-bearing user content, or full
+pairwise root keys, traffic keys, plaintext, AAD-bearing user content, or full
 ciphertext. Unknown versions and suites never downgrade automatically.
 
 ## 11. Test-vector contract
@@ -364,16 +384,19 @@ fixtures. The independent implementations are:
   `@hpke/chacha20poly1305` 1.8.0, and `@noble/ciphers` 2.2.0.
 
 `verify.mjs` requires exact equality for public keys, canonical bytes,
-signatures, HPKE encapsulation/ciphertext, derived traffic keys, nonces,
-XChaCha ciphertexts, pin digests, and rotation output. It also requires these
-negative cases to fail:
+signatures, HPKE encapsulation/ciphertext, per-peer derived traffic keys,
+nonces, XChaCha ciphertexts, pin digests, and rotation output. It includes two
+peer roots and also requires these negative cases to fail:
 
 - changed attestation bytes;
 - changed wrap AAD;
 - a sender key different from the local pin;
 - changed envelope AAD;
+- a nonce inconsistent with the canonical sequence;
+- Peer A opening Peer B ciphertext;
+- Peer A forging a frame that claims Peer B's identity;
 - duplicate and too-old sequences; and
-- epoch-2 ciphertext opened with the epoch-1 key.
+- Peer A epoch-2 ciphertext opened with the Peer A epoch-1 key.
 
 The harness runs on Linux, macOS, and Windows in GitHub Actions. Passing these
 vectors establishes interoperability and the tested failure properties; it

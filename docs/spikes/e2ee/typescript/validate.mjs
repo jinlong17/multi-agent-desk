@@ -171,11 +171,17 @@ async function run(input) {
   const targetKeys = await suite.kem.deriveKeyPair(
     hex(input.seeds.targetX25519Ikm),
   );
+  const peerBKeys = await suite.kem.deriveKeyPair(
+    hex(input.seeds.peerBX25519Ikm),
+  );
   const sourcePublicRaw = new Uint8Array(
     await suite.kem.serializePublicKey(sourceKeys.publicKey),
   );
   const targetPublicRaw = new Uint8Array(
     await suite.kem.serializePublicKey(targetKeys.publicKey),
+  );
+  const peerBPublicRaw = new Uint8Array(
+    await suite.kem.serializePublicKey(peerBKeys.publicKey),
   );
 
   const attestation = {
@@ -241,8 +247,10 @@ async function run(input) {
     hpkeSuite: hpkeSuiteName,
   };
   const wrapAAD = encoder.encode(canonical(wrapHeader));
-  const sessionKey1 = hex(input.seeds.sessionKeyEpoch1);
-  const wrappedKey = new Uint8Array(await sender.seal(sessionKey1, wrapAAD));
+  const pairwiseRootPeerA1 = hex(input.seeds.pairwiseRootPeerAEpoch1);
+  const wrappedKey = new Uint8Array(
+    await sender.seal(pairwiseRootPeerA1, wrapAAD),
+  );
   const recipient = await suite.createRecipientContext({
     recipientKey: targetKeys.privateKey,
     enc,
@@ -250,7 +258,7 @@ async function run(input) {
     senderPublicKey: sourceKeys.publicKey,
   });
   const recoveredKey = new Uint8Array(await recipient.open(wrappedKey, wrapAAD));
-  if (!Buffer.from(recoveredKey).equals(Buffer.from(sessionKey1))) {
+  if (!Buffer.from(recoveredKey).equals(Buffer.from(pairwiseRootPeerA1))) {
     throw new Error("HPKE recovered key mismatch");
   }
   const mutatedWrapAAD = encoder.encode(
@@ -285,7 +293,7 @@ async function run(input) {
   }
 
   const traffic1 = deriveTraffic(
-    sessionKey1,
+    pairwiseRootPeerA1,
     input.keyWrap.sessionId,
     input.payload.keyEpoch,
     input.attestation.approverDeviceId,
@@ -334,6 +342,129 @@ async function run(input) {
   } catch {
     payloadAADMutationRejected = true;
   }
+  const badNonce = makeNonce(traffic1.noncePrefix, "101");
+  const badNonceAAD = encoder.encode(
+    canonical({ ...payloadHeader, nonce: b64url(badNonce) }),
+  );
+  const badNonceCiphertext = xchacha20poly1305(
+    traffic1.key,
+    badNonce,
+    badNonceAAD,
+  ).encrypt(payloadPlaintext);
+  let nonceSequenceMismatchRejected = !Buffer.from(badNonce).equals(
+    Buffer.from(nonce1),
+  );
+  try {
+    xchacha20poly1305(traffic1.key, nonce1, badNonceAAD).decrypt(
+      badNonceCiphertext,
+    );
+    nonceSequenceMismatchRejected = false;
+  } catch {
+    // The receiver's recomputed nonce does not authenticate the bad frame.
+  }
+
+  const pairwiseRootPeerB1 = hex(input.seeds.pairwiseRootPeerBEpoch1);
+  const peerBTraffic = deriveTraffic(
+    pairwiseRootPeerB1,
+    input.keyWrap.sessionId,
+    input.payload.keyEpoch,
+    input.attestation.approverDeviceId,
+    input.peerB.deviceId,
+    input.payload.direction,
+    input.payload.streamId,
+  );
+  const peerBNonce = makeNonce(peerBTraffic.noncePrefix, input.peerB.sequence);
+  const peerBHeader = {
+    direction: input.payload.direction,
+    keyEpoch: input.payload.keyEpoch,
+    kind: input.payload.kind,
+    messageId: input.peerB.messageId,
+    nonce: b64url(peerBNonce),
+    sentAt: input.peerB.sentAt,
+    sequence: input.peerB.sequence,
+    sessionId: input.keyWrap.sessionId,
+    sourceDeviceId: input.attestation.approverDeviceId,
+    streamId: input.payload.streamId,
+    targetDeviceId: input.peerB.deviceId,
+    type: "session_envelope",
+    version: 1,
+  };
+  const peerBAAD = encoder.encode(canonical(peerBHeader));
+  const peerBPlaintext = hex(input.peerB.plaintextHex);
+  const peerBCiphertext = xchacha20poly1305(
+    peerBTraffic.key,
+    peerBNonce,
+    peerBAAD,
+  ).encrypt(peerBPlaintext);
+  let peerAOpenPeerBRejected = false;
+  try {
+    xchacha20poly1305(traffic1.key, peerBNonce, peerBAAD).decrypt(
+      peerBCiphertext,
+    );
+  } catch {
+    peerAOpenPeerBRejected = true;
+  }
+
+  const forgeDirection = "client_to_device";
+  const forgeStream = "control";
+  const forgeSequence = "1";
+  const attackerTraffic = deriveTraffic(
+    pairwiseRootPeerA1,
+    input.keyWrap.sessionId,
+    input.payload.keyEpoch,
+    input.peerB.deviceId,
+    input.attestation.approverDeviceId,
+    forgeDirection,
+    forgeStream,
+  );
+  const expectedPeerBTraffic = deriveTraffic(
+    pairwiseRootPeerB1,
+    input.keyWrap.sessionId,
+    input.payload.keyEpoch,
+    input.peerB.deviceId,
+    input.attestation.approverDeviceId,
+    forgeDirection,
+    forgeStream,
+  );
+  const attackerNonce = makeNonce(attackerTraffic.noncePrefix, forgeSequence);
+  const expectedPeerBNonce = makeNonce(
+    expectedPeerBTraffic.noncePrefix,
+    forgeSequence,
+  );
+  const forgeHeader = {
+    direction: forgeDirection,
+    keyEpoch: input.payload.keyEpoch,
+    kind: "control_input",
+    messageId: "018f47d2-7c11-7d3f-a9b8-1f6d83de3004",
+    nonce: b64url(attackerNonce),
+    sentAt: input.peerB.sentAt,
+    sequence: forgeSequence,
+    sessionId: input.keyWrap.sessionId,
+    sourceDeviceId: input.peerB.deviceId,
+    streamId: forgeStream,
+    targetDeviceId: input.attestation.approverDeviceId,
+    type: "session_envelope",
+    version: 1,
+  };
+  const forgeAAD = encoder.encode(canonical(forgeHeader));
+  const forgeCiphertext = xchacha20poly1305(
+    attackerTraffic.key,
+    attackerNonce,
+    forgeAAD,
+  ).encrypt(encoder.encode("forged control"));
+  let peerAForgeryRejected = !Buffer.from(attackerNonce).equals(
+    Buffer.from(expectedPeerBNonce),
+  );
+  try {
+    xchacha20poly1305(
+      expectedPeerBTraffic.key,
+      expectedPeerBNonce,
+      forgeAAD,
+    ).decrypt(forgeCiphertext);
+    peerAForgeryRejected = false;
+  } catch {
+    // Pairwise root B cannot authenticate a ciphertext forged with root A.
+  }
 
   const replaySequence = ["100", "98", "99", "100", "36"];
   const replay = new ReplayWindow();
@@ -341,9 +472,9 @@ async function run(input) {
     replay.accept(sequence) ? "accept" : "reject",
   );
 
-  const sessionKey2 = hex(input.seeds.sessionKeyEpoch2);
+  const pairwiseRootPeerA2 = hex(input.seeds.pairwiseRootPeerAEpoch2);
   const traffic2 = deriveTraffic(
-    sessionKey2,
+    pairwiseRootPeerA2,
     input.keyWrap.sessionId,
     input.rotation.keyEpoch,
     input.attestation.approverDeviceId,
@@ -422,11 +553,23 @@ async function run(input) {
       unwrapMatches: true,
       wrongPinnedSenderRejected,
     },
+    crossPeer: {
+      forgeAAD: new TextDecoder().decode(forgeAAD),
+      forgeCiphertext: b64url(forgeCiphertext),
+      peerAForPeerBForgeRejected: peerAForgeryRejected,
+      peerAForPeerBOpenRejected: peerAOpenPeerBRejected,
+      peerBAAD: new TextDecoder().decode(peerBAAD),
+      peerBCiphertext: b64url(peerBCiphertext),
+      peerBExchangePublicKey: b64url(peerBPublicRaw),
+      peerBTrafficContext: peerBTraffic.contextCanonical,
+      peerBTrafficKey: b64url(peerBTraffic.key),
+    },
     payload: {
       aad: new TextDecoder().decode(payloadAAD),
       aadMutationRejected: payloadAADMutationRejected,
       ciphertext: b64url(payloadCiphertext),
       nonce: b64url(nonce1),
+      nonceSequenceMismatchRejected,
       replaySequence,
       replayVerdicts,
       roundTrip: true,

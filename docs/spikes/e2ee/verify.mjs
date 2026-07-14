@@ -48,6 +48,9 @@ assert.equal(goResult.keyWrap.aadMutationRejected, true);
 assert.equal(goResult.keyWrap.wrongPinnedSenderRejected, true);
 assert.equal(goResult.payload.roundTrip, true);
 assert.equal(goResult.payload.aadMutationRejected, true);
+assert.equal(goResult.payload.nonceSequenceMismatchRejected, true);
+assert.equal(goResult.crossPeer.peerAForPeerBOpenRejected, true);
+assert.equal(goResult.crossPeer.peerAForPeerBForgeRejected, true);
 assert.deepEqual(goResult.payload.replayVerdicts, [
   "accept",
   "accept",
@@ -71,8 +74,11 @@ process.stdout.write(
     resultSha256,
     negativeCases: {
       attestationMutation: "rejected",
+      crossPeerForge: "rejected",
+      crossPeerOpen: "rejected",
       envelopeAADMutation: "rejected",
-      oldSessionKeyAfterRotation: "rejected",
+      nonceSequenceMismatch: "rejected",
+      oldPairwiseRootAfterRotation: "rejected",
       replayDuplicateAndTooOld: "rejected",
       sessionWrapAADMutation: "rejected",
       wrongPinnedSender: "rejected",
