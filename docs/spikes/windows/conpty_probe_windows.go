@@ -409,13 +409,20 @@ func parentMain(duration time.Duration, resultPath string) (retErr error) {
 }
 
 func childMain() {
+	closeConsole, err := attachChildConsole()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "attach ConPTY console:", err)
+		os.Exit(2)
+	}
+	defer closeConsole()
+
 	out := bufio.NewWriterSize(os.Stdout, 64*1024)
 	defer out.Flush()
 	writeChild(out, "\x1b[?1049h\x1b[2J\x1b[H")
 	width, height, err := consoleSize()
 	if err != nil {
 		writeChild(out, "ERROR|console-size|"+err.Error()+"\r\n")
-		os.Exit(2)
+		os.Exit(3)
 	}
 	writeChild(out, fmt.Sprintf("READY|%dx%d\r\n", width, height))
 
@@ -428,14 +435,14 @@ func childMain() {
 			width, height, err := consoleSize()
 			if err != nil {
 				writeChild(out, "ERROR|console-size|"+err.Error()+"\r\n")
-				os.Exit(3)
+				os.Exit(4)
 			}
 			writeChild(out, fmt.Sprintf("SIZE-ACK|%s|%dx%d\r\n", tag, width, height))
 		case strings.HasPrefix(line, "FLOOD|"):
 			count, err := strconv.Atoi(strings.TrimPrefix(line, "FLOOD|"))
 			if err != nil || count < 1 || count > 4096 {
 				writeChild(out, "ERROR|bad-flood\r\n")
-				os.Exit(4)
+				os.Exit(5)
 			}
 			for i := 0; i < count; i++ {
 				writeChild(out, fmt.Sprintf("HISTORY|%04d|scrollback\r\n", i))
@@ -452,13 +459,36 @@ func childMain() {
 			return
 		default:
 			writeChild(out, "ERROR|unknown-command\r\n")
-			os.Exit(5)
+			os.Exit(6)
 		}
 	}
 	if err := scanner.Err(); err != nil {
 		writeChild(out, "ERROR|stdin|"+err.Error()+"\r\n")
-		os.Exit(6)
+		os.Exit(7)
 	}
+}
+
+// Go preserves the process standard-handle values supplied by CreateProcess.
+// Opening the console device names after the pseudoconsole attachment makes
+// the fixture's streams explicit and avoids accidentally using the host
+// runner's inherited PowerShell handles.
+func attachChildConsole() (func(), error) {
+	input, err := os.OpenFile("CONIN$", os.O_RDWR, 0)
+	if err != nil {
+		return nil, fmt.Errorf("open CONIN$: %w", err)
+	}
+	output, err := os.OpenFile("CONOUT$", os.O_RDWR, 0)
+	if err != nil {
+		input.Close()
+		return nil, fmt.Errorf("open CONOUT$: %w", err)
+	}
+	os.Stdin = input
+	os.Stdout = output
+	os.Stderr = output
+	return func() {
+		_ = input.Close()
+		_ = output.Close()
+	}, nil
 }
 
 func writeChild(out *bufio.Writer, value string) {
