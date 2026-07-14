@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-07-14T21:43:46Z",
+  "sanitized": true,
+  "secret_values_recorded": false,
+  "schema_replay": [
+    {
+      "version": "0.142.5",
+      "schema_file_count": 267,
+      "combined_schema_sha256": "9cbd16ba198892b3c7376b1d61c0cd1707a7eed1ca2ac1393aa6ec6f20d5878d",
+      "initialize": true,
+      "account_read": true,
+      "account_rate_limits_read": true,
+      "account_usage_read": true
+    },
+    {
+      "version": "0.143.0",
+      "schema_file_count": 267,
+      "combined_schema_sha256": "3ec0a6d3f7bcf3c8a764c555140fcba07897094b8f0a4528dd23f86fbccea812",
+      "initialize": true,
+      "account_read": true,
+      "account_rate_limits_read": true,
+      "account_usage_read": true
+    },
+    {
+      "version": "0.144.2",
+      "schema_file_count": 267,
+      "combined_schema_sha256": "ac43c092e0659310c4f7581c7913f18ca7673638f38cab7004952c8fefba5385",
+      "initialize": true,
+      "account_read": true,
+      "account_rate_limits_read": true,
+      "account_usage_read": true,
+      "proactive_refresh": true
+    }
+  ],
+  "stable_account_methods": [
+    "account/chatgptAuthTokens/refresh",
+    "account/login/cancel",
+    "account/login/start",
+    "account/logout",
+    "account/rateLimitResetCredit/consume",
+    "account/rateLimits/read",
+    "account/read",
+    "account/sendAddCreditsNudgeEmail",
+    "account/usage/read",
+    "account/workspaceMessages/read"
+  ],
+  "live_response_shapes": {
+    "account_read": ["account", "requiresOpenaiAuth"],
+    "account_read_account": ["email", "planType", "type"],
+    "rate_limits": ["rateLimitResetCredits", "rateLimits", "rateLimitsByLimitId"],
+    "usage": ["dailyUsageBuckets", "summary"],
+    "usage_summary": [
+      "currentStreakDays",
+      "lifetimeTokens",
+      "longestRunningTurnSec",
+      "longestStreakDays",
+      "peakDailyTokens"
+    ]
+  },
+  "two_device_probe": {
+    "local": {
+      "platform": "macOS 26.5.2 arm64",
+      "version": "0.144.2",
+      "auth_file_mode": "0600"
+    },
+    "remote": {
+      "platform": "Linux 5.4.0 x86_64",
+      "version": "0.144.4",
+      "auth_file_mode": "0600"
+    },
+    "same_account_before": true,
+    "concurrent_proactive_refresh": {
+      "local_ok": true,
+      "remote_ok": true,
+      "local_auth_file_changed": true,
+      "remote_auth_file_changed": true
+    },
+    "same_account_after": true,
+    "post_refresh_read_local": true,
+    "post_refresh_read_remote": true
+  },
+  "device_auth_initiation": {
+    "macos_isolated_codex_home": true,
+    "linux_isolated_codex_home": true,
+    "authorization_url_observed_on_both": true,
+    "completed_login_observed": false
+  },
+  "soak": {
+    "status": "running",
+    "started_at": "2026-07-14T21:43:11Z",
+    "minimum_end_at": "2026-07-16T21:43:11Z",
+    "interval_seconds": 3600,
+    "first_sample_passed": true,
+    "active_output": "/private/tmp/mad-codex-soak-20260714T2143Z.jsonl"
+  }
+}

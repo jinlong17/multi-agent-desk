@@ -2,28 +2,28 @@
   "schema_version": 1,
   "state_owner": "project-system",
   "plan_version": "v0.2",
-  "current_phase": "0",
-  "current_status": "Phase 0 · 5/5 单元已 SHIPPED；仓库与治理基线完成",
-  "current_owner": "project-system",
-  "next_action": "begin Phase 0.5 provider and security spike intake in dependency order",
+  "current_phase": "0.5",
+  "current_status": "Phase 0.5 · Codex auth/refresh Spike 正在执行 48 小时双设备监测",
+  "current_owner": "provider",
+  "next_action": "complete the Codex two-device soak after 2026-07-16T21:43:11Z, then run security-review and record the compatibility decision",
   "manual_updated_at": "2026-07-14",
-  "manual_updated_by": "operator-authorized Phase 0 ship completion (receipt recorded in phase0-ci-governance Work Log)",
+  "manual_updated_by": "operator-directed Codex provider-spike session (refresh recorded in spike-codex-auth-refresh Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 0 · 完成仓库、治理、工作流、CI 与架构决策基线"
+      "value": "Phase 0.5 · 验证 Codex app-server、认证、Usage 与双设备刷新假设"
     },
     {
       "label": "在哪条线",
-      "value": "main → codex/<module>/<feature>；并行 writer 使用独立 worktree"
+      "value": "codex/provider/spike-codex-auth-refresh；双设备为 macOS + Linux"
     },
     {
       "label": "用哪个入口",
-      "value": "classify → brief → plan → review → build → verify → ship"
+      "value": "feature-plan intake → provider-spike → security-review → compatibility decision"
     },
     {
       "label": "做到什么状态",
-      "value": "Phase 0 已 SHIPPED 5/5；最终 main 七项检查通过，准备 Phase 0.5 spikes"
+      "value": "三版本协议回放与首轮并发刷新通过；48 小时结论尚未形成"
     }
   ],
   "phases": [
@@ -37,7 +37,7 @@
     {
       "id": "0.5",
       "title": "Provider & Security Spikes",
-      "state": "planned",
+      "state": "active",
       "depends": "Phase 0",
       "gate": "外部假设有可复现证据与 fallback"
     },
@@ -103,8 +103,8 @@
   ],
   "focus": [
     {
-      "slug": "phase0-ci-governance",
-      "expected_status": "SHIPPED"
+      "slug": "spike-codex-auth-refresh",
+      "expected_status": "SPIKE_READY"
     }
   ]
 }
