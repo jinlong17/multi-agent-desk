@@ -7,11 +7,20 @@
 - Draft PR: [#7](https://github.com/jinlong17/multi-agent-desk/pull/7)
 - Security gate: open; role-separated security review required
 
+Revision history:
+
+- Candidate 1 at `1b8286d` proved cross-language interoperability but used one
+  shared session root. The security review at `13cec27` returned `REVISE`
+  because one peer could derive another peer's traffic keys.
+- Candidate 2 at `8859530` replaces the group root with a distinct random
+  Host↔Peer root and adds cross-peer plus nonce/sequence negative vectors.
+
 ## Verdict
 
-**EVIDENCE READY — the interoperability portion is supported.** The candidate
-protocol is reproducible in independent Go and TypeScript implementations and
-the tested tamper, pin, replay, and revocation-rotation failures fail closed.
+**EVIDENCE READY — the interoperability portion is supported.** The revised
+pairwise protocol is reproducible in independent Go and TypeScript
+implementations and the tested tamper, pin, replay, cross-peer impersonation,
+nonce/sequence, and revocation-rotation failures fail closed.
 The broader hypothesis is not gate-resolved until the security-review role
 accepts the protocol and the feature-plan role records the ADR.
 
@@ -30,7 +39,8 @@ Supported when:
 - all public keys, canonical bytes, signatures, HPKE results, derived keys,
   nonces, XChaCha ciphertexts, pin digests, and rotation outputs match;
 - attestation mutation, AAD mutation, wrong pinned sender, duplicate/too-old
-  replay, and old-key-after-rotation cases fail; and
+  replay, cross-peer open/forge, nonce/sequence mismatch, and
+  old-key-after-rotation cases fail; and
 - Linux, macOS, and Windows runners return the same result hash.
 
 Falsified when any implementation or platform diverges, any negative case is
@@ -42,13 +52,19 @@ The candidate in [PROTOCOL.md](PROTOCOL.md) uses:
 
 - Ed25519 for device attestations;
 - RFC 9180 HPKE Auth mode with X25519, HKDF-SHA-256, and
-  ChaCha20-Poly1305 for wrapping fresh 32-byte session root keys;
+  ChaCha20-Poly1305 for wrapping a fresh, distinct 32-byte pairwise root for
+  each Host↔Peer relationship;
 - HKDF-SHA-256 for direction/stream/epoch-separated traffic material;
 - XChaCha20-Poly1305 for protected WebSocket payloads;
 - RFC 8785 JCS for signatures and AAD;
 - decimal strings for `uint64` sequence/epoch fields; and
 - a durable direction-scoped replay window plus mandatory epoch rotation on
   revocation or state ambiguity.
+
+The host encrypts fan-out content separately for each peer. A peer receives
+only its own pairwise root and therefore cannot derive or authenticate another
+peer's traffic context. Capability and ControllerLease checks remain mandatory
+after cryptographic authentication.
 
 The Control Plane directory remains an untrusted index. The recipient supplies
 the sender public key from its local pin; the header digest alone never becomes
@@ -105,19 +121,19 @@ Local macOS result:
   "schemaVersion": 1,
   "result": "pass",
   "implementations": ["go", "typescript"],
-  "resultSha256": "8df7d15b5c48ff9bba21938daae4a1649b00e2c9e6843e761c3f2de756c78be1"
+  "resultSha256": "082033265c774aad70fccf89e1a682a5f411ca14c1e675eca346184dff8da2a5"
 }
 ```
 
-Cross-platform GitHub run
-[`29375412822`](https://github.com/jinlong17/multi-agent-desk/actions/runs/29375412822)
-at commit `1b8286d9449d92a80ccc134de6623df9ed001349`:
+Revised cross-platform GitHub run
+[`29375956127`](https://github.com/jinlong17/multi-agent-desk/actions/runs/29375956127)
+at commit `885953007916a9d98b82037c0f4ddbb325aec435`:
 
 | Runner | Job | Result |
 |---|---|---|
-| Linux | [`e2ee-vectors-ubuntu`](https://github.com/jinlong17/multi-agent-desk/actions/runs/29375412822/job/87227713997) | pass |
-| macOS | [`e2ee-vectors-macos`](https://github.com/jinlong17/multi-agent-desk/actions/runs/29375412822/job/87227714045) | pass |
-| Windows | [`e2ee-vectors-windows`](https://github.com/jinlong17/multi-agent-desk/actions/runs/29375412822/job/87227714005) | pass |
+| Linux | [`e2ee-vectors-ubuntu`](https://github.com/jinlong17/multi-agent-desk/actions/runs/29375956127/job/87229354426) | pass |
+| macOS | [`e2ee-vectors-macos`](https://github.com/jinlong17/multi-agent-desk/actions/runs/29375956127/job/87229354460) | pass |
+| Windows | [`e2ee-vectors-windows`](https://github.com/jinlong17/multi-agent-desk/actions/runs/29375956127/job/87229354410) | pass |
 
 All three jobs installed the exact nested lockfile and independently executed
 the same comparator.
@@ -130,6 +146,9 @@ the same comparator.
 | Change HPKE wrap AAD target | HPKE open fails | rejected in Go and TypeScript |
 | Supply a sender key different from local pin | HPKE Auth open fails | rejected in Go and TypeScript |
 | Change protected envelope `kind` | XChaCha AEAD open fails | rejected in Go and TypeScript |
+| Peer A opens Peer B ciphertext | pairwise traffic key mismatch | rejected in Go and TypeScript |
+| Peer A forges a frame claiming Peer B | Host's Peer B key/nonce rejects it | rejected in Go and TypeScript |
+| Carry nonce for sequence 101 while header says 100 | receiver recomputation detects mismatch | rejected in Go and TypeScript |
 | Replay sequence `100` | replay window rejects duplicate | rejected in Go and TypeScript |
 | Supply sequence below 64-entry vector window | replay window rejects too-old value | rejected in Go and TypeScript |
 | Open epoch-2 frame with epoch-1 traffic key | XChaCha AEAD open fails | rejected in Go and TypeScript |
@@ -175,9 +194,10 @@ The protocol requires a 1024-entry production window with identical semantics.
    authorized or compromised recipient.
 6. Sequence persistence, transactional replay state, WSS flow control, queue
    expiry, and redaction must be implemented and tested in Phase 4b.
-7. The operator waived a separate human reviewer. The required security-review
-   workflow role remains mandatory and must record an explicit verdict before
-   the ADR is accepted.
+7. The first role-separated security review correctly rejected the shared-root
+   candidate. The revised pairwise candidate still requires a new explicit
+   security-review verdict before the ADR is accepted. The operator waived a
+   separate human reviewer, not the automated security gate.
 
 ## Deterministic fallback
 
