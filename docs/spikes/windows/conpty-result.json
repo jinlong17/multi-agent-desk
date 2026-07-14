@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "supported": true,
+  "executed_at_utc": "2026-07-14T23:50:22Z",
+  "goos": "windows",
+  "goarch": "amd64",
+  "go_version": "go1.26.5",
+  "runner_image_os": "win25-vs2026",
+  "runner_image_version": "20260628.158.1",
+  "windows_version": "Microsoft Windows [Version 10.0.26100.32995]",
+  "initial_size": "120x40",
+  "resizes": [
+    {
+      "tag": "compact",
+      "expected": "80x24",
+      "observed": "80x24"
+    },
+    {
+      "tag": "wide",
+      "expected": "132x43",
+      "observed": "132x43"
+    },
+    {
+      "tag": "restore",
+      "expected": "100x30",
+      "observed": "100x30"
+    }
+  ],
+  "stress_duration_ms": 15004,
+  "frames_sent": 1405,
+  "history_lines": 512,
+  "captured_bytes": 400654,
+  "transcript_sha256": "dbb6cf0826c1e93db737abd867fca7acb2315938b39d0525da52409055142709",
+  "alternate_screen_open": true,
+  "alternate_screen_exit": true,
+  "whole_replay": {
+    "ready_markers": 4,
+    "resize_markers": [
+      "SIZE-ACK|compact|80x24",
+      "SIZE-ACK|restore|100x30",
+      "SIZE-ACK|wide|132x43"
+    ],
+    "history_markers": 512,
+    "frame_markers": 1405,
+    "bye_markers": 1
+  },
+  "chunked_replay": {
+    "ready_markers": 4,
+    "resize_markers": [
+      "SIZE-ACK|compact|80x24",
+      "SIZE-ACK|restore|100x30",
+      "SIZE-ACK|wide|132x43"
+    ],
+    "history_markers": 512,
+    "frame_markers": 1405,
+    "bye_markers": 1
+  },
+  "replay_equivalent": true,
+  "process_exit_code": 0,
+  "reader_reached_eof": true,
+  "teardown_duration_ms": 1,
+  "limitations": [
+    "The GitHub-hosted x64 runner is Windows Server, not a physical Windows 11 workstation.",
+    "The probe validates ConPTY transport and VT capture; the host application remains responsible for terminal rendering and scrollback storage.",
+    "Mouse, IME, accessibility, GPU rendering, and a real Codex or Claude full-screen binary are outside this minimal protocol probe."
+  ]
+}

@@ -24,9 +24,10 @@ normalized only where semantics genuinely match.
 Codex schemas, usage methods, credential behavior, and refresh safety remain
 pending `spike-codex-auth-refresh`. Claude config/keychain isolation, auth
 status, setup-token, hooks, and PTY behavior remain pending
-`spike-claude-config-keychain`. Windows ConPTY behavior remains pending
-`spike-windows-conpty`. No supported version or undocumented behavior is
-asserted by this ADR.
+`spike-claude-config-keychain`. Windows PTY transport uses the native ConPTY
+backend under [ADR 0012](0012-windows-conpty-pty-backend.md); Windows 11
+real-provider and UI acceptance remains an implementation/release gate. No
+undocumented Provider behavior is asserted by this ADR.
 
 ## Consequences
 
