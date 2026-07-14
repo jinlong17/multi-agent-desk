@@ -1,10 +1,10 @@
 # Phase 0 P2 remote governance receipt
 
-> Status: `READY_FOR_VERIFY`
+> Status: `SHIPPED`
 > Repository: `jinlong17/multi-agent-desk`
 > Branch: `codex/project-system/phase0-ci-governance`
 > Pull request: [#1](https://github.com/jinlong17/multi-agent-desk/pull/1)
-> Last updated: `2026-07-14 02:32 -0700`
+> Last updated: `2026-07-14 12:26 -0700`
 
 This is a sanitized, append-only-oriented P2 evidence record. It contains no
 tokens, cookies, authorization headers, secrets, or environment contents.
@@ -208,3 +208,13 @@ original writer re-anchored the policy to signed `main` commit `ba69094` and
 removed three exceptions whose original commits were also absent after the
 squash. This failure remains failed until the correction passes both PR and
 `main` push checks.
+
+## Final ship completion
+
+Correction PR #2 merged by rebase as signed commits `9ba99f1`, `165fa75`, and
+`750b435`. On final main head `750b435`, Governance run `29361556828` completed
+successfully for DCO, licenses, and links; CI run `29361556914` completed
+successfully for project verification, Ubuntu, macOS, and Windows. Independent
+protection and Actions readback remained exact. The Phase 0 CI/governance unit
+is therefore shipped. No tag, release, deployment, or package publication was
+performed.
