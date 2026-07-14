@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-07-14T21:55:00Z",
+  "sanitized": true,
+  "secret_values_recorded": false,
+  "auth_status_contract": {
+    "macos_version": "2.1.207",
+    "linux_version": "2.1.132",
+    "json_keys_equal": true,
+    "keys": [
+      "apiProvider",
+      "authMethod",
+      "email",
+      "loggedIn",
+      "orgId",
+      "orgName",
+      "subscriptionType"
+    ],
+    "same_account": true,
+    "same_organization": true
+  },
+  "macos_keychain_isolation": {
+    "platform": "macOS 26.5.2 arm64",
+    "default_profile_logged_in": true,
+    "empty_profile_a_inherited_login": false,
+    "empty_profile_b_inherited_login": false,
+    "profile_a_interactive_login_completed": true,
+    "profile_a_same_identity_as_default": true,
+    "profile_b_remained_logged_out": true,
+    "profile_a_credentials_file_present": false,
+    "profile_a_logout_completed": true,
+    "default_remained_logged_in_after_profile_a_logout": true,
+    "profile_a_logged_out_after_own_logout": true,
+    "isolation_observed": true,
+    "distinct_account_isolation_proven": false
+  },
+  "linux_config_dir_isolation": {
+    "platform": "Linux 5.4.0 x86_64",
+    "default_profile_logged_in": true,
+    "empty_profile_a_inherited_login": false,
+    "empty_profile_b_inherited_login": false,
+    "isolated_login_completed": false
+  },
+  "setup_token_pty": {
+    "version": "2.1.207",
+    "pty_allocated": true,
+    "authorization_url_detected": true,
+    "resize_24x80_to_50x140": true,
+    "alive_after_resize": true,
+    "credential_issued": false,
+    "sigterm_required_sigkill_escalation": true
+  },
+  "live_request": {
+    "macos_authentication_error": false,
+    "linux_authentication_error": false,
+    "quota_limited_until_local_1540": true,
+    "successful_inference_after_reset": false
+  },
+  "remaining_gates": {
+    "second_distinct_account": true,
+    "setup_token_issue_and_injection": true,
+    "long_session": true,
+    "revocation": true
+  }
+}

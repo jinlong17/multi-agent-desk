@@ -2,28 +2,28 @@
   "schema_version": 1,
   "state_owner": "project-system",
   "plan_version": "v0.2",
-  "current_phase": "0",
-  "current_status": "Phase 0 · 5/5 单元已 SHIPPED；仓库与治理基线完成",
-  "current_owner": "project-system",
-  "next_action": "begin Phase 0.5 provider and security spike intake in dependency order",
+  "current_phase": "0.5",
+  "current_status": "Phase 0.5 · Claude Config Dir/Keychain/PTY Spike 正在执行",
+  "current_owner": "provider",
+  "next_action": "complete post-quota inference, setup-token injection, long-session, and revocation evidence before security review",
   "manual_updated_at": "2026-07-14",
-  "manual_updated_by": "operator-authorized Phase 0 ship completion (receipt recorded in phase0-ci-governance Work Log)",
+  "manual_updated_by": "operator-directed Claude provider-spike session (refresh recorded in spike-claude-config-keychain Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 0 · 完成仓库、治理、工作流、CI 与架构决策基线"
+      "value": "Phase 0.5 · 验证 Claude Config Dir、Keychain、auth JSON 与 setup-token PTY"
     },
     {
       "label": "在哪条线",
-      "value": "main → codex/<module>/<feature>；并行 writer 使用独立 worktree"
+      "value": "codex/provider/spike-claude-config-keychain；macOS 主测 + Linux 对照"
     },
     {
       "label": "用哪个入口",
-      "value": "classify → brief → plan → review → build → verify → ship"
+      "value": "feature-plan intake → provider-spike → security-review → compatibility decision"
     },
     {
       "label": "做到什么状态",
-      "value": "Phase 0 已 SHIPPED 5/5；最终 main 七项检查通过，准备 Phase 0.5 spikes"
+      "value": "凭据槽隔离、scoped logout 与 JSON 契约已通过；token/长会话/吊销未完成"
     }
   ],
   "phases": [
@@ -37,7 +37,7 @@
     {
       "id": "0.5",
       "title": "Provider & Security Spikes",
-      "state": "planned",
+      "state": "active",
       "depends": "Phase 0",
       "gate": "外部假设有可复现证据与 fallback"
     },
@@ -103,8 +103,8 @@
   ],
   "focus": [
     {
-      "slug": "phase0-ci-governance",
-      "expected_status": "SHIPPED"
+      "slug": "spike-claude-config-keychain",
+      "expected_status": "SPIKE_READY"
     }
   ]
 }
