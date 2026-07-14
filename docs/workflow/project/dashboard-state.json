@@ -5,9 +5,9 @@
   "current_phase": "0",
   "current_status": "Phase 0 · 4/5 单元已 SHIPPED；phase0-ci-governance P2 BLOCKED（GitHub 远端读回连接）",
   "current_owner": "project-system",
-  "next_action": "operator reinstalls the Chrome plugin and confirms ready, or provides authenticated GitHub API/CLI; then resume P2 final run readback, merge and strict main protection",
+  "next_action": "operator fully restarts Chrome and the ChatGPT/Codex desktop host after reinstall, or provides authenticated GitHub API/CLI; then resume P2 final run readback, merge and strict main protection",
   "manual_updated_at": "2026-07-14",
-  "manual_updated_by": "operator-directed feature-build P2 Chrome recovery record (refresh recorded in phase0-ci-governance Work Log)",
+  "manual_updated_by": "operator-directed feature-build P2 post-reinstall Chrome diagnostics (refresh recorded in phase0-ci-governance Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",

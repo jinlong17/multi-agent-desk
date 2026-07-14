@@ -4,7 +4,7 @@
 > Repository: `jinlong17/multi-agent-desk`
 > Branch: `codex/project-system/phase0-ci-governance`
 > Pull request: [#1](https://github.com/jinlong17/multi-agent-desk/pull/1)
-> Last updated: `2026-07-14 01:11 -0700`
+> Last updated: `2026-07-14 01:32 -0700`
 
 This is a sanitized, append-only-oriented P2 evidence record. It contains no
 tokens, cookies, authorization headers, secrets, or environment contents.
@@ -80,11 +80,23 @@ also timed out. The Chrome troubleshooting contract now requires reinstalling
 the Chrome plugin from the ChatGPT/Codex plugin UI; it forbids fallback through
 scripts, cookies, browser storage, or another automation surface.
 
+The operator then reinstalled the plugin and enabled the extension. At
+`2026-07-14 01:32 -0700`, post-reinstall diagnostics proved all four local
+prerequisites again: Chrome `150.0.7871.115` was running; ChatGPT Chrome
+Extension `1.2.27203.26575` was installed and enabled in the selected `Default`
+profile; the expected native host `com.openai.codexextension` existed; and its
+allowed origin exactly matched the extension. Browser setup still returned a
+Chrome binding, but both controlled-tab listing and the single documented
+two-second retry timed out. Therefore reinstall did not clear the authenticated
+readback blocker, and no GitHub result or setting is inferred from local
+installation health.
+
 Without an authenticated readback, the final clean/GPL run results and
 repository rule cannot be proved or changed safely.
 
-Clearing role: the operator reinstalls the Chrome plugin from the ChatGPT/Codex
-plugin UI and confirms it is ready (or provides another authenticated GitHub
-API/CLI surface). Feature-build then completes readback, performs separately
-confirmed merge/settings actions, updates this receipt, and returns
-`READY_FOR_VERIFY` only if every P2 criterion is proven.
+Clearing role: the operator fully quits and relaunches Chrome and the
+ChatGPT/Codex desktop host after the completed reinstall, then confirms the
+browser is ready, or provides another authenticated GitHub API/CLI surface.
+Feature-build then completes readback, performs separately confirmed
+merge/settings actions, updates this receipt, and returns `READY_FOR_VERIFY`
+only if every P2 criterion is proven.
