@@ -10,10 +10,10 @@
 | Owner Module | `project-system` |
 | Impacted Modules | `none` |
 | Current Phase | `FEATURE_VERIFY_P2` |
-| Status | `READY_FOR_VERIFY` |
-| Executor | `Codex as original feature-build writer` |
+| Status | `READY_TO_SHIP` |
+| Executor | `Codex as independent feature-verify` |
 | Updated | `2026-07-14` |
-| Suggested Next | `independent feature-verify audits the operator-approved single-account rule, current PR head, and seven required checks` |
+| Suggested Next | `ship verifies head 36dfe6f and performs the explicitly authorized linear merge of PR #1` |
 | Branch / Worktree | `codex/project-system/phase0-ci-governance @ agent-deck-worktrees/phase0-ci-governance` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none` |
@@ -24,7 +24,7 @@
 | Phase | Scope | Dependencies | Acceptance | Status |
 |---|---|---|---|---|
 | P1 local CI contracts + gates | read-only 3-platform workflows, exact required job names, CODEOWNERS generator, DCO/local-link/license validators and negative fixtures | shipped scaffold | static contracts and positive/negative local evidence | `VERIFIED` |
-| P2 remote Actions + governance | authorized push/test PR, clean and GPL-fail Actions runs, strict main protection, Actions/release-permission audit and readback | P1 verified; explicit operator authorization | seven checks proven; remote rules/permissions match and receipt persisted | `READY_FOR_VERIFY` |
+| P2 remote Actions + governance | authorized push/test PR, clean and GPL-fail Actions runs, strict main protection, Actions/release-permission audit and readback | P1 verified; explicit operator authorization | seven checks proven; remote rules/permissions match and receipt persisted | `READY_TO_SHIP` |
 
 ## Evidence Ledger
 
@@ -46,10 +46,12 @@
 | 2026-07-14 02:34 -0700 | P2 transition verification | workflow/dashboard generation and verification; leaf CI contracts/fixtures/links/licenses; DCO; diff check; protection and PR re-read | first workflow verification correctly rejected a Suggested Next phrase containing `ship` from `READY_FOR_VERIFY`; phrase corrected to feature-verify-only guidance, then all local checks passed and remote readback remained exact | command output retained in task |
 | 2026-07-14 11:30 -0700 | P2 independent feature-verify | offline frozen install; workflow/dashboard; CI contracts/fixtures/links/licenses; DCO; complete Go/Web/Tauri scaffold regression; authenticated GPL/clean runs, Actions settings, protection, PR, CODEOWNERS and official GitHub review semantics | all P2 technical criteria pass; final verdict `BLOCKED` because sole base-branch CODEOWNER `@jinlong17` is also PR author and GitHub forbids self-approval, leaving no qualifying review path for PR #1; post-verdict dashboard refresh is correctly deferred to an operator-directed writer | `docs/reviews/phase0-ci-governance/2026-07-14-feature-verify-p2.md` |
 | 2026-07-14 11:48 -0700 | P2 operator exception and blocker clearance | operator explicitly accepted one-account/no-review governance and authorized direct `main`; authenticated PUT changed only approval count `1 -> 0` and CODEOWNER requirement `true -> false`; independent GET retained seven strict checks, admin enforcement, conversation resolution, linear history, and force-push/delete prohibitions | PR #1 changed from `BLOCKED` / `REVIEW_REQUIRED` to `MERGEABLE` / `CLEAN`; prior verifier blocker resolved and last non-blocked state restored | `remote-receipt.md`; live GitHub protection/PR readback |
+| 2026-07-14 11:55 -0700 | P2 independent single-account feature-verify | authenticated PR/protection/Actions readback; current CI `29359454753` and Governance `29359454802`; offline pnpm 10.23.0 install; workflow/dashboard; CI contracts/fixtures/links/licenses; DCO; Go/Web/Cargo/Tauri full scaffold regression | all seven current-head checks and all local checks pass; PR is `MERGEABLE` / `CLEAN`; operator exception matches exactly; no blocking finding | `docs/reviews/phase0-ci-governance/2026-07-14-feature-verify-p2-single-account.md` |
 
 ## Risks and Blockers
 
-- Merge remains a separate explicit human gate after independent verification.
+- Merge is an explicit human gate; the operator authorized the linear PR #1
+  merge and direct `main` completion on 2026-07-14.
 - The local machine currently lacks Go/gofmt. The combined scaffold rerun failed
   at that prerequisite; no downstream scaffold result is inferred.
 - GPL-negative and clean-recovery GitHub Actions evidence is now proven through
@@ -84,3 +86,4 @@
 | 2026-07-14 11:30 -0700 | Codex as independent feature-verify | Re-ran the full local and remote P2 acceptance matrix, confirmed every technical criterion, checked the live protected PR against base-branch CODEOWNERS and official GitHub review semantics, and persisted this verdict without changing implementation, plan, dashboard, or remote state | `docs/reviews/phase0-ci-governance/2026-07-14-feature-verify-p2.md`, this file | `BLOCKED`; PR #1 has no satisfiable CODEOWNER approval because its sole owner is also its author | operator provides a distinct eligible PR author, or feature-plan reviews a bootstrap exception; original writer then clears BLOCKED |
 | 2026-07-14 11:34 -0700 | operator-directed writer | Refreshed the dashboard to the independently persisted `BLOCKED` verdict and queried collaborators, invitations, and requested reviewers | `docs/workflow/project/dashboard-state.json`, this file, generated dashboard state | focus aligned; `jinlong17` is the only collaborator and administrator, with no pending invitation or requested reviewer | operator provides a distinct eligible PR author, or feature-plan reviews a bootstrap exception |
 | 2026-07-14 11:48 -0700 | Codex as original feature-build writer and operator-directed dashboard writer | Applied the operator's highest-priority single-account/no-review exception, changed only the review subset of `main` protection, independently read back the preserved safeguards, cleared the reproducible identity blocker to its last non-blocked state, and refreshed dashboard judgment | `design.md`, `test.md`, `remote-receipt.md`, this file, `docs/workflow/project/dashboard-state.json`, generated dashboard state | `READY_FOR_VERIFY`; PR #1 is `MERGEABLE` / `CLEAN` before the pending evidence push | independent feature-verify audits the updated head and live rule |
+| 2026-07-14 11:55 -0700 | Codex as independent feature-verify | Verified the exact updated branch/PR head, seven successful remote checks, operator-approved protection subset, least-privilege Actions settings, retained GPL-negative evidence, and the complete local Go/Web/Tauri scaffold without modifying implementation, plan, dashboard, or remote state | `docs/reviews/phase0-ci-governance/2026-07-14-feature-verify-p2-single-account.md`, this file | `READY_TO_SHIP`; no blocking finding, single-account review risk explicitly accepted by operator | ship verifies the same head and performs the authorized linear merge |
