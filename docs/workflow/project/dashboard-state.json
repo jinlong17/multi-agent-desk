@@ -3,15 +3,15 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0.5",
-  "current_status": "Phase 0.5 · 浏览器密钥存储 GATE_RESOLVED；其余 Provider/E2EE/Windows Spikes 继续",
-  "current_owner": "web",
-  "next_action": "continue Codex/Claude evidence, E2EE protocol vectors, and Windows platform spikes",
+  "current_status": "Phase 0.5 · 浏览器密钥存储与 E2EE 协议均 GATE_RESOLVED；Provider/Windows Spikes 继续",
+  "current_owner": "security",
+  "next_action": "continue Codex soak, Claude setup-token validation, and Windows platform spikes",
   "manual_updated_at": "2026-07-14",
-  "manual_updated_by": "operator-authorized browser key spike execution (recorded in spike-browser-key-storage Work Log)",
+  "manual_updated_by": "operator-authorized E2EE protocol spike execution (recorded in spike-e2ee-protocol-vectors Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 0.5 · 验证各浏览器非导出设备密钥与安全降级路径"
+      "value": "Phase 0.5 · 收口 Provider 认证与 Windows 平台证据"
     },
     {
       "label": "在哪条线",
@@ -19,11 +19,11 @@
     },
     {
       "label": "用哪个入口",
-      "value": "provider-spike → security-review → feature-plan decision"
+      "value": "剩余 Spike：feature-plan → provider-spike → security-review（如需）→ decision"
     },
     {
       "label": "做到什么状态",
-      "value": "浏览器存储门已解决：Chrome/Edge/Firefox 原生；Safari/WebKit 受控 software_wrapped fallback"
+      "value": "浏览器门与 E2EE 门已解决；Pairwise Root + HPKE Auth + 跨语言向量已接受"
     }
   ],
   "phases": [
@@ -104,6 +104,10 @@
   "focus": [
     {
       "slug": "spike-browser-key-storage",
+      "expected_status": "GATE_RESOLVED"
+    },
+    {
+      "slug": "spike-e2ee-protocol-vectors",
       "expected_status": "GATE_RESOLVED"
     }
   ]
