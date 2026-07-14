@@ -1,0 +1,73 @@
+name: Browser key spike
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/browser-key-spike.yml
+      - docs/spikes/browser/poc/**
+      - docs/spikes/browser/run_chromium_probe.cjs
+      - docs/spikes/browser/run_selenium_probe.py
+      - docs/spikes/browser/run_webkit_process_probe.py
+      - docs/spikes/browser/webkit-probe/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: browser-key-spike-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser-key-spike:
+    name: browser-key-${{ matrix.id }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: edge-windows
+            os: windows-latest
+            browser: edge
+            browser_name: Microsoft Edge on Windows
+          - id: firefox-linux
+            os: ubuntu-latest
+            browser: firefox
+            browser_name: Mozilla Firefox on Linux
+          - id: safari-macos
+            os: macos-latest
+            browser: safari
+            browser_name: Apple Safari on macOS
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Enable Safari WebDriver on the ephemeral runner
+        if: matrix.browser == 'safari'
+        run: sudo safaridriver --enable
+      - name: Install pinned Selenium client
+        run: python -m pip install --disable-pip-version-check selenium==4.38.0
+      - name: Run browser key persistence probe
+        shell: bash
+        run: >-
+          python docs/spikes/browser/run_selenium_probe.py
+          --browser '${{ matrix.browser }}'
+          --browser-name '${{ matrix.browser_name }}'
+          --output 'browser-key-${{ matrix.id }}.json'
+      - name: Run separate-process WebKit persistence probe
+        if: matrix.browser == 'safari'
+        run: >-
+          python docs/spikes/browser/run_webkit_process_probe.py
+          --swiftc xcrun
+          --output browser-key-webkit-process-macos.json
+      - name: Upload sanitized evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: browser-key-${{ matrix.id }}
+          path: |
+            browser-key-${{ matrix.id }}.json
+            browser-key-webkit-process-macos.json
+          if-no-files-found: warn
