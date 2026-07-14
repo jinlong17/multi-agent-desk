@@ -13,7 +13,7 @@
 | Status | `BLOCKED` |
 | Executor | `Codex as feature-build` |
 | Updated | `2026-07-14` |
-| Suggested Next | `operator fully restarts Chrome and the ChatGPT/Codex desktop host after reinstall, or provides authenticated GitHub API/CLI; then feature-build resumes P2` |
+| Suggested Next | `operator chooses public repository or GitHub Pro/private-repo protection; then feature-build applies and reads back the exact main rule before any merge` |
 | Branch / Worktree | `codex/project-system/phase0-ci-governance @ agent-deck-worktrees/phase0-ci-governance` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none` |
@@ -40,23 +40,21 @@
 | 2026-07-14 | P2 blocker reproduction | Chrome running, extension installed/enabled, native host valid; browser-client `openTabs()` retried twice | connection timed out; operator approval required by browser recovery policy before opening a fresh window | `remote-receipt.md` |
 | 2026-07-14 01:11 -0700 | P2 authorized browser recovery | operator-authorized fresh Chrome window; two-second wait; one permitted reconnect and `openTabs()` retry | retry timed out; Chrome troubleshooting now requires plugin reinstall and forbids alternate automation fallback | `remote-receipt.md` |
 | 2026-07-14 01:32 -0700 | P2 post-reinstall browser diagnostics | Chrome 150 running; extension 1.2.27203.26575 installed/enabled in selected Default profile; native host and allowed origin correct; controlled-tab listing retried once after two seconds | local install health passed, but both post-reinstall control calls timed out; no remote evidence inferred | `remote-receipt.md` |
+| 2026-07-14 02:00 -0700 | P2 authenticated API readback | real `gh api user` and ADMIN repository read; check-runs/runs for GPL head `0bce526` and clean head `22e2240`; Actions permissions/workflows; protection and rulesets endpoints | GPL `license-gate` failure proven in run `29315247924`; clean seven checks proven in runs `29315826964`/`29315826965`; Actions read-only/no-approval proven; both protection surfaces return plan-required HTTP 403 | `remote-receipt.md` |
+| 2026-07-14 02:03 -0700 | P2 local receipt verification | workflow generate/verify; dashboard generate/verify; `ci:verify` and `ci:static`; direct leaf action/CODEOWNERS/fixture/link/license checks; DCO range; `git diff --check` | workflow/dashboard pass; aggregate npm wrappers could not start because local `npm` is absent; all equivalent leaf checks pass (`checks=7`, `actions=15`, Markdown=135, pnpm groups=5, Cargo packages=418); DCO pass for 24 commits with three exact grandfathered exceptions | command output retained in task |
 
 ## Risks and Blockers
 
-- Remote settings need operator permissions (human gate).
-- P1 static workflow validation is not runner evidence; all GitHub checks remain
-  unknown until P2.
+- Remote settings and merge remain explicit human gates.
 - The local machine currently lacks Go/gofmt. The combined scaffold rerun failed
   at that prerequisite; no downstream scaffold result is inferred.
-- The final GPL-negative and clean-recovery Actions run IDs/results are unknown
-  until authenticated GitHub readback is restored.
-- The operator-authorized fresh-window recovery and the post-reinstall retry
-  both failed despite a healthy Chrome/extension/native-host installation; a
-  full Chrome plus desktop-host restart or authenticated GitHub API/CLI surface
-  is required before browser work resumes.
-- `main` has no proven protection rule. Applying and reading back the exact rule
-  remains mandatory; the rule may also expose a second-approver operational
-  requirement for this single-owner repository.
+- GPL-negative and clean-recovery GitHub Actions evidence is now proven through
+  authenticated API readback; the superseded GPL CI Windows job was cancelled
+  and is retained as cancelled, not pass.
+- Authenticated `gh` access clears the Chrome/browser evidence blocker.
+- The repository is private and the current GitHub plan returns HTTP 403 for
+  both branch protection and rulesets, requiring GitHub Pro or public
+  visibility. The approved design forbids a weaker substitute.
 - The pre-mutation value of the full-length Action SHA setting was not persisted,
   so exact rollback parity for that one setting remains unknown.
 
@@ -75,3 +73,4 @@
 | 2026-07-14 00:59 -0700 | Codex as feature-build P2 and operator-directed dashboard writer | Pushed/opened PR #1, retained two Windows runner failures and fixes, exercised GPL/recovery heads, read back least-privilege Actions settings, reproduced the authenticated-browser connection failure, persisted a sanitized partial receipt, and refreshed dashboard focus without inferring final remote success | `remote-receipt.md`, this file, `docs/workflow/project/dashboard-state.json`, generated dashboard state | `BLOCKED`; final seven-check/GPL evidence and strict `main` protection remain unknown | operator authorizes a fresh Chrome window or supplies authenticated GitHub API/CLI access; resume feature-build P2 |
 | 2026-07-14 01:11 -0700 | Codex as feature-build P2 and operator-directed dashboard writer | Used the operator-authorized fresh-window recovery exactly once, retained the failed connection as evidence, and refreshed the dashboard next action without weakening the remote acceptance criteria | `remote-receipt.md`, this file, `docs/workflow/project/dashboard-state.json`, generated dashboard state | remains `BLOCKED`; Chrome troubleshooting requires plugin reinstall | operator reinstalls the Chrome plugin and confirms ready, or supplies authenticated GitHub API/CLI access |
 | 2026-07-14 01:32 -0700 | Codex as feature-build P2 and operator-directed dashboard writer | Verified the post-reinstall Chrome, extension, selected profile, native-host manifest, and allowed origin; retried the documented lightweight connection once after two seconds; retained the timeout as evidence and refreshed only the blocked next action | `remote-receipt.md`, this file, `docs/workflow/project/dashboard-state.json`, generated dashboard state | remains `BLOCKED`; installation health is proven but authenticated tab control still fails | operator fully restarts Chrome and the ChatGPT/Codex desktop host, or supplies authenticated GitHub API/CLI access |
+| 2026-07-14 02:00 -0700 | Codex as feature-build P2 and operator-directed dashboard writer | Verified `gh` authentication end to end, cleared the browser-readback condition, persisted GPL/clean run IDs and exact conclusions, read back Actions permissions/workflow inventory, and queried both protection surfaces without weakening criteria | `remote-receipt.md`, this file, `docs/workflow/project/dashboard-state.json`, generated dashboard state | remains `BLOCKED`; GitHub returns plan-required HTTP 403 for protection/rulesets on this private repository | operator chooses public visibility or a GitHub plan supporting private-repository protection; then resume P2 before merge |
