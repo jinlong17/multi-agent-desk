@@ -58,7 +58,7 @@ NODE_PATH=/path/to/node_modules node \
 | Google Chrome / macOS 26.5.2 arm64 | 150.0.7871.116 | pass | pass | pass | `PASS` | `chrome-macos.json` |
 | Microsoft Edge / Windows | 149.0.4022.98 | pass | pass | pass | `PASS` | GitHub Actions artifact |
 | Mozilla Firefox / Linux | 152.0.4 | pass | pass | pass | `PASS` | GitHub Actions artifact |
-| Apple Safari / WebKit / macOS | Safari runner 26.4; local macOS 26.5.2 WebKit | Ed25519 pass; X25519 `TypeError` after process restart | pass | pass in separate WKWebView app processes | `PASS_WITH_FALLBACK` | `webkit-macos.json`; Safari CI rerun pending |
+| Apple Safari / WebKit / macOS | Safari 26.4; WebKit on macOS 26.4 and 26.5.2 | Ed25519 pass; X25519 `TypeError` | pass | pass in separate WKWebView app processes | `PASS_WITH_FALLBACK` | `safari-macos.json`, `webkit-macos-ci.json`, `webkit-macos.json` |
 
 The Chrome result was reproduced independently through Playwright and Selenium.
 Edge and Firefox passed on hosted Windows and Linux runners. The local WebKit
@@ -105,9 +105,9 @@ IndexedDB are origin-scoped.
 
 ## Provisional decision
 
-Chrome, Edge/Windows, and Firefox/Linux satisfy both paths. WebKit/macOS
-satisfies the bounded encrypted fallback across separate app processes but not
-the complete native path. The project-wide decision remains open until the
-Safari session rerun completes and a security verdict accepts or rejects that
-fallback. Any unsupported browser is downgraded to metadata-only access; there
-is no silent plaintext or exportable-key mode.
+Chrome, Edge/Windows, and Firefox/Linux satisfy both paths. Safari 26.4 and
+WebKit on macOS 26.4/26.5.2 consistently satisfy the bounded encrypted fallback
+but not the complete native path. Provider evidence is therefore ready with a
+`PASS_WITH_FALLBACK` compatibility result. The security verdict must still
+accept or reject that fallback. Any unsupported browser is downgraded to
+metadata-only access; there is no silent plaintext or exportable-key mode.

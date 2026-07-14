@@ -12,10 +12,10 @@
 | Hypothesis | `Chrome/Edge, Safari, and Firefox can hold a non-exportable WebCrypto device key usable for E2EE, with a documented IndexedDB encrypted-key fallback where non-exportable storage is unavailable` |
 | Time-box | `4 days` |
 | Current Phase | `PROVIDER_SPIKE` |
-| Status | `SPIKE_READY` |
+| Status | `EVIDENCE_READY` |
 | Executor | `Codex web provider-spike` |
-| Updated | `2026-07-14 15:33 -0700` |
-| Suggested Next | `provider-spike` |
+| Updated | `2026-07-14 15:36 -0700` |
+| Suggested Next | `security-review` |
 | Security Gate | `open — security-review must judge the fallback` |
 | Evidence Path | `docs/spikes/browser/` |
 | Decision Record | `pending — feeds E2EE protocol ADR` |
@@ -41,14 +41,15 @@
 | 2026-07-14 15:31 -0700 | GitHub Actions engine matrix defined for Edge/Windows, Firefox/Linux, and Safari/macOS | external evidence queued on branch push | `.github/workflows/browser-key-spike.yml` |
 | 2026-07-14 15:33 -0700 | PR #6 run 29372955467 | Edge/Windows and Firefox/Linux passed native and fallback paths across process restart; Safari cross-session control confirmed WebDriver isolation | `docs/spikes/browser/edge-windows.json`, `firefox-linux.json`, `safari-webdriver-isolation-macos.json` |
 | 2026-07-14 15:33 -0700 | Minimal WKWebView harness, three separate app processes | Ed25519 and AES-GCM fallback persisted; X25519 read returned `TypeError`; fallback makes WebKit E2EE-eligible | `docs/spikes/browser/webkit-macos.json` |
+| 2026-07-14 15:36 -0700 | PR #6 run 29373451433 | Edge/Windows, Firefox/Linux, Safari 26.4, and separate-process WebKit matrix all passed their declared compatibility paths | `docs/spikes/browser/edge-windows.json`, `firefox-linux.json`, `safari-macos.json`, `webkit-macos-ci.json` |
 
 ## Result, limitations, and fallback
 
 Chrome, Edge/Windows, and Firefox/Linux pass native and encrypted-fallback paths
 across a full process restart. WebKit/macOS passes only Ed25519 plus the
 encrypted fallback across separate app processes because persisted X25519 use
-returned `TypeError`. Safari WebDriver capability rerun remains pending. The
-fallback reduces raw-key-at-rest exposure but does not protect against
+returned `TypeError`. Safari 26.4 and separate-process WebKit evidence agree on
+the same fallback boundary. The fallback reduces raw-key-at-rest exposure but does not protect against
 same-origin script; browsers failing both paths must be metadata-only.
 
 ## Risks and Blockers
@@ -63,3 +64,4 @@ same-origin script; browsers failing both paths must be metadata-only.
 | 2026-07-14 15:00 -0700 | Codex web provider-spike, feature-plan | Froze per-browser non-exportable CryptoKey, IndexedDB persistence, encrypted fallback, and metadata-only downgrade criteria; pinned locally available browsers | this file | `SPIKE_READY` | provider-spike |
 | 2026-07-14 15:31 -0700 | Codex web provider-spike | Implemented two-process WebCrypto/IndexedDB PoC, reproduced Chrome through Playwright and Selenium, and added a real-engine CI matrix | `docs/spikes/browser/`, `.github/workflows/browser-key-spike.yml` | Chrome `PASS`; external browsers queued | push branch and collect artifacts |
 | 2026-07-14 15:33 -0700 | Codex web provider-spike | Collected Edge/Windows and Firefox/Linux passes, identified Apple WebDriver isolation, and added a separate-process WKWebView harness | PR #6 run `29372955467`, `docs/spikes/browser/` | Edge/Firefox `PASS`; WebKit `PASS_WITH_FALLBACK`; Safari session rerun required | push corrected Safari probe and rerun matrix |
+| 2026-07-14 15:36 -0700 | Codex web provider-spike | Completed the real-engine matrix and stored sanitized artifacts for every declared platform path | PR #6 run `29373451433`, `docs/spikes/browser/` | `EVIDENCE_READY`; Chrome/Edge/Firefox `PASS`, Safari/WebKit `PASS_WITH_FALLBACK` | security-review |

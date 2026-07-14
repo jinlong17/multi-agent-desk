@@ -163,11 +163,13 @@ def main() -> int:
         "schemaVersion": 1,
         "browser": args.browser_name,
         "browserVersion": read_version,
-        "versionStableAcrossRestart": write_version == read_version,
+        "versionStableAcrossPhases": write_version == read_version,
         "processRestarted": process_restarted,
         "writeComplete": bool(write.get("writeComplete")),
         "probe": read,
     }
+    if process_restarted:
+        output["versionStableAcrossRestart"] = write_version == read_version
     if args.browser == "safari":
         output["webdriverSessionIsolated"] = True
         output["restartEvidence"] = "separate WebKit process probe required"
