@@ -11,14 +11,14 @@
 | Impacted Modules | `security, control-plane` |
 | Hypothesis | `Chrome/Edge, Safari, and Firefox can hold a non-exportable WebCrypto device key usable for E2EE, with a documented IndexedDB encrypted-key fallback where non-exportable storage is unavailable` |
 | Time-box | `4 days` |
-| Current Phase | `SECURITY_REVIEW` |
-| Status | `ACCEPTED` |
-| Executor | `Codex security-review` |
-| Updated | `2026-07-14 15:42 -0700` |
-| Suggested Next | `feature-plan` |
+| Current Phase | `FEATURE_PLAN_DECISION` |
+| Status | `GATE_RESOLVED` |
+| Executor | `Codex web feature-plan` |
+| Updated | `2026-07-14 15:45 -0700` |
+| Suggested Next | `Phase 4b consumes ADR 0010 after E2EE protocol gate resolves` |
 | Security Gate | `resolved — fallback accepted only with documented software-wrapped downgrade controls` |
 | Evidence Path | `docs/spikes/browser/` |
-| Decision Record | `pending — feeds E2EE protocol ADR` |
+| Decision Record | `docs/adr/0010-browser-device-key-storage-modes.md; docs/PROVIDER_COMPATIBILITY.md` |
 
 ## Success and failure criteria
 
@@ -66,3 +66,4 @@ same-origin script; browsers failing both paths must be metadata-only.
 | 2026-07-14 15:33 -0700 | Codex web provider-spike | Collected Edge/Windows and Firefox/Linux passes, identified Apple WebDriver isolation, and added a separate-process WKWebView harness | PR #6 run `29372955467`, `docs/spikes/browser/` | Edge/Firefox `PASS`; WebKit `PASS_WITH_FALLBACK`; Safari session rerun required | push corrected Safari probe and rerun matrix |
 | 2026-07-14 15:36 -0700 | Codex web provider-spike | Completed the real-engine matrix and stored sanitized artifacts for every declared platform path | PR #6 run `29373451433`, `docs/spikes/browser/` | `EVIDENCE_READY`; Chrome/Edge/Firefox `PASS`, Safari/WebKit `PASS_WITH_FALLBACK` | security-review |
 | 2026-07-14 15:42 -0700 | Codex security-review | Reviewed origin compromise, raw-key exposure, non-exportability limits, storage loss, recovery, trust anchor, revocation, audit binding, and unresolved protocol gates | `docs/reviews/spike-browser-key-storage/2026-07-14-security-review.md`, this file | `ACCEPTED`; Security Gate resolved for the Spike only | feature-plan decision |
+| 2026-07-14 15:45 -0700 | Codex web feature-plan | Recorded native, software-wrapped, and metadata-only modes; bound the security-review controls; refreshed the operator-directed dashboard focus | `docs/adr/0010-browser-device-key-storage-modes.md`, `docs/PROVIDER_COMPATIBILITY.md`, `docs/workflow/project/dashboard-state.json`, this file | `GATE_RESOLVED` | consume in Phase 4b after E2EE protocol gate |

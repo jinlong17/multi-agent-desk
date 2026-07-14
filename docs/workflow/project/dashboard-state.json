@@ -3,9 +3,9 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0.5",
-  "current_status": "Phase 0.5 · 浏览器密钥矩阵 EVIDENCE_READY；等待 fallback 安全审查",
+  "current_status": "Phase 0.5 · 浏览器密钥存储 GATE_RESOLVED；其余 Provider/E2EE/Windows Spikes 继续",
   "current_owner": "web",
-  "next_action": "security-review the Safari/WebKit encrypted-key fallback and same-origin script residual risk",
+  "next_action": "continue Codex/Claude evidence, E2EE protocol vectors, and Windows platform spikes",
   "manual_updated_at": "2026-07-14",
   "manual_updated_by": "operator-authorized browser key spike execution (recorded in spike-browser-key-storage Work Log)",
   "status_rows": [
@@ -23,7 +23,7 @@
     },
     {
       "label": "做到什么状态",
-      "value": "四浏览器/三系统证据已完成；Safari/WebKit 仅通过受控加密 fallback"
+      "value": "浏览器存储门已解决：Chrome/Edge/Firefox 原生；Safari/WebKit 受控 software_wrapped fallback"
     }
   ],
   "phases": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "spike-browser-key-storage",
-      "expected_status": "EVIDENCE_READY"
+      "expected_status": "GATE_RESOLVED"
     }
   ]
 }
