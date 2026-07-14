@@ -11,11 +11,11 @@
 | Impacted Modules | `core, desktop` |
 | Hypothesis | `ConPTY can host a full-screen provider TUI reliably: render, resize, scrollback replay, and clean teardown behave correctly for long interactive sessions` |
 | Time-box | `3 days` |
-| Current Phase | `INTAKE` |
-| Status | `DRAFT` |
-| Executor | `pending assignment` |
-| Updated | `2026-07-11 09:20 -0700` |
-| Suggested Next | `feature-plan` |
+| Current Phase | `PROVIDER_SPIKE` |
+| Status | `SPIKE_READY` |
+| Executor | `Codex (GPT-5)` |
+| Updated | `2026-07-14 16:40 -0700` |
+| Suggested Next | `provider-spike` |
 | Security Gate | `none (no credentials in scope)` |
 | Evidence Path | `docs/spikes/windows/` |
 | Decision Record | `pending — PROVIDER_COMPATIBILITY.md + platform matrix entry` |
@@ -29,8 +29,8 @@
 
 | Field | Value |
 |---|---|
-| Tool + version | Windows 11, Go toolchain (pin at intake) |
-| OS | Windows |
+| Tool + version | Go `1.26.0`; native `CreatePseudoConsole`, `ResizePseudoConsole`, and `ClosePseudoConsole` APIs |
+| OS | GitHub-hosted `windows-latest` (`x64`); Windows 11 desktop acceptance remains outside this automated Spike |
 | Auth mode | not applicable |
 
 ## Evidence Ledger
@@ -51,3 +51,4 @@ Pending. Fallback: reduce Windows terminal scope for v0.1 (Windows Desktop stays
 | Time | Executor | Action | Files/commit | Result | Next |
 |---|---|---|---|---|---|
 | 2026-07-11 09:20 -0700 | Claude Code (Fable 5), lifecycle-readiness P3 build | Spike created by R3 single-owner re-split of spike-windows-pty-ipc (ConPTY/PTY → provider per module-registry signals) | this file | `DRAFT` | feature-plan |
+| 2026-07-14 16:40 -0700 | Codex (GPT-5), feature-plan spike intake | Classified ConPTY under the sole `provider` owner; froze native-API probe scope, 15-second interactive stress, resize observation, transcript replay, and bounded teardown criteria; refreshed the operator-directed dashboard snapshot | this file; `docs/workflow/project/dashboard-state.json`; `docs/prototypes/dev-dashboard/state.generated.js`; `codex/provider/spike-windows-conpty` | `SPIKE_READY`; `project:verify` passed; no credentials or trust boundary in scope | provider-spike |
