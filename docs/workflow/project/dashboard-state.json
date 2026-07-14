@@ -2,16 +2,16 @@
   "schema_version": 1,
   "state_owner": "project-system",
   "plan_version": "v0.2",
-  "current_phase": "0",
-  "current_status": "Phase 0 · 5/5 单元已 SHIPPED；仓库与治理基线完成",
-  "current_owner": "project-system",
-  "next_action": "begin Phase 0.5 provider and security spike intake in dependency order",
+  "current_phase": "0.5",
+  "current_status": "Phase 0.5 · 浏览器密钥存储 Spike 正在收集四引擎实证",
+  "current_owner": "web",
+  "next_action": "collect Edge/Windows, Firefox/Linux, and Safari/macOS CI evidence, then security-review",
   "manual_updated_at": "2026-07-14",
-  "manual_updated_by": "operator-authorized Phase 0 ship completion (receipt recorded in phase0-ci-governance Work Log)",
+  "manual_updated_by": "operator-authorized browser key spike execution (recorded in spike-browser-key-storage Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 0 · 完成仓库、治理、工作流、CI 与架构决策基线"
+      "value": "Phase 0.5 · 验证各浏览器非导出设备密钥与安全降级路径"
     },
     {
       "label": "在哪条线",
@@ -19,11 +19,11 @@
     },
     {
       "label": "用哪个入口",
-      "value": "classify → brief → plan → review → build → verify → ship"
+      "value": "provider-spike → security-review → feature-plan decision"
     },
     {
       "label": "做到什么状态",
-      "value": "Phase 0 已 SHIPPED 5/5；最终 main 七项检查通过，准备 Phase 0.5 spikes"
+      "value": "Chrome 已通过；等待 Edge/Windows、Firefox/Linux、Safari/macOS 真实引擎证据"
     }
   ],
   "phases": [
@@ -37,7 +37,7 @@
     {
       "id": "0.5",
       "title": "Provider & Security Spikes",
-      "state": "planned",
+      "state": "active",
       "depends": "Phase 0",
       "gate": "外部假设有可复现证据与 fallback"
     },
@@ -103,8 +103,8 @@
   ],
   "focus": [
     {
-      "slug": "phase0-ci-governance",
-      "expected_status": "SHIPPED"
+      "slug": "spike-browser-key-storage",
+      "expected_status": "SPIKE_READY"
     }
   ]
 }
