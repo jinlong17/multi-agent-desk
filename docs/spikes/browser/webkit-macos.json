@@ -1,0 +1,37 @@
+{
+  "browser": "WKWebView on macOS",
+  "cleanupComplete": true,
+  "osVersion": "26.5.2",
+  "probe": {
+    "e2eeEligible": true,
+    "fallbackPath": true,
+    "indexedDbAvailable": true,
+    "metadataOnlyRequired": false,
+    "nativePath": false,
+    "schemaVersion": 1,
+    "secureContext": true,
+    "subtleCryptoAvailable": true,
+    "tests": {
+      "ed25519": {
+        "persistedAcrossReload": true,
+        "privateExportRejected": true,
+        "privateExtractable": false,
+        "signVerify": true
+      },
+      "encryptedFallback": {
+        "decryptMatches": true,
+        "persistedAcrossReload": true,
+        "wrappingKeyExportRejected": true,
+        "wrappingKeyExtractable": false
+      },
+      "x25519": {
+        "error": "TypeError",
+        "persistedAcrossReload": false
+      }
+    },
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)"
+  },
+  "processRestarted": true,
+  "schemaVersion": 1,
+  "writeComplete": true
+}

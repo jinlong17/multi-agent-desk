@@ -52,10 +52,18 @@ jobs:
           --browser '${{ matrix.browser }}'
           --browser-name '${{ matrix.browser_name }}'
           --output 'browser-key-${{ matrix.id }}.json'
+      - name: Run separate-process WebKit persistence probe
+        if: matrix.browser == 'safari'
+        run: >-
+          python docs/spikes/browser/run_webkit_process_probe.py
+          --swiftc xcrun
+          --output browser-key-webkit-process-macos.json
       - name: Upload sanitized evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: browser-key-${{ matrix.id }}
-          path: browser-key-${{ matrix.id }}.json
+          path: |
+            browser-key-${{ matrix.id }}.json
+            browser-key-webkit-process-macos.json
           if-no-files-found: warn

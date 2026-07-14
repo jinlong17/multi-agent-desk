@@ -3,9 +3,9 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0.5",
-  "current_status": "Phase 0.5 · 浏览器密钥存储 Spike 正在收集四引擎实证",
+  "current_status": "Phase 0.5 · Chrome、Edge/Windows、Firefox/Linux 已通过；WebKit 通过受限 fallback",
   "current_owner": "web",
-  "next_action": "collect Edge/Windows, Firefox/Linux, and Safari/macOS CI evidence, then security-review",
+  "next_action": "complete corrected Safari session CI, then run security-review on the WebKit fallback",
   "manual_updated_at": "2026-07-14",
   "manual_updated_by": "operator-authorized browser key spike execution (recorded in spike-browser-key-storage Work Log)",
   "status_rows": [
@@ -23,7 +23,7 @@
     },
     {
       "label": "做到什么状态",
-      "value": "Chrome 已通过；等待 Edge/Windows、Firefox/Linux、Safari/macOS 真实引擎证据"
+      "value": "Chrome、Edge/Windows、Firefox/Linux 通过；WebKit/macOS 原生 X25519 失败但加密 fallback 通过"
     }
   ],
   "phases": [

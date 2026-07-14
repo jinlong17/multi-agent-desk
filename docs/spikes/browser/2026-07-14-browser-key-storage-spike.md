@@ -35,6 +35,9 @@ browser that passes neither path must be restricted to metadata-only access.
   Playwright and a persistent, temporary profile.
 - `run_selenium_probe.py` exercises Chrome, Edge, Firefox, or Safari with two
   independent WebDriver sessions.
+- `run_webkit_process_probe.py` compiles a minimal, background-only WKWebView
+  app and runs write/read phases in separate application processes without
+  touching the operator's open Safari windows.
 - `.github/workflows/browser-key-spike.yml` runs the same Selenium probe on
   Edge/Windows, Firefox/Linux, and Safari/macOS. Safari automation is enabled
   only inside the disposable GitHub runner.
@@ -53,13 +56,16 @@ NODE_PATH=/path/to/node_modules node \
 | Browser / OS | Exact version | Native Ed25519 + X25519 | AES-GCM fallback | Process restart | Verdict | Evidence |
 |---|---:|---:|---:|---:|---|---|
 | Google Chrome / macOS 26.5.2 arm64 | 150.0.7871.116 | pass | pass | pass | `PASS` | `chrome-macos.json` |
-| Microsoft Edge / Windows | pending runner | pending | pending | pending | `RUNNING` | GitHub Actions artifact |
-| Mozilla Firefox / Linux | pending runner | pending | pending | pending | `RUNNING` | GitHub Actions artifact |
-| Apple Safari / macOS | 26.5.2 local; runner version pending | pending | pending | pending | `RUNNING` | GitHub Actions artifact |
+| Microsoft Edge / Windows | 149.0.4022.98 | pass | pass | pass | `PASS` | GitHub Actions artifact |
+| Mozilla Firefox / Linux | 152.0.4 | pass | pass | pass | `PASS` | GitHub Actions artifact |
+| Apple Safari / WebKit / macOS | Safari runner 26.4; local macOS 26.5.2 WebKit | Ed25519 pass; X25519 `TypeError` after process restart | pass | pass in separate WKWebView app processes | `PASS_WITH_FALLBACK` | `webkit-macos.json`; Safari CI rerun pending |
 
 The Chrome result was reproduced independently through Playwright and Selenium.
-The stored Chrome artifact contains no key bytes, profile paths, hostnames, or
-session identifiers.
+Edge and Firefox passed on hosted Windows and Linux runners. The local WebKit
+harness retained Ed25519 and the non-exportable AES-GCM wrapping key across
+separate application processes; X25519 failed on the native path, so WebKit is
+eligible only through the encrypted fallback. Stored artifacts contain no key
+bytes, profile paths, hostnames, or session identifiers.
 
 ## Standards and vendor baseline
 
@@ -73,6 +79,9 @@ session identifiers.
   structured serialization used for values stored by IndexedDB.
 - [WebKit Safari 18.4 release notes](https://webkit.org/blog/16574/webkit-features-in-safari-18-4/) record Safari's X25519 WebCrypto support. Runtime evidence, not this
   compatibility statement, remains the acceptance authority.
+- [Apple WebDriver documentation](https://developer.apple.com/documentation/safari-developer-tools/webdriver/) states that Safari automation windows are isolated from normal
+  browsing data and from other test runs. A second WebDriver session therefore
+  cannot be used as Safari process-restart persistence evidence.
 
 ## Security interpretation
 
@@ -96,7 +105,9 @@ IndexedDB are origin-scoped.
 
 ## Provisional decision
 
-Chrome satisfies both paths. The project-wide decision remains open until the
-three external browser jobs finish and a security verdict accepts or rejects
-the fallback. Any unsupported browser is downgraded to metadata-only access;
-there is no silent plaintext or exportable-key mode.
+Chrome, Edge/Windows, and Firefox/Linux satisfy both paths. WebKit/macOS
+satisfies the bounded encrypted fallback across separate app processes but not
+the complete native path. The project-wide decision remains open until the
+Safari session rerun completes and a security verdict accepts or rejects that
+fallback. Any unsupported browser is downgraded to metadata-only access; there
+is no silent plaintext or exportable-key mode.

@@ -14,7 +14,7 @@
 | Current Phase | `PROVIDER_SPIKE` |
 | Status | `SPIKE_READY` |
 | Executor | `Codex web provider-spike` |
-| Updated | `2026-07-14 15:00 -0700` |
+| Updated | `2026-07-14 15:33 -0700` |
 | Suggested Next | `provider-spike` |
 | Security Gate | `open — security-review must judge the fallback` |
 | Evidence Path | `docs/spikes/browser/` |
@@ -29,8 +29,8 @@
 
 | Field | Value |
 |---|---|
-| Tool + version | Chrome `150.0.7871.116`; Safari `26.5.2`; Edge/Firefox absent locally and require external evidence |
-| OS | macOS 26.5.2 arm64 primary + Windows runner required |
+| Tool + version | Chrome `150.0.7871.116`; Edge `149.0.4022.98`; Firefox `152.0.4`; Safari runner `26.4`; local WebKit on macOS `26.5.2` |
+| OS | macOS 26.5.2 arm64 + GitHub-hosted Windows and Linux runners |
 | Auth mode | WebCrypto, IndexedDB |
 
 ## Evidence Ledger
@@ -39,11 +39,15 @@
 |---|---|---|---|
 | 2026-07-14 15:28 -0700 | Playwright and Selenium, Chrome 150, two independent browser processes over one temporary profile | native Ed25519/X25519 and encrypted fallback passed; all stored private/wrapping keys remained non-extractable | `docs/spikes/browser/chrome-macos.json` |
 | 2026-07-14 15:31 -0700 | GitHub Actions engine matrix defined for Edge/Windows, Firefox/Linux, and Safari/macOS | external evidence queued on branch push | `.github/workflows/browser-key-spike.yml` |
+| 2026-07-14 15:33 -0700 | PR #6 run 29372955467 | Edge/Windows and Firefox/Linux passed native and fallback paths across process restart; Safari cross-session control confirmed WebDriver isolation | `docs/spikes/browser/edge-windows.json`, `firefox-linux.json`, `safari-webdriver-isolation-macos.json` |
+| 2026-07-14 15:33 -0700 | Minimal WKWebView harness, three separate app processes | Ed25519 and AES-GCM fallback persisted; X25519 read returned `TypeError`; fallback makes WebKit E2EE-eligible | `docs/spikes/browser/webkit-macos.json` |
 
 ## Result, limitations, and fallback
 
-Chrome passes native and encrypted-fallback paths across a full process restart.
-Edge, Firefox, and Safari remain pending real-engine CI evidence. The encrypted
+Chrome, Edge/Windows, and Firefox/Linux pass native and encrypted-fallback paths
+across a full process restart. WebKit/macOS passes only Ed25519 plus the
+encrypted fallback across separate app processes because persisted X25519 use
+returned `TypeError`. Safari WebDriver capability rerun remains pending. The
 fallback reduces raw-key-at-rest exposure but does not protect against
 same-origin script; browsers failing both paths must be metadata-only.
 
@@ -58,3 +62,4 @@ same-origin script; browsers failing both paths must be metadata-only.
 | 2026-07-10 20:56 -0700 | Claude Code (Fable 5), lifecycle-readiness build | Spike unit created from Phase 0.5 breakdown | this file | `DRAFT` | feature-plan |
 | 2026-07-14 15:00 -0700 | Codex web provider-spike, feature-plan | Froze per-browser non-exportable CryptoKey, IndexedDB persistence, encrypted fallback, and metadata-only downgrade criteria; pinned locally available browsers | this file | `SPIKE_READY` | provider-spike |
 | 2026-07-14 15:31 -0700 | Codex web provider-spike | Implemented two-process WebCrypto/IndexedDB PoC, reproduced Chrome through Playwright and Selenium, and added a real-engine CI matrix | `docs/spikes/browser/`, `.github/workflows/browser-key-spike.yml` | Chrome `PASS`; external browsers queued | push branch and collect artifacts |
+| 2026-07-14 15:33 -0700 | Codex web provider-spike | Collected Edge/Windows and Firefox/Linux passes, identified Apple WebDriver isolation, and added a separate-process WKWebView harness | PR #6 run `29372955467`, `docs/spikes/browser/` | Edge/Firefox `PASS`; WebKit `PASS_WITH_FALLBACK`; Safari session rerun required | push corrected Safari probe and rerun matrix |

@@ -271,11 +271,20 @@ async function readPhase() {
   });
 }
 
+async function cleanupPhase() {
+  setStage("cleanup:database");
+  await deleteDatabase();
+  setStage("cleanup:complete");
+  emit({schemaVersion: 1, cleanupComplete: true});
+}
+
 try {
   if (phase === "write") {
     await writePhase();
-  } else {
+  } else if (phase === "read") {
     await readPhase();
+  } else {
+    await cleanupPhase();
   }
 } catch (error) {
   emit({schemaVersion: 1, fatalError: errorName(error), e2eeEligible: false});
