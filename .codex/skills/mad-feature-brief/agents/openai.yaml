@@ -1,0 +1,4 @@
+interface:
+  display_name: "MultiAgentDesk Feature Brief"
+  short_description: "Turn a raw request into a reviewable project feature brief"
+  default_prompt: "Use $mad-feature-brief to normalize this request into a scoped MultiAgentDesk feature brief with acceptance criteria."

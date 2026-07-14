@@ -1,0 +1,34 @@
+name: Feature brief
+description: Propose a scoped MultiAgentDesk feature for classification and planning
+title: "[Feature] "
+labels: ["feature"]
+body:
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation and desired outcome
+    validations:
+      required: true
+  - type: textarea
+    id: journeys
+    attributes:
+      label: Primary user journeys
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and non-goals
+  - type: dropdown
+    id: likely-module
+    attributes:
+      label: Likely owning module
+      options: ["Unknown", "core", "provider", "control-plane", "web", "desktop", "security", "project-system"]
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+  - type: textarea
+    id: security
+    attributes:
+      label: Credential, privacy, or remote-control impact

@@ -1,0 +1,173 @@
+# MultiAgentDesk threat model
+
+- Status: Initial Phase 0 model; implementation mitigations are not yet verified
+- Date: 2026-07-11
+- Owner module: `security`
+- Baseline: [Implementation Plan v0.2](IMPLEMENTATION_PLAN.md),
+  [security invariants](../CLAUDE.md), and [ADR index](adr/README.md)
+
+## 1. Scope and non-goals
+
+This model covers v0.1 Device Daemon, CLI/TUI, Web/PWA, Desktop shell, Control
+Plane, built-in Provider processes, local Vault/materialization, device pairing,
+CredentialGrant, metadata sync, ciphertext relay, and dependency/update
+boundaries.
+
+It does not prove that planned controls are implemented. It does not select an
+E2EE algorithm suite, attest a Provider credential format, establish browser
+key support, validate Windows ConPTY/Named Pipe/Tauri behavior, or promise that
+revocation remotely erases a secret already copied to another device.
+
+Evidence states used below:
+
+- **accepted design**: reviewed requirement; not runtime evidence;
+- **planned**: required mitigation is not yet proven in product code;
+- **pending evidence**: the named Spike must resolve the mechanism or claim;
+- **verified**: reserved for a linked, reproducible artifact (none in this
+  initial model);
+- **deferred**: explicitly open acceptance outside the current environment.
+
+Unknown, planned, pending, partial, and deferred evidence never count as pass.
+
+## 2. Assets and security objectives
+
+| Asset | Confidentiality objective | Integrity/authorization objective | Availability objective |
+|---|---|---|---|
+| Provider credentials and Vault keys | plaintext remains on authorized devices and out of Control Plane/logs | only explicit authorized flows create or update a CredentialInstance | lock/failure does not destroy or overwrite the Vault |
+| Device signing/exchange keys and pins | private keys remain device-local | key changes never silently replace a local pin | loss triggers re-enrollment, not server recovery of the private key |
+| CredentialGrant bundles | Control Plane sees ciphertext only | target, source, revision, purpose, expiry, and grant identity are authenticated and replay-safe | failure is explicit and retry-safe |
+| Session terminal/model content | plaintext remains on session device and approved endpoints | inputs, approvals, resize, stop, and kill require current authorization/lease | detach or relay loss does not silently kill the Provider process |
+| Account/Profile/Workspace configuration | secrets are excluded from ordinary sync | revisions and ownership prevent stale or cross-account overwrite | local operation uses last valid device state when Control Plane is offline |
+| Session/usage/device metadata | exposure is minimized and documented | server and clients cannot forge authoritative device/session facts | bounded outage and queue failure are observable |
+| Audit records | never contain credentials or terminal/model plaintext | security-sensitive actions are attributable and append-oriented | enough evidence remains for diagnosis without becoming a secret store |
+| Build and release artifacts | no embedded credentials or unreviewed copied code | dependencies, provenance, signing, and licenses are gated before release | rollback paths remain available |
+
+## 3. Attacker model
+
+| Attacker | Assumed capability | Not assumed away |
+|---|---|---|
+| Network attacker | observe, replay, delay, reorder, drop, or modify traffic outside correctly authenticated encryption | TLS or relay availability alone does not establish device trust |
+| Compromised Control Plane/operator | read or alter server databases, public-key directory, metadata, queued ciphertext, and service behavior | server is not trusted with Provider plaintext or as the pin trust anchor |
+| Unapproved local process | run as the same or another OS user, probe IPC, inspect permissive files, race lifecycle operations | host root/admin compromise can defeat local isolation |
+| Compromised authorized device/server | read memory/files accessible to that device and use credentials already granted to it | revocation cannot guarantee erasure of copied secrets |
+| Malicious or compromised Web origin/dependency | execute script in the application origin, steal accessible keys/content, issue authorized requests | XSS can defeat client-side E2EE while the client is active |
+| Malicious Provider process/config | read its materialized credential area, emit hostile terminal content, hang, crash, or alter auth files | Provider behavior and credential layout require separate evidence |
+| Supply-chain attacker | compromise a dependency, toolchain, update, adapter, workflow, or release artifact | CI success alone is not provenance or signing proof |
+| Authorized but mistaken user | approve the wrong fingerprint/device, grant the wrong account, disclose recovery material, or kill a session | UI confirmation reduces but cannot eliminate human error |
+
+## 4. Trust boundaries
+
+| Boundary | Trusted input/identity | Required checks | Residual exposure |
+|---|---|---|---|
+| User ↔ Web/PWA | Passkey-authenticated user plus separately enrolled Web Device | origin security, CSP, enrollment, locally pinned keys, capability check | active XSS can access decrypted content; site-data loss loses the Web key |
+| Web/Desktop ↔ Control Plane | TLS-authenticated service, but server may be read/modified | signed requests, bounded metadata, ciphertext-only protected payloads | traffic and metadata patterns remain visible; service can deny availability |
+| Control Plane ↔ Device Daemon | enrolled Device identity whose keys match local pins/attestations | signature, exchange-key match, audience, purpose, expiry, replay, revision | compromised server can suppress or replay traffic until client checks reject it |
+| CLI/TUI/Desktop ↔ local Daemon | local OS identity over IPC | endpoint permissions, peer authorization, protocol/version checks, lease rules | same-user malware or root/admin may impersonate a client |
+| Daemon ↔ Vault/database/filesystem | device-local process and OS protection | least privilege, restrictive permissions, authenticated encryption, transactions | root/admin or live-process compromise can read plaintext/memory |
+| Daemon ↔ Provider process | configured binary and isolated runtime home | argument/env allowlists, explicit capability, path/version checks, output handling | Provider must read materialized credentials and can change its files |
+| Source Device ↔ target Device grant | directly pinned keys or valid attestation from a locally pinned approver | source/target/capability binding, freshness, revision, replay protection, signed receipt | an already compromised approved target receives usable plaintext by design |
+| Build/research input ↔ repository/release | reviewed source and compatible license | DCO, license, dependency, link, provenance/signing gates | compromised tooling or reviewer error remains possible |
+
+## 5. Non-negotiable security invariants
+
+1. A Passkey authenticates a user to the Control Plane; it does not derive,
+   replace, recover, or authorize use of an E2EE Device private key.
+2. The Control Plane public-key directory is an index, not a trust anchor. It
+   cannot silently replace locally pinned signing or exchange keys.
+3. Credential grants are explicit, target-device scoped, encrypted,
+   revocable for future use, and never described as remotely erasable after a
+   target or host has copied the plaintext secret.
+4. Credential refresh/materialization has one writer and uses monotonic
+   credential revision/CAS semantics; mtime is only a change hint.
+5. MultiAgentDesk never implements automatic account rotation, quota bypass,
+   rate-limit evasion, or transparent mid-session credential switching.
+
+## 6. Threats, required mitigations, and evidence
+
+| ID | Asset/boundary and attacker scenario | Impact | Required mitigation | Evidence state | Residual risk |
+|---|---|---|---|---|---|
+| T-01 | Compromised Control Plane substitutes a Device key | credential/session decryption by attacker or unauthorized grants | local pin match; key change is a new device; attestation only from directly pinned approver; fingerprint ceremony | accepted design; E2EE details pending `spike-e2ee-protocol-vectors` | user may approve a malicious fingerprint; compromised pinned approver can attest a bad key |
+| T-02 | Relay replays/reorders/tampers with enrollment, grant, command, or terminal envelopes | duplicated grant, stale control, forged state, content corruption | authenticated source/target/purpose/audience/revision/expiry/message ID, replay cache, monotonic ordering where required | pending `spike-e2ee-protocol-vectors` | availability attacks and bounded state loss remain possible |
+| T-03 | Control Plane DB/log/queue captures Provider credential or terminal plaintext | broad remote secret/content disclosure | data-classification allowlist, ciphertext-only protected payloads, redaction tests, no plaintext trace | planned | metadata, traffic patterns, device/account/session identifiers remain exposed |
+| T-04 | Vault or Device DB is copied, permissions are weak, or unlock material leaks | offline credential/key theft | OS key store or password-derived wrapping, authenticated encryption, restrictive permissions, explicit locked state | planned; browser/key mechanics pending `spike-browser-key-storage` where applicable | host root/admin, unlocked-process compromise, weak user password, and memory disclosure remain |
+| T-05 | Daemon crash or concurrent refresh writes an older credential over a newer one | account lockout, stale token reuse, credential corruption | single materialization writer, monotonic `credentialRevision` CAS, digest validation, transactional recovery, quarantine ambiguous leases | planned; Provider semantics pending `spike-codex-auth-refresh` and `spike-claude-config-keychain` | Provider-side concurrent mutation can remain ambiguous and require re-login |
+| T-06 | Materialized auth home, temp file, process env, crash dump, or backup exposes plaintext | local credential theft | per-session least-privilege directory, minimal env, cleanup after process exit, quarantine on uncertain recovery, secret-safe diagnostics | planned; Provider layout pending Provider Spikes | **Provider-readable plaintext exists at runtime; host root/admin or Provider compromise can copy it** |
+| T-07 | Unauthorized local process connects to IPC or steals a ControllerLease | session observation/input/resize/stop/kill by attacker | 0600 Unix socket/reference path, peer authorization, request capability checks, expiring lease with owner identity, audit events | planned for Phase 1; Windows transport pending `spike-windows-named-pipe-ipc` | same-user malware and root/admin can often act with the user's local authority |
+| T-08 | Multiple clients race control, stale lease holder sends input, or detach kills the process | command confusion, loss of work, unintended termination | single ControllerLease, monotonic lease revision/expiry, explicit acquire/release, detach separate from process lifecycle, idempotent stop/kill | planned for Phase 1 | network partitions can delay awareness; forced takeover may discard unsent input |
+| T-09 | Provider binary/path/config arguments are malicious or wrong account files are reused | code execution, secret crossover, wrong-account actions | explicit binary path/version evidence, argument/env construction without shell injection, isolated runtime homes, pinned session account/profile/capabilities | planned; specifics pending Provider Spikes | a user-approved or compromised Provider binary executes with granted local access |
+| T-10 | Hostile terminal/model output injects control sequences or content into TUI/Web/Desktop | UI spoofing, clipboard abuse, XSS, data exfiltration | terminal parser hardening, output encoding, strict CSP, no untrusted HTML, bounded buffers, security tests | planned; Windows terminal behavior pending `spike-windows-conpty` | terminal emulation and browser dependencies retain parser bugs |
+| T-11 | Web XSS or malicious dependency accesses enrolled Device keys and decrypted content | live session/credential grant compromise | no third-party scripts, strict CSP/Trusted Types where supported, dependency audit, non-exportable keys, metadata-only fallback | planned; support pending `spike-browser-key-storage` | active same-origin code can use keys/content even if key bytes are non-exportable |
+| T-12 | CredentialGrant targets wrong/revoked/incapable device or is replayed | unauthorized credential copy | explicit user confirmation, `credentials.store` capability, direct pin/attestation validation, target-bound encryption, revision/expiry/replay checks, signed receipt | accepted design; protocol pending `spike-e2ee-protocol-vectors` | user error or already compromised approved target remains; **revocation cannot erase copied plaintext** |
+| T-13 | Revoked Device/session key continues receiving new content | post-revocation access | reject revoked identity for new envelopes/grants, rotate future session keys, invalidate leases, audit revocation | planned; protocol pending `spike-e2ee-protocol-vectors` | previously decrypted or copied data remains outside remote control |
+| T-14 | Secrets or terminal content enter logs, metrics, traces, crash reports, generated dashboard, or audit export | secondary disclosure | structured allowlisted telemetry, secret-field blacklist, payload exclusion, test fixtures, bounded audit schema | planned; dashboard secret-field check exists only for generated project facts | novel fields or third-party crash tooling may bypass redaction until tested |
+| T-15 | Control Plane outage, relay suppression, or local DB corruption causes unsafe fallback | loss of control/data or bypassed authorization | local-first operation with last valid local state, fail closed for new remote grants/control, explicit offline/stale status, backups and migration rollback | planned | remote observation/control is unavailable; local disk failure can lose unbacked metadata |
+| T-16 | Dependency, update, external adapter, copied research, or CI workflow is compromised | arbitrary code execution, license contamination, release compromise | compatible-license gate, DCO, dependency review, pinned toolchains, provenance/signing/SBOM before release, external adapters out of process | planned; release controls deferred to Phase 6 | upstream compromise, maintainer key theft, and review error remain possible |
+| T-17 | Automatic recommendation silently rotates accounts or uses misleading quota data | policy evasion, wrong-account actions, Provider enforcement risk | user confirmation, pinned session identity, source/freshness labels, no automatic rotation or mid-session switch | accepted design; usage evidence pending Provider Spikes | user may choose poorly based on stale or estimated usage |
+| T-18 | Desktop starts a second Daemon or an untrusted sidecar | split-brain Vault/session state or code execution | discover system service first, single-instance lock/IPC ownership, signed/verified packaged sidecar, stop only owned sidecar | planned; Windows behavior pending `spike-windows-desktop-sidecar` | packaging/signing and platform service behavior are unverified |
+
+## 7. Failure and recovery rules
+
+- Key mismatch, invalid attestation, replay, wrong audience/purpose, revoked
+  Device, or unauthorized capability fails closed and requires re-pairing or
+  explicit remediation; the Control Plane cannot override a local pin.
+- A locked Vault keeps metadata queries available but denies new secret
+  materialization/session start with an explicit `vault_locked` error. Unlock
+  failure never clears or overwrites the Vault.
+- Ambiguous or unauthenticated credential lease residue is quarantined. It is
+  not written back over the Vault merely because its mtime is newer.
+- Detach releases a client relationship; it does not stop the Provider process.
+  Stop requests graceful termination; Kill is explicit forced termination.
+- Control Plane outage disables remote coordination but does not weaken local
+  authorization or silently switch accounts/credentials.
+- Audit and diagnostic paths record identifiers, decisions, and error classes,
+  not Provider secrets or terminal/model plaintext.
+
+## 8. Spike-gated and deferred evidence
+
+| Area | Required evidence | Current state |
+|---|---|---|
+| Codex credential store, auth refresh, concurrent revision behavior | [`spike-codex-auth-refresh`](workflow/features/spike-codex-auth-refresh/dev_log.md) | pending evidence; no compatibility claim |
+| Claude config/keychain isolation, auth status/setup token, refresh behavior | [`spike-claude-config-keychain`](workflow/features/spike-claude-config-keychain/dev_log.md) | pending evidence; no compatibility claim |
+| Browser non-exportable/wrapped key storage and metadata-only fallback | [`spike-browser-key-storage`](workflow/features/spike-browser-key-storage/dev_log.md) | pending evidence |
+| E2EE envelope, AAD binding, replay, vectors, and independent crypto review | [`spike-e2ee-protocol-vectors`](workflow/features/spike-e2ee-protocol-vectors/dev_log.md) | pending evidence; no algorithm frozen |
+| Windows terminal/ConPTY behavior | [`spike-windows-conpty`](workflow/features/spike-windows-conpty/dev_log.md) | DRAFT; not started |
+| Windows local IPC/Named Pipe behavior | [`spike-windows-named-pipe-ipc`](workflow/features/spike-windows-named-pipe-ipc/dev_log.md) | DRAFT; not started; Unix socket remains reference |
+| Windows Tauri sidecar lifecycle | [`spike-windows-desktop-sidecar`](workflow/features/spike-windows-desktop-sidecar/dev_log.md) | DRAFT; not started |
+
+Windows acceptance: deferred (no local Windows machine). This is an open gate,
+not a pass. GitHub Actions `windows-latest` may later provide build, static, and
+unit-test evidence but cannot replace interactive ConPTY, Named Pipe, Fake
+Session, or Tauri sidecar acceptance.
+
+## 9. Explicit residual risk
+
+- An authorized device or server must receive usable credentials for local
+  Provider execution. If that host is compromised, the attacker may copy them;
+  later revocation prevents future authorized flows but cannot prove erasure.
+- Provider-readable credentials exist in plaintext at the point of use. Vault
+  encryption protects storage, not a compromised root/admin, live Daemon, or
+  Provider process.
+- A compromised Control Plane can observe metadata/traffic patterns, deny or
+  delay service, and attempt key substitution/replay; local pins and protocol
+  checks are intended to prevent silent decryption/authorization, pending
+  reproducible E2EE evidence.
+- XSS in an active approved Web Device can use keys and decrypted content even
+  when private key material is non-exportable.
+- Human fingerprint/grant/account confirmation can be mistaken or coerced.
+- Supply-chain controls reduce but do not eliminate compromised upstreams,
+  toolchains, signing keys, or reviewers.
+- Cross-platform process, terminal, filesystem, key-store, and IPC behavior
+  differs. Windows interactive behavior remains unverified and deferred.
+
+## 10. Assumptions and update triggers
+
+The v0.1 baseline assumes one user, self-hosted deployment, TLS to the Control
+Plane, supported host OS security primitives, and user control of enrolled
+devices. Root/admin compromise and compromise of an already authorized target
+are not assumed preventable by application cryptography alone.
+
+Re-review this model when any asset, trust boundary, credential flow, key or
+envelope protocol, Provider integration, external adapter boundary, logging or
+retention behavior, supported platform, update/signing path, or multi-user
+scope changes. Each implementation feature must link its security tests and
+new residual risks rather than changing an evidence state without proof.

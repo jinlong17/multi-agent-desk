@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "state_owner": "project-system",
+  "plan_version": "v0.2",
+  "current_phase": "0",
+  "current_status": "Phase 0 · 4/5 单元已 SHIPPED；phase0-ci-governance P2 READY_TO_SHIP（单账号/no-review 例外已验证）",
+  "current_owner": "project-system",
+  "next_action": "ship verifies the final PR #1 head and performs the explicitly authorized linear merge into main",
+  "manual_updated_at": "2026-07-14",
+  "manual_updated_by": "operator-directed READY_TO_SHIP verdict sync (refresh recorded in phase0-ci-governance Work Log)",
+  "status_rows": [
+    {
+      "label": "现在做什么",
+      "value": "Phase 0 · 完成仓库、治理、工作流、CI 与架构决策基线"
+    },
+    {
+      "label": "在哪条线",
+      "value": "main → codex/<module>/<feature>；并行 writer 使用独立 worktree"
+    },
+    {
+      "label": "用哪个入口",
+      "value": "classify → brief → plan → review → build → verify → ship"
+    },
+    {
+      "label": "做到什么状态",
+      "value": "Phase 0 已 SHIPPED 4/5；CI P2 当前 head 七项检查和完整本地回归通过，等待已授权线性合并"
+    }
+  ],
+  "phases": [
+    {
+      "id": "0",
+      "title": "仓库与治理基线",
+      "state": "in_progress",
+      "depends": "Plan v0.2",
+      "gate": "monorepo 空构建和治理检查通过"
+    },
+    {
+      "id": "0.5",
+      "title": "Provider & Security Spikes",
+      "state": "planned",
+      "depends": "Phase 0",
+      "gate": "外部假设有可复现证据与 fallback"
+    },
+    {
+      "id": "1",
+      "title": "Device Kernel",
+      "state": "planned",
+      "depends": "Phase 0",
+      "gate": "Fake Session 跨平台闭环"
+    },
+    {
+      "id": "2",
+      "title": "Codex Vertical Slice",
+      "state": "gated",
+      "depends": "Phase 1 + Codex spikes",
+      "gate": "真实 Codex attach/approval/resume"
+    },
+    {
+      "id": "3",
+      "title": "Claude Vertical Slice",
+      "state": "gated",
+      "depends": "Phase 1 + Claude spikes",
+      "gate": "真实 Claude PTY attach/control/reconnect"
+    },
+    {
+      "id": "4a",
+      "title": "Control Plane Core",
+      "state": "planned",
+      "depends": "Phase 1",
+      "gate": "身份、设备、同步、异步命令通过"
+    },
+    {
+      "id": "4b",
+      "title": "E2EE Realtime + Web",
+      "state": "gated",
+      "depends": "Phase 4a + E2EE spikes",
+      "gate": "未配对客户端不能解密"
+    },
+    {
+      "id": "5",
+      "title": "Credential Grant + macOS",
+      "state": "gated",
+      "depends": "Phase 4b",
+      "gate": "显式目标设备授权与换钥攻击测试"
+    },
+    {
+      "id": "6",
+      "title": "发布与加固",
+      "state": "planned",
+      "depends": "稳定验收",
+      "gate": "无未处理 Critical/High；Windows Desktop 仍 Experimental"
+    }
+  ],
+  "human_gates": [
+    "priority",
+    "risk acceptance",
+    "phase completion",
+    "branch creation",
+    "merge",
+    "push",
+    "ship",
+    "release"
+  ],
+  "focus": [
+    {
+      "slug": "phase0-ci-governance",
+      "expected_status": "READY_TO_SHIP"
+    }
+  ]
+}

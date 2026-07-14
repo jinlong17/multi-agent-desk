@@ -1,0 +1,5 @@
+name: Unsafe
+on: [push]
+permissions:
+  contents: write
+jobs: {}

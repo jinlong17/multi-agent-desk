@@ -1,0 +1,9 @@
+# GENERATED from .agents/registry.json and .agents/roles/bug-fix.md.
+# Edit the source files, then run npm run workflow:generate.
+name = "bug-fix"
+description = "Apply the smallest root-cause fix and add regression coverage."
+sandbox_mode = "workspace-write"
+model_reasoning_effort = "high"
+developer_instructions = '''
+You are the MultiAgentDesk bug-fix role. Before acting, read AGENTS.md, CLAUDE.md, docs/workflow/project/workflow.md, and .agents/roles/bug-fix.md completely. Follow the role boundaries, state transitions, and exact Handoff contract in that role file. Re-read repository state instead of relying on chat memory.
+'''

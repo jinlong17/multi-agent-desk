@@ -1,0 +1,96 @@
+name: Governance
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: governance-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  license-gate:
+    name: license-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Setup pnpm
+        uses: pnpm/action-setup@d15e628ca66d93ee5f352c71671a7bc6a97af5c9 # v6.0.8
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Setup Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version-file: .go-version
+          cache: true
+      - name: Setup pinned Rust
+        shell: bash
+        run: |
+          rustup set profile minimal
+          rustup toolchain install 1.91.1
+          rustup default 1.91.1
+      - name: Install frozen workspace
+        run: pnpm install --frozen-lockfile
+      - name: Verify pnpm and Cargo license policy
+        run: npm run ci:licenses
+      - name: Install pinned Go license scanner
+        run: go install github.com/google/go-licenses/v2@v2.0.1
+      - name: Verify Go dependency licenses
+        run: >-
+          "$(go env GOPATH)/bin/go-licenses" check --include_tests
+          --ignore github.com/jinlong17/multi-agent-desk
+          --allowed_licenses Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,MIT,MPL-2.0
+          github.com/jinlong17/multi-agent-desk/...
+
+  dco:
+    name: dco
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify DCO range
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: node scripts/ci/verify-dco.mjs --base "$BASE_SHA" --head "$HEAD_SHA"
+
+  link-check:
+    name: link-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Verify local links and anchors
+        run: node scripts/ci/check-local-links.mjs
+      - name: Verify HTTP links
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: >-
+            --root-dir .
+            --no-progress
+            --max-retries 2
+            --exclude-loopback
+            --exclude-path node_modules
+            --exclude-path scripts/ci/fixtures/links
+            --exclude-path apps/desktop/src-tauri/target
+            './**/*.md'
+          fail: true
+          failIfEmpty: true

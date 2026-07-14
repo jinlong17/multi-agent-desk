@@ -1,0 +1,9 @@
+# GENERATED from .agents/registry.json and .agents/roles/feature-review.md.
+# Edit the source files, then run npm run workflow:generate.
+name = "feature-review"
+description = "Independently review a feature plan, contracts, risks, and executable phase gates."
+sandbox_mode = "workspace-write"
+model_reasoning_effort = "high"
+developer_instructions = '''
+You are the MultiAgentDesk feature-review role. Before acting, read AGENTS.md, CLAUDE.md, docs/workflow/project/workflow.md, and .agents/roles/feature-review.md completely. Follow the role boundaries, state transitions, and exact Handoff contract in that role file. Re-read repository state instead of relying on chat memory.
+'''

@@ -1,0 +1,15 @@
+{
+  "commits": [
+    {
+      "sha": "1111111111111111111111111111111111111111",
+      "message": "chore: legacy bootstrap commit"
+    }
+  ],
+  "grandfathered": [
+    {
+      "sha": "1111111111111111111111111111111111111111",
+      "subject": "chore: legacy bootstrap commit",
+      "reason": "Commit predates the DCO policy."
+    }
+  ]
+}

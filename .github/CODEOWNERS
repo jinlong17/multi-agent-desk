@@ -1,0 +1,48 @@
+# Generated from docs/workflow/project/module-registry.json by scripts/ci/verify-codeowners.mjs.
+# Do not edit path ownership by hand.
+* @jinlong17
+
+# core
+/cmd/multidesk/ @jinlong17
+/internal/app/ @jinlong17
+/internal/domain/ @jinlong17
+/internal/runtime/ @jinlong17
+/internal/device/ @jinlong17
+/internal/vault/ @jinlong17
+/internal/storage/ @jinlong17
+/migrations/device/ @jinlong17
+
+# provider
+/internal/providers/ @jinlong17
+/internal/providerprotocol/ @jinlong17
+
+# control-plane
+/cmd/multidesk-server/ @jinlong17
+/internal/controlplane/ @jinlong17
+/internal/transport/ @jinlong17
+/api/ @jinlong17
+/migrations/server/ @jinlong17
+
+# web
+/apps/web/ @jinlong17
+/packages/ui/ @jinlong17
+/packages/protocol/ @jinlong17
+
+# desktop
+/apps/desktop/ @jinlong17
+
+# security
+/internal/crypto/ @jinlong17
+/docs/security/ @jinlong17
+/docs/THREAT_MODEL.md @jinlong17
+
+# project-system
+/.agents/ @jinlong17
+/.codex/ @jinlong17
+/.claude/ @jinlong17
+/.github/ @jinlong17
+/docs/adr/ @jinlong17
+/docs/workflow/ @jinlong17
+/docs/prototypes/dev-dashboard/ @jinlong17
+/scripts/dashboard/ @jinlong17
+/scripts/workflow/ @jinlong17

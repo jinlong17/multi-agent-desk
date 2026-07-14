@@ -1,0 +1,809 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>MultiAgentDesk 开发说明看板</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --navy: #071b34;
+      --navy-2: #0b294d;
+      --blue: #1260f3;
+      --blue-soft: #edf4ff;
+      --cyan: #058aa3;
+      --cyan-soft: #e9f8fb;
+      --green: #15803d;
+      --green-soft: #edf9f0;
+      --amber: #b96800;
+      --amber-soft: #fff7e5;
+      --red: #c92a2a;
+      --red-soft: #fff0f0;
+      --purple: #6d3ed1;
+      --purple-soft: #f4efff;
+      --ink: #142033;
+      --muted: #5e6b7e;
+      --faint: #7c8798;
+      --line: #d8e0ea;
+      --line-strong: #bac6d6;
+      --canvas: #f3f6fa;
+      --surface: #ffffff;
+      --surface-2: #f8fafc;
+      --radius: 0.55rem;
+      --shadow: 0 0.75rem 2rem rgba(27, 52, 86, 0.08);
+      --rail-width: 15.5rem;
+      --max-width: 104rem;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-width: 20rem;
+      background: var(--canvas);
+      color: var(--ink);
+      font: 1rem/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    a { color: inherit; text-decoration: none; }
+    code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
+    svg { display: block; }
+    :focus-visible { outline: 0.18rem solid rgba(18, 96, 243, 0.32); outline-offset: 0.15rem; }
+
+    .app-shell { min-height: 100vh; }
+    .rail {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 4rem;
+      padding: 0.65rem 0.9rem;
+      background: var(--navy);
+      color: #fff;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+    .brand { display: flex; align-items: center; gap: 0.7rem; min-width: 0; }
+    .brand-mark {
+      width: 2.25rem;
+      height: 2.25rem;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(255,255,255,0.34);
+      border-radius: 0.45rem;
+      background: var(--blue);
+      font-weight: 850;
+      letter-spacing: -0.05em;
+    }
+    .brand-text { min-width: 0; }
+    .brand-text strong { display: block; font-size: 0.96rem; white-space: nowrap; }
+    .brand-text span { display: block; color: #a9bfd8; font-size: 0.76rem; white-space: nowrap; }
+    .nav-toggle {
+      min-width: 2.75rem;
+      min-height: 2.75rem;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      color: #fff;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: var(--radius);
+    }
+    .rail-panel {
+      position: fixed;
+      inset: 4rem 0 auto 0;
+      display: none;
+      max-height: calc(100vh - 4rem);
+      overflow: auto;
+      padding: 0.75rem;
+      background: var(--navy);
+      border-top: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 1rem 2rem rgba(0,0,0,0.26);
+    }
+    .rail-panel.is-open { display: block; }
+    .nav { display: grid; gap: 0.22rem; }
+    .nav a {
+      min-height: 2.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.68rem 0.8rem;
+      color: #c9d8e9;
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+    .nav a:hover, .nav a.is-active { color: #fff; background: var(--blue); border-color: #4f8cff; }
+    .nav-icon { width: 1.15rem; height: 1.15rem; flex: 0 0 auto; }
+    .rail-fact, .rail-rule {
+      margin-top: 0.8rem;
+      padding: 0.9rem;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,0.045);
+    }
+    .rail-fact b, .rail-rule b { display: block; font-size: 0.8rem; }
+    .rail-fact p, .rail-rule p { margin: 0.3rem 0 0; color: #a9bfd8; font-size: 0.78rem; }
+    .rail-fact strong { display: block; margin-top: 0.45rem; color: #fff; font-size: 0.88rem; }
+
+    .main { min-width: 0; }
+    .topbar {
+      position: sticky;
+      top: 4rem;
+      z-index: 20;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      min-height: 3.75rem;
+      padding: 0.65rem 1rem;
+      background: rgba(255,255,255,0.96);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(0.8rem);
+    }
+    .repo-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.65rem 1.2rem; }
+    .meta-item { display: grid; gap: 0.05rem; }
+    .meta-item span { color: var(--faint); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+    .meta-item strong { font-size: 0.82rem; }
+    .top-actions { display: flex; gap: 0.5rem; }
+    .icon-button, .action-button {
+      min-height: 2.75rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      padding: 0.55rem 0.8rem;
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      font-size: 0.82rem;
+      font-weight: 760;
+    }
+    .icon-button:hover, .action-button:hover { border-color: #91add4; background: var(--blue-soft); color: var(--blue); }
+
+    .content { width: 100%; max-width: var(--max-width); margin: 0 auto; padding: 1rem 1rem 4rem; }
+    .section { scroll-margin-top: 8.5rem; margin-bottom: 1.1rem; }
+    .section-title { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.8rem; }
+    .section-title h2 { margin: 0; font-size: clamp(1.25rem, 2.6vw, 1.8rem); letter-spacing: -0.025em; }
+    .section-title p { max-width: 62ch; margin: 0.25rem 0 0; color: var(--muted); }
+    .section-kicker { color: var(--blue); font-size: 0.76rem; font-weight: 850; letter-spacing: 0.08em; text-transform: uppercase; }
+    .surface { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+    .pad { padding: 1rem; }
+    .notice {
+      display: grid;
+      grid-template-columns: auto minmax(0,1fr);
+      gap: 0.75rem;
+      align-items: start;
+      margin-bottom: 0.9rem;
+      padding: 0.8rem 0.9rem;
+      background: var(--amber-soft);
+      border: 1px solid #efcb7a;
+      border-radius: var(--radius);
+    }
+    .notice svg { width: 1.2rem; color: var(--amber); margin-top: 0.1rem; }
+    .notice b { display: block; font-size: 0.88rem; }
+    .notice p { margin: 0.18rem 0 0; color: #79521e; font-size: 0.83rem; }
+
+    .cockpit-grid { display: grid; grid-template-columns: 1fr; gap: 0.7rem; margin-bottom: 0.9rem; }
+    .cockpit-item {
+      min-height: 8.8rem;
+      display: grid;
+      grid-template-columns: auto minmax(0,1fr);
+      gap: 0.8rem;
+      align-items: start;
+      padding: 1rem;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+    .cockpit-item.is-primary { border-color: var(--blue); box-shadow: inset 0 0 0 1px rgba(18,96,243,0.18); }
+    .cockpit-icon { width: 2.5rem; height: 2.5rem; display: grid; place-items: center; color: var(--blue); background: var(--blue-soft); border: 1px solid #bed2ff; border-radius: 50%; }
+    .cockpit-icon svg { width: 1.25rem; height: 1.25rem; }
+    .cockpit-item span { color: var(--muted); font-size: 0.76rem; font-weight: 760; }
+    .cockpit-item strong { display: block; margin-top: 0.25rem; font-size: 1rem; line-height: 1.35; }
+    .cockpit-item small { display: block; margin-top: 0.42rem; color: var(--faint); font-size: 0.78rem; }
+
+    .overview-layout { display: grid; gap: 0.9rem; }
+    .timeline-panel { min-width: 0; padding: 1rem; }
+    .panel-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.7rem; margin-bottom: 0.8rem; }
+    .panel-head h3 { margin: 0; font-size: 1rem; }
+    .legend { display: flex; flex-wrap: wrap; gap: 0.45rem 0.8rem; color: var(--muted); font-size: 0.74rem; }
+    .legend span { display: inline-flex; align-items: center; gap: 0.32rem; }
+    .legend i { width: 0.65rem; height: 0.65rem; border-radius: 0.15rem; background: var(--surface-2); border: 1px solid var(--line-strong); }
+    .legend .ready { background: var(--blue-soft); border-color: var(--blue); }
+    .legend .gate { transform: rotate(45deg); background: var(--amber-soft); border-color: var(--amber); }
+    .timeline-scroll { overflow-x: auto; padding: 0.4rem 0.1rem 0.8rem; }
+    .timeline { min-width: 65rem; display: grid; grid-template-columns: repeat(9, minmax(6rem,1fr)); align-items: center; gap: 1.35rem; padding: 1rem 0.35rem; }
+    .phase-button {
+      position: relative;
+      min-height: 6rem;
+      padding: 0.72rem 0.55rem;
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      text-align: left;
+    }
+    .phase-button:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: calc(100% + 0.2rem);
+      width: 1rem;
+      height: 1px;
+      background: #65758a;
+    }
+    .phase-button:not(:last-child)::before {
+      content: "";
+      position: absolute;
+      top: calc(50% - 0.2rem);
+      left: calc(100% + 1.06rem);
+      width: 0.4rem;
+      height: 0.4rem;
+      border-top: 1px solid #65758a;
+      border-right: 1px solid #65758a;
+      transform: rotate(45deg);
+    }
+    .phase-button:hover, .phase-button.is-selected { border-color: var(--blue); background: var(--blue-soft); }
+    .phase-button[data-state="ready"] { border-color: var(--blue); }
+    .phase-button[data-state="gated"] { border-color: #e4bd65; background: #fffdf7; }
+    .phase-button[data-state="experimental"] { border-style: dashed; }
+    .phase-id { color: var(--blue); font-size: 0.72rem; font-weight: 850; }
+    .phase-button b { display: block; margin: 0.22rem 0; font-size: 0.83rem; line-height: 1.3; }
+    .phase-button small { color: var(--muted); font-size: 0.7rem; }
+    .phase-state { display: block; margin-top: 0.45rem; font-size: 0.7rem; font-weight: 800; }
+    .phase-state.ready { color: var(--blue); }
+    .phase-state.planned { color: var(--muted); }
+    .phase-state.gated { color: var(--amber); }
+    .phase-state.experimental { color: var(--purple); }
+    .parallel-note { margin: 0; padding: 0.65rem 0.75rem; color: #4b5b71; background: var(--surface-2); border-left: 0.2rem solid var(--cyan); font-size: 0.8rem; }
+
+    .inspector { padding: 1rem; }
+    .inspector-head { display: flex; align-items: start; justify-content: space-between; gap: 0.6rem; padding-bottom: 0.8rem; border-bottom: 1px solid var(--line); }
+    .inspector-head span { color: var(--blue); font-size: 0.75rem; font-weight: 850; }
+    .inspector-head h3 { margin: 0.18rem 0 0; font-size: 1.1rem; }
+    .state-label { flex: 0 0 auto; padding: 0.25rem 0.45rem; border: 1px solid #b9cdf2; border-radius: 0.3rem; color: var(--blue); background: var(--blue-soft); font-size: 0.7rem; font-weight: 850; }
+    .inspector-block { padding: 0.8rem 0; border-bottom: 1px solid var(--line); }
+    .inspector-block:last-child { border-bottom: 0; }
+    .inspector-block h4 { margin: 0 0 0.45rem; font-size: 0.78rem; }
+    .inspector-block ul { margin: 0; padding-left: 1rem; color: var(--muted); font-size: 0.78rem; }
+    .inspector-block li + li { margin-top: 0.28rem; }
+    .inspector-row { display: grid; grid-template-columns: 5.4rem minmax(0,1fr); gap: 0.4rem; padding: 0.22rem 0; font-size: 0.77rem; }
+    .inspector-row span { color: var(--faint); }
+    .inspector-row b { font-weight: 700; overflow-wrap: anywhere; }
+
+    .workflow-toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.8rem; }
+    .segmented { display: inline-grid; grid-template-columns: repeat(3,1fr); padding: 0.2rem; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); }
+    .segmented button { min-height: 2.55rem; padding: 0.45rem 0.8rem; border: 0; border-radius: 0.35rem; background: transparent; color: var(--muted); font-size: 0.8rem; font-weight: 800; }
+    .segmented button.is-active { background: #fff; color: var(--blue); box-shadow: 0 0.2rem 0.8rem rgba(30,56,90,0.12); }
+    .workflow-panel { padding: 1rem; }
+    .workflow-flow { display: grid; grid-template-columns: 1fr; gap: 0.65rem; }
+    .workflow-step {
+      position: relative;
+      min-height: 11rem;
+      display: flex;
+      flex-direction: column;
+      padding: 0.85rem;
+      border: 1px solid var(--line);
+      border-top: 0.2rem solid var(--blue);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+    .workflow-step.readonly { border-top-color: var(--green); }
+    .workflow-step.human { border-top-color: var(--amber); background: #fffdf7; }
+    .step-top { display: flex; align-items: start; justify-content: space-between; gap: 0.5rem; }
+    .step-top b { font-size: 0.86rem; }
+    .mode-tag { padding: 0.18rem 0.35rem; border-radius: 0.25rem; background: var(--blue-soft); color: var(--blue); font-size: 0.66rem; font-weight: 850; }
+    .readonly .mode-tag { color: var(--green); background: var(--green-soft); }
+    .human .mode-tag { color: var(--amber); background: var(--amber-soft); }
+    .workflow-step p { margin: 0.5rem 0; color: var(--muted); font-size: 0.76rem; }
+    .workflow-step ul { margin: 0; padding-left: 1rem; color: #536176; font-size: 0.73rem; }
+    .workflow-step footer { margin-top: auto; padding-top: 0.6rem; color: var(--faint); font-size: 0.69rem; border-top: 1px solid var(--line); }
+    .flow-arrow { display: none; width: 1.6rem; color: #77879b; align-self: center; }
+    .state-contract { display: grid; gap: 0.6rem; margin-top: 0.85rem; }
+    .contract-row { display: grid; grid-template-columns: minmax(8rem,0.9fr) 1.2rem minmax(8rem,1fr); align-items: center; gap: 0.4rem; padding: 0.6rem 0.7rem; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); font-size: 0.75rem; }
+    .contract-row code { color: var(--blue); font-weight: 800; }
+    .contract-row svg { width: 1rem; color: var(--faint); }
+    .contract-note { color: var(--muted); }
+
+    .filter-bar { display: grid; gap: 0.55rem; margin-bottom: 0.8rem; }
+    .search-wrap { position: relative; }
+    .search-wrap svg { position: absolute; left: 0.75rem; top: 50%; width: 1rem; color: var(--faint); transform: translateY(-50%); }
+    .search-wrap input {
+      width: 100%; min-height: 2.75rem; padding: 0.55rem 0.75rem 0.55rem 2.2rem;
+      border: 1px solid var(--line); border-radius: var(--radius); background: #fff; color: var(--ink);
+    }
+    .filter-buttons { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .filter-buttons button { min-height: 2.75rem; padding: 0.5rem 0.75rem; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); color: var(--muted); font-size: 0.78rem; font-weight: 760; }
+    .filter-buttons button.is-active { color: var(--blue); border-color: var(--blue); background: var(--blue-soft); }
+    .registry { overflow: hidden; }
+    .registry-head, .registry-row { display: grid; grid-template-columns: minmax(10rem,1.3fr) minmax(7rem,0.7fr) minmax(12rem,1.5fr) minmax(9rem,1fr); gap: 0.65rem; align-items: center; }
+    .registry-head { display: none; padding: 0.7rem 0.85rem; background: var(--surface-2); border-bottom: 1px solid var(--line); color: var(--faint); font-size: 0.69rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0.05em; }
+    .registry-row { grid-template-columns: 1fr; padding: 0.85rem; border-bottom: 1px solid var(--line); }
+    .registry-row:last-child { border-bottom: 0; }
+    .registry-name { display: flex; align-items: start; gap: 0.65rem; }
+    .type-mark { width: 2rem; height: 2rem; flex: 0 0 auto; display: grid; place-items: center; border-radius: 0.4rem; background: var(--blue-soft); color: var(--blue); font-size: 0.72rem; font-weight: 900; }
+    .type-mark.agent { color: var(--purple); background: var(--purple-soft); }
+    .registry-name b { display: block; font-size: 0.83rem; }
+    .registry-name span, .registry-cell { color: var(--muted); font-size: 0.75rem; }
+    .registry-cell strong { display: block; color: var(--ink); font-size: 0.72rem; }
+    .status-proposed { color: var(--amber); font-weight: 800; }
+    .status-baseline { color: var(--green); font-weight: 800; }
+
+    .phase-table-wrap { overflow-x: auto; }
+    .phase-table { width: 100%; min-width: 58rem; border-collapse: collapse; background: #fff; }
+    .phase-table th, .phase-table td { padding: 0.75rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 0.76rem; }
+    .phase-table th { position: sticky; top: 0; color: var(--faint); background: var(--surface-2); font-size: 0.68rem; letter-spacing: 0.05em; text-transform: uppercase; }
+    .phase-table tr:last-child td { border-bottom: 0; }
+    .phase-table button { padding: 0; color: var(--blue); background: none; border: 0; font-weight: 850; text-align: left; }
+
+    .architecture-grid { display: grid; gap: 0.8rem; }
+    .architecture-map { position: relative; min-height: 36rem; padding: 1rem; overflow: hidden; }
+    .arch-band { margin-bottom: 0.8rem; padding: 0.55rem 0.7rem; color: var(--muted); background: var(--surface-2); border-left: 0.2rem solid var(--line-strong); font-size: 0.72rem; font-weight: 800; }
+    .arch-row { display: grid; grid-template-columns: 1fr; gap: 0.65rem; margin-bottom: 1rem; }
+    .arch-node { min-height: 6.1rem; padding: 0.8rem; text-align: left; color: var(--ink); background: #fff; border: 1px solid var(--line); border-radius: var(--radius); }
+    .arch-node:hover, .arch-node.is-selected { border-color: var(--blue); background: var(--blue-soft); }
+    .arch-node b { display: block; font-size: 0.84rem; }
+    .arch-node span { display: block; margin-top: 0.25rem; color: var(--muted); font-size: 0.73rem; }
+    .arch-node.owner { border-top: 0.2rem solid var(--green); }
+    .arch-node.relay { border-top: 0.2rem solid var(--amber); }
+    .arch-node.provider { border-top: 0.2rem solid var(--purple); }
+    .architecture-inspector { padding: 1rem; }
+    .architecture-inspector h3 { margin: 0 0 0.35rem; font-size: 1.05rem; }
+    .architecture-inspector > p { margin: 0 0 0.85rem; color: var(--muted); font-size: 0.8rem; }
+    .boundary-list { display: grid; gap: 0.5rem; }
+    .boundary-item { padding: 0.65rem; background: var(--surface-2); border-left: 0.18rem solid var(--line-strong); }
+    .boundary-item b { display: block; font-size: 0.75rem; }
+    .boundary-item span { color: var(--muted); font-size: 0.72rem; }
+
+    .security-flow { display: grid; grid-template-columns: 1fr; gap: 0.6rem; }
+    .security-step { padding: 0.85rem; border: 1px solid var(--line); border-left: 0.22rem solid var(--cyan); border-radius: var(--radius); background: #fff; }
+    .security-step b { display: block; font-size: 0.84rem; }
+    .security-step span { display: block; margin-top: 0.25rem; color: var(--muted); font-size: 0.74rem; }
+    .security-gate { margin-top: 0.8rem; padding: 0.85rem; background: var(--red-soft); border: 1px solid #f0b2b2; border-radius: var(--radius); }
+    .security-gate b { color: var(--red); font-size: 0.84rem; }
+    .security-gate p { margin: 0.3rem 0 0; color: #7c3a3a; font-size: 0.76rem; }
+
+    .quality-grid { display: grid; gap: 0.8rem; }
+    .checklist { padding: 1rem; }
+    .checklist-head { display: flex; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.6rem; }
+    .checklist-head h3 { margin: 0; font-size: 1rem; }
+    .checklist-head span { color: var(--faint); font-size: 0.72rem; }
+    .check-row { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 0.65rem; align-items: start; padding: 0.7rem 0; border-bottom: 1px solid var(--line); }
+    .check-row:last-child { border-bottom: 0; }
+    .check-row input { width: 1.2rem; height: 1.2rem; margin-top: 0.15rem; accent-color: var(--blue); }
+    .check-row b { display: block; font-size: 0.8rem; }
+    .check-row span { color: var(--muted); font-size: 0.72rem; }
+    .risk-list { padding: 1rem; }
+    .risk-list h3 { margin: 0 0 0.6rem; font-size: 1rem; }
+    .risk-row { display: grid; grid-template-columns: 4.3rem minmax(0,1fr); gap: 0.65rem; padding: 0.65rem 0; border-bottom: 1px solid var(--line); }
+    .risk-row:last-child { border-bottom: 0; }
+    .risk-level { align-self: start; padding: 0.2rem 0.35rem; border-radius: 0.25rem; color: var(--red); background: var(--red-soft); font-size: 0.66rem; font-weight: 850; text-align: center; }
+    .risk-row b { display: block; font-size: 0.78rem; }
+    .risk-row span { display: block; margin-top: 0.2rem; color: var(--muted); font-size: 0.71rem; }
+
+    .docs-grid { display: grid; gap: 0.7rem; }
+    .doc-row { padding: 0.85rem; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); }
+    .doc-row b { display: block; font-size: 0.82rem; }
+    .doc-row code { display: block; margin-top: 0.25rem; color: var(--blue); font-size: 0.72rem; overflow-wrap: anywhere; }
+    .doc-row p { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.73rem; }
+    .borrowed-patterns { margin-top: 0.8rem; padding: 1rem; }
+    .borrowed-patterns h3 { margin: 0 0 0.6rem; font-size: 1rem; }
+    .borrowed-patterns ul { margin: 0; padding-left: 1.1rem; color: var(--muted); font-size: 0.78rem; }
+    .borrowed-patterns li + li { margin-top: 0.35rem; }
+
+    .footer { padding: 1.2rem 0 0; color: var(--faint); font-size: 0.72rem; text-align: center; }
+    .empty { padding: 1.4rem; color: var(--muted); text-align: center; }
+
+    @media (min-width: 40rem) {
+      .content { padding: 1.2rem 1.25rem 5rem; }
+      .cockpit-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .workflow-flow { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .filter-bar { grid-template-columns: minmax(16rem,1fr) auto; align-items: center; }
+      .registry-head { display: grid; }
+      .registry-row { grid-template-columns: minmax(10rem,1.3fr) minmax(7rem,0.7fr) minmax(12rem,1.5fr) minmax(9rem,1fr); }
+      .architecture-grid { grid-template-columns: minmax(0,1.6fr) minmax(15rem,0.8fr); }
+      .arch-row.clients { grid-template-columns: repeat(3,minmax(0,1fr)); }
+      .arch-row.core { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .arch-row.providers { grid-template-columns: repeat(3,minmax(0,1fr)); }
+      .security-flow { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .quality-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .docs-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    }
+
+    @media (min-width: 64rem) {
+      .app-shell { display: grid; grid-template-columns: var(--rail-width) minmax(0,1fr); }
+      .rail { position: sticky; height: 100vh; display: block; padding: 1rem 0.8rem; border-right: 1px solid rgba(255,255,255,0.12); border-bottom: 0; overflow: auto; }
+      .nav-toggle { display: none; }
+      .rail-panel { position: static; display: block; max-height: none; padding: 0; margin-top: 1.2rem; overflow: visible; border: 0; box-shadow: none; }
+      .topbar { top: 0; padding-inline: 1.25rem; }
+      .content { padding: 1.25rem 1.5rem 5rem; }
+      .cockpit-grid { grid-template-columns: repeat(4,minmax(0,1fr)); }
+      .workflow-flow { display: flex; align-items: stretch; gap: 0.55rem; overflow-x: auto; padding-bottom: 0.35rem; scroll-snap-type: x proximity; }
+      .workflow-step { flex: 1 0 9.5rem; min-width: 0; scroll-snap-align: start; }
+      .flow-arrow { display: block; flex: 0 0 1.6rem; }
+      .docs-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+    }
+
+    @media (min-width: 80rem) {
+      .overview-layout { grid-template-columns: minmax(0,1fr) 19rem; align-items: start; }
+      .inspector { position: sticky; top: 4.65rem; }
+      .workflow-step { flex-basis: 10.5rem; }
+      .architecture-map { min-height: 31rem; }
+    }
+
+    @media print {
+      .rail, .topbar, .filter-bar, .segmented, .icon-button, .action-button { display: none !important; }
+      .app-shell { display: block; }
+      .content { max-width: none; padding: 0; }
+      .section { break-inside: avoid; }
+      .surface { box-shadow: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="rail" aria-label="开发看板导航">
+      <div class="brand">
+        <div class="brand-mark">M</div>
+        <div class="brand-text"><strong>MultiAgentDesk</strong><span>开发说明驾驶舱</span></div>
+      </div>
+      <button class="nav-toggle" id="navToggle" type="button" aria-expanded="false" aria-controls="railPanel" aria-label="打开导航">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <div class="rail-panel" id="railPanel">
+        <nav class="nav" id="nav">
+          <a href="#overview" class="is-active"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span>总览</span></a>
+          <a href="#lifecycle"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h11M15 7l-3-3m3 3-3 3M20 17H9m0 0 3-3m-3 3 3 3"/></svg><span>生命周期</span></a>
+          <a href="#skills"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M12 7.5v4M7 17l4-4M17 17l-4-4"/></svg><span>Skill / Agent</span></a>
+          <a href="#phases"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>Phase 看板</span></a>
+          <a href="#architecture"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="3" width="6" height="5"/><rect x="3" y="16" width="6" height="5"/><rect x="15" y="16" width="6" height="5"/><path d="M12 8v4M6 16v-4h12v4"/></svg><span>系统架构</span></a>
+          <a href="#security"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v5c0 4.6-2.8 8-7 10-4.2-2-7-5.4-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg><span>安全与凭据</span></a>
+          <a href="#quality"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M8 12l2.5 2.5L16 9"/></svg><span>验收与风险</span></a>
+          <a href="#docs"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h10l4 4v14H5z"/><path d="M15 3v5h5M8 12h8M8 16h8"/></svg><span>文档与来源</span></a>
+        </nav>
+        <div class="rail-fact"><b>当前真实状态</b><strong id="railStatus">Plan v0.2 已审查</strong><p id="railStatusNote">运行 npm run dashboard 刷新仓库事实。</p></div>
+        <div class="rail-rule"><b>核心规则</b><p>机器事实自动读取；优先级、风险接受、Ship 和发布状态始终由人确认。</p></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="repo-meta">
+          <div class="meta-item"><span>仓库</span><strong id="repoValue">jinlong17/multi-agent-desk</strong></div>
+          <div class="meta-item"><span>当前分支</span><strong id="branchValue">main</strong></div>
+          <div class="meta-item"><span>开发状态</span><strong id="statusValue">读取项目状态…</strong></div>
+          <div class="meta-item"><span>状态快照</span><strong id="snapshotValue">静态 fallback</strong></div>
+        </div>
+        <div class="top-actions">
+          <button class="action-button" id="copyNext" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
+            <span id="copyNextLabel">复制下一步</span>
+          </button>
+          <button class="icon-button" type="button" onclick="window.print()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7"/></svg>
+            打印
+          </button>
+        </div>
+      </header>
+
+      <div class="content">
+        <section class="section" id="overview">
+          <div class="section-title"><div><h2>MultiAgentDesk 开发流程总览</h2><p>一屏回答现在做什么、在哪条线、用哪个入口、做到什么状态；下面所有状态都来自当前 Plan v0.2，不虚构代码完成度。</p></div></div>
+          <div class="notice">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 3l10 18H2L12 3z"/><path d="M12 9v5M12 18h.01"/></svg>
+            <div><b>人工判断与机器事实已分离</b><p>Phase、优先级和 Ship 来自人工状态；分支、commit、dirty files、文档和 Agent/Skill 镜像由 generator 刷新。看板只展示，不替人做发布决策。</p></div>
+          </div>
+          <div class="cockpit-grid">
+            <article class="cockpit-item is-primary"><div class="cockpit-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></svg></div><div><span>现在做什么</span><strong id="currentWorkValue">Phase 0 · 仓库与治理基线</strong><small>目录/remote、monorepo、CI、ADR、Threat Model、DCO</small></div></article>
+            <article class="cockpit-item"><div class="cockpit-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="18" r="2"/><path d="M8 6h5a3 3 0 0 1 3 3v7M6 8v10h10"/></svg></div><div><span>在哪条线</span><strong id="currentBranchValue">main → codex/&lt;area&gt;/&lt;feature&gt;</strong><small>先按模块分类；并行 writer 使用独立 branch/worktree</small></div></article>
+            <article class="cockpit-item"><div class="cockpit-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M8 9l-4 3 4 3M16 9l4 3-4 3M14 5l-4 14"/></svg></div><div><span>用哪个入口</span><strong>intake → plan → review → build → verify → (gated security-review) → ship</strong><small>Review / Verify 是裁决 Writer，只写 verdict 记录与 dev_log；Ship 需要人工触发</small></div></article>
+            <article class="cockpit-item"><div class="cockpit-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 5h16v14H4zM8 9h8M8 13h5"/></svg></div><div><span>做到什么状态</span><strong id="currentStateValue">Plan v0.2 已审查 · 代码未启动</strong><small>人工状态 + 自动仓库事实</small></div></article>
+          </div>
+
+          <div class="overview-layout">
+            <div class="surface timeline-panel">
+              <div class="panel-head"><h3>全局依赖轨道</h3><div class="legend"><span><i class="ready"></i>下一步</span><span><i></i>计划中</span><span><i class="gate"></i>门禁</span></div></div>
+              <div class="timeline-scroll"><div class="timeline" id="timeline"></div></div>
+              <p class="parallel-note"><b>并行原则：</b>Phase 0.5 Provider/Security Spikes 可与 Phase 1 Device Kernel 并行，但它们分别阻塞 Phase 2/3 Provider 集成和 Phase 4b/5 E2EE 设计冻结。</p>
+            </div>
+            <aside class="surface inspector" id="phaseInspector" aria-live="polite"></aside>
+          </div>
+        </section>
+
+        <section class="section" id="lifecycle">
+          <div class="section-title"><div><h2>文档驱动的开发生命周期</h2><p>参考 XAI_Desktop：共享状态写进文档，不依赖聊天记忆；一个 writer 拥有一个 Phase，独立 reviewer 决定下一步。</p></div></div>
+          <div class="workflow-toolbar"><div class="segmented" role="tablist" aria-label="工作流类型"><button class="is-active" data-workflow="feature" type="button">Feature</button><button data-workflow="bug" type="button">Bugfix</button><button data-workflow="spike" type="button">Spike</button></div></div>
+          <div class="surface workflow-panel"><div class="workflow-flow" id="workflowFlow"></div><div class="state-contract" id="stateContract"></div></div>
+        </section>
+
+        <section class="section" id="skills">
+          <div class="section-title"><div><h2>Skill / Agent 注册表</h2><p id="skillRegistryIntro">Skill 负责可复用领域流程，Agent 负责一次生命周期角色；状态由项目注册表与运行时镜像生成。</p></div></div>
+          <div class="filter-bar">
+            <label class="search-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="skillSearch" type="search" placeholder="搜索名字、用途、输入或输出…" aria-label="搜索 Skill 和 Agent"></label>
+            <div class="filter-buttons" role="group" aria-label="类型筛选"><button class="is-active" data-skill-filter="all" type="button">全部</button><button data-skill-filter="skill" type="button">Skill</button><button data-skill-filter="agent" type="button">Agent</button></div>
+          </div>
+          <div class="surface registry"><div class="registry-head"><span>名称</span><span>类型 / 状态</span><span>用途</span><span>输入 → 输出</span></div><div id="skillRegistry"></div></div>
+        </section>
+
+        <section class="section" id="phases">
+          <div class="section-title"><div><h2>Phase 开发看板</h2><p>不使用虚假的百分比。每一行只显示依赖、交付物、出口门禁和当前真实状态。</p></div></div>
+          <div class="surface phase-table-wrap"><table class="phase-table"><thead><tr><th>Phase</th><th>目标</th><th>依赖</th><th>关键交付</th><th>出口门禁</th><th>当前状态</th></tr></thead><tbody id="phaseTable"></tbody></table></div>
+        </section>
+
+        <section class="section" id="architecture">
+          <div class="section-title"><div><h2>系统架构与职责边界</h2><p>点击组件查看“它拥有什么、它绝不能做什么”。核心不变量是 Device Daemon 持有秘密与 Provider 进程，Control Plane 只存元数据和密文。</p></div></div>
+          <div class="architecture-grid">
+            <div class="surface architecture-map">
+              <div class="arch-band">控制客户端 · Web/Desktop 需要独立 E2EE Device Identity</div>
+              <div class="arch-row clients"><button class="arch-node" data-arch="web" type="button"><b>Web / PWA</b><span>看板、远程终端、审批；未配对时 metadata-only</span></button><button class="arch-node" data-arch="desktop" type="button"><b>Tauri Desktop</b><span>共享 Web UI、OS Keychain、Sidecar 生命周期</span></button><button class="arch-node" data-arch="cli" type="button"><b>CLI / TUI</b><span>服务器核心入口，本地 IPC 优先</span></button></div>
+              <div class="arch-band">本地事实源与远程控制平面</div>
+              <div class="arch-row core"><button class="arch-node owner is-selected" data-arch="daemon" type="button"><b>Device Daemon</b><span>Vault、Credential、Provider 进程、PTY、Session</span></button><button class="arch-node relay" data-arch="control" type="button"><b>Control Plane</b><span>Passkey、设备目录、配置同步、密文路由</span></button></div>
+              <div class="arch-band">Provider Runtime · 能力非对称，不强行统一</div>
+              <div class="arch-row providers"><button class="arch-node provider" data-arch="codex" type="button"><b>Codex app-server</b><span>结构化事件、Approval、Session、官方 Usage</span></button><button class="arch-node provider" data-arch="claude" type="button"><b>Claude CLI + PTY</b><span>完整终端、Hooks、Auth Status、best-effort Usage</span></button><button class="arch-node provider" data-arch="future" type="button"><b>Future Adapter</b><span>stdio JSON-RPC；v0.1 内部实验接口</span></button></div>
+            </div>
+            <aside class="surface architecture-inspector" id="archInspector"></aside>
+          </div>
+        </section>
+
+        <section class="section" id="security">
+          <div class="section-title"><div><h2>安全、配对与凭据授权</h2><p>Passkey 解决“你是谁”，Device Key 解决“谁能解密”。Control Plane 即使被读取，也不能替换已 pin 的公钥或解密 CredentialBundle。</p></div></div>
+          <div class="surface pad">
+            <div class="security-flow">
+              <article class="security-step"><b>1. Bootstrap Ceremony</b><span>创建用户、注册 Passkey，并登记一台具有 OS Vault 的 Daemon/Desktop 为初始 Trust Anchor。</span></article>
+              <article class="security-step"><b>2. Device Keys</b><span>每个 Daemon/Web/Desktop 生成 Ed25519 + X25519；Web 安全能力不足时降级 metadata-only。</span></article>
+              <article class="security-step"><b>3. 指纹 + Attestation</b><span>双端核对 120-bit Base32 指纹；已 pin 设备签署 DeviceAttestation，Server 不能伪造。</span></article>
+              <article class="security-step"><b>4. Credential Grant</b><span>来源 Daemon 只向已 pin/有效 attestation 的目标 Daemon发送 E2EE CredentialBundle。</span></article>
+              <article class="security-step"><b>5. Session Key</b><span>每个 Session 独立密钥，分别包装给已批准客户端；AEAD AAD 绑定路由元数据。</span></article>
+              <article class="security-step"><b>6. 撤销与轮换</b><span>撤销设备后关闭 WSS、轮换所有受影响活动 Key，并只重新分发给存活设备。</span></article>
+            </div>
+            <div class="security-gate"><b>必须诚实披露的残余风险</b><p>目标服务器获得授权后，在凭据有效期内必然可以使用或复制它。设备撤销不能远程擦除攻击者已经复制的秘密；需要同时在 Provider 官方安全页面撤销会话或重置凭据。</p></div>
+          </div>
+        </section>
+
+        <section class="section" id="quality">
+          <div class="section-title"><div><h2>验收、阅读进度与高风险项</h2><p>左侧勾选仅表示你在本浏览器“理解了这条规则”，不会改变项目状态或发布门禁。</p></div></div>
+          <div class="quality-grid">
+            <div class="surface checklist"><div class="checklist-head"><h3>核心验收理解清单</h3><span id="checkProgress">0 / 6</span></div><div id="checklist"></div></div>
+            <div class="surface risk-list"><h3>必须通过 Spike/测试关闭的风险</h3><div class="risk-row"><span class="risk-level">Critical</span><div><b>Control Plane 换钥攻击</b><span>本地 pin + DeviceAttestation + AAD 篡改测试。</span></div></div><div class="risk-row"><span class="risk-level">Critical</span><div><b>并发 Token 刷新破坏 Vault</b><span>单一 materialization writer + credentialRevision CAS + kill -9 恢复。</span></div></div><div class="risk-row"><span class="risk-level">High</span><div><b>Claude macOS 账号隔离</b><span>验证 Keychain；失败时确定性切到 setup-token 注入。</span></div></div><div class="risk-row"><span class="risk-level">High</span><div><b>浏览器 Device Key 保存</b><span>WebCrypto / encrypted libsodium fallback；不安全则 metadata-only。</span></div></div><div class="risk-row"><span class="risk-level">High</span><div><b>Provider 协议变化</b><span>版本门禁、fixture replay、Compatibility Matrix。</span></div></div></div>
+          </div>
+        </section>
+
+        <section class="section" id="docs">
+          <div class="section-title"><div><h2>文档、状态和参考来源</h2><p>计划是当前权威基线；进入开发后，每个 Feature 应拥有 design/api/test/dev_log 四件套，并由看板读取而不是复制第二份状态。</p></div></div>
+          <div class="docs-grid">
+            <article class="doc-row"><b>实施计划</b><code>docs/IMPLEMENTATION_PLAN.md</code><p>产品、架构、安全、阶段、测试和最终验收的权威基线。</p></article>
+            <article class="doc-row"><b>独立审查记录</b><code>docs/reviews/2026-07-10-fable5-high-plan-review.md</code><p>审查问题、采纳/修改决定与额外加固。</p></article>
+            <article class="doc-row"><b>Feature / Bug 状态</b><code>docs/workflow/features/&lt;slug&gt;/dev_log.md</code><p>Status Panel + append-only Work Log 是跨工具断点续接权威。</p></article>
+            <article class="doc-row"><b>Provider 兼容性</b><code>docs/PROVIDER_COMPATIBILITY.md</code><p>由 Phase 0.5 建立，记录真实版本、证据和降级能力。</p></article>
+            <article class="doc-row"><b>架构决策</b><code>docs/adr/</code><p>不可逆技术决策、替代方案和后果。</p></article>
+            <article class="doc-row"><b>工作流文件结构</b><code>docs/workflow/FILE_STRUCTURE.md</code><p>权威源、生成镜像、人工状态和机器快照的完整目录与编辑责任。</p></article>
+            <article class="doc-row"><b>参考项目</b><code>/Users/jinlong/Desktop/jinlong_project/XAI_Desktop</code><p>借鉴 workflow、dashboard authority model、Skill/Agent registry 和人工门禁。</p></article>
+          </div>
+          <div class="surface borrowed-patterns"><h3>从 XAI_Desktop 借鉴但不复制业务状态的模式</h3><ul><li>4 问驾驶舱：现在做什么 / 在哪条线 / 用哪个入口 / 做到什么状态。</li><li>文档是共享状态，不靠聊天上下文；Handoff 保持结构化和可复制。</li><li>Review/Verify 是裁决 Writer：只写 verdict 记录和 dev_log 状态，从不修改 plan/实现文件。</li><li>机器事实与人工判断分离：看板读取和提醒，但不自动决定优先级、风险接受和 Ship。</li><li>Skill/Agent 注册表展示用途、输入、输出、工作流、维护状态和镜像状态。</li><li>一个数据域只有一个 Owner；看板中的其它位置只能做 Mirror 或 Shared Widget。</li></ul></div>
+          <div class="footer">MultiAgentDesk 本地开发看板 · manual state + generated facts · Plan v0.2</div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="./state.generated.js"></script>
+  <script>
+    const arrowSvg = '<svg class="flow-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 12h15M15 7l5 5-5 5"/></svg>';
+
+    let phases = [
+      {id:'0', name:'仓库与治理基线', state:'ready', stateLabel:'下一步 · 无阻塞', depends:'Plan v0.2', goal:'建立可以安全开始编码的仓库、规范和 CI 基线。', goals:['本地目录/remote 统一为 multi-agent-desk','建立 Go + pnpm + Tauri monorepo 骨架','补齐 ADR、Threat Model、DCO 与许可证门禁'], outputs:['README / CONTRIBUTING / SECURITY','ADR 0001–0008','三平台空构建 CI'], exit:'三平台空项目构建通过；未知/不兼容许可证可让 CI 失败。', blockers:'无', owner:'feature-plan → feature-review → feature-build'},
+      {id:'0.5', name:'Provider & Security Spikes', state:'planned', stateLabel:'与 Phase 1 并行', depends:'Phase 0', goal:'把 Provider 与 E2EE 的外部假设变成可验证证据。', goals:['验证 Codex auth/Usage/device auth','验证 Claude Keychain/setup-token/PTY','验证 Web Key、ConPTY、Tauri Sidecar'], outputs:['Spike reports','E2EE spec + test vectors','PROVIDER_COMPATIBILITY.md'], exit:'每个阻塞假设有成立/失败证据和确定 fallback。', blockers:'阻塞 Phase 2 / 3 / 4b / 5 的设计冻结', owner:'provider-spike + security-review'},
+      {id:'1', name:'Device Kernel', state:'planned', stateLabel:'可与 0.5 并行', depends:'Phase 0', goal:'先完成不依赖真实 Provider 的本地核心闭环。', goals:['Domain model + SQLite migration','IPC、Daemon lifecycle、Vault lock','Fake Provider、Session、ControllerLease'], outputs:['multidesk CLI/TUI skeleton','Fake Session E2E','Credential refresh/recovery tests'], exit:'三平台 Fake Session 可 start/attach/control/resize/stop/kill/resume。', blockers:'无；真实 Provider 能力另受 0.5 约束', owner:'feature-build + feature-verify'},
+      {id:'2', name:'Codex Vertical Slice', state:'gated', stateLabel:'受 0.5 门禁', depends:'Phase 1 + Codex spikes', goal:'用官方 app-server 完成结构化 Codex 闭环。', goals:['独立 CODEX_HOME 与登录','JSON-RPC、事件、Approval','官方 Usage 能力与版本门禁'], outputs:['Codex adapter','fixture record/replay','compatibility rows'], exit:'Linux Codex Session 可由第二个 CLI 接管、审批和 resume。', blockers:'Codex auth 并发刷新与 schema 必须先验证', owner:'provider-codex + feature-verify'},
+      {id:'3', name:'Claude Vertical Slice', state:'gated', stateLabel:'受 0.5 门禁', depends:'Phase 1 + Claude spikes', goal:'用官方 Claude CLI + PTY 完成本地远程附着能力。', goals:['CLAUDE_CONFIG_DIR 或 token fallback','Unix PTY + ConPTY','Hooks/Auth Status/best-effort Usage'], outputs:['Claude adapter','ANSI/PTy fixtures','Capability Matrix'], exit:'第二个本地 CLI 可观察、取得控制、输入、Resize、重连和停止。', blockers:'macOS Keychain 隔离与 setup-token 交互行为', owner:'provider-claude + feature-verify'},
+      {id:'4a', name:'Control Plane Core', state:'planned', stateLabel:'计划中', depends:'Phase 1', goal:'先建立身份、设备目录、同步和异步命令，不承诺远程终端。', goals:['Bootstrap/Passkey/Recovery','Device enrollment/pin/attestation','OpenAPI、sync inbox/outbox/tombstone'], outputs:['multidesk-server','metadata dashboard','async command API'], exit:'配对、换钥拒绝、撤销、同步冲突和 tombstone 测试通过。', blockers:'生产需要固定 RP ID + TLS', owner:'feature-build + security-review'},
+      {id:'4b', name:'E2EE Realtime + Web', state:'gated', stateLabel:'受浏览器/E2EE门禁', depends:'Phase 4a + browser/E2EE spikes', goal:'让批准过的浏览器安全控制远程会话。', goals:['Web Device Key 生命周期','Session Key 分发/轮换','WSS 流控、replay、xterm.js'], outputs:['Web terminal','Approval UI','ControllerLease UI'], exit:'未配对浏览器不能解密；撤销后旧 Key 不能解密新帧。', blockers:'浏览器 Key PoC 与密码学评审', owner:'security-build + cross-vendor verify'},
+      {id:'5', name:'Credential Grant + macOS', state:'gated', stateLabel:'受 E2EE 门禁', depends:'Phase 4b', goal:'完成本地登录到远程服务器的显式加密授权。', goals:['Vault/materialization manager','Pinned-key CredentialBundle','macOS Tauri Sidecar/Deep Link'], outputs:['E2EE grant flow','macOS Desktop','provider revocation guidance'], exit:'Server 换钥攻击失败；指定账号可授权指定 Linux Device。', blockers:'Phase 0.5 credential/provider 结论', owner:'security-build + desktop-build + verify'},
+      {id:'6', name:'发布与加固', state:'experimental', stateLabel:'Windows Desktop Experimental', depends:'所有稳定验收', goal:'签名、公证、部署、弱网和安全测试后发布 v0.1.0。', goals:['Docker Compose + TLS examples','macOS signing/notarization','SBOM、升级/卸载/数据保留'], outputs:['v0.1.0 release','release notes','support matrix'], exit:'稳定验收全部通过，无 Critical/High 未处理安全问题。', blockers:'Windows Desktop 不作为稳定发布阻塞项', owner:'ship（人工触发）'}
+    ];
+
+    const workflows = {
+      feature: {
+        steps:[
+          {name:'intake / brief', mode:'可写 Skill', desc:'规范化需求、模块归属、范围与非目标。', items:['写 Feature Brief','确定 canonical name','列出验收'], footer:'输出：brief + planner handoff'},
+          {name:'feature-plan', mode:'可写 Agent', desc:'调研、契约、Phase 切分与风险门禁。', items:['design / api / test','冻结假设','写 NEEDS_REVIEW'], footer:'状态：NEEDS_REVIEW'},
+          {name:'feature-review', mode:'裁决 Writer', readonly:true, desc:'独立审查计划，并自行落盘 verdict：审查记录 + dev_log 状态。', items:['不修 plan/实现文件','写审查记录','更新 dev_log + Work Log'], footer:'状态：APPROVED / REVISE / BLOCKED'},
+          {name:'feature-build', mode:'单一 Writer', desc:'每次只实现一个 Phase，并写证据。', items:['检查 dirty files','精确写 scope','测试 + scoped commit'], footer:'状态：READY_FOR_VERIFY'},
+          {name:'feature-verify', mode:'裁决 Writer', readonly:true, desc:'独立验证一个 Phase，并自行落盘 verdict：验证记录 + dev_log 状态。', items:['重跑命令','检查回归','更新 dev_log + Work Log'], footer:'状态：VERIFIED / READY_TO_SHIP / BLOCKED'},
+          {name:'security-review', mode:'裁决 Writer', readonly:true, desc:'Security Gate 开启的 Feature 在 READY_TO_SHIP 必须先通过安全审查。', items:['信任边界与残余风险','ACCEPTED 置 gate resolved','REVISE 回 feature-plan'], footer:'状态：ACCEPTED / REVISE / BLOCKED'},
+          {name:'ship', mode:'人工门禁', human:true, desc:'只在人工触发后做最终范围、文档和发布检查。', items:['精确 stage','确认 branch/remote','commit/push/release'], footer:'状态：SHIPPED'}
+        ],
+        contract:[['NEEDS_REVIEW','feature-review'],['APPROVED','feature-build'],['READY_FOR_VERIFY','feature-verify'],['READY_TO_SHIP（门禁开）','security-review'],['ACCEPTED','ship（人工触发）'],['READY_TO_SHIP（无门禁）','ship（人工触发）'],['BLOCKED','blocker 指名的清除角色']]
+      },
+      bug: {
+        steps:[
+          {name:'bug-diagnose', mode:'可写 Agent', desc:'复现、证据、根因和最小修复范围。', items:['稳定复现','定位根因','定义回归测试'], footer:'状态：DIAGNOSED'},
+          {name:'bug-fix', mode:'单一 Writer', desc:'只修根因，不顺手重构无关区域。', items:['最小 patch','补回归测试','记录命令'], footer:'状态：READY_FOR_VERIFY'},
+          {name:'bug-verify', mode:'裁决 Writer', readonly:true, desc:'独立复现原问题并自行落盘 verdict。', items:['原复现失败','新测试通过','更新 dev_log + Work Log'], footer:'状态：READY_TO_SHIP / BLOCKED'},
+          {name:'ship', mode:'人工门禁', human:true, desc:'核对精确文件和发布范围。', items:['status/diff audit','scoped commit','push after approval'], footer:'状态：SHIPPED'}
+        ],
+        contract:[['DRAFT','bug-diagnose'],['DIAGNOSED','bug-fix'],['READY_FOR_VERIFY','bug-verify'],['READY_TO_SHIP','ship（人工触发）'],['BLOCKED','blocker 指名的清除角色']]
+      },
+      spike: {
+        steps:[
+          {name:'feature-plan（spike intake）', mode:'可写 Agent', desc:'把未知假设改写为可证伪问题，实例化 spike_log。', items:['成功/失败判据','环境矩阵 + 时间盒','凭据/密钥/auth/远程控制/信任边界 → 开 Security Gate'], footer:'状态：SPIKE_READY'},
+          {name:'provider-spike', mode:'证据 Writer', desc:'运行最小原型，不直接做生产实现。', items:['记录版本','保存命令/输出','成立或失败'], footer:'状态：EVIDENCE_READY / INCONCLUSIVE'},
+          {name:'security-review', mode:'裁决 Writer', readonly:true, desc:'Security Gate 开启时是 EVIDENCE_READY 唯一合法写入者。', items:['证据可信度','攻击路径','残余风险'], footer:'状态：ACCEPTED / REVISE / BLOCKED'},
+          {name:'feature-plan（decision）', mode:'可写 Agent', desc:'把证据转成支持矩阵与不可逆决策。', items:['ADR','Compatibility Matrix','REVISE 回 SPIKE_READY'], footer:'状态：GATE_RESOLVED'}
+        ],
+        contract:[['SPIKE_READY','provider-spike'],['EVIDENCE_READY（门禁开）','security-review'],['EVIDENCE_READY（无门禁）','feature-plan decision'],['ACCEPTED','feature-plan → GATE_RESOLVED'],['REVISE','feature-plan → SPIKE_READY'],['INCONCLUSIVE','feature-plan → SPIKE_READY / BLOCKED']]
+      }
+    };
+
+    let skills = [
+      {name:'mad-module-classify', kind:'skill', status:'proposed', scenario:'每个任务开始前确定 core/provider/web/desktop/security/docs 主归属。', io:'需求 → 单一主模块 + impacts'},
+      {name:'mad-feature-brief', kind:'skill', status:'proposed', scenario:'把自由文本需求规范化为目标、非目标、边界与验收。', io:'需求 → Feature Brief'},
+      {name:'provider-compatibility-scan', kind:'skill', status:'proposed', scenario:'验证 Codex/Claude 版本、auth、usage、PTY 与 fallback。', io:'版本矩阵 → Spike report'},
+      {name:'e2ee-protocol-review', kind:'skill', status:'proposed', scenario:'检查 pin、attestation、AAD、replay、撤销与测试向量。', io:'Protocol spec → security verdict'},
+      {name:'mad-dashboard-sync', kind:'skill', status:'proposed', scenario:'进入开发后刷新 branch、dirty、test、agent registry 和 release evidence。', io:'repo facts → generated snapshot'},
+      {name:'feature-plan', kind:'agent', status:'baseline', scenario:'写 design/api/test/dev_log 与 Phase 计划，状态进入 NEEDS_REVIEW。', io:'Brief + repo → reviewed plan candidate'},
+      {name:'feature-review', kind:'agent', status:'baseline', scenario:'独立审查计划、契约、测试和安全门禁，并自行落盘 verdict。', io:'Plan → APPROVED / REVISE / BLOCKED'},
+      {name:'feature-build', kind:'agent', status:'baseline', scenario:'一个 Phase 一个 writer；实现、测试、更新文档与 scoped commit。', io:'Approved phase → implementation evidence'},
+      {name:'feature-verify', kind:'agent', status:'baseline', scenario:'不同工具独立验证功能、安全、测试与兼容性，并自行落盘 verdict。', io:'Build receipt → VERIFIED / READY_TO_SHIP / BLOCKED'},
+      {name:'provider-spike', kind:'agent', status:'proposed', scenario:'时间盒验证 Provider 外部行为，不写生产功能。', io:'Hypothesis → evidence + fallback'},
+      {name:'security-review', kind:'agent', status:'proposed', scenario:'独立审查 E2EE、Vault、Credential Grant 与威胁模型；门禁 Feature/Spike 的唯一放行者。', io:'Security change → ACCEPTED / REVISE / BLOCKED'},
+      {name:'ship', kind:'agent', status:'baseline', scenario:'人工触发的最终范围、分支、文档、测试和发布门禁。', io:'READY_TO_SHIP → release receipt'}
+    ];
+
+    const architecture = {
+      web:{title:'Web / PWA', desc:'统一看板和远程控制客户端。Passkey 登录后仍需独立 Device Enrollment。', owns:['UI 本地状态','Web Device Key','Session subscriptions'], forbids:['保存 Provider 明文凭据','未批准时解密终端','自行决定 ship/risk']},
+      desktop:{title:'Tauri Desktop', desc:'共享 Web UI 的系统壳，同时拥有独立控制客户端身份。', owns:['OS Keychain client key','托盘/通知/Deep Link','Sidecar 发现与生命周期'], forbids:['第二套业务领域逻辑','直接绕过 Daemon 访问 Provider','把 Windows Preview 当稳定承诺']},
+      cli:{title:'CLI / TUI', desc:'远程服务器核心入口，默认通过本地 IPC 连接 Daemon。', owns:['账号/Profile 命令','本地 attach/control','Daemon service 操作'], forbids:['直接读 SQLite 作为 UI API','透明自动换账号']},
+      daemon:{title:'Device Daemon', desc:'整个系统的本地事实源，也是唯一拥有 Provider 秘密和进程的组件。', owns:['Vault/CredentialInstance','Provider 进程和 PTY','Session/Usage/Materialization'], forbids:['把秘密上传 Control Plane','自动账号轮换','多个 credential refresh writer']},
+      control:{title:'Control Plane', desc:'单用户自托管控制面，只管理身份、元数据、同步和密文路由。', owns:['Passkey/Recovery','Device metadata/presence','Encrypted relay + sync revisions'], forbids:['成为公钥信任锚','解密 CredentialBundle/terminal','伪造同步/发布结论']},
+      codex:{title:'Codex app-server', desc:'通过官方结构化接口集成事件、审批、历史和 Usage。', owns:['Provider-native session','structured approval','official usage when schema verified'], forbids:['直接暴露实验性公网 WS','绕过版本门禁']},
+      claude:{title:'Claude CLI + PTY', desc:'保留官方交互终端体验，以 Hooks/Auth Status 提供有限结构化状态。', owns:['interactive PTY','provider-native history','best-effort local usage'], forbids:['宣称官方订阅剩余额度','复制 macOS 整个 Keychain']},
+      future:{title:'Future Adapter', desc:'v0.1 只有内部实验 stdio JSON-RPC 协议，不对外承诺 SDK 稳定性。', owns:['capability declaration','protocol frames on stdout','logs on stderr'], forbids:['Go plugin ABI','默认加载未知第三方代码']}
+    };
+
+    const checklistItems = [
+      ['Phase 0/1 可以开始','它们不依赖尚未验证的 Provider/E2EE 假设。'],
+      ['Phase 0.5 是证据门禁','Spike 不是旁支研究，而是 Phase 2/3/4b/5 的阻塞输入。'],
+      ['Review / Verify 是裁决 Writer','只写 verdict 记录与 dev_log 状态；plan/实现文件由 writer 或 fix role 修改。'],
+      ['Passkey ≠ Device Key','登录 Control Plane 不代表能解密远程终端。'],
+      ['Session ≠ Attachment','Provider 进程状态和客户端连接/控制权分开建模。'],
+      ['Ship 需要人工触发','测试通过也不会让看板自动决定发布。']
+    ];
+
+    function escapeHtml(value='') { return String(value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+
+    function renderTimeline(selected='0') {
+      document.getElementById('timeline').innerHTML = phases.map(p => `<button class="phase-button ${p.id === selected ? 'is-selected' : ''}" data-phase="${p.id}" data-state="${p.state}" type="button"><span class="phase-id">Phase ${p.id}</span><b>${escapeHtml(p.name)}</b><small>${escapeHtml(p.depends)}</small><span class="phase-state ${p.state}">${escapeHtml(p.stateLabel)}</span></button>`).join('');
+      document.querySelectorAll('[data-phase]').forEach(btn => btn.addEventListener('click', () => selectPhase(btn.dataset.phase)));
+    }
+
+    function selectPhase(id) {
+      const phase = phases.find(p => p.id === id) || phases[0];
+      renderTimeline(id);
+      document.getElementById('phaseInspector').innerHTML = `<div class="inspector-head"><div><span>Phase ${escapeHtml(phase.id)}</span><h3>${escapeHtml(phase.name)}</h3></div><em class="state-label">${escapeHtml(phase.stateLabel)}</em></div><div class="inspector-block"><h4>目标</h4><p style="margin:0;color:var(--muted);font-size:.78rem">${escapeHtml(phase.goal)}</p></div><div class="inspector-block"><h4>关键工作</h4><ul>${phase.goals.map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul></div><div class="inspector-block"><h4>主要输出</h4><ul>${phase.outputs.map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul></div><div class="inspector-block"><h4>出口门禁</h4><p style="margin:0;color:var(--green);font-size:.77rem;font-weight:700">${escapeHtml(phase.exit)}</p></div><div class="inspector-block"><div class="inspector-row"><span>阻塞</span><b>${escapeHtml(phase.blockers)}</b></div><div class="inspector-row"><span>Owner</span><b>${escapeHtml(phase.owner)}</b></div></div>`;
+    }
+
+    function renderWorkflow(key='feature') {
+      const wf = workflows[key];
+      const pieces = [];
+      wf.steps.forEach((step,index) => {
+        pieces.push(`<article class="workflow-step ${step.readonly?'readonly':''} ${step.human?'human':''}"><div class="step-top"><b>${escapeHtml(step.name)}</b><span class="mode-tag">${escapeHtml(step.mode)}</span></div><p>${escapeHtml(step.desc)}</p><ul>${step.items.map(i=>`<li>${escapeHtml(i)}</li>`).join('')}</ul><footer>${escapeHtml(step.footer)}</footer></article>`);
+        if(index < wf.steps.length-1) pieces.push(arrowSvg);
+      });
+      document.getElementById('workflowFlow').innerHTML = pieces.join('');
+      document.getElementById('stateContract').innerHTML = wf.contract.map(([from,to]) => `<div class="contract-row"><code>${escapeHtml(from)}</code><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12h15M15 7l5 5-5 5"/></svg><span class="contract-note">${escapeHtml(to)}</span></div>`).join('');
+      document.querySelectorAll('[data-workflow]').forEach(b=>b.classList.toggle('is-active',b.dataset.workflow===key));
+    }
+
+    let skillFilter = 'all';
+    function renderSkills() {
+      const query = document.getElementById('skillSearch').value.trim().toLowerCase();
+      const filtered = skills.filter(s => (skillFilter === 'all' || s.kind === skillFilter) && `${s.name} ${s.scenario} ${s.io}`.toLowerCase().includes(query));
+      document.getElementById('skillRegistry').innerHTML = filtered.length ? filtered.map(s => `<article class="registry-row"><div class="registry-name"><span class="type-mark ${s.kind}">${s.kind==='skill'?'S':'A'}</span><div><b>${escapeHtml(s.name)}</b><span>项目级 ${s.kind === 'skill' ? '可复用流程' : '生命周期角色'}</span></div></div><div class="registry-cell"><strong>${s.kind === 'skill' ? 'Skill' : 'Agent'}</strong><span class="${s.status==='baseline'?'status-baseline':'status-proposed'}">${s.status==='baseline'?'已建立':'拟建'}</span></div><div class="registry-cell">${escapeHtml(s.scenario)}</div><div class="registry-cell">${escapeHtml(s.io)}</div></article>`).join('') : '<div class="empty">没有匹配的 Skill / Agent。</div>';
+    }
+
+    function renderPhaseTable() {
+      document.getElementById('phaseTable').innerHTML = phases.map(p => `<tr><td><button type="button" data-phase-table="${p.id}">Phase ${escapeHtml(p.id)}<br>${escapeHtml(p.name)}</button></td><td>${escapeHtml(p.goal)}</td><td>${escapeHtml(p.depends)}</td><td>${p.outputs.map(escapeHtml).join('<br>')}</td><td>${escapeHtml(p.exit)}</td><td><span class="phase-state ${p.state}">${escapeHtml(p.stateLabel)}</span></td></tr>`).join('');
+      document.querySelectorAll('[data-phase-table]').forEach(btn => btn.addEventListener('click', () => { selectPhase(btn.dataset.phaseTable); document.getElementById('overview').scrollIntoView(); }));
+    }
+
+    function selectArchitecture(key='daemon') {
+      const item = architecture[key];
+      document.querySelectorAll('[data-arch]').forEach(btn=>btn.classList.toggle('is-selected',btn.dataset.arch===key));
+      document.getElementById('archInspector').innerHTML = `<h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.desc)}</p><div class="boundary-list"><div class="boundary-item" style="border-left-color:var(--green)"><b>Owns</b><span>${item.owns.map(escapeHtml).join(' · ')}</span></div><div class="boundary-item" style="border-left-color:var(--red)"><b>Must not</b><span>${item.forbids.map(escapeHtml).join(' · ')}</span></div></div>`;
+    }
+
+    function renderChecklist() {
+      let saved = {};
+      try { saved = JSON.parse(localStorage.getItem('mad-dashboard-reading') || '{}'); } catch {}
+      const host = document.getElementById('checklist');
+      host.innerHTML = checklistItems.map(([title,note],i)=>`<label class="check-row"><input type="checkbox" data-check="${i}" ${saved[i]?'checked':''}><span><b>${escapeHtml(title)}</b><span>${escapeHtml(note)}</span></span></label>`).join('');
+      function update() {
+        const state = {};
+        host.querySelectorAll('[data-check]').forEach(box=>state[box.dataset.check]=box.checked);
+        try { localStorage.setItem('mad-dashboard-reading',JSON.stringify(state)); } catch {}
+        document.getElementById('checkProgress').textContent = `${Object.values(state).filter(Boolean).length} / ${checklistItems.length}`;
+      }
+      host.querySelectorAll('[data-check]').forEach(box=>box.addEventListener('change',update));
+      update();
+    }
+
+    let nextActionText = '开始 MultiAgentDesk Phase 0：统一仓库目录与 remote，建立 Go + pnpm + Tauri monorepo 骨架，补齐 CI、ADR、Threat Model、DCO 和许可证门禁；完成后进入独立 verify。';
+    function hydrateGeneratedState() {
+      const state = window.MULTI_AGENT_DESK_DASHBOARD_STATE;
+      if (!state || !state.manual || !state.git) return;
+      const setText = (id,value) => { const node=document.getElementById(id); if(node && value) node.textContent=value; };
+      const repoName = String(state.git.remote || '').replace(/\.git$/,'').split(/[/:]/).slice(-2).join('/') || 'local repository';
+      const manual = state.manual;
+      const activePhase = (manual.phases || []).find(phase => phase.id === manual.current_phase);
+      setText('repoValue',repoName);
+      setText('branchValue',state.git.branch);
+      setText('statusValue',activePhase ? `Phase ${activePhase.id} · ${activePhase.state === 'in_progress' ? '进行中' : activePhase.state}` : manual.current_status);
+      setText('snapshotValue',`dirty ${state.git.dirty?.total || 0} · ${String(state.git.latest_commit || '').split(' ')[0] || 'no commit'}`);
+      setText('railStatus',manual.current_status);
+      setText('railStatusNote',`下一步：${manual.next_action}`);
+      setText('currentWorkValue',activePhase ? `Phase ${activePhase.id} · ${activePhase.title}` : `Phase ${manual.current_phase}`);
+      setText('currentBranchValue',`${state.git.branch} → codex/<module>/<feature>`);
+      setText('currentStateValue',manual.current_status);
+      nextActionText = manual.next_action || nextActionText;
+
+      const manualPhases = new Map((manual.phases || []).map(phase => [phase.id,phase]));
+      phases = phases.map(phase => {
+        const current = manualPhases.get(phase.id);
+        if (!current) return phase;
+        const stateName = current.state === 'in_progress' ? 'ready' : current.state;
+        const stateLabel = current.state === 'in_progress' ? '进行中 · 人工状态' : current.state === 'gated' ? `门禁 · ${current.gate}` : current.state === 'planned' ? '计划中' : current.state;
+        return {...phase,state:stateName,stateLabel,depends:current.depends || phase.depends,exit:current.gate || phase.exit};
+      });
+
+      const registry = state.skill_agent_registry || {};
+      const generatedSkills = (registry.skills || []).map(item => ({name:item.name,kind:'skill',status:item.codex_exists && item.claude_exists ? 'baseline' : 'proposed',scenario:item.purpose,io:`${item.source} → ${item.claude_path}`}));
+      const generatedAgents = (registry.agents || []).map(item => ({name:item.name,kind:'agent',status:item.role_exists && item.codex_exists && item.claude_exists ? 'baseline' : 'proposed',scenario:item.description,io:`${item.input} → ${item.output}`}));
+      if (generatedSkills.length || generatedAgents.length) skills = [...generatedSkills,...generatedAgents];
+      setText('skillRegistryIntro',`${registry.summary?.skills || generatedSkills.length} 个 Skill、${registry.summary?.agents || generatedAgents.length} 个 Agent；状态来自权威注册表和 Codex/Claude 运行时镜像。`);
+    }
+
+    document.querySelectorAll('[data-workflow]').forEach(btn=>btn.addEventListener('click',()=>renderWorkflow(btn.dataset.workflow)));
+    document.getElementById('skillSearch').addEventListener('input',renderSkills);
+    document.querySelectorAll('[data-skill-filter]').forEach(btn=>btn.addEventListener('click',()=>{ skillFilter=btn.dataset.skillFilter; document.querySelectorAll('[data-skill-filter]').forEach(x=>x.classList.toggle('is-active',x===btn)); renderSkills(); }));
+    document.querySelectorAll('[data-arch]').forEach(btn=>btn.addEventListener('click',()=>selectArchitecture(btn.dataset.arch)));
+
+    const navToggle = document.getElementById('navToggle');
+    const railPanel = document.getElementById('railPanel');
+    navToggle.addEventListener('click',()=>{ const open=railPanel.classList.toggle('is-open'); navToggle.setAttribute('aria-expanded',String(open)); });
+    document.querySelectorAll('#nav a').forEach(link=>link.addEventListener('click',()=>{ railPanel.classList.remove('is-open'); navToggle.setAttribute('aria-expanded','false'); }));
+
+    const sections = [...document.querySelectorAll('.section[id]')];
+    const navLinks = [...document.querySelectorAll('#nav a')];
+    const observer = new IntersectionObserver(entries => { const visible=entries.filter(e=>e.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio)[0]; if(!visible) return; navLinks.forEach(link=>link.classList.toggle('is-active',link.getAttribute('href')===`#${visible.target.id}`)); }, {rootMargin:'-18% 0px -70% 0px',threshold:[0,.2,.6]});
+    sections.forEach(section=>observer.observe(section));
+
+    document.getElementById('copyNext').addEventListener('click', async event => {
+      const text = nextActionText;
+      const label = document.getElementById('copyNextLabel');
+      try { await navigator.clipboard.writeText(text); label.textContent='已复制'; setTimeout(()=>label.textContent='复制下一步',1200); } catch { window.prompt('复制下一步：',text); }
+    });
+
+    hydrateGeneratedState();
+    selectPhase(window.MULTI_AGENT_DESK_DASHBOARD_STATE?.manual?.current_phase || '0');
+    renderWorkflow('feature');
+    renderSkills();
+    renderPhaseTable();
+    selectArchitecture('daemon');
+    renderChecklist();
+  </script>
+</body>
+</html>
