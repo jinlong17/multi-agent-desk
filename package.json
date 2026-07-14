@@ -31,9 +31,6 @@
     "ci:static": "npm run ci:actions && npm run ci:codeowners",
     "ci:verify": "npm run ci:static && npm run ci:fixtures && npm run ci:links && npm run ci:licenses"
   },
-  "devDependencies": {
-    "ci-gpl-rejection-fixture": "file:scripts/ci/fixtures/gpl-package"
-  },
   "engines": {
     "node": ">=24 <25",
     "pnpm": ">=10 <11"

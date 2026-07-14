@@ -6,11 +6,7 @@ settings:
 
 importers:
 
-  .:
-    devDependencies:
-      ci-gpl-rejection-fixture:
-        specifier: file:scripts/ci/fixtures/gpl-package
-        version: file:scripts/ci/fixtures/gpl-package
+  .: {}
 
   apps/desktop:
     devDependencies:
@@ -402,9 +398,6 @@ packages:
   '@types/estree@1.0.9':
     resolution: {integrity: sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==}
 
-  ci-gpl-rejection-fixture@file:scripts/ci/fixtures/gpl-package:
-    resolution: {directory: scripts/ci/fixtures/gpl-package, type: directory}
-
   esbuild@0.28.1:
     resolution: {integrity: sha512-HrJrvZv5ayxBzPfwphOoNzkzOIIlifzk0KJrGK2c8R4+LKpMtpYLQeUdjnwjWv/LZlkH2laZk+4w78pi99D4Vw==}
     engines: {node: '>=18'}
@@ -701,8 +694,6 @@ snapshots:
       '@tauri-apps/cli-win32-x64-msvc': 2.11.4
 
   '@types/estree@1.0.9': {}
-
-  ci-gpl-rejection-fixture@file:scripts/ci/fixtures/gpl-package: {}
 
   esbuild@0.28.1:
     optionalDependencies:
