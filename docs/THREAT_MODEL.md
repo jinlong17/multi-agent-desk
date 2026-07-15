@@ -1,7 +1,7 @@
 # MultiAgentDesk threat model
 
-- Status: Initial Phase 0 model; implementation mitigations are not yet verified
-- Date: 2026-07-11
+- Status: Phase 0 model with evidence-backed browser storage and E2EE protocol decisions; production mitigations are not yet verified
+- Date: 2026-07-14
 - Owner module: `security`
 - Baseline: [Implementation Plan v0.2](IMPLEMENTATION_PLAN.md),
   [security invariants](../CLAUDE.md), and [ADR index](adr/README.md)
@@ -13,18 +13,20 @@ Plane, built-in Provider processes, local Vault/materialization, device pairing,
 CredentialGrant, metadata sync, ciphertext relay, and dependency/update
 boundaries.
 
-It does not prove that planned controls are implemented. It does not select an
-E2EE algorithm suite, attest a Provider credential format, establish browser
-key support, validate Windows ConPTY/Named Pipe/Tauri behavior, or promise that
-revocation remotely erases a secret already copied to another device.
+It does not prove that planned controls are implemented. ADR 0010 selects the
+browser key-storage modes and ADR 0011 selects the E2EE protocol candidate from
+reproducible Spike evidence, but neither is production runtime evidence. This
+model does not attest a Provider credential format, validate Windows
+ConPTY/Named Pipe/Tauri behavior, or promise that revocation remotely erases a
+secret already copied to another device.
 
 Evidence states used below:
 
 - **accepted design**: reviewed requirement; not runtime evidence;
 - **planned**: required mitigation is not yet proven in product code;
 - **pending evidence**: the named Spike must resolve the mechanism or claim;
-- **verified**: reserved for a linked, reproducible artifact (none in this
-  initial model);
+- **verified design evidence**: a linked, reproducible Spike proves the stated
+  compatibility/protocol property, not production implementation;
 - **deferred**: explicitly open acceptance outside the current environment.
 
 Unknown, planned, pending, partial, and deferred evidence never count as pass.
@@ -62,7 +64,7 @@ Unknown, planned, pending, partial, and deferred evidence never count as pass.
 | User ↔ Web/PWA | Passkey-authenticated user plus separately enrolled Web Device | origin security, CSP, enrollment, locally pinned keys, capability check | active XSS can access decrypted content; site-data loss loses the Web key |
 | Web/Desktop ↔ Control Plane | TLS-authenticated service, but server may be read/modified | signed requests, bounded metadata, ciphertext-only protected payloads | traffic and metadata patterns remain visible; service can deny availability |
 | Control Plane ↔ Device Daemon | enrolled Device identity whose keys match local pins/attestations | signature, exchange-key match, audience, purpose, expiry, replay, revision | compromised server can suppress or replay traffic until client checks reject it |
-| CLI/TUI/Desktop ↔ local Daemon | local OS identity over IPC | endpoint permissions, peer authorization, protocol/version checks, lease rules | same-user malware or root/admin may impersonate a client |
+| CLI/TUI/Desktop ↔ local Daemon | local OS identity plus mutually authenticated local Device/client over IPC | 0600 Unix socket or protected current-logon Named Pipe, server/client authentication, protocol/version checks, capability and lease rules, bounded requests | same-logon malware or root/admin may race ownership, consume resources, or act with local user authority |
 | Daemon ↔ Vault/database/filesystem | device-local process and OS protection | least privilege, restrictive permissions, authenticated encryption, transactions | root/admin or live-process compromise can read plaintext/memory |
 | Daemon ↔ Provider process | configured binary and isolated runtime home | argument/env allowlists, explicit capability, path/version checks, output handling | Provider must read materialized credentials and can change its files |
 | Source Device ↔ target Device grant | directly pinned keys or valid attestation from a locally pinned approver | source/target/capability binding, freshness, revision, replay protection, signed receipt | an already compromised approved target receives usable plaintext by design |
@@ -81,24 +83,27 @@ Unknown, planned, pending, partial, and deferred evidence never count as pass.
    credential revision/CAS semantics; mtime is only a change hint.
 5. MultiAgentDesk never implements automatic account rotation, quota bypass,
    rate-limit evasion, or transparent mid-session credential switching.
+6. Realtime E2EE roots are random and pairwise per Host↔Peer; no Peer receives
+   a group root that can derive another Peer's traffic keys, and cryptographic
+   possession never replaces capability or ControllerLease checks.
 
 ## 6. Threats, required mitigations, and evidence
 
 | ID | Asset/boundary and attacker scenario | Impact | Required mitigation | Evidence state | Residual risk |
 |---|---|---|---|---|---|
-| T-01 | Compromised Control Plane substitutes a Device key | credential/session decryption by attacker or unauthorized grants | local pin match; key change is a new device; attestation only from directly pinned approver; fingerprint ceremony | accepted design; E2EE details pending `spike-e2ee-protocol-vectors` | user may approve a malicious fingerprint; compromised pinned approver can attest a bad key |
-| T-02 | Relay replays/reorders/tampers with enrollment, grant, command, or terminal envelopes | duplicated grant, stale control, forged state, content corruption | authenticated source/target/purpose/audience/revision/expiry/message ID, replay cache, monotonic ordering where required | pending `spike-e2ee-protocol-vectors` | availability attacks and bounded state loss remain possible |
+| T-01 | Compromised Control Plane substitutes a Device key | credential/session decryption by attacker or unauthorized grants | local pin match; key change is a new device; attestation only from directly pinned approver; fingerprint ceremony | verified design evidence: ADR 0011 and `spike-e2ee-protocol-vectors`; production enforcement planned | user may approve a malicious fingerprint; compromised pinned approver can attest a bad key |
+| T-02 | Relay replays/reorders/tampers with enrollment, grant, command, or terminal envelopes | duplicated grant, stale control, forged state, content corruption | pairwise root; authenticated source/target/purpose/audience/epoch/message ID; JCS AAD; nonce recomputation; durable replay window | verified design evidence and negative vectors in `spike-e2ee-protocol-vectors`; production persistence planned | availability attacks and bounded state loss remain possible |
 | T-03 | Control Plane DB/log/queue captures Provider credential or terminal plaintext | broad remote secret/content disclosure | data-classification allowlist, ciphertext-only protected payloads, redaction tests, no plaintext trace | planned | metadata, traffic patterns, device/account/session identifiers remain exposed |
-| T-04 | Vault or Device DB is copied, permissions are weak, or unlock material leaks | offline credential/key theft | OS key store or password-derived wrapping, authenticated encryption, restrictive permissions, explicit locked state | planned; browser/key mechanics pending `spike-browser-key-storage` where applicable | host root/admin, unlocked-process compromise, weak user password, and memory disclosure remain |
+| T-04 | Vault or Device DB is copied, permissions are weak, or unlock material leaks | offline credential/key theft | OS key store or password-derived wrapping, authenticated encryption, restrictive permissions, explicit locked state | browser storage modes have verified design evidence in ADR 0010; Daemon/Desktop Vault implementation remains planned | host root/admin, unlocked-process compromise, weak user password, and memory disclosure remain |
 | T-05 | Daemon crash or concurrent refresh writes an older credential over a newer one | account lockout, stale token reuse, credential corruption | single materialization writer, monotonic `credentialRevision` CAS, digest validation, transactional recovery, quarantine ambiguous leases | planned; Provider semantics pending `spike-codex-auth-refresh` and `spike-claude-config-keychain` | Provider-side concurrent mutation can remain ambiguous and require re-login |
 | T-06 | Materialized auth home, temp file, process env, crash dump, or backup exposes plaintext | local credential theft | per-session least-privilege directory, minimal env, cleanup after process exit, quarantine on uncertain recovery, secret-safe diagnostics | planned; Provider layout pending Provider Spikes | **Provider-readable plaintext exists at runtime; host root/admin or Provider compromise can copy it** |
-| T-07 | Unauthorized local process connects to IPC or steals a ControllerLease | session observation/input/resize/stop/kill by attacker | 0600 Unix socket/reference path, peer authorization, request capability checks, expiring lease with owner identity, audit events | planned for Phase 1; Windows transport pending `spike-windows-named-pipe-ipc` | same-user malware and root/admin can often act with the user's local authority |
+| T-07 | Unauthorized local process connects to IPC, impersonates a pipe endpoint, or steals a ControllerLease | session observation/input/resize/stop/kill by attacker | 0600 Unix socket; protected current-logon Named Pipe with Network deny, remote rejection, and first-instance fail-closed ownership; mutual peer authentication; request capability checks; expiring lease with owner identity; bounds and audit events | Windows transport verified by ADR 0013 and `spike-windows-named-pipe-ipc`; protocol authorization and Unix/Windows production enforcement planned for Phase 1 | same-logon malware and root/admin can race availability or act with the user's local authority |
 | T-08 | Multiple clients race control, stale lease holder sends input, or detach kills the process | command confusion, loss of work, unintended termination | single ControllerLease, monotonic lease revision/expiry, explicit acquire/release, detach separate from process lifecycle, idempotent stop/kill | planned for Phase 1 | network partitions can delay awareness; forced takeover may discard unsent input |
 | T-09 | Provider binary/path/config arguments are malicious or wrong account files are reused | code execution, secret crossover, wrong-account actions | explicit binary path/version evidence, argument/env construction without shell injection, isolated runtime homes, pinned session account/profile/capabilities | planned; specifics pending Provider Spikes | a user-approved or compromised Provider binary executes with granted local access |
 | T-10 | Hostile terminal/model output injects control sequences or content into TUI/Web/Desktop | UI spoofing, clipboard abuse, XSS, data exfiltration | terminal parser hardening, output encoding, strict CSP, no untrusted HTML, bounded buffers, security tests | planned; Windows terminal behavior pending `spike-windows-conpty` | terminal emulation and browser dependencies retain parser bugs |
-| T-11 | Web XSS or malicious dependency accesses enrolled Device keys and decrypted content | live session/credential grant compromise | no third-party scripts, strict CSP/Trusted Types where supported, dependency audit, non-exportable keys, metadata-only fallback | planned; support pending `spike-browser-key-storage` | active same-origin code can use keys/content even if key bytes are non-exportable |
-| T-12 | CredentialGrant targets wrong/revoked/incapable device or is replayed | unauthorized credential copy | explicit user confirmation, `credentials.store` capability, direct pin/attestation validation, target-bound encryption, revision/expiry/replay checks, signed receipt | accepted design; protocol pending `spike-e2ee-protocol-vectors` | user error or already compromised approved target remains; **revocation cannot erase copied plaintext** |
-| T-13 | Revoked Device/session key continues receiving new content | post-revocation access | reject revoked identity for new envelopes/grants, rotate future session keys, invalidate leases, audit revocation | planned; protocol pending `spike-e2ee-protocol-vectors` | previously decrypted or copied data remains outside remote control |
+| T-11 | Web XSS or malicious dependency accesses enrolled Device keys and decrypted content | live session/credential grant compromise | no third-party scripts, strict CSP/Trusted Types where supported, dependency audit, non-exportable keys, metadata-only fallback | storage compatibility verified by ADR 0010; origin hardening and production enforcement planned | active same-origin code can use keys/content even if key bytes are non-exportable |
+| T-12 | CredentialGrant targets wrong/revoked/incapable device or is replayed | unauthorized credential copy | explicit user confirmation, `credentials.store` capability, direct pin/attestation validation, target-bound HPKE, revision/expiry/replay checks, signed receipt | pin/attestation/HPKE mechanism has verified design evidence in ADR 0011; CredentialGrant implementation remains planned | user error or already compromised approved target remains; **revocation cannot erase copied plaintext** |
+| T-13 | Revoked Device/pairwise root continues receiving new content | post-revocation access | reject revoked identity before decrypt, close WSS, tombstone/rotate affected pairs, invalidate leases, audit revocation | old-root and cross-peer rejection have verified design evidence in ADR 0011; production orchestration planned | previously decrypted or copied data remains outside remote control |
 | T-14 | Secrets or terminal content enter logs, metrics, traces, crash reports, generated dashboard, or audit export | secondary disclosure | structured allowlisted telemetry, secret-field blacklist, payload exclusion, test fixtures, bounded audit schema | planned; dashboard secret-field check exists only for generated project facts | novel fields or third-party crash tooling may bypass redaction until tested |
 | T-15 | Control Plane outage, relay suppression, or local DB corruption causes unsafe fallback | loss of control/data or bypassed authorization | local-first operation with last valid local state, fail closed for new remote grants/control, explicit offline/stale status, backups and migration rollback | planned | remote observation/control is unavailable; local disk failure can lose unbacked metadata |
 | T-16 | Dependency, update, external adapter, copied research, or CI workflow is compromised | arbitrary code execution, license contamination, release compromise | compatible-license gate, DCO, dependency review, pinned toolchains, provenance/signing/SBOM before release, external adapters out of process | planned; release controls deferred to Phase 6 | upstream compromise, maintainer key theft, and review error remain possible |
@@ -128,16 +133,16 @@ Unknown, planned, pending, partial, and deferred evidence never count as pass.
 |---|---|---|
 | Codex credential store, auth refresh, concurrent revision behavior | [`spike-codex-auth-refresh`](workflow/features/spike-codex-auth-refresh/dev_log.md) | pending evidence; no compatibility claim |
 | Claude config/keychain isolation, auth status/setup token, refresh behavior | [`spike-claude-config-keychain`](workflow/features/spike-claude-config-keychain/dev_log.md) | pending evidence; no compatibility claim |
-| Browser non-exportable/wrapped key storage and metadata-only fallback | [`spike-browser-key-storage`](workflow/features/spike-browser-key-storage/dev_log.md) | pending evidence |
-| E2EE envelope, AAD binding, replay, vectors, and independent crypto review | [`spike-e2ee-protocol-vectors`](workflow/features/spike-e2ee-protocol-vectors/dev_log.md) | pending evidence; no algorithm frozen |
-| Windows terminal/ConPTY behavior | [`spike-windows-conpty`](workflow/features/spike-windows-conpty/dev_log.md) | DRAFT; not started |
-| Windows local IPC/Named Pipe behavior | [`spike-windows-named-pipe-ipc`](workflow/features/spike-windows-named-pipe-ipc/dev_log.md) | DRAFT; not started; Unix socket remains reference |
+| Browser non-exportable/wrapped key storage and metadata-only fallback | [`spike-browser-key-storage`](workflow/features/spike-browser-key-storage/dev_log.md) | `GATE_RESOLVED`; verified design evidence in ADR 0010; production implementation pending |
+| E2EE envelope, AAD binding, replay, pairwise roots, vectors, and security review | [`spike-e2ee-protocol-vectors`](workflow/features/spike-e2ee-protocol-vectors/dev_log.md) | `GATE_RESOLVED`; verified design evidence in ADR 0011; production implementation pending |
+| Windows terminal/ConPTY behavior | [`spike-windows-conpty`](workflow/features/spike-windows-conpty/dev_log.md) | `GATE_RESOLVED`; native ConPTY selected by ADR 0012; Windows 11 real-provider acceptance pending |
+| Windows local IPC/Named Pipe behavior | [`spike-windows-named-pipe-ipc`](workflow/features/spike-windows-named-pipe-ipc/dev_log.md) | `GATE_RESOLVED`; protected native Named Pipe selected by ADR 0013; production protocol and Windows 11 multi-session/service acceptance pending |
 | Windows Tauri sidecar lifecycle | [`spike-windows-desktop-sidecar`](workflow/features/spike-windows-desktop-sidecar/dev_log.md) | DRAFT; not started |
 
-Windows acceptance: deferred (no local Windows machine). This is an open gate,
-not a pass. GitHub Actions `windows-latest` may later provide build, static, and
-unit-test evidence but cannot replace interactive ConPTY, Named Pipe, Fake
-Session, or Tauri sidecar acceptance.
+Windows Server CI now provides native ConPTY and Named Pipe transport evidence,
+but Windows 11 workstation acceptance remains open. GitHub Actions cannot
+replace real Provider TUI/IME/accessibility, two-user Named Pipe/service
+contexts, Fake Session, sleep/resume, packaging, or Tauri sidecar acceptance.
 
 ## 9. Explicit residual risk
 
@@ -148,9 +153,9 @@ Session, or Tauri sidecar acceptance.
   encryption protects storage, not a compromised root/admin, live Daemon, or
   Provider process.
 - A compromised Control Plane can observe metadata/traffic patterns, deny or
-  delay service, and attempt key substitution/replay; local pins and protocol
-  checks are intended to prevent silent decryption/authorization, pending
-  reproducible E2EE evidence.
+  delay service, and attempt key substitution/replay; ADR 0011 and the shared
+  vectors verify the candidate rejection behavior, while production
+  enforcement remains unimplemented.
 - XSS in an active approved Web Device can use keys and decrypted content even
   when private key material is non-exportable.
 - Human fingerprint/grant/account confirmation can be mistaken or coerced.

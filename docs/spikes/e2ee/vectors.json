@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "seeds": {
+    "approverEd25519": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+    "subjectEd25519": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+    "sourceX25519Ikm": "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f",
+    "targetX25519Ikm": "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f",
+    "ephemeralX25519Ikm": "808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9f",
+    "pairwiseRootPeerAEpoch1": "a0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebf",
+    "pairwiseRootPeerAEpoch2": "c0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedf",
+    "peerBX25519Ikm": "e0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
+    "pairwiseRootPeerBEpoch1": "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
+  },
+  "attestation": {
+    "approverDeviceId": "018f47d2-7c11-7d3f-a9b8-1f6d83de1001",
+    "attestationId": "018f47d2-7c11-7d3f-a9b8-1f6d83de1003",
+    "capabilities": [
+      "credentials.store",
+      "session.control",
+      "session.decrypt"
+    ],
+    "expiresAt": "2026-07-15T00:00:00Z",
+    "issuedAt": "2026-07-14T16:00:00Z",
+    "subjectDeviceId": "018f47d2-7c11-7d3f-a9b8-1f6d83de1002"
+  },
+  "keyWrap": {
+    "expiresAt": "2026-07-14T16:10:00Z",
+    "keyEpoch": "1",
+    "purpose": "session_content",
+    "sessionId": "018f47d2-7c11-7d3f-a9b8-1f6d83de2001",
+    "wrapId": "018f47d2-7c11-7d3f-a9b8-1f6d83de2002"
+  },
+  "payload": {
+    "direction": "device_to_client",
+    "keyEpoch": "1",
+    "kind": "terminal_output",
+    "messageId": "018f47d2-7c11-7d3f-a9b8-1f6d83de3001",
+    "plaintextHex": "1b5b33326d72656d6f7465207465726d696e616c206672616d651b5b306d0a",
+    "sentAt": "2026-07-14T16:00:01Z",
+    "sequence": "100",
+    "streamId": "terminal"
+  },
+  "peerB": {
+    "deviceId": "018f47d2-7c11-7d3f-a9b8-1f6d83de1004",
+    "messageId": "018f47d2-7c11-7d3f-a9b8-1f6d83de3003",
+    "plaintextHex": "706565722062207061697277697365206672616d650a",
+    "sentAt": "2026-07-14T16:00:01Z",
+    "sequence": "100"
+  },
+  "rotation": {
+    "keyEpoch": "2",
+    "messageId": "018f47d2-7c11-7d3f-a9b8-1f6d83de3002",
+    "plaintextHex": "726f74617465642073657373696f6e206b6579206672616d650a",
+    "sentAt": "2026-07-14T16:00:02Z",
+    "sequence": "1"
+  }
+}

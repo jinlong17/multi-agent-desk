@@ -1,0 +1,10 @@
+{
+  "browser": "Apple Safari on macOS",
+  "browserVersion": "26.4",
+  "finding": "a second Safari WebDriver session cannot read the first session's IndexedDB because Apple isolates automation runs",
+  "metadataOnlyRequired": true,
+  "processRestarted": true,
+  "schemaVersion": 1,
+  "testInterpretation": "automation isolation control; not a product compatibility verdict",
+  "writeComplete": true
+}

@@ -18,7 +18,19 @@ ADR 0001–0008 are reserved for the first batch defined in
 | [0007](0007-user-confirms-account-selection.md) | System recommends; user confirms account selection | Accepted |
 | [0008](0008-config-sync-separated-from-credential-grants.md) | Configuration sync is separate from credential grants | Accepted |
 | [0009](0009-repository-layout-authority.md) | Repository layout authority | Accepted |
+| [0010](0010-browser-device-key-storage-modes.md) | Browser device key storage modes | Accepted |
+| [0011](0011-pairwise-e2ee-session-protocol.md) | Pairwise E2EE session protocol | Accepted |
+| [0012](0012-windows-conpty-pty-backend.md) | Windows ConPTY PTY backend | Accepted |
+| [0013](0013-windows-named-pipe-local-ipc.md) | Windows Named Pipe local IPC | Accepted |
 
 ADR 0001–0008 accept only the broad Plan v0.2 boundaries. Their
 `Spike-gated details` sections are authoritative markers for decisions that
 remain pending reproducible Phase 0.5 evidence.
+
+ADR 0010 through ADR 0013 are Phase 0.5 evidence-backed decisions. ADR 0010
+resolves browser key storage compatibility; ADR 0011 resolves the E2EE protocol
+candidate with per-peer roots and cross-language vectors; ADR 0012 selects the
+Windows ConPTY backend; ADR 0013 selects Windows Named Pipes with a protected
+current-logon boundary and mandatory protocol authorization. Both Windows ADRs
+preserve Windows 11 acceptance gates. None of these ADRs claims that its
+production implementation is complete.

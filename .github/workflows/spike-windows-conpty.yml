@@ -1,0 +1,61 @@
+name: Windows ConPTY spike
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/spike-windows-conpty.yml"
+      - "docs/spikes/windows/conpty_probe_windows.go"
+      - "docs/spikes/windows/conpty-result.json"
+      - "docs/spikes/windows/2026-07-14-windows-conpty-spike.md"
+      - "docs/workflow/features/spike-windows-conpty/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/spike-windows-conpty.yml"
+      - "docs/spikes/windows/conpty_probe_windows.go"
+      - "docs/spikes/windows/conpty-result.json"
+      - "docs/spikes/windows/2026-07-14-windows-conpty-spike.md"
+      - "docs/workflow/features/spike-windows-conpty/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-conpty-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  conpty:
+    name: conpty-windows-x64
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Setup Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: Build native ConPTY probe
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force docs/spikes/windows/.bin | Out-Null
+          go build -trimpath -o docs/spikes/windows/.bin/conpty-probe.exe docs/spikes/windows/conpty_probe_windows.go
+      - name: Exercise full-screen, resize, replay, and teardown behavior
+        shell: pwsh
+        run: >-
+          docs/spikes/windows/.bin/conpty-probe.exe
+          -duration 15s
+          -result docs/spikes/windows/conpty-result.json
+      - name: Upload sanitized evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: conpty-windows-x64
+          path: docs/spikes/windows/conpty-result.json
+          if-no-files-found: warn

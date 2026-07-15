@@ -3,15 +3,15 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0.5",
-  "current_status": "Phase 0.5 · Codex auth/refresh Spike 已形成保守证据，等待安全审查",
+  "current_status": "Phase 0.5 · Codex auth/refresh 已通过单写者边界安全审查，等待兼容性决策",
   "current_owner": "provider",
-  "next_action": "security-review the canonical single-refresh-writer boundary, then record the Codex compatibility decision",
+  "next_action": "record the Codex compatibility decision and preserve the canonical single-refresh-writer boundary",
   "manual_updated_at": "2026-07-14",
-  "manual_updated_by": "operator-directed Codex provider-spike session (refresh recorded in spike-codex-auth-refresh Work Log)",
+  "manual_updated_by": "operator-directed Codex feature-plan session (refresh recorded in spike-codex-auth-refresh Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 0.5 · 验证 Codex app-server、认证、Usage 与双设备刷新假设"
+      "value": "Phase 0.5 · 收口 Codex app-server、认证、Usage 与刷新兼容边界"
     },
     {
       "label": "在哪条线",
@@ -23,7 +23,7 @@
     },
     {
       "label": "做到什么状态",
-      "value": "三版本协议回放和约三小时双端短测通过；不声明多写者安全，采用单写者 CAS fallback"
+      "value": "安全审查 ACCEPTED；不声明多写者安全，采用单写者 revisioned-CAS fallback"
     }
   ],
   "phases": [
@@ -104,7 +104,19 @@
   "focus": [
     {
       "slug": "spike-codex-auth-refresh",
-      "expected_status": "EVIDENCE_READY"
+      "expected_status": "ACCEPTED"
+    },
+    {
+      "slug": "spike-windows-conpty",
+      "expected_status": "GATE_RESOLVED"
+    },
+    {
+      "slug": "spike-windows-named-pipe-ipc",
+      "expected_status": "GATE_RESOLVED"
+    },
+    {
+      "slug": "spike-windows-desktop-sidecar",
+      "expected_status": "DRAFT"
     }
   ]
 }

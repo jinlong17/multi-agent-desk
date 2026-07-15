@@ -1,0 +1,292 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>MultiAgentDesk browser key storage probe</title>
+<pre id="result">pending</pre>
+<script type="module">
+const resultNode = document.querySelector("#result");
+const params = new URL(location.href).searchParams;
+const phase = params.get("phase") || "write";
+const databaseName = "multi-agent-desk-browser-key-probe-v1";
+
+function emit(value) {
+  resultNode.textContent = JSON.stringify(value);
+  document.documentElement.dataset.probeComplete = "true";
+}
+
+function setStage(value) {
+  document.documentElement.dataset.probeStage = value;
+}
+
+function errorName(error) {
+  return error instanceof Error ? error.name : "UnknownError";
+}
+
+function openDatabase() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(databaseName, 1);
+    request.onupgradeneeded = () => {
+      request.result.createObjectStore("probe");
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function deleteDatabase() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(databaseName);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+    request.onblocked = () => reject(new DOMException("blocked", "InvalidStateError"));
+  });
+}
+
+async function put(key, value) {
+  const database = await openDatabase();
+  try {
+    await new Promise((resolve, reject) => {
+      const transaction = database.transaction("probe", "readwrite");
+      transaction.objectStore("probe").put(value, key);
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+      transaction.onabort = () => reject(transaction.error);
+    });
+  } finally {
+    database.close();
+  }
+}
+
+async function get(key) {
+  const database = await openDatabase();
+  try {
+    return await new Promise((resolve, reject) => {
+      const request = database.transaction("probe", "readonly")
+        .objectStore("probe").get(key);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  } finally {
+    database.close();
+  }
+}
+
+async function sha256(bytes) {
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+  return [...digest].map((value) => value.toString(16).padStart(2, "0")).join("");
+}
+
+async function exportMustFail(format, key) {
+  try {
+    await crypto.subtle.exportKey(format, key);
+    return false;
+  } catch (error) {
+    return errorName(error) === "InvalidAccessError";
+  }
+}
+
+async function writePhase() {
+  setStage("write:init");
+  const write = {
+    secureContext: self.isSecureContext,
+    indexedDbAvailable: typeof indexedDB !== "undefined",
+    subtleCryptoAvailable: Boolean(crypto?.subtle),
+  };
+  setStage("write:delete-database");
+  await deleteDatabase();
+
+  try {
+    setStage("write:ed25519");
+    const keyPair = await crypto.subtle.generateKey(
+      {name: "Ed25519"},
+      false,
+      ["sign", "verify"],
+    );
+    await put("ed25519-private", keyPair.privateKey);
+    await put("ed25519-public", keyPair.publicKey);
+    write.ed25519Stored = true;
+  } catch (error) {
+    write.ed25519Stored = false;
+    write.ed25519Error = errorName(error);
+  }
+
+  try {
+    setStage("write:x25519");
+    const device = await crypto.subtle.generateKey(
+      {name: "X25519"},
+      false,
+      ["deriveBits"],
+    );
+    const peer = await crypto.subtle.generateKey(
+      {name: "X25519"},
+      true,
+      ["deriveBits"],
+    );
+    const expected = await crypto.subtle.deriveBits(
+      {name: "X25519", public: peer.publicKey},
+      device.privateKey,
+      256,
+    );
+    await put("x25519-private", device.privateKey);
+    await put("x25519-peer-public", peer.publicKey);
+    await put("x25519-expected", await sha256(expected));
+    write.x25519Stored = true;
+  } catch (error) {
+    write.x25519Stored = false;
+    write.x25519Error = errorName(error);
+  }
+
+  try {
+    setStage("write:fallback");
+    const wrappingKey = await crypto.subtle.generateKey(
+      {name: "AES-GCM", length: 256},
+      false,
+      ["encrypt", "decrypt"],
+    );
+    const simulatedPrivateKey = crypto.getRandomValues(new Uint8Array(32));
+    const expected = await sha256(simulatedPrivateKey);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ciphertext = await crypto.subtle.encrypt(
+      {name: "AES-GCM", iv},
+      wrappingKey,
+      simulatedPrivateKey,
+    );
+    simulatedPrivateKey.fill(0);
+    await put("fallback-wrapping-key", wrappingKey);
+    await put("fallback-envelope", {iv, ciphertext, expected});
+    write.fallbackStored = true;
+  } catch (error) {
+    write.fallbackStored = false;
+    write.fallbackError = errorName(error);
+  }
+
+  setStage("write:status");
+  await put("write-status", write);
+  setStage("write:complete");
+  emit({schemaVersion: 1, writeComplete: true, write});
+}
+
+async function readPhase() {
+  setStage("read:init");
+  const write = (await get("write-status")) || {};
+  const tests = {};
+  const message = new TextEncoder().encode("multi-agent-desk-browser-key-probe");
+
+  if (write.ed25519Stored) {
+    try {
+      setStage("read:ed25519");
+      const privateKey = await get("ed25519-private");
+      const publicKey = await get("ed25519-public");
+      const signature = await crypto.subtle.sign("Ed25519", privateKey, message);
+      tests.ed25519 = {
+        persistedAcrossReload: true,
+        privateExtractable: privateKey.extractable,
+        signVerify: await crypto.subtle.verify("Ed25519", publicKey, signature, message),
+        privateExportRejected: await exportMustFail("pkcs8", privateKey),
+      };
+    } catch (error) {
+      tests.ed25519 = {persistedAcrossReload: false, error: errorName(error)};
+    }
+  } else {
+    tests.ed25519 = {persistedAcrossReload: false, error: write.ed25519Error};
+  }
+
+  if (write.x25519Stored) {
+    try {
+      setStage("read:x25519");
+      const privateKey = await get("x25519-private");
+      const peerPublicKey = await get("x25519-peer-public");
+      const expected = await get("x25519-expected");
+      const derived = await crypto.subtle.deriveBits(
+        {name: "X25519", public: peerPublicKey},
+        privateKey,
+        256,
+      );
+      tests.x25519 = {
+        persistedAcrossReload: true,
+        privateExtractable: privateKey.extractable,
+        deriveMatches: (await sha256(derived)) === expected,
+        privateExportRejected: await exportMustFail("pkcs8", privateKey),
+      };
+    } catch (error) {
+      tests.x25519 = {persistedAcrossReload: false, error: errorName(error)};
+    }
+  } else {
+    tests.x25519 = {persistedAcrossReload: false, error: write.x25519Error};
+  }
+
+  if (write.fallbackStored) {
+    try {
+      setStage("read:fallback");
+      const wrappingKey = await get("fallback-wrapping-key");
+      const envelope = await get("fallback-envelope");
+      const plaintext = await crypto.subtle.decrypt(
+        {name: "AES-GCM", iv: envelope.iv},
+        wrappingKey,
+        envelope.ciphertext,
+      );
+      tests.encryptedFallback = {
+        persistedAcrossReload: true,
+        wrappingKeyExtractable: wrappingKey.extractable,
+        decryptMatches: (await sha256(plaintext)) === envelope.expected,
+        wrappingKeyExportRejected: await exportMustFail("raw", wrappingKey),
+      };
+    } catch (error) {
+      tests.encryptedFallback = {
+        persistedAcrossReload: false,
+        error: errorName(error),
+      };
+    }
+  } else {
+    tests.encryptedFallback = {
+      persistedAcrossReload: false,
+      error: write.fallbackError,
+    };
+  }
+
+  const nativePath = Boolean(
+    tests.ed25519?.persistedAcrossReload &&
+    tests.ed25519?.signVerify &&
+    tests.ed25519?.privateExportRejected &&
+    tests.x25519?.persistedAcrossReload &&
+    tests.x25519?.deriveMatches &&
+    tests.x25519?.privateExportRejected
+  );
+  const fallbackPath = Boolean(
+    tests.encryptedFallback?.persistedAcrossReload &&
+    tests.encryptedFallback?.decryptMatches &&
+    tests.encryptedFallback?.wrappingKeyExportRejected
+  );
+  setStage("read:complete");
+  emit({
+    schemaVersion: 1,
+    userAgent: navigator.userAgent,
+    secureContext: write.secureContext,
+    indexedDbAvailable: write.indexedDbAvailable,
+    subtleCryptoAvailable: write.subtleCryptoAvailable,
+    tests,
+    nativePath,
+    fallbackPath,
+    e2eeEligible: nativePath || fallbackPath,
+    metadataOnlyRequired: !nativePath && !fallbackPath,
+  });
+}
+
+async function cleanupPhase() {
+  setStage("cleanup:database");
+  await deleteDatabase();
+  setStage("cleanup:complete");
+  emit({schemaVersion: 1, cleanupComplete: true});
+}
+
+try {
+  if (phase === "write") {
+    await writePhase();
+  } else if (phase === "read") {
+    await readPhase();
+  } else {
+    await cleanupPhase();
+  }
+} catch (error) {
+  emit({schemaVersion: 1, fatalError: errorName(error), e2eeEligible: false});
+}
+</script>

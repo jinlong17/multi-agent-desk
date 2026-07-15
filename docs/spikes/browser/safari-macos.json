@@ -1,0 +1,39 @@
+{
+  "browser": "Apple Safari on macOS",
+  "browserVersion": "26.4",
+  "probe": {
+    "e2eeEligible": true,
+    "fallbackPath": true,
+    "indexedDbAvailable": true,
+    "metadataOnlyRequired": false,
+    "nativePath": false,
+    "schemaVersion": 1,
+    "secureContext": true,
+    "subtleCryptoAvailable": true,
+    "tests": {
+      "ed25519": {
+        "persistedAcrossReload": true,
+        "privateExportRejected": true,
+        "privateExtractable": false,
+        "signVerify": true
+      },
+      "encryptedFallback": {
+        "decryptMatches": true,
+        "persistedAcrossReload": true,
+        "wrappingKeyExportRejected": true,
+        "wrappingKeyExtractable": false
+      },
+      "x25519": {
+        "error": "TypeError",
+        "persistedAcrossReload": false
+      }
+    },
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15"
+  },
+  "processRestarted": false,
+  "restartEvidence": "separate WebKit process probe required",
+  "schemaVersion": 1,
+  "versionStableAcrossPhases": true,
+  "webdriverSessionIsolated": true,
+  "writeComplete": true
+}
