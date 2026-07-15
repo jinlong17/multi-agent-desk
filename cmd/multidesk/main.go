@@ -33,6 +33,8 @@ func run(args []string, stdout, stderr *os.File) error {
 	switch args[0] {
 	case "init":
 		return runInit(args[1:], stdout, stderr)
+	case "client":
+		return runClient(args[1:], stdout, stderr)
 	case "daemon":
 		if len(args) < 2 {
 			return domain.NewError(domain.CodeInvalidArgument, "daemon command is required")
@@ -42,9 +44,25 @@ func run(args []string, stdout, stderr *os.File) error {
 			return runServe(args[2:], stderr)
 		case "status":
 			return runStatus(args[2:], stdout, stderr)
+		case "install", "uninstall":
+			return runServiceSpec(args[1], args[2:], stdout, stderr)
+		case "start", "stop":
+			return domain.NewError(domain.CodeUnsupportedPlatform, "host service mutation is disabled; use daemon serve or render a service spec")
 		default:
 			return domain.NewError(domain.CodeMethodNotFound, "daemon command is not available")
 		}
+	case "vault":
+		return runVault(args[1:], stdout, stderr)
+	case "run":
+		return runSessionStart(args[1:], stdout, stderr)
+	case "sessions":
+		return runSessions(args[1:], stdout, stderr)
+	case "control":
+		return runControl(args[1:], stdout, stderr)
+	case "terminal":
+		return runTerminal(args[1:], stdout, stderr)
+	case "tui":
+		return runTUI(args[1:], stdout, stderr)
 	case "internal":
 		if len(args) == 2 && args[1] == "fake-provider" {
 			return runtimepkg.RunFakeProvider(os.Stdin, os.Stdout)

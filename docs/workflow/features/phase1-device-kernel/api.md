@@ -21,6 +21,11 @@ not network APIs. Service install/uninstall defaults to rendering and validating
 user-level platform specifications. Host mutation requires an explicit flag and
 is excluded from automated tests and Phase 1 acceptance on the developer host.
 
+In Phase 1, `client list` is the authenticated metadata command. Client
+provisioning, rotation, and revocation remain offline-only administration
+operations and are rejected by the thin CLI rather than returning private key
+material over IPC or stdout.
+
 Every `--json` response has `schema_version`, `request_id`, `ok`, and exactly
 one of `result` or `error`. Human output may summarize metadata but never prints
 identity private keys, fake credential bytes, terminal payloads, or raw IPC.

@@ -10,10 +10,10 @@
 | Owner Module | `core` |
 | Impacted Modules | `security, provider, desktop, project-system` |
 | Current Phase | `P5 CLI/TUI and platform exit` |
-| Status | `VERIFIED` |
-| Executor | `Codex (GPT-5) as independent feature-verify P4 v2` |
-| Updated | `2026-07-14 23:24 -0700` |
-| Suggested Next | `feature-build P5 CLI/TUI and platform exit` |
+| Status | `READY_FOR_VERIFY` |
+| Executor | `Codex (GPT-5) as feature-build P5 CLI/TUI and platform exit` |
+| Updated | `2026-07-14 23:31 -0700` |
+| Suggested Next | `feature-verify P5 CLI/TUI and platform exit` |
 | Branch / Worktree | `codex/core/phase1-device-kernel` / `/Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/phase1-device-kernel` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none — deterministic first-party Fake Provider only` |
@@ -27,7 +27,7 @@
 | P2 identity, IPC, and Daemon lifecycle | Ed25519 bootstrap/rotation/revocation; framed protocol; Unix socket/Windows Named Pipe; application authorization shell; Daemon/service specs | P1 verified | mutual authentication and fail-closed endpoint tests; native IPC on three platforms; no TCP listener | `VERIFIED` |
 | P3 Fake runtime and Session control | Fake Provider subprocess; process manager; Session state machine; ring buffer; attachments; ControllerLease; input/resize/stop/kill/resume | P2 verified | two-client native-IPC scenario passes; observer/lease/idempotency/replay and bounded process behavior proven | `VERIFIED` |
 | P4 Vault and materialization recovery | locked/unlocked runtime; fake credential revision/CAS; atomic runtime home; cleanup/quarantine; failure injection | P3 verified | lock/restart boundary, fake credential revision/CAS, atomic runtime home, cleanup/quarantine tests pass | `VERIFIED` |
-| P5 CLI/TUI and platform exit | stable JSON/human commands; minimal TUI; service-spec commands; docs; complete three-platform E2E/CI/license/race evidence | P4 verified | Phase 1 exit scenario passes on macOS/Linux/Windows; full project checks and security review ready | `PLANNED` |
+| P5 CLI/TUI and platform exit | stable JSON/human commands; minimal TUI; service-spec commands; docs; complete three-platform E2E/CI/license/race evidence | P4 verified | Phase 1 exit scenario passes on macOS/Linux/Windows; full project checks and security review ready | `READY_FOR_VERIFY` |
 
 Each phase is implemented by one writer, sets `READY_FOR_VERIFY`, receives an
 independent phase verdict, and only then unlocks the next phase. After P5
@@ -65,8 +65,9 @@ verification, the required independent Security Gate must pass before ship.
 
 ## Risks and Blockers
 
-- P1 through P4 are independently verified. P5 and the final Security Gate
-  remain open. P4 still does not claim production Vault crypto, Windows 11
+- P1 through P4 are independently verified. P5 is ready for independent
+  verification; the final Security Gate remains open. Phase 1 still does not
+  claim production Vault crypto, real Provider/PTy compatibility, Windows 11
   multi-user/service acceptance, signed packaging, release, or deployment.
 - Full SQLite migration, lock-contention, restart, and recovery behavior must be
   proven with project-owned temporary-directory tests; the planning smoke only
@@ -120,3 +121,4 @@ verification, the required independent Security Gate must pass before ship.
 | 2026-07-14 23:19 -0700 | Codex (GPT-5) as feature-build P4 Windows permissions correction | Reused the existing platform-private filesystem boundary for materialization directories/files, applied the current-logon DACL on Windows, retained Unix `0600` evidence, added staging-path protection, and made the vault test platform-aware; local Go/full/vet and Windows cross-compiles pass | `READY_FOR_VERIFY`; no protected runner result inferred | `internal/device/privatefs_*`; `internal/vault/materialization.go`; `internal/vault/vault_test.go`; `p4-as-built.md` | feature-verify P4 Vault and materialization recovery v2 |
 | 2026-07-14 23:24 -0700 | Codex (GPT-5) as independent feature-verify P4 v2 | Recomputed exact head `b57fb40`, inspected Windows `internal/vault` output and all protected jobs; macOS, Ubuntu, Windows, project, DCO, license, and link checks passed | `VERIFIED`; P4 unlocked P5; final Security Gate remains open | `docs/reviews/phase1-device-kernel/2026-07-14-feature-verify-p4-v2.md`; CI `29393903799`; Governance `29393903755`; Windows job `87283019648` | feature-build P5 CLI/TUI and platform exit |
 | 2026-07-14 23:24 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Rebound manual dashboard judgment to the persisted P4 `VERIFIED` verdict and exposed P5 as the next executable phase without closing the Security Gate | dashboard manual/generated state; this file | focus expects `VERIFIED`; Phase 1 remains `in_progress`; P5 is planned | feature-build P5 CLI/TUI and platform exit |
+| 2026-07-14 23:31 -0700 | Codex (GPT-5) as feature-build P5 | Implemented authenticated thin CLI commands for Vault, Fake Session control, terminal control, client metadata, service-spec rendering, and a minimal TUI; added stable JSON/non-mutating service-spec tests and documented offline client provisioning limits; reran Go, race, vet, three-target compile, license, project, CI, scaffold, Web, and Desktop evidence | `READY_FOR_VERIFY`; local Phase 1 exit evidence is green; protected runner evidence remains required | `cmd/multidesk`; `internal/app/session_service.go`; `p5-as-built.md`; `api.md`; command tests | feature-verify P5 CLI/TUI and platform exit |

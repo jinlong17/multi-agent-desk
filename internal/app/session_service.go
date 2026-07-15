@@ -139,6 +139,16 @@ func (s *SessionService) dispatch(ctx context.Context, auth device.AuthContext, 
 			result = append(result, sessionView(session))
 		}
 		return result, nil
+	case "client.list":
+		clients, err := s.Store.ListClientIdentities(ctx)
+		if err != nil {
+			return nil, err
+		}
+		result := make([]any, 0, len(clients))
+		for _, client := range clients {
+			result = append(result, clientView(client))
+		}
+		return result, nil
 	case "sessions.show":
 		var body sessionBody
 		if err := decodeBody(request.Body, &body); err != nil {
@@ -359,4 +369,10 @@ func leaseView(lease domain.ControllerLease) map[string]any {
 	return map[string]any{"session_id": lease.SessionID, "holder_device_id": lease.HolderDeviceID,
 		"revision": lease.Revision, "expires_at": lease.ExpiresAt, "last_heartbeat_at": lease.LastHeartbeat,
 		"released_at": lease.ReleasedAt}
+}
+
+func clientView(client domain.ClientIdentity) map[string]any {
+	return map[string]any{"id": client.ID, "name": client.Name, "revision": client.Revision,
+		"status": client.Status, "capabilities": client.Caps, "created_at": client.CreatedAt,
+		"updated_at": client.UpdatedAt}
 }
