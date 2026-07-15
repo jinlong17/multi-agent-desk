@@ -197,8 +197,8 @@ func (m *Materializer) Recover(ctx context.Context) error {
 		}
 		manifest, err := readManifest(filepath.Join(m.finalPath(leaseID), "manifest.json"))
 		if err != nil || !manifestMatches(manifest, materialization, filepath.Join(m.finalPath(leaseID), "credential.fake")) {
-			if materialization.State == domain.MaterializationPending {
-				_, _ = m.Store.TransitionCredentialMaterialization(ctx, leaseID, domain.MaterializationPending, domain.MaterializationQuarantined, 0, m.now())
+			if materialization.State == domain.MaterializationPending || materialization.State == domain.MaterializationActive {
+				_, _ = m.Store.TransitionCredentialMaterialization(ctx, leaseID, materialization.State, domain.MaterializationQuarantined, 0, m.now())
 			}
 			if qErr := m.quarantine(entry.Name()); qErr != nil {
 				return qErr

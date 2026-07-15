@@ -89,6 +89,10 @@ func TestMaterializerAtomicCommitAndQuarantine(t *testing.T) {
 	if err := materializer.Recover(ctx); err != nil {
 		t.Fatal(err)
 	}
+	quarantined, err := store.CredentialMaterialization(ctx, leaseID)
+	if err != nil || quarantined.State != domain.MaterializationQuarantined {
+		t.Fatalf("materialization state after corruption=%s err=%v", quarantined.State, err)
+	}
 	quarantineEntries, err := os.ReadDir(filepath.Join(root, "quarantine"))
 	if err != nil || len(quarantineEntries) != 1 {
 		t.Fatalf("quarantine entries=%d err=%v", len(quarantineEntries), err)
