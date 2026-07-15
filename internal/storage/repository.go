@@ -703,21 +703,29 @@ func (s *Store) ListSessions(ctx context.Context) ([]domain.Session, error) {
 	if err != nil {
 		return nil, domain.WrapError(domain.CodeConflict, "sessions could not be listed", err)
 	}
-	defer rows.Close()
-	var sessions []domain.Session
+	ids := make([]domain.ID, 0)
 	for rows.Next() {
 		var id domain.ID
 		if err := rows.Scan(&id); err != nil {
+			_ = rows.Close()
 			return nil, domain.WrapError(domain.CodeConflict, "session list could not be read", err)
 		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		return nil, domain.WrapError(domain.CodeConflict, "sessions could not be listed", err)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, domain.WrapError(domain.CodeConflict, "sessions could not be listed", err)
+	}
+	sessions := make([]domain.Session, 0, len(ids))
+	for _, id := range ids {
 		session, err := s.Session(ctx, id)
 		if err != nil {
 			return nil, err
 		}
 		sessions = append(sessions, session)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, domain.WrapError(domain.CodeConflict, "sessions could not be listed", err)
 	}
 	return sessions, nil
 }

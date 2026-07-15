@@ -34,8 +34,12 @@ and in-memory terminal replay.
 
 The runtime package test builds a real `multidesk` binary and drives a child
 subprocess through start, replay, duplicate input, resize, stop, resume, and
-kill. Full Go tests, scoped race tests, `go vet`, and darwin/arm64,
-linux/amd64, and windows/amd64 cross-builds pass locally.
+kill. `internal/device/native_session_e2e_test.go` additionally builds that
+binary, starts the authenticated native endpoint, and drives two clients
+through start/idempotent replay/list/attach/observe/observer denial,
+lease/input/resize/stop/resume/kill, and shutdown. Full Go tests, scoped race
+tests, `go vet`, and darwin/arm64, linux/amd64, and windows/amd64 cross-builds
+pass locally.
 
 Independent verification must still run the application service through two
 authenticated native IPC clients and repeat the P3 acceptance on macOS,
