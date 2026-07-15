@@ -11,12 +11,12 @@
 | Impacted Modules | `core, desktop, security` |
 | Hypothesis | `On macOS, two CLAUDE_CONFIG_DIR profiles isolate accounts including Keychain entries; auth status is machine-readable JSON; setup-token works in an interactive PTY, survives long sessions, and revocation is observable` |
 | Time-box | `operator-scoped: one account + conservative interactive-login fallback` |
-| Current Phase | `EVIDENCE` |
-| Status | `EVIDENCE_READY` |
-| Executor | `Claude Code 2.1.207 + Codex provider-spike` |
-| Updated | `2026-07-14 19:31 -0700` |
-| Suggested Next | `security-review` |
-| Security Gate | `open — Keychain, setup-token, and revocation touch credentials (SOP_SPIKE rule 5); security-review required on evidence` |
+| Current Phase | `SECURITY_REVIEW` |
+| Status | `ACCEPTED` |
+| Executor | `Codex (GPT-5), security-review` |
+| Updated | `2026-07-14 19:34 -0700` |
+| Suggested Next | `feature-plan` |
+| Security Gate | `resolved — ACCEPTED only for per-target-profile official interactive login; setup-token CredentialGrant remains unsupported` |
 | Evidence Path | `docs/spikes/claude/` |
 | Decision Record | `pending — PROVIDER_COMPATIBILITY.md entry` |
 
@@ -70,3 +70,4 @@ CredentialGrant remains experimental and fail-closed.
 | 2026-07-14 14:55 -0700 | Codex provider-spike | Proved same-account macOS Keychain slot isolation/scoped logout, cross-version JSON health checks, and setup-token PTY initiation/resize; recorded quota and remaining gates | `docs/spikes/claude/`; this file | `SPIKE_READY`, experiment incomplete | provider-spike after quota reset / second identity or fallback decision |
 | 2026-07-14 14:55 -0700 | Codex provider-spike | Refreshed the operator-owned dashboard to Phase 0.5 active with a status binding to this Spike | `docs/workflow/project/dashboard-state.json` | dashboard focus `SPIKE_READY` | continue provider-spike |
 | 2026-07-14 19:31 -0700 | Codex provider-spike | Applied the operator one-account scope, retained only secret-safe auth/session evidence, classified quota as non-auth failure, excluded unverified setup-token/long-session/revocation behavior, and selected official interactive login per target profile | `docs/spikes/claude/`; this file; dashboard | `EVIDENCE_READY`, gate remains `open` | security-review |
+| 2026-07-14 19:34 -0700 | Codex (GPT-5), security-review | Reviewed profile/Keychain trust boundaries, PII redaction, path isolation, login/account pinning, quota classification, setup-token exclusion, logout/revocation wording, and residual risk | `docs/reviews/spike-claude-config-keychain/2026-07-14-security-review.md`; this file | `ACCEPTED`; Security Gate resolved only for per-profile interactive login | feature-plan decision |
