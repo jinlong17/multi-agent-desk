@@ -5,9 +5,9 @@
   "current_phase": "1",
   "current_status": "Phase 1 · Device Kernel 已激活，Phase 0.5 决策门已完成",
   "current_owner": "core",
-  "next_action": "ship PR #11 after the final evidence head passes seven required checks",
+  "next_action": "create the phase1-device-kernel Feature Brief and run feature-plan",
   "manual_updated_at": "2026-07-14",
-  "manual_updated_by": "operator-directed project-system writer (refresh recorded in phase0-5-consolidation Work Log)",
+  "manual_updated_by": "operator-directed ship writer (refresh recorded in phase0-5-consolidation Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
@@ -15,15 +15,15 @@
     },
     {
       "label": "在哪条线",
-      "value": "codex/project-system/phase0-5-consolidation；P2 状态迁移"
+      "value": "next: codex/core/phase1-device-kernel"
     },
     {
       "label": "用哪个入口",
-      "value": "ship phase0-5-consolidation → feature-plan Phase 1"
+      "value": "mad-feature-brief → feature-plan → feature-review"
     },
     {
       "label": "做到什么状态",
-      "value": "Phase 0.5 completed；Phase 1 in_progress；P2 READY_TO_SHIP"
+      "value": "Phase 0.5 SHIPPED；Phase 1 in_progress；产品代码尚未开始"
     }
   ],
   "phases": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "phase0-5-consolidation",
-      "expected_status": "READY_TO_SHIP"
+      "expected_status": "SHIPPED"
     }
   ]
 }
