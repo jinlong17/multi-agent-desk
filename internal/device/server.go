@@ -60,7 +60,7 @@ func (s *Server) Serve(ctx context.Context) error {
 		}
 	}()
 	for {
-		connection, err := s.Listener.Accept()
+		connection, err := acceptWithContext(ctx, s.Listener)
 		if err != nil {
 			if ctx.Err() != nil || errors.Is(err, io.EOF) || errors.Is(err, os.ErrClosed) || errors.Is(err, net.ErrClosed) {
 				return nil
@@ -74,6 +74,21 @@ func (s *Server) Serve(ctx context.Context) error {
 		default:
 			_ = connection.Close()
 		}
+	}
+}
+
+func acceptWithContext(ctx context.Context, listener Listener) (io.ReadWriteCloser, error) {
+	type result struct {
+		connection io.ReadWriteCloser
+		err        error
+	}
+	accepted := make(chan result, 1)
+	go func() { connection, err := listener.Accept(); accepted <- result{connection: connection, err: err} }()
+	select {
+	case value := <-accepted:
+		return value.connection, value.err
+	case <-ctx.Done():
+		return nil, ctx.Err()
 	}
 }
 

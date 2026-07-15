@@ -77,7 +77,7 @@ func TestNamedPipeAuthenticatedDaemon(t *testing.T) {
 	if !response.OK {
 		t.Fatalf("request rejected: %+v", response.Error)
 	}
-	_ = listener.Close()
+	_ = server.Close()
 	cancel()
 	select {
 	case <-serveErr:

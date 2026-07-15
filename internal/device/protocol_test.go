@@ -156,7 +156,7 @@ func TestBootstrapAndAuthenticatedUnixDaemon(t *testing.T) {
 	if !response.OK || string(response.Result) != `{"status":"ok"}` {
 		t.Fatalf("unexpected response: %+v", response)
 	}
-	_ = listener.Close()
+	_ = server.Close()
 	cancel()
 	select {
 	case <-serveErr:
