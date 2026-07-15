@@ -10,10 +10,10 @@
 | Owner Module | `core` |
 | Impacted Modules | `security, provider, desktop, project-system` |
 | Current Phase | `P3 Fake runtime and Session control` |
-| Status | `READY_FOR_VERIFY` |
-| Executor | `Codex (GPT-5) as feature-build P3 Windows subprocess correction` |
-| Updated | `2026-07-14 22:40 -0700` |
-| Suggested Next | `feature-verify P3 Fake runtime and Session control` |
+| Status | `VERIFIED` |
+| Executor | `Codex (GPT-5) as independent feature-verify P3 v2` |
+| Updated | `2026-07-14 22:58 -0700` |
+| Suggested Next | `feature-build P4 Vault and materialization recovery` |
 | Branch / Worktree | `codex/core/phase1-device-kernel` / `/Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/phase1-device-kernel` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none — deterministic first-party Fake Provider only` |
@@ -25,7 +25,7 @@
 |---|---|---|---|---|
 | P1 domain and Device store | domain entities/invariants; SQLite driver, schema, migrations, repositories, transactions, future-schema/restart handling | approved plan | domain and storage suites pass on empty/current/restart/future state; WAL/FK/busy settings proven | `VERIFIED` |
 | P2 identity, IPC, and Daemon lifecycle | Ed25519 bootstrap/rotation/revocation; framed protocol; Unix socket/Windows Named Pipe; application authorization shell; Daemon/service specs | P1 verified | mutual authentication and fail-closed endpoint tests; native IPC on three platforms; no TCP listener | `VERIFIED` |
-| P3 Fake runtime and Session control | Fake Provider subprocess; process manager; Session state machine; ring buffer; attachments; ControllerLease; input/resize/stop/kill/resume | P2 verified | two-client native-IPC scenario passes; observer/lease/idempotency/replay and bounded process behavior proven | `READY_FOR_VERIFY` |
+| P3 Fake runtime and Session control | Fake Provider subprocess; process manager; Session state machine; ring buffer; attachments; ControllerLease; input/resize/stop/kill/resume | P2 verified | two-client native-IPC scenario passes; observer/lease/idempotency/replay and bounded process behavior proven | `VERIFIED` |
 | P4 Vault and materialization recovery | locked/unlocked runtime; fake credential revision/CAS; atomic runtime home; cleanup/quarantine; failure injection | P3 verified | lock/restart boundary, single writer, permission, crash and stale-overwrite tests pass | `PLANNED` |
 | P5 CLI/TUI and platform exit | stable JSON/human commands; minimal TUI; service-spec commands; docs; complete three-platform E2E/CI/license/race evidence | P4 verified | Phase 1 exit scenario passes on macOS/Linux/Windows; full project checks and security review ready | `PLANNED` |
 
@@ -61,6 +61,7 @@ verification, the required independent Security Gate must pass before ship.
 | 2026-07-14 22:35 -0700 | P3 verify v1 | actual Draft PR CI run `29391693620` passed project, macOS, Ubuntu, DCO, license, and link checks but Windows `go test ./...` failed in `TestManagerRunsRealFakeProviderSubprocess`: Windows appends `.exe` to the test-built output path while the manager invoked the extensionless path | `BLOCKED`; failure is a concrete cross-platform process-launch defect; no P3 pass inferred | `docs/reviews/phase1-device-kernel/2026-07-14-feature-verify-p3-v1.md`; CI `29391693620`; Windows job `87276396962` | feature-build P3 Windows subprocess correction |
 | 2026-07-14 22:40 -0700 | P3 correction | resolved the Windows executable suffix at `StartProcess`: when the configured path is extensionless and the `.exe` artifact exists, the process boundary invokes the concrete Windows path; reran local runtime/full/race/vet and Windows cross-compile checks | `READY_FOR_VERIFY`; exact original Windows failure has a scoped correction; fresh protected runner evidence required | `internal/runtime/process.go`; command output | feature-verify P3 Fake runtime and Session control |
 | 2026-07-14 22:52 -0700 | P3 E2E correction | added the real two-client native IPC scenario and found/fixed a single-connection SQLite deadlock in `ListSessions` by closing rows before per-session reads; the Unix socket scenario now proves start/idempotent replay/list/attach/observe/observer denial/lease/input/resize/stop/resume/kill/shutdown | `READY_FOR_VERIFY`; local native E2E passes; fresh macOS/Linux/Windows protected runner evidence required | `internal/device/native_session_e2e_test.go`; `internal/storage/repository.go`; command output | feature-verify P3 Fake runtime and Session control |
+| 2026-07-14 22:58 -0700 | P3 verify v2 | verified exact head after the Windows executable correction and native E2E/SQLite row-lifetime correction; actual macOS, Ubuntu, and Windows jobs passed all Go/scaffold checks, including Device, Runtime, and Storage packages; project, DCO, license, and link gates also passed | `VERIFIED`: P3 acceptance passes; P4 unlocked; Security Gate remains open | `docs/reviews/phase1-device-kernel/2026-07-14-feature-verify-p3-v2.md`; CI `29392655976`; Governance `29392655993`; Windows job `87279295885` |
 
 ## Risks and Blockers
 
@@ -109,3 +110,5 @@ verification, the required independent Security Gate must pass before ship.
 | 2026-07-14 22:35 -0700 | Codex (GPT-5) as independent feature-verify P3 v1 | Recomputed the exact P3 head, inspected all seven protected checks, and retained the Windows failure as a blocker rather than treating local cross-build as runtime proof | `BLOCKED`; dashboard rebound to the persisted verifier result | `docs/reviews/phase1-device-kernel/2026-07-14-feature-verify-p3-v1.md`; this file; CI `29391693620` | feature-build P3 Windows subprocess correction |
 | 2026-07-14 22:35 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Rebound manual dashboard judgment to the persisted P3 `BLOCKED` verdict without changing the implementation finding | dashboard manual/generated state; this file | focus expects `BLOCKED`; Phase 1 remains `in_progress`; P3 correction required | feature-build P3 Windows subprocess correction |
 | 2026-07-14 22:40 -0700 | Codex (GPT-5) as feature-build P3 Windows subprocess correction | Applied only the cross-platform executable-path correction, preserved the bounded child protocol, and rebound the phase to `READY_FOR_VERIFY`; native two-client IPC and all three runner results remain open | `READY_FOR_VERIFY`; no blocker silently upgraded | `internal/runtime/process.go`; this file | feature-verify P3 Fake runtime and Session control |
+| 2026-07-14 22:58 -0700 | Codex (GPT-5) as independent feature-verify P3 v2 | Recomputed exact head `b001842`, inspected all seven protected checks, confirmed the native two-client E2E is part of all-platform Go test execution, and verified the corrected Windows runner logs; modified only verdict surfaces | `VERIFIED`; P4 unlocked; Draft PR #13 remains unmerged; Security Gate remains open | `docs/reviews/phase1-device-kernel/2026-07-14-feature-verify-p3-v2.md`; this file; CI `29392655976`; Governance `29392655993` | feature-build P4 Vault and materialization recovery |
+| 2026-07-14 22:58 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Rebound manual dashboard judgment to the persisted P3 `VERIFIED` verdict and exposed P4 as the next executable phase without closing the Security Gate | dashboard manual/generated state; this file | focus expects `VERIFIED`; Phase 1 remains `in_progress`; P4 is unlocked | feature-build P4 Vault and materialization recovery |
