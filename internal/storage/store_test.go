@@ -37,6 +37,57 @@ func openTestStore(t *testing.T) (*Store, string) {
 	return store, path
 }
 
+func TestSQLiteDSNPreservesAbsolutePlatformPaths(t *testing.T) {
+	tests := []struct {
+		name     string
+		goos     string
+		path     string
+		expected string
+	}{
+		{
+			name:     "unix special characters",
+			goos:     "linux",
+			path:     "/tmp/device root/a?#%.db",
+			expected: "file:///tmp/device%20root/a%3F%23%25.db",
+		},
+		{
+			name:     "windows drive",
+			goos:     "windows",
+			path:     `C:\Users\runner admin\device?#%.db`,
+			expected: "file:///C:/Users/runner%20admin/device%3F%23%25.db",
+		},
+		{
+			name:     "windows unc",
+			goos:     "windows",
+			path:     `\\server\private share\device.db`,
+			expected: "file://server/private%20share/device.db",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := sqliteDSNForOS(test.goos, test.path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != test.expected {
+				t.Fatalf("got %q, want %q", got, test.expected)
+			}
+		})
+	}
+	for _, test := range []struct {
+		goos string
+		path string
+	}{
+		{"linux", "relative/device.db"},
+		{"windows", `relative\device.db`},
+		{"windows", `\\server`},
+	} {
+		if _, err := sqliteDSNForOS(test.goos, test.path); domain.CodeOf(err) != domain.CodeInvalidArgument {
+			t.Fatalf("%s path %q got %v", test.goos, test.path, err)
+		}
+	}
+}
+
 func TestOpenConfiguresAndRestartsDeviceDatabase(t *testing.T) {
 	store, path := openTestStore(t)
 	ctx := context.Background()

@@ -3,15 +3,15 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "1",
-  "current_status": "Phase 1 · P1 域不变量已修正，但 Windows SQLite runtime open 失败",
+  "current_status": "Phase 1 · Windows SQLite path/DSN 已修正，等待 Draft PR #13 三平台复验",
   "current_owner": "core",
-  "next_action": "feature-build fixes portable Windows SQLite path/DSN and reruns Draft PR #13 checks",
+  "next_action": "push corrected P1 head and require all seven Draft PR #13 checks before VERIFIED",
   "manual_updated_at": "2026-07-14",
   "manual_updated_by": "operator-directed core writer (refresh recorded in phase1-device-kernel Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 1 · 修正 Windows Device SQLite 路径"
+      "value": "Phase 1 · 复验 Windows Device SQLite 路径修正"
     },
     {
       "label": "在哪条线",
@@ -19,11 +19,11 @@
     },
     {
       "label": "用哪个入口",
-      "value": "feature-build P1 Windows correction → feature-verify"
+      "value": "feature-verify P1 on Draft PR #13"
     },
     {
       "label": "做到什么状态",
-      "value": "P1 BLOCKED（Windows runtime）；P2 尚未开始；Security Gate open"
+      "value": "P1 READY_FOR_VERIFY；P2 尚未开始；Security Gate open"
     }
   ],
   "phases": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "phase1-device-kernel",
-      "expected_status": "BLOCKED"
+      "expected_status": "READY_FOR_VERIFY"
     }
   ]
 }

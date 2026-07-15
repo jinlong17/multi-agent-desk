@@ -10,10 +10,10 @@
 | Owner Module | `core` |
 | Impacted Modules | `security, provider, desktop, project-system` |
 | Current Phase | `P1 domain and Device store` |
-| Status | `BLOCKED` |
-| Executor | `Codex (GPT-5) as independent feature-verify P1 v2` |
-| Updated | `2026-07-14 21:22 -0700` |
-| Suggested Next | `feature-build P1 Windows SQLite path correction` |
+| Status | `READY_FOR_VERIFY` |
+| Executor | `Codex (GPT-5) as feature-build P1 Windows correction` |
+| Updated | `2026-07-14 21:25 -0700` |
+| Suggested Next | `feature-verify P1 on Draft PR #13` |
 | Branch / Worktree | `codex/core/phase1-device-kernel` / `/Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/phase1-device-kernel` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none — deterministic first-party Fake Provider only` |
@@ -51,6 +51,7 @@ verification, the required independent Security Gate must pass before ship.
 | 2026-07-14 21:13 -0700 | P1 verify | independent exact-commit code/invariant audit plus full Go/vet/race/cross-build, license, project/CI/scaffold/link, migration, and boundary evidence review | automated checks pass, but three uncovered counterexamples block P1: Resume snapshot invention, non-monotonic reacquire after release, and unbounded invalid ID prefix | `docs/reviews/phase1-device-kernel/2026-07-14-feature-verify-p1.md` |
 | 2026-07-14 21:17 -0700 | P1 correction | added exact source/new Resume snapshot equality and source capability enforcement in the creation transaction; monotonic reacquire check; complete bounded ID grammar; direct negative tests; full Go/vet/race/three-target compile, exact license, project/CI/scaffold/diff suite | pass: all three verifier counterexamples now reject without side effects; existing P1 evidence remains green | correction diff and command output |
 | 2026-07-14 21:22 -0700 | P1 verify v2 | re-audited the three corrections; reran uncached local/race/governance evidence; pushed corrected head to Draft PR #13 and required actual macOS/Ubuntu/Windows execution | 6/7 protected checks pass; Windows job `87267159036` fails every Store test at database Ping while domain/migrations pass; macOS and Ubuntu Store suites pass | `docs/reviews/phase1-device-kernel/2026-07-14-feature-verify-p1-v2.md`; CI `29388679737`; Governance `29388679739` |
+| 2026-07-14 21:25 -0700 | P1 Windows correction | replaced drive-ambiguous URI construction with explicit Unix, drive-rooted Windows, and UNC file-URI mapping; percent-encoded special path characters; added pure mapping positive/negative fixtures; reran local/race/vet/three-target compile, exact licenses, project/CI/scaffold/diff | pass locally; corrected head still requires a new actual Windows run | `internal/storage/store.go`; `internal/storage/store_test.go`; command output |
 
 ## Risks and Blockers
 
@@ -83,3 +84,5 @@ verification, the required independent Security Gate must pass before ship.
 | 2026-07-14 21:17 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Rebound dashboard focus from the persisted verifier block to the persisted corrected `READY_FOR_VERIFY` state; regenerated mirrors and machine facts without advancing P1/P2 | `docs/workflow/project/dashboard-state.json`; generated dashboard state; this file | dashboard verification passes; Phase 1 remains `in_progress` | feature-verify P1 domain and Device store |
 | 2026-07-14 21:22 -0700 | Codex (GPT-5) as independent feature-verify P1 v2 | Confirmed closure of all three domain findings and reran local evidence; created Draft PR #13 to obtain real three-platform execution; retained the Windows failure instead of treating cross-build as runtime proof; modified only verdict surfaces | `docs/reviews/phase1-device-kernel/2026-07-14-feature-verify-p1-v2.md`, this file; GitHub runs `29388679737`, `29388679739` | `BLOCKED`; Windows Device Store cannot open its test database | feature-build P1 Windows SQLite path correction |
 | 2026-07-14 21:22 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Rebound dashboard focus to the persisted Windows-runtime `BLOCKED` verdict without changing P1 scope or starting P2 | `docs/workflow/project/dashboard-state.json`; generated dashboard state; this file | focus expects `BLOCKED`; Phase 1 remains `in_progress` | feature-build P1 Windows SQLite path correction |
+| 2026-07-14 21:25 -0700 | Codex (GPT-5) as feature-build P1 Windows correction | Corrected SQLite DSN construction for absolute Unix, Windows drive-rooted, and UNC paths using explicit valid file URI shapes and percent encoding; retained private-root and regular-file checks; added mapping fixtures and reran the complete local P1/repository suite without modifying other phases | Store code/tests; this file | `READY_FOR_VERIFY`; new Windows runner required | feature-verify P1 on Draft PR #13 |
+| 2026-07-14 21:25 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Rebound dashboard focus from the persisted Windows block to the persisted corrected `READY_FOR_VERIFY` state; regenerated mirrors and facts without inferring a Windows pass | dashboard manual/generated state; this file | dashboard verification passes; actual runner remains required | feature-verify P1 on Draft PR #13 |

@@ -60,7 +60,10 @@ func Open(ctx context.Context, path string) (*Store, error) {
 		return nil, domain.WrapError(domain.CodeConflict, "database path cannot be inspected", err)
 	}
 
-	dsn := (&url.URL{Scheme: "file", Path: filepath.ToSlash(absolute)}).String()
+	dsn, err := sqliteDSNForOS(runtime.GOOS, absolute)
+	if err != nil {
+		return nil, err
+	}
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, domain.WrapError(domain.CodeConflict, "database open failed", err)
@@ -90,6 +93,37 @@ func Open(ctx context.Context, path string) (*Store, error) {
 	}
 	ok = true
 	return store, nil
+}
+
+func sqliteDSNForOS(goos, absolute string) (string, error) {
+	if absolute == "" {
+		return "", domain.NewError(domain.CodeInvalidArgument, "database path is required")
+	}
+	if goos != "windows" {
+		if !strings.HasPrefix(absolute, "/") {
+			return "", domain.NewError(domain.CodeInvalidArgument, "database path must be absolute")
+		}
+		return (&url.URL{Scheme: "file", Path: absolute}).String(), nil
+	}
+
+	normalized := strings.ReplaceAll(absolute, `\`, "/")
+	if strings.HasPrefix(normalized, "//") {
+		remainder := strings.TrimPrefix(normalized, "//")
+		separator := strings.IndexByte(remainder, '/')
+		if separator <= 0 || separator == len(remainder)-1 {
+			return "", domain.NewError(domain.CodeInvalidArgument, "database UNC path is invalid")
+		}
+		return (&url.URL{
+			Scheme: "file",
+			Host:   remainder[:separator],
+			Path:   remainder[separator:],
+		}).String(), nil
+	}
+	if len(normalized) < 3 || normalized[1] != ':' || normalized[2] != '/' ||
+		((normalized[0] < 'A' || normalized[0] > 'Z') && (normalized[0] < 'a' || normalized[0] > 'z')) {
+		return "", domain.NewError(domain.CodeInvalidArgument, "database Windows path must be drive-rooted or UNC")
+	}
+	return (&url.URL{Scheme: "file", Path: "/" + normalized}).String(), nil
 }
 
 func ensurePrivateDirectory(path string) error {
