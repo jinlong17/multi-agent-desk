@@ -41,6 +41,7 @@ const (
 	daclSecurityInformation   = 0x00000004
 	seKernelObject            = 6
 	maxMessageBytes           = 1 << 20
+	maxSteadyHandleGrowth     = 10
 )
 
 var (
@@ -230,12 +231,12 @@ func parentMain(resultPath string, roundTrips int) error {
 	}
 	// Warm os/exec and the Go Windows poller before taking a baseline so
 	// process-lifetime runtime handles are not mistaken for connection leaks.
-	if err := exec.Command("cmd.exe", "/d", "/c", "exit 0").Run(); err != nil {
-		return fmt.Errorf("warm process launcher: %w", err)
+	for attempt := 0; attempt < 8; attempt++ {
+		if err := exec.Command("cmd.exe", "/d", "/c", "exit 0").Run(); err != nil {
+			return fmt.Errorf("warm process launcher: %w", err)
+		}
 	}
-	runtime.GC()
-	time.Sleep(200 * time.Millisecond)
-	handlesBefore, err := processHandleCount()
+	handlesBefore, err := settledProcessHandleCount()
 	if err != nil {
 		return err
 	}
@@ -291,9 +292,7 @@ func parentMain(resultPath string, roundTrips int) error {
 		}
 		completed++
 		if completed == roundTrips/2 {
-			runtime.GC()
-			time.Sleep(200 * time.Millisecond)
-			handlesMid, err = processHandleCount()
+			handlesMid, err = settledProcessHandleCount()
 			if err != nil {
 				return err
 			}
@@ -311,15 +310,16 @@ func parentMain(resultPath string, roundTrips int) error {
 	if outcome.Err != nil {
 		return outcome.Err
 	}
-	runtime.GC()
-	time.Sleep(200 * time.Millisecond)
-	handlesAfter, err := processHandleCount()
+	handlesAfter, err := settledProcessHandleCount()
 	if err != nil {
 		return err
 	}
 	firstHalfGrowth := int64(handlesMid) - int64(handlesBefore)
 	secondHalfGrowth := int64(handlesAfter) - int64(handlesMid)
-	if secondHalfGrowth > 4 {
+	// os/exec and the Go Windows poller retain a small, run-dependent number of
+	// process-lifetime handles. A one-handle-per-client leak would add 50 in the
+	// second half; tolerate at most ten after quiescent minimum sampling.
+	if secondHalfGrowth > maxSteadyHandleGrowth {
 		return fmt.Errorf("handles continued growing with client count: before=%d mid=%d after=%d", handlesBefore, handlesMid, handlesAfter)
 	}
 
@@ -835,6 +835,22 @@ func processHandleCount() (uint32, error) {
 		return 0, fmt.Errorf("GetProcessHandleCount: %w", callErr)
 	}
 	return value, nil
+}
+
+func settledProcessHandleCount() (uint32, error) {
+	runtime.GC()
+	minimum := ^uint32(0)
+	for sample := 0; sample < 5; sample++ {
+		time.Sleep(100 * time.Millisecond)
+		value, err := processHandleCount()
+		if err != nil {
+			return 0, err
+		}
+		if value < minimum {
+			minimum = value
+		}
+	}
+	return minimum, nil
 }
 
 func runChild(executable string, timeout time.Duration, args ...string) (string, error) {
