@@ -10,10 +10,10 @@
 | Owner Module | `core` |
 | Impacted Modules | `security, provider, desktop, project-system` |
 | Current Phase | `ship` |
-| Status | `ACCEPTED` |
-| Executor | `Codex (GPT-5) as independent security-review` |
-| Updated | `2026-07-15 00:45 -0700` |
-| Suggested Next | `ship phase1-device-kernel` |
+| Status | `SHIPPED` |
+| Executor | `Codex (GPT-5) as ship (operator authorized)` |
+| Updated | `2026-07-15 00:55 -0700` |
+| Suggested Next | `feature-plan Phase 2 Codex Vertical Slice` |
 | Branch / Worktree | `codex/core/phase1-device-kernel` / `/Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/phase1-device-kernel` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none — deterministic first-party Fake Provider only` |
@@ -27,7 +27,7 @@
 | P2 identity, IPC, and Daemon lifecycle | Ed25519 bootstrap/rotation/revocation; framed protocol; Unix socket/Windows Named Pipe; application authorization shell; Daemon/service specs | P1 verified | mutual authentication and fail-closed endpoint tests; native IPC on three platforms; no TCP listener | `VERIFIED` |
 | P3 Fake runtime and Session control | Fake Provider subprocess; process manager; Session state machine; ring buffer; attachments; ControllerLease; input/resize/stop/kill/resume | P2 verified | two-client native-IPC scenario passes; observer/lease/idempotency/replay and bounded process behavior proven | `VERIFIED` |
 | P4 Vault and materialization recovery | locked/unlocked runtime; fake credential revision/CAS; atomic runtime home; cleanup/quarantine; failure injection | P3 verified | lock/restart boundary, fake credential revision/CAS, atomic runtime home, cleanup/quarantine tests pass | `VERIFIED` |
-| P5 CLI/TUI and platform exit | stable JSON/human commands; minimal TUI; service-spec commands; docs; complete three-platform E2E/CI/license/race evidence | P4 verified | Phase 1 exit scenario passes on macOS/Linux/Windows; full project checks and security review ready | `READY_TO_SHIP` |
+| P5 CLI/TUI and platform exit | stable JSON/human commands; minimal TUI; service-spec commands; docs; complete three-platform E2E/CI/license/race evidence | P4 verified | Phase 1 exit scenario passes on macOS/Linux/Windows; full project checks and security review ready | `SHIPPED` |
 
 Each phase is implemented by one writer, sets `READY_FOR_VERIFY`, receives an
 independent phase verdict, and only then unlocks the next phase. After P5
@@ -138,3 +138,4 @@ verification, the required independent Security Gate must pass before ship.
 | 2026-07-15 00:34 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Rebound manual dashboard judgment to the persisted final P5 `READY_TO_SHIP` verdict and advanced the next action to the independent Security Gate; no implementation or security verdict changed | dashboard manual/generated state; this file | workflow/dashboard verification required; Security Gate remains open | security-review phase1-device-kernel |
 | 2026-07-15 00:45 -0700 | Codex (GPT-5) as independent security-review | Reviewed exact head `bf5f5c3`, confirmed request-bound idempotency, bounded stdin and complete argv rejection, rechecked authentication/authorization, Vault/materialization, ACL, replay, and protected evidence; no remaining P1/P2 finding | `ACCEPTED`; Security Gate resolved; ship remains human-authorized | `docs/reviews/phase1-device-kernel/2026-07-15-security-review-v2.md`; CI `29396672544`; Governance `29396672597` | ship phase1-device-kernel |
 | 2026-07-15 00:47 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Rebound manual dashboard judgment to the persisted Security Gate `ACCEPTED` verdict and advanced the next action to the authorized ship gate | dashboard manual/generated state; this file | workflow/dashboard verification required; merge and release remain explicit ship actions | ship phase1-device-kernel |
+| 2026-07-15 00:55 -0700 | Codex (GPT-5) as ship (operator authorized) | Marked Phase 1 `SHIPPED` only after PR #13 was ready, protected checks were green, and squash merge completed; recorded main commit and rollback receipt; no tag/release/deployment performed | `SHIPPED`; main `36efca8`; Phase 2 remains gated | `docs/reviews/phase1-device-kernel/2026-07-15-ship-receipt.md`; PR #13 | feature-plan Phase 2 Codex Vertical Slice |
