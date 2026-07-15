@@ -47,7 +47,7 @@ go build -tags named_pipe_spike -trimpath -o docs/spikes/windows/.bin/named-pipe
 
 ## Evidence
 
-Passing run: GitHub Actions `29378594831`, job
+Final passing run: GitHub Actions `29379406760`, job
 `named-pipe-windows-x64`, completed 2026-07-14. The sanitized artifact is
 committed as `docs/spikes/windows/named-pipe-result.json`.
 
@@ -65,16 +65,20 @@ committed as `docs/spikes/windows/named-pipe-result.json`.
 | Abrupt disconnects recovered | `1` |
 | Largest framed message | `71,741` bytes |
 | Message boundaries | preserved |
-| Transcript SHA-256 | `089d13ff485b3ffaf920268c35473ec3b7f545b58e4d453fbbcb314d0d888e8f` |
+| Transcript SHA-256 | `30db010957060d20b47ed99065b43055bdcde495173f12167cbb6dc86d9a8123` |
 | Handles baseline / midpoint / end | `127 / 143 / 142` |
 | Second-half handle growth | `-1` |
 | Shutdown | `0 ms` |
 
 The initial run `29378469528` passed the functional and authorization checks
-but failed the original process-handle heuristic (`117` to `142`). The increase
-was front-loaded Go and `os/exec` runtime initialization, not linear per-client
-growth. The corrected probe warms process creation and compares midpoint to
-end; the passing run decreased from `143` to `142` over clients 51–100.
+but failed a cold-start process-handle heuristic (`117` to `142`). Run
+`29379229462` later showed why a four-handle steady-state threshold was still
+too tight: its second half grew by five handles (`143` to `148`), far below the
+50 handles expected from a one-handle-per-client leak, while all transport and
+security assertions passed. The final probe warms eight child launches, takes
+the minimum of five quiescent samples at each checkpoint, and allows at most ten
+retained runtime handles across clients 51–100. Final run `29379406760`
+decreased from `143` to `142` in that interval.
 
 ## Security contract checked
 

@@ -88,5 +88,5 @@ Session 0 or broad administrator access.
 - `docs/spikes/windows/named-pipe-result.json`
 - `docs/spikes/windows/2026-07-14-windows-named-pipe-spike.md`
 - `docs/reviews/spike-windows-named-pipe-ipc/2026-07-14-security-review.md`
-- GitHub Actions passing run `29378594831`
-- GitHub Actions retained negative harness run `29378469528`
+- GitHub Actions final passing run `29379406760`
+- GitHub Actions retained negative harness runs `29378469528` and `29379229462`
