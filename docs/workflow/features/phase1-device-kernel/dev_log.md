@@ -10,14 +10,14 @@
 | Owner Module | `core` |
 | Impacted Modules | `security, provider, desktop, project-system` |
 | Current Phase | `Security Gate for Phase 1` |
-| Status | `READY_TO_SHIP` |
-| Executor | `operator-directed project-system writer after independent P5 verification` |
-| Updated | `2026-07-14 23:45 -0700` |
-| Suggested Next | `security-review Phase 1 Device Kernel` |
+| Status | `REVISE` |
+| Executor | `Codex (GPT-5) as independent security-review` |
+| Updated | `2026-07-14 23:50 -0700` |
+| Suggested Next | `feature-plan P5 CLI correction: request-bound idempotency and stdin unlock` |
 | Branch / Worktree | `codex/core/phase1-device-kernel` / `/Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/phase1-device-kernel` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none — deterministic first-party Fake Provider only` |
-| Security Gate | `open — local peer auth, authorization, Vault/materialization, recovery, bounds, redaction` |
+| Security Gate | `open — REVISE: CLI idempotency key binding and argv secret exposure` |
 
 ## Phase Plan
 
@@ -125,3 +125,4 @@ verification, the required independent Security Gate must pass before ship.
 | 2026-07-14 23:40 -0700 | Codex (GPT-5) as independent feature-verify P5 v1 | Recomputed exact head `f68e7b4`, inspected all three platform jobs including Windows CLI/device/vault output, and confirmed project, DCO, license, and link gates | `VERIFIED`; Phase 1 Security Gate is the only remaining gate; no ship/merge inference | `docs/reviews/phase1-device-kernel/2026-07-14-feature-verify-p5-v1.md`; CI `29394552147`; Governance `29394552139`; Windows job `87284979063` | security-review Phase 1 Device Kernel |
 | 2026-07-14 23:40 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Rebound manual dashboard judgment to the persisted P5 `VERIFIED` verdict and advanced the next action to the independent Security Gate without closing ship/merge gates | dashboard manual/generated state; this file | focus expects `VERIFIED`; Phase 1 remains `in_progress`; Security Gate is open | security-review Phase 1 Device Kernel |
 | 2026-07-14 23:45 -0700 | operator-directed project-system writer | Promoted the independently verified P5 unit to the workflow's `READY_TO_SHIP` input for the required Security Gate; no implementation or verdict evidence changed | this file; dashboard manual state | Security Gate remains open; ship/merge still gated | security-review Phase 1 Device Kernel |
+| 2026-07-14 23:50 -0700 | Codex (GPT-5) as independent security-review | Reviewed the exact P5 head's trust boundaries, authentication/authorization, replay/idempotency, Vault/materialization, platform ACLs, redaction, and protected evidence; found method-only CLI idempotency keys and argv Vault secret exposure | `REVISE`; Security Gate remains open; no implementation files changed | `docs/reviews/phase1-device-kernel/2026-07-14-security-review.md`; `cmd/multidesk/commands.go`; `internal/app/session_service.go`; CI `29394552147`; Governance `29394552139` | feature-plan P5 CLI correction |
