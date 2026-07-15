@@ -10,10 +10,10 @@
 | Owner Module | `project-system` |
 | Impacted Modules | `core, provider, control-plane, web, desktop, security` |
 | Current Phase | `P2 project transition` |
-| Status | `READY_FOR_VERIFY` |
-| Executor | `Codex (GPT-5) as feature-build` |
-| Updated | `2026-07-14 20:14 -0700` |
-| Suggested Next | `feature-verify P2 project transition` |
+| Status | `READY_TO_SHIP` |
+| Executor | `Codex (GPT-5) as feature-verify` |
+| Updated | `2026-07-14 20:19 -0700` |
+| Suggested Next | `ship phase0-5-consolidation exact verified head` |
 | Branch / Worktree | `codex/project-system/phase0-5-consolidation @ agent-deck-worktrees/phase0-5-consolidation` |
 | Plan Version | `v0.2` |
 | Provider Gate | `resolved — seven Spike decisions merged; exact support bounds retained` |
@@ -24,7 +24,7 @@
 | Phase | Scope | Dependencies | Acceptance | Status |
 |---|---|---|---|---|
 | P1 evidence reconciliation | audit seven Spike authorities, ADR 0010-0016, compatibility matrix, fallbacks, and residual gates | seven Spike PRs merged to protected `main` | exact decision set complete; no unbounded or missing claim | `VERIFIED` |
-| P2 project transition | update plan/dashboard to Phase 0.5 completed and Phase 1 active; refresh generated facts; protected PR integration | P1 complete and plan approved | local checks plus seven remote checks pass; verified head merged and main green | `READY_FOR_VERIFY` |
+| P2 project transition | update plan/dashboard to Phase 0.5 completed and Phase 1 active; refresh generated facts; protected PR integration | P1 complete and plan approved | local checks plus seven remote checks pass; verified head merged and main green | `VERIFIED` |
 
 ## Evidence Ledger
 
@@ -37,6 +37,7 @@
 | 2026-07-14 20:07 -0700 | P1 verify | exact-set/ADR/evidence/matrix audit; E2EE Go/TypeScript vectors; project/dashboard/links/licenses; authenticated protection readback; diff check | pass after pinned temporary Go and frozen isolated TypeScript dependency setup; first two prerequisite-start failures retained, final vectors and all scoped checks pass | `docs/reviews/phase0-5-consolidation/2026-07-14-feature-verify-p1.md` |
 | 2026-07-14 20:14 -0700 | P2 build | `npm run workflow:generate`; `npm run project:verify`; `npm run ci:verify`; corrected phase-transition assertion; `git diff --check` | pass: plan/manual/static state aligned; Actions/CODEOWNERS/positive-negative fixtures; 168 Markdown files; 5 pnpm groups; 418 Cargo packages; first inline assertion wrapper had shell quoting syntax error and the quote-free equivalent passed | command output retained in task |
 | 2026-07-14 20:14 -0700 | P2 build | pinned Go 1.26.5 + Node 24 + pnpm 10.23.0 `npm run scaffold:verify` | pass: layout 27 directories/49 files/7 modules; 15 Go files formatted; Go tests/build; TypeScript checks/builds; Cargo format/check; Tauri release build | command output retained in task |
+| 2026-07-14 20:19 -0700 | P2 verify | independent state/stale-language audit; complete project/CI/scaffold regression; PR #11 exact-head checks; `main` protection readback; diff integrity | pass: local audit and builds green; remote CI `29386113562` and Governance `29386113538` provide seven successful checks; PR `MERGEABLE` / `CLEAN` | `docs/reviews/phase0-5-consolidation/2026-07-14-feature-verify-p2.md` |
 
 ## Risks and Blockers
 
@@ -62,3 +63,5 @@
 | 2026-07-14 20:07 -0700 | operator-directed project-system writer | Refreshed manual dashboard judgment and focus to the persisted P1 `VERIFIED` verdict without advancing Phase 0.5 completion | `docs/workflow/project/dashboard-state.json`, generated dashboard state | focus aligned to `VERIFIED` | feature-build P2 project transition |
 | 2026-07-14 20:14 -0700 | Codex (GPT-5) as feature-build P2 | Marked Phase 0.5 decision gates completed and Phase 1 active across the plan, README, compatibility matrix, threat model, manual/static dashboard; reconciled the one-account/two-profile acceptance language; preserved Provider and Windows residual gates; ran all local governance and scaffold checks without starting Phase 1 code | `README.md`; plan; compatibility; threat model; dashboard static/manual state; this file | `READY_FOR_VERIFY`; local checks pass, remote PR checks pending | feature-verify P2 project transition |
 | 2026-07-14 20:14 -0700 | operator-directed project-system writer | Refreshed dashboard manual judgment and focus to the persisted P2 build handoff after the authorized phase transition | `docs/workflow/project/dashboard-state.json`, generated dashboard state | Phase 0.5 completed; Phase 1 in progress; focus aligned to `READY_FOR_VERIFY` | feature-verify P2 project transition |
+| 2026-07-14 20:19 -0700 | Codex (GPT-5) as independent feature-verify | Verified the final diff, exact manual/static phase transition, resolved compatibility rows, README/toolchain truth, one-account scope, threat/security boundaries, dashboard focus, full local Go/Web/Tauri regression, exact PR head, seven remote checks, and protected-main settings; modified only verdict surfaces | `docs/reviews/phase0-5-consolidation/2026-07-14-feature-verify-p2.md`, this file | `READY_TO_SHIP`; no blocking finding | ship exact verified head and require seven green main checks |
+| 2026-07-14 20:19 -0700 | operator-directed project-system writer | Refreshed dashboard manual judgment and focus to the persisted final verifier verdict without changing its conclusion or shipping | `docs/workflow/project/dashboard-state.json`, generated dashboard state | focus aligned to `READY_TO_SHIP`; final evidence head still requires protected checks | commit/push final evidence, then authorized ship |
