@@ -90,4 +90,11 @@ func TestVaultUnlockRejectsArgvSecret(t *testing.T) {
 	}
 }
 
+func TestVaultUnlockRejectsPositionalSecret(t *testing.T) {
+	_, err := captureCLI(t, "vault", "unlock", "--root", filepath.Join(t.TempDir(), "device"), "--secret-stdin", "argv-secret")
+	if err == nil || !strings.Contains(err.Error(), "accepts no positional arguments") {
+		t.Fatalf("positional Vault secret was not rejected at parse boundary: %v", err)
+	}
+}
+
 func ptrInt64(value int64) *int64 { return &value }

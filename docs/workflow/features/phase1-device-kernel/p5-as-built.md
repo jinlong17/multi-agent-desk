@@ -11,7 +11,8 @@ service used by the native E2E.
   the current platform. It does not install, stop, or mutate a host service;
   `daemon serve` remains the explicit foreground entrypoint.
 - `vault status|unlock|lock` uses the Vault gate and idempotency boundary;
-  unlock reads a bounded value from `--secret-stdin` and rejects argv secrets.
+  unlock reads a bounded value from `--secret-stdin` and rejects flags or
+  positional argv secrets.
 - `run fake`, `sessions list|show|observe|attach|detach|stop|kill|resume`,
   `control acquire|heartbeat|release`, and `terminal input|resize` map to the
   authenticated service methods with bounded flags and lease revisions.

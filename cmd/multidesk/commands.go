@@ -81,8 +81,14 @@ func runVault(args []string, stdout, stderr *os.File) error {
 	root := flags.String("root", "", "private Device root")
 	secretStdin := flags.Bool("secret-stdin", false, "read unlock input from stdin")
 	jsonOutput := flags.Bool("json", false, "JSON output")
-	if err := flags.Parse(args[1:]); err != nil || *root == "" {
+	if err := flags.Parse(args[1:]); err != nil {
+		return domain.NewError(domain.CodeInvalidArgument, "vault command arguments are invalid")
+	}
+	if *root == "" {
 		return domain.NewError(domain.CodeInvalidArgument, "vault command requires --root")
+	}
+	if len(flags.Args()) != 0 {
+		return domain.NewError(domain.CodeInvalidArgument, "vault command accepts no positional arguments")
 	}
 	switch args[0] {
 	case "status":
