@@ -1,0 +1,108 @@
+name: Windows Tauri sidecar spike
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/spike-windows-sidecar.yml"
+      - "docs/spikes/windows/tauri-sidecar-probe/**"
+      - "docs/spikes/windows/tauri-sidecar-result.json"
+      - "docs/spikes/windows/2026-07-14-windows-tauri-sidecar-spike.md"
+      - "docs/workflow/features/spike-windows-desktop-sidecar/**"
+      - "docs/reviews/spike-windows-desktop-sidecar/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/spike-windows-sidecar.yml"
+      - "docs/spikes/windows/tauri-sidecar-probe/**"
+      - "docs/spikes/windows/tauri-sidecar-result.json"
+      - "docs/spikes/windows/2026-07-14-windows-tauri-sidecar-spike.md"
+      - "docs/workflow/features/spike-windows-desktop-sidecar/**"
+      - "docs/reviews/spike-windows-desktop-sidecar/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-sidecar-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sidecar:
+    name: tauri-sidecar-windows-x64
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Setup pnpm
+        uses: pnpm/action-setup@d15e628ca66d93ee5f352c71671a7bc6a97af5c9 # v6.0.8
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Setup Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: Cache Cargo
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            docs/spikes/windows/tauri-sidecar-probe/src-tauri/target
+          key: windows-sidecar-cargo-${{ hashFiles('docs/spikes/windows/tauri-sidecar-probe/src-tauri/Cargo.lock', 'rust-toolchain.toml') }}
+          restore-keys: windows-sidecar-cargo-
+      - name: Setup pinned Rust
+        shell: bash
+        run: |
+          rustup set profile minimal
+          rustup toolchain install 1.91.1
+          rustup default 1.91.1
+      - name: Install frozen workspace
+        run: pnpm install --frozen-lockfile
+      - name: Prepare target-suffixed external binary and icon
+        shell: pwsh
+        run: |
+          $fixture = "docs/spikes/windows/tauri-sidecar-probe/src-tauri"
+          New-Item -ItemType Directory -Force "$fixture/binaries", "$fixture/icons" | Out-Null
+          Copy-Item "apps/desktop/src-tauri/icons/icon.ico" "$fixture/icons/icon.ico"
+          go build -trimpath -o "$fixture/binaries/mad-sidecar-x86_64-pc-windows-msvc.exe" "docs/spikes/windows/tauri-sidecar-probe/sidecar_probe_windows.go"
+      - name: Build Tauri host and NSIS externalBin bundle
+        shell: pwsh
+        run: |
+          $fixture = Join-Path $env:GITHUB_WORKSPACE "docs/spikes/windows/tauri-sidecar-probe"
+          $tauri = Join-Path $env:GITHUB_WORKSPACE "apps/desktop/node_modules/.bin/tauri.cmd"
+          Push-Location $fixture
+          try {
+            & $tauri build --bundles nsis --ci --no-sign -- --locked
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } finally {
+            Pop-Location
+          }
+      - name: Exercise ownership, crash continuity, reconnect, and cleanup
+        shell: pwsh
+        run: |
+          $target = "docs/spikes/windows/tauri-sidecar-probe/src-tauri/target/release"
+          $installer = Get-ChildItem "$target/bundle/nsis/*.exe" | Select-Object -First 1
+          if ($null -eq $installer) { throw "NSIS installer was not produced" }
+          & "docs/spikes/windows/tauri-sidecar-probe/run-sidecar-probe.ps1" `
+            -HostExe "$target/mad-tauri-sidecar-host.exe" `
+            -SidecarExe "$target/mad-sidecar.exe" `
+            -InstallerPath $installer.FullName `
+            -ResultPath "docs/spikes/windows/tauri-sidecar-result.json" `
+            -WorkRoot "$env:RUNNER_TEMP/mad-tauri-sidecar-spike"
+      - name: Upload sanitized evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: tauri-sidecar-windows-x64
+          path: docs/spikes/windows/tauri-sidecar-result.json
+          if-no-files-found: warn
