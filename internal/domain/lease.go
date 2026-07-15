@@ -38,6 +38,9 @@ func AcquireControllerLease(current *ControllerLease, sessionID, holderID ID, at
 		if current.SessionID != sessionID {
 			return ControllerLease{}, NewError(CodeConflict, "lease belongs to another session")
 		}
+		if current.Revision < 1 || at.Before(current.LastHeartbeat) {
+			return ControllerLease{}, NewError(CodeInvalidArgument, "lease acquisition time is invalid")
+		}
 		if current.Active(at) {
 			return ControllerLease{}, NewError(CodeLeaseHeld, "controller lease is already held")
 		}

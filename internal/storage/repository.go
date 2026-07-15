@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"slices"
 	"strings"
 	"time"
 
@@ -552,13 +553,15 @@ func validCredentialStatus(status domain.CredentialStatus) bool {
 func validateResumeSource(ctx context.Context, tx *sql.Tx, resumed domain.Session) error {
 	var source domain.Session
 	var endedAt sql.NullString
+	var sourceCapabilitiesJSON []byte
 	err := tx.QueryRowContext(ctx, `
 		SELECT device_id, provider, credential_instance_id, runtime_profile_id,
-			workspace_id, coalesce(provider_session_id, ''), status, ended_at
+			workspace_id, coalesce(provider_session_id, ''), status, ended_at,
+			capability_snapshot_json
 		FROM sessions WHERE id = ?`, resumed.ResumedFromSessionID).Scan(
 		&source.DeviceID, &source.Provider, &source.CredentialInstanceID,
 		&source.RuntimeProfileID, &source.WorkspaceID, &source.ProviderSessionID,
-		&source.Status, &endedAt,
+		&source.Status, &endedAt, &sourceCapabilitiesJSON,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return domain.NewError(domain.CodeNotFound, "resume source session not found")
@@ -575,6 +578,22 @@ func validateResumeSource(ctx context.Context, tx *sql.Tx, resumed domain.Sessio
 	}
 	if resumed.StartedAt.Before(sourceEndedAt) {
 		return domain.NewError(domain.CodeInvalidArgument, "resumed session cannot precede source end")
+	}
+	if err := json.Unmarshal(sourceCapabilitiesJSON, &source.CapabilitySnapshot); err != nil {
+		return domain.WrapError(domain.CodeSchemaIncompatible, "resume source capabilities are invalid", err)
+	}
+	canonicalSource, err := domain.CanonicalCapabilities(source.CapabilitySnapshot)
+	if err != nil {
+		return domain.WrapError(domain.CodeSchemaIncompatible, "resume source capabilities are invalid", err)
+	}
+	if !slices.Equal(canonicalSource, source.CapabilitySnapshot) {
+		return domain.NewError(domain.CodeSchemaIncompatible, "resume source capabilities are not canonical")
+	}
+	if !domain.HasCapability(canonicalSource, domain.CapabilitySessionResume) {
+		return domain.NewError(domain.CodePermissionDenied, "resume source capability is required")
+	}
+	if !slices.Equal(canonicalSource, resumed.CapabilitySnapshot) {
+		return domain.NewError(domain.CodeConflict, "resumed session changed capability snapshot")
 	}
 	if source.DeviceID != resumed.DeviceID || source.Provider != resumed.Provider ||
 		source.CredentialInstanceID != resumed.CredentialInstanceID || source.RuntimeProfileID != resumed.RuntimeProfileID ||

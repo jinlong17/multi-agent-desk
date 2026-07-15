@@ -2,6 +2,7 @@ package domain
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -167,6 +168,9 @@ func TestControllerLeaseLifecycle(t *testing.T) {
 	if released.Active(now.Add(11*time.Second)) || released.Revision != 2 {
 		t.Fatalf("unexpected release: %+v", released)
 	}
+	if _, err := AcquireControllerLease(&released, sessionID, holderB, now.Add(10*time.Second), DefaultLeaseDuration); CodeOf(err) != CodeInvalidArgument {
+		t.Fatalf("non-monotonic acquire got %v", err)
+	}
 	next, err := AcquireControllerLease(&released, sessionID, holderB, now.Add(12*time.Second), DefaultLeaseDuration)
 	if err != nil {
 		t.Fatal(err)
@@ -187,5 +191,33 @@ func TestCanonicalCapabilities(t *testing.T) {
 	}
 	if _, err := CanonicalCapabilities([]Capability{"root"}); CodeOf(err) != CodeInvalidArgument {
 		t.Fatalf("got %v, want invalid argument", err)
+	}
+}
+
+func TestValidateIDChecksCompleteBoundedGrammar(t *testing.T) {
+	valid := []ID{
+		testID("session", fixedHex),
+		testID("phase_one", fixedHex),
+		testID("_", fixedHex),
+	}
+	for _, id := range valid {
+		if err := ValidateID(id); err != nil {
+			t.Fatalf("valid id %q rejected: %v", id, err)
+		}
+	}
+	invalid := []ID{
+		"",
+		fixedHex,
+		ID("_" + fixedHex),
+		ID("UPPER_" + fixedHex),
+		ID("bad!_" + fixedHex),
+		ID(strings.Repeat("a", 25) + "_" + fixedHex),
+		"session_0011",
+		"session_zz112233445566778899aabbccddeeff",
+	}
+	for _, id := range invalid {
+		if err := ValidateID(id); CodeOf(err) != CodeInvalidArgument {
+			t.Fatalf("invalid id %q got %v", id, err)
+		}
 	}
 }

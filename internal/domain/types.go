@@ -14,13 +14,8 @@ type ID string
 
 // NewID creates a random identifier with a stable entity prefix.
 func NewID(prefix string) (ID, error) {
-	if prefix == "" || len(prefix) > 24 {
+	if !validIDPrefix(prefix) {
 		return "", NewError(CodeInvalidArgument, "invalid identifier prefix")
-	}
-	for _, r := range prefix {
-		if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '_' {
-			return "", NewError(CodeInvalidArgument, "invalid identifier prefix")
-		}
 	}
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {
@@ -32,16 +27,32 @@ func NewID(prefix string) (ID, error) {
 // ValidateID validates an opaque identifier without inferring ownership from
 // its prefix.
 func ValidateID(id ID) error {
-	parts := strings.Split(string(id), "_")
-	if len(parts) < 2 {
+	value := string(id)
+	separator := strings.LastIndexByte(value, '_')
+	if separator <= 0 || !validIDPrefix(value[:separator]) {
 		return NewError(CodeInvalidArgument, "invalid identifier")
 	}
-	randomPart := parts[len(parts)-1]
+	randomPart := value[separator+1:]
+	if len(randomPart) != 32 {
+		return NewError(CodeInvalidArgument, "invalid identifier")
+	}
 	decoded, err := hex.DecodeString(randomPart)
 	if err != nil || len(decoded) != 16 {
 		return NewError(CodeInvalidArgument, "invalid identifier")
 	}
 	return nil
+}
+
+func validIDPrefix(prefix string) bool {
+	if prefix == "" || len(prefix) > 24 {
+		return false
+	}
+	for _, r := range prefix {
+		if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '_' {
+			return false
+		}
+	}
+	return true
 }
 
 // Capability names one server-authorized local action.

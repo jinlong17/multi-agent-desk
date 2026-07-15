@@ -195,6 +195,13 @@ type storageFixture struct {
 }
 
 func createStorageFixture(t *testing.T, store *Store) storageFixture {
+	return createStorageFixtureWithCapabilities(t, store, []domain.Capability{
+		domain.CapabilityMetadataRead,
+		domain.CapabilitySessionResume,
+	})
+}
+
+func createStorageFixtureWithCapabilities(t *testing.T, store *Store, capabilities []domain.Capability) storageFixture {
 	t.Helper()
 	ctx := context.Background()
 	now := time.Unix(100, 0).UTC()
@@ -232,7 +239,7 @@ func createStorageFixture(t *testing.T, store *Store) storageFixture {
 		ID: storageID("session", storageHexA), DeviceID: fixture.device.ID, Provider: "fake",
 		CredentialInstanceID: fixture.credential.ID, RuntimeProfileID: fixture.profile.ID,
 		WorkspaceID: fixture.workspace.ID, Status: domain.SessionStarting, StartedAt: now,
-		CapabilitySnapshot: []domain.Capability{domain.CapabilityMetadataRead, domain.CapabilitySessionResume},
+		CapabilitySnapshot: append([]domain.Capability(nil), capabilities...),
 	}
 	for _, call := range []func() error{
 		func() error { return store.CreateDevice(ctx, fixture.device) },
@@ -409,6 +416,18 @@ func TestResumeRepositoryRequiresTerminalSourceAndPreservesOriginal(t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
+	expanded := resumed
+	expanded.ID = storageID("session", "11111111111111111111111111111111")
+	expanded.CapabilitySnapshot = append(expanded.CapabilitySnapshot, domain.CapabilitySessionStart)
+	if err := store.CreateSession(ctx, expanded); domain.CodeOf(err) != domain.CodeConflict {
+		t.Fatalf("expanded resume snapshot got %v", err)
+	}
+	removed := resumed
+	removed.ID = storageID("session", "22222222222222222222222222222222")
+	removed.CapabilitySnapshot = []domain.Capability{domain.CapabilitySessionResume}
+	if err := store.CreateSession(ctx, removed); domain.CodeOf(err) != domain.CodeConflict {
+		t.Fatalf("reduced resume snapshot got %v", err)
+	}
 	if err := store.CreateSession(ctx, resumed); err != nil {
 		t.Fatal(err)
 	}
@@ -425,6 +444,33 @@ func TestResumeRepositoryRequiresTerminalSourceAndPreservesOriginal(t *testing.T
 	}
 	if persistedResume.Status != domain.SessionStarting || persistedResume.ResumedFromSessionID != fixture.session.ID {
 		t.Fatalf("unexpected resumed record: %+v", persistedResume)
+	}
+}
+
+func TestResumeRepositoryRequiresCapabilityOnSource(t *testing.T) {
+	store, _ := openTestStore(t)
+	ctx := context.Background()
+	fixture := createStorageFixtureWithCapabilities(t, store, []domain.Capability{domain.CapabilityMetadataRead})
+	if _, err := store.TransitionSession(ctx, fixture.session.ID, domain.SessionStarting, domain.SessionRunning, time.Unix(110, 0), nil, ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.TransitionSession(ctx, fixture.session.ID, domain.SessionRunning, domain.SessionStopping, time.Unix(115, 0), nil, ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.TransitionSession(ctx, fixture.session.ID, domain.SessionStopping, domain.SessionExited, time.Unix(120, 0), nil, ""); err != nil {
+		t.Fatal(err)
+	}
+	newID := storageID("session", storageHexB)
+	manufactured := fixture.session
+	manufactured.ID = newID
+	manufactured.ResumedFromSessionID = fixture.session.ID
+	manufactured.StartedAt = time.Unix(121, 0).UTC()
+	manufactured.CapabilitySnapshot = []domain.Capability{domain.CapabilityMetadataRead, domain.CapabilitySessionResume}
+	if err := store.CreateSession(ctx, manufactured); domain.CodeOf(err) != domain.CodePermissionDenied {
+		t.Fatalf("manufactured resume capability got %v", err)
+	}
+	if _, err := store.Session(ctx, newID); domain.CodeOf(err) != domain.CodeNotFound {
+		t.Fatalf("rejected resume persisted a row: %v", err)
 	}
 }
 
