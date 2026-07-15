@@ -20,12 +20,14 @@ plaintext credentials or Provider processes.
 
 ## Spike-gated details
 
-Credential locations, refresh concurrency, and auth behavior remain pending
-`spike-codex-auth-refresh` and `spike-claude-config-keychain`. ADR 0013 resolves
+ADR 0014 resolves Codex credential layout and refresh concurrency by requiring
+one canonical writable app-server/auth home per CredentialInstance. Claude
+credential locations and auth behavior remain pending
+`spike-claude-config-keychain`. ADR 0013 resolves
 `spike-windows-named-pipe-ipc`: Phase 1 uses protected, local-only Named Pipes
 on Windows and Unix-domain sockets on macOS/Linux, with mutual protocol
 authentication and per-request capability/lease authorization above both
-transports. Provider credential mechanisms remain unfrozen.
+transports. Production enforcement remains pending.
 
 ## Consequences
 

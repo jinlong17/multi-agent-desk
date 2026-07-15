@@ -3,15 +3,15 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0.5",
-  "current_status": "Phase 0.5 · Codex auth/refresh 已通过单写者边界安全审查，等待兼容性决策",
+  "current_status": "Phase 0.5 · Codex auth/refresh 已由 ADR 0014 收口",
   "current_owner": "provider",
-  "next_action": "record the Codex compatibility decision and preserve the canonical single-refresh-writer boundary",
+  "next_action": "merge the Codex decision, then continue the remaining Claude and Windows Sidecar Spikes",
   "manual_updated_at": "2026-07-14",
   "manual_updated_by": "operator-directed Codex feature-plan session (refresh recorded in spike-codex-auth-refresh Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 0.5 · 收口 Codex app-server、认证、Usage 与刷新兼容边界"
+      "value": "Phase 0.5 · Codex 单写者兼容边界已完成，继续剩余 Provider/Windows Spike"
     },
     {
       "label": "在哪条线",
@@ -23,7 +23,7 @@
     },
     {
       "label": "做到什么状态",
-      "value": "安全审查 ACCEPTED；不声明多写者安全，采用单写者 revisioned-CAS fallback"
+      "value": "Codex GATE_RESOLVED；不声明多写者安全，采用单写者 revisioned-CAS"
     }
   ],
   "phases": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "spike-codex-auth-refresh",
-      "expected_status": "ACCEPTED"
+      "expected_status": "GATE_RESOLVED"
     },
     {
       "slug": "spike-windows-conpty",

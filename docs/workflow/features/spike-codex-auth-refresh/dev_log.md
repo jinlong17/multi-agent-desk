@@ -11,14 +11,14 @@
 | Impacted Modules | `core, security` |
 | Hypothesis | `Codex supports app-server schema discovery, usage methods, a file credential store, headless device auth, and two devices refreshing one account concurrently for ≥48h without corruption` |
 | Time-box | `operator-shortened: ~3h two-device run + conservative fallback` |
-| Current Phase | `SECURITY_REVIEW` |
-| Status | `ACCEPTED` |
-| Executor | `Codex (GPT-5), security-review` |
-| Updated | `2026-07-14 19:18 -0700` |
-| Suggested Next | `feature-plan` |
+| Current Phase | `DECISION` |
+| Status | `GATE_RESOLVED` |
+| Executor | `Codex (GPT-5), feature-plan` |
+| Updated | `2026-07-14 19:22 -0700` |
+| Suggested Next | `Phase 0.5 consolidation; apply ADR 0014 in Phase 2 and Phase 5 design/build` |
 | Security Gate | `resolved — ACCEPTED only with canonical single refresh writer, revisioned CAS, secret-safe evidence, and interactive-login fallback` |
 | Evidence Path | `docs/spikes/codex/` |
-| Decision Record | `pending — PROVIDER_COMPATIBILITY.md entry` |
+| Decision Record | `docs/adr/0014-codex-app-server-single-writer-auth.md`; `docs/PROVIDER_COMPATIBILITY.md` |
 
 ## Success and failure criteria
 
@@ -42,21 +42,21 @@
 | 2026-07-14 14:36 -0700 | Concurrent `account/read {refreshToken:true}` on the same account from macOS and Linux | both succeeded, both `auth.json` files changed, both post-refresh reads succeeded, same account before/after | `docs/spikes/codex/app-server-account-matrix.json` |
 | 2026-07-14 14:43 -0700 | Started sanitized hourly two-device soak (PID `35221`) | first sample passed; minimum completion `2026-07-16T21:43:11Z` | `/private/tmp/mad-codex-soak-20260714T2143Z.jsonl`, harness in `docs/spikes/codex/` |
 | 2026-07-14 19:16 -0700 | Operator cancelled the 48-hour requirement and terminated the harness after four samples | all four macOS/Linux account, rate-limit, and usage samples passed across `10812.845s`; first concurrent refresh passed; no 48h or production multi-writer claim; canonical single-writer CAS fallback selected | `docs/spikes/codex/two-device-short-run.json` |
+| 2026-07-14 19:22 -0700 | Feature-plan decision after security-review `ACCEPTED` | ADR 0014 freezes version-gated app-server methods, one canonical writable app-server/auth home per CredentialInstance, revisioned CAS, and interactive-login fallback | `docs/adr/0014-codex-app-server-single-writer-auth.md`; `docs/PROVIDER_COMPATIBILITY.md` |
 
 ## Result, limitations, and fallback
 
-Evidence ready. Schema discovery, rate-limit/usage reads, proactive refresh,
-and four short-run same-account two-device samples passed. Device-auth
-initiation passed on macOS and Linux, but completed isolated login is not
-claimed. The operator cancelled the 48-hour requirement. The original
-long-duration/multi-writer hypothesis is therefore unsupported, and the
-selected production boundary is one canonical refresh writer with revisioned
-CAS. Security review must accept that boundary before the compatibility
-decision is recorded.
+Gate resolved. Schema discovery, rate-limit/usage reads, proactive refresh,
+and four short-run same-account two-device samples passed for the exact matrix.
+Device-auth initiation passed on macOS and Linux, but completed isolated login
+is not claimed. ADR 0014 and the Compatibility Matrix select one canonical
+writable app-server/auth home per CredentialInstance with revisioned CAS and
+interactive-login fallback. The original long-duration/multi-writer hypothesis
+remains unsupported and is not required by the selected production design.
 
 ## Risks and Blockers
 
-- Blocks Phase 2 design freeze (not Phase 1) until security review accepts the single-writer boundary.
+- No remaining Codex Spike blocker for Phase 2 design freeze; ADR 0014 obligations become Phase 2/5 acceptance criteria.
 - Official documentation does not define concurrent refresh-token rotation semantics; absence of a failure in the first sample is not a safety guarantee.
 - The remote SSH transport reports that its current key exchange is not post-quantum; no Provider credential was sent through SSH, but the infrastructure warning remains recorded for operator remediation.
 
@@ -71,3 +71,4 @@ decision is recorded.
 | 2026-07-14 14:43 -0700 | Codex CLI 0.144.2, provider-spike | Refreshed the operator-owned dashboard to Phase 0.5 active with a status binding to this Spike; regenerated and verified machine facts | `docs/workflow/project/dashboard-state.json`; `npm run dashboard` equivalent | dashboard verified, focus `SPIKE_READY` | continue provider-spike |
 | 2026-07-14 19:16 -0700 | Codex CLI 0.144.2, provider-spike | Applied the operator cancellation, stopped the 48-hour harness, persisted four sanitized samples, rejected a production multi-writer claim, and selected the canonical single-writer revisioned-CAS fallback | `docs/spikes/codex/two-device-short-run.json`; provider evidence; this file | `EVIDENCE_READY`, gate remains `open` | security-review |
 | 2026-07-14 19:18 -0700 | Codex (GPT-5), security-review | Reviewed credential trust boundaries, sanitized evidence, file mutation, lease/CAS, crash recovery, account pinning, device-auth limits, revocation, audit safety, and residual risk | `docs/reviews/spike-codex-auth-refresh/2026-07-14-security-review.md`; this file | `ACCEPTED`; Security Gate resolved only for the canonical single-writer boundary | feature-plan decision |
+| 2026-07-14 19:22 -0700 | Codex (GPT-5), feature-plan | Recorded ADR 0014 and exact Provider compatibility rows, synchronized the implementation plan/threat model/related ADR markers, and refreshed the operator-authorized dashboard binding | ADR 0014; compatibility matrix; plan; threat model; dashboard; this file | `GATE_RESOLVED`; no multi-writer, completed device-auth, or 48h claim | Phase 0.5 consolidation / Phase 2 and 5 |
