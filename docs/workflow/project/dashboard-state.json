@@ -3,15 +3,15 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "1",
-  "current_status": "Phase 1 · P3 Fake runtime 与 Session control 已实现，等待验证",
+  "current_status": "Phase 1 · P3 Windows Fake Provider 子进程启动阻塞",
   "current_owner": "core",
-  "next_action": "run feature-verify P3 Fake runtime and Session control on Draft PR #13",
+  "next_action": "run feature-build P3 Windows subprocess correction on Draft PR #13",
   "manual_updated_at": "2026-07-14",
   "manual_updated_by": "operator-directed core writer (refresh recorded in phase1-device-kernel Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 1 · P3 Fake runtime 与 Session control，等待验证"
+      "value": "Phase 1 · 修复 P3 Windows Fake Provider 子进程启动"
     },
     {
       "label": "在哪条线",
@@ -23,7 +23,7 @@
     },
     {
       "label": "做到什么状态",
-      "value": "P3 READY_FOR_VERIFY；Security Gate open"
+      "value": "P3 BLOCKED；Security Gate open"
     }
   ],
   "phases": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "phase1-device-kernel",
-      "expected_status": "READY_FOR_VERIFY"
+      "expected_status": "BLOCKED"
     }
   ]
 }
