@@ -1,15 +1,21 @@
 # Codex auth, usage, and concurrent refresh Spike
 
-Status: **in progress**. The first two-device sample passed; the mandatory
-48-hour soak does not complete before `2026-07-16T21:43:11Z`.
+Status: **conclusive**. The operator cancelled the 48-hour requirement after a
+sanitized three-hour short run. The evidence is sufficient to reject a
+production multi-writer claim and select the canonical single-writer fallback.
 
 ## Scope and decision rule
 
-The composite hypothesis is supported only if schema discovery, account usage,
+The original composite hypothesis is supported only if schema discovery, account usage,
 file-backed credentials, headless device authentication, and same-account
 two-device refresh all reproduce. Any failed sub-claim, or any design that
 depends on undocumented concurrent-writer behavior, falsifies the composite
 hypothesis and selects the single-writer CAS fallback.
+
+The 48-hour criterion was removed by explicit operator direction on
+`2026-07-14`. This does not convert the short run into a passing long-duration
+result. Instead, the original composite hypothesis is treated as unsupported,
+and the predeclared conservative fallback becomes the decision.
 
 This Spike records no email address, account/workspace identifier, token,
 authorization code, usage value, rate-limit value, auth-file content, or
@@ -76,11 +82,13 @@ python3 docs/spikes/codex/run_two_device_soak.py \
   --output /private/tmp/mad-codex-soak-20260714T2143Z.jsonl
 ```
 
-The harness runs outside the repository as PID `35221`. It compares the account
-only in memory, requests account/rate-limit/usage reads hourly, performs a
-concurrent proactive refresh at the first and final samples, and writes only
-sanitized booleans/error codes. The first sample passed on both devices and both
-`auth.json` files changed while remaining readable.
+The harness was stopped after four samples spanning `10812.845` seconds. It
+compared the account only in memory, requested account/rate-limit/usage reads
+hourly, and wrote only sanitized booleans/error codes. All four read samples
+passed. The first sample also performed a concurrent proactive refresh: both
+devices succeeded, both `auth.json` files changed, and both remained readable.
+The persisted sanitized result is
+[two-device-short-run.json](two-device-short-run.json).
 
 ## Results so far
 
@@ -91,18 +99,21 @@ sanitized booleans/error codes. The first sample passed on both devices and both
 | `account/usage/read` | Same request and response-key contract succeeded on all three versions | Passed on macOS |
 | Managed proactive refresh | `account/read {refreshToken:true}` succeeded | Passed on macOS; also passed in first two-device sample |
 | File credential store | Official contract plus active `0600` `auth.json` on macOS and Linux | Observed for default homes; isolated explicit-store login still not completed |
-| Headless device auth | Isolated device-auth initiation and authorization URL on macOS and Linux | Initiation passed; completion pending |
-| Same-account concurrent refresh | Both devices refreshed successfully, both auth files changed, both remained readable, account identity remained equal | First sample passed; 48-hour conclusion pending |
+| Headless device auth | Isolated device-auth initiation and authorization URL on macOS and Linux | Initiation passed; completed login not claimed; interactive login remains required fallback |
+| Same-account concurrent refresh | Four hourly samples passed across about three hours; the first refreshed both devices and retained account equality/readability | Short-run compatibility observed; long-duration and production multi-writer safety not claimed |
 
 ## Fallback and limitations
 
-Until the soak and security review finish, production design must assume that a
-refreshable credential has exactly one canonical writer. Device-specific
-runtime homes may contain session/config state, but they must not independently
-persist refresh-token rotations. The deterministic fallback is the planned
-`CredentialMaterializationManager`: one lease, one refresh writer, revisioned
-CAS back to the Vault, and rejection of a second writer.
+Production design must assume that a refreshable credential has exactly one
+canonical writer. Device-specific runtime homes may contain session/config
+state, but they must not independently persist refresh-token rotations. The
+selected design is the planned `CredentialMaterializationManager`: one lease,
+one refresh writer, revisioned CAS back to the Vault, and rejection of a second
+writer. Headless device-auth initiation may be offered as an experimental
+operator flow, but interactive login remains the required fallback until a
+completed isolated device login is evidenced.
 
-The current evidence does not authorize claiming multi-writer refresh support,
-completed headless device login, or support outside the exact versions and
-platforms above.
+The evidence authorizes the exact app-server reads and managed refresh behavior
+listed above. It does not authorize claiming multi-writer refresh support,
+completed headless device login, 48-hour stability, or support outside the
+exact versions and platforms above.

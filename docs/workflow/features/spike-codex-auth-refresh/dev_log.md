@@ -10,12 +10,12 @@
 | Owner Module | `provider` |
 | Impacted Modules | `core, security` |
 | Hypothesis | `Codex supports app-server schema discovery, usage methods, a file credential store, headless device auth, and two devices refreshing one account concurrently for ≥48h without corruption` |
-| Time-box | `5 days (48h soak included)` |
-| Current Phase | `PROVIDER_SPIKE` |
-| Status | `SPIKE_READY` |
+| Time-box | `operator-shortened: ~3h two-device run + conservative fallback` |
+| Current Phase | `EVIDENCE` |
+| Status | `EVIDENCE_READY` |
 | Executor | `Codex CLI 0.144.2 (ChatGPT auth)` |
-| Updated | `2026-07-14 14:43 -0700` |
-| Suggested Next | `provider-spike` |
+| Updated | `2026-07-14 19:16 -0700` |
+| Suggested Next | `security-review` |
 | Security Gate | `open — file credential store, device auth, and concurrent refresh touch credentials (SOP_SPIKE rule 5); security-review required on evidence` |
 | Evidence Path | `docs/spikes/codex/` |
 | Decision Record | `pending — PROVIDER_COMPATIBILITY.md entry` |
@@ -41,19 +41,22 @@
 | 2026-07-14 14:33 -0700 | Started device auth in empty isolated `CODEX_HOME` on macOS and Linux | both produced device-auth prompts and authorization URLs; no code/URL/credential persisted; completion intentionally not claimed | `docs/spikes/codex/2026-07-14-auth-refresh-spike.md` |
 | 2026-07-14 14:36 -0700 | Concurrent `account/read {refreshToken:true}` on the same account from macOS and Linux | both succeeded, both `auth.json` files changed, both post-refresh reads succeeded, same account before/after | `docs/spikes/codex/app-server-account-matrix.json` |
 | 2026-07-14 14:43 -0700 | Started sanitized hourly two-device soak (PID `35221`) | first sample passed; minimum completion `2026-07-16T21:43:11Z` | `/private/tmp/mad-codex-soak-20260714T2143Z.jsonl`, harness in `docs/spikes/codex/` |
+| 2026-07-14 19:16 -0700 | Operator cancelled the 48-hour requirement and terminated the harness after four samples | all four macOS/Linux account, rate-limit, and usage samples passed across `10812.845s`; first concurrent refresh passed; no 48h or production multi-writer claim; canonical single-writer CAS fallback selected | `docs/spikes/codex/two-device-short-run.json` |
 
 ## Result, limitations, and fallback
 
-In progress. Schema discovery, rate-limit/usage reads, proactive refresh, and the
-first same-account two-device refresh passed. Device-auth initiation passed on
-macOS and Linux but completed isolated login is not yet proven. The 48-hour soak
-is running. Fallback remains one canonical refresh writer with revisioned CAS;
-multi-writer support is not a compatibility claim unless the soak and security
-review accept it.
+Evidence ready. Schema discovery, rate-limit/usage reads, proactive refresh,
+and four short-run same-account two-device samples passed. Device-auth
+initiation passed on macOS and Linux, but completed isolated login is not
+claimed. The operator cancelled the 48-hour requirement. The original
+long-duration/multi-writer hypothesis is therefore unsupported, and the
+selected production boundary is one canonical refresh writer with revisioned
+CAS. Security review must accept that boundary before the compatibility
+decision is recorded.
 
 ## Risks and Blockers
 
-- Blocks Phase 2 design freeze (not Phase 1) until the 48-hour soak and security review finish.
+- Blocks Phase 2 design freeze (not Phase 1) until security review accepts the single-writer boundary.
 - Official documentation does not define concurrent refresh-token rotation semantics; absence of a failure in the first sample is not a safety guarantee.
 - The remote SSH transport reports that its current key exchange is not post-quantum; no Provider credential was sent through SSH, but the infrastructure warning remains recorded for operator remediation.
 
@@ -66,3 +69,4 @@ review accept it.
 | 2026-07-14 12:43 -0700 | Codex CLI 0.144.2, feature-plan | Froze the five-part provider hypothesis, pinned the first CLI/OS/auth environment, and retained the 48h/two-device/three-version exit criteria | this file | `SPIKE_READY` | provider-spike |
 | 2026-07-14 14:43 -0700 | Codex CLI 0.144.2, provider-spike | Completed three-version schema/live account replay, verified device-auth initiation on macOS/Linux, proved the first same-account concurrent refresh, and started the sanitized 48-hour soak | `docs/spikes/codex/`; this file | `SPIKE_READY`, experiment running | provider-spike after `2026-07-16T21:43:11Z` |
 | 2026-07-14 14:43 -0700 | Codex CLI 0.144.2, provider-spike | Refreshed the operator-owned dashboard to Phase 0.5 active with a status binding to this Spike; regenerated and verified machine facts | `docs/workflow/project/dashboard-state.json`; `npm run dashboard` equivalent | dashboard verified, focus `SPIKE_READY` | continue provider-spike |
+| 2026-07-14 19:16 -0700 | Codex CLI 0.144.2, provider-spike | Applied the operator cancellation, stopped the 48-hour harness, persisted four sanitized samples, rejected a production multi-writer claim, and selected the canonical single-writer revisioned-CAS fallback | `docs/spikes/codex/two-device-short-run.json`; provider evidence; this file | `EVIDENCE_READY`, gate remains `open` | security-review |

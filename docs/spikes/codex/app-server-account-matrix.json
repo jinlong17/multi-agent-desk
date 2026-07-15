@@ -87,11 +87,18 @@
     "completed_login_observed": false
   },
   "soak": {
-    "status": "running",
+    "status": "operator_terminated_after_short_run",
     "started_at": "2026-07-14T21:43:11Z",
-    "minimum_end_at": "2026-07-16T21:43:11Z",
+    "stopped_after_sample_at": "2026-07-15T00:43:26Z",
+    "requested_duration_hours": 48,
+    "requested_duration_completed": false,
+    "observed_duration_seconds": 10812.845,
     "interval_seconds": 3600,
-    "first_sample_passed": true,
-    "active_output": "/private/tmp/mad-codex-soak-20260714T2143Z.jsonl"
+    "sample_count": 4,
+    "all_observed_reads_passed": true,
+    "first_sample_concurrent_refresh_passed": true,
+    "production_multi_writer_claim": false,
+    "selected_fallback": "canonical_single_refresh_writer_with_revisioned_cas",
+    "sanitized_artifact": "docs/spikes/codex/two-device-short-run.json"
   }
 }
