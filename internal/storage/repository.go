@@ -635,6 +635,93 @@ func (s *Store) AppendAuditEvent(ctx context.Context, event domain.AuditEvent) e
 	})
 }
 
+// IdempotencyRecord is the bounded replay metadata for one client mutation.
+// ResponseMetadata contains an already-encoded, redacted service result; it
+// never contains raw terminal bytes or credential material.
+type IdempotencyRecord struct {
+	ClientID         domain.ID
+	Method           string
+	IdempotencyKey   string
+	RequestDigest    string
+	ResponseCode     domain.ErrorCode
+	ResponseMetadata json.RawMessage
+	CreatedAt        time.Time
+}
+
+func (s *Store) IdempotencyRecord(ctx context.Context, clientID domain.ID, method, key string) (IdempotencyRecord, error) {
+	var record IdempotencyRecord
+	var metadata, createdAt string
+	err := s.db.QueryRowContext(ctx, `
+		SELECT client_id, method, idempotency_key, request_digest, response_code,
+			response_metadata_json, created_at
+		FROM idempotency_records WHERE client_id = ? AND method = ? AND idempotency_key = ?`,
+		clientID, method, key).Scan(&record.ClientID, &record.Method, &record.IdempotencyKey,
+		&record.RequestDigest, &record.ResponseCode, &metadata, &createdAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return IdempotencyRecord{}, domain.NewError(domain.CodeNotFound, "idempotency record not found")
+	}
+	if err != nil {
+		return IdempotencyRecord{}, domain.WrapError(domain.CodeConflict, "idempotency record could not be read", err)
+	}
+	if !json.Valid([]byte(metadata)) {
+		return IdempotencyRecord{}, domain.NewError(domain.CodeSchemaIncompatible, "idempotency metadata is invalid")
+	}
+	record.ResponseMetadata = json.RawMessage(metadata)
+	record.CreatedAt, err = parseTime(createdAt)
+	if err != nil {
+		return IdempotencyRecord{}, err
+	}
+	return record, nil
+}
+
+// SaveIdempotencyRecord inserts one record. The primary key is intentionally
+// not replaced: a concurrent or reused key must be compared by the caller.
+func (s *Store) SaveIdempotencyRecord(ctx context.Context, record IdempotencyRecord) error {
+	if err := domain.ValidateID(record.ClientID); err != nil {
+		return err
+	}
+	if record.Method == "" || record.IdempotencyKey == "" || len(record.Method) > 128 || len(record.IdempotencyKey) > 128 ||
+		len(record.RequestDigest) != 64 || record.ResponseCode == "" || !json.Valid(record.ResponseMetadata) || record.CreatedAt.IsZero() {
+		return domain.NewError(domain.CodeInvalidArgument, "invalid idempotency record")
+	}
+	return s.withTx(ctx, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, `
+			INSERT INTO idempotency_records(
+				client_id, method, idempotency_key, request_digest, response_code,
+				response_metadata_json, created_at
+			) VALUES(?, ?, ?, ?, ?, ?, ?)`, record.ClientID, record.Method, record.IdempotencyKey,
+			record.RequestDigest, record.ResponseCode, record.ResponseMetadata, formatTime(record.CreatedAt))
+		return writeError("idempotency record could not be saved", err)
+	})
+}
+
+// ListSessions returns bounded metadata in deterministic order for the
+// application service and CLI. It deliberately exposes no provider payload.
+func (s *Store) ListSessions(ctx context.Context) ([]domain.Session, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT id FROM sessions ORDER BY started_at, id`)
+	if err != nil {
+		return nil, domain.WrapError(domain.CodeConflict, "sessions could not be listed", err)
+	}
+	defer rows.Close()
+	var sessions []domain.Session
+	for rows.Next() {
+		var id domain.ID
+		if err := rows.Scan(&id); err != nil {
+			return nil, domain.WrapError(domain.CodeConflict, "session list could not be read", err)
+		}
+		session, err := s.Session(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		sessions = append(sessions, session)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, domain.WrapError(domain.CodeConflict, "sessions could not be listed", err)
+	}
+	return sessions, nil
+}
+
 func validCreatedUpdated(createdAt, updatedAt time.Time) bool {
 	return !createdAt.IsZero() && !updatedAt.IsZero() && !updatedAt.Before(createdAt)
 }

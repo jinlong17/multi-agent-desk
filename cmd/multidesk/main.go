@@ -14,6 +14,7 @@ import (
 	"github.com/jinlong17/multi-agent-desk/internal/app"
 	"github.com/jinlong17/multi-agent-desk/internal/device"
 	"github.com/jinlong17/multi-agent-desk/internal/domain"
+	runtimepkg "github.com/jinlong17/multi-agent-desk/internal/runtime"
 	"github.com/jinlong17/multi-agent-desk/internal/storage"
 )
 
@@ -43,6 +44,11 @@ func run(args []string, stdout, stderr *os.File) error {
 		default:
 			return domain.NewError(domain.CodeMethodNotFound, "daemon command is not available")
 		}
+	case "internal":
+		if len(args) == 2 && args[1] == "fake-provider" {
+			return runtimepkg.RunFakeProvider(os.Stdin, os.Stdout)
+		}
+		return domain.NewError(domain.CodeMethodNotFound, "internal command is not available")
 	default:
 		return domain.NewError(domain.CodeMethodNotFound, "command is not available")
 	}
@@ -105,7 +111,10 @@ func runServe(args []string, stderr *os.File) error {
 		return err
 	}
 	authorizer := app.Authorizer{Clients: store}
-	server := &device.Server{Listener: listener, Authenticator: authenticator, Authorizer: authorizer.Authorize, Handler: device.HandlerFunc(handleRequest)}
+	manager := runtimepkg.NewManager(store, os.Args[0])
+	defer manager.Close()
+	service := app.NewSessionService(store, manager)
+	server := &device.Server{Listener: listener, Authenticator: authenticator, Authorizer: authorizer.Authorize, Handler: service}
 	return server.Serve(ctx)
 }
 
