@@ -43,6 +43,9 @@ evidence.
   forbidden, invalid base64, duplicate JSON keys, missing IDs, malformed
   signatures, uncanonical capability order, and 256 KiB boundaries.
 - JSON CLI golden files require stable error codes and additive schemas.
+- CLI mutation tests derive distinct request-bound idempotency keys for
+  different bodies, replay exact retries, and reject argv Vault secrets while
+  accepting bounded stdin unlock input without echoing it.
 - Fake Provider fixtures cover normal output, resize acknowledgement, delayed
   graceful exit, crash, malformed child frame, blocked writer, and forced kill.
 - Migration checksums are immutable and applied exactly once.

@@ -9,15 +9,15 @@
 | Title | `Phase 1 Device Kernel` |
 | Owner Module | `core` |
 | Impacted Modules | `security, provider, desktop, project-system` |
-| Current Phase | `Security Gate for Phase 1` |
-| Status | `REVISE` |
-| Executor | `Codex (GPT-5) as independent security-review` |
-| Updated | `2026-07-14 23:50 -0700` |
-| Suggested Next | `feature-plan P5 CLI correction: request-bound idempotency and stdin unlock` |
+| Current Phase | `P5 CLI correction after Security Gate` |
+| Status | `APPROVED` |
+| Executor | `Codex (GPT-5) as independent feature-review` |
+| Updated | `2026-07-14 23:58 -0700` |
+| Suggested Next | `feature-build P5 CLI correction` |
 | Branch / Worktree | `codex/core/phase1-device-kernel` / `/Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/phase1-device-kernel` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none — deterministic first-party Fake Provider only` |
-| Security Gate | `open — REVISE: CLI idempotency key binding and argv secret exposure` |
+| Security Gate | `open — REVISE findings scoped in P5 CLI correction plan` |
 
 ## Phase Plan
 
@@ -27,7 +27,7 @@
 | P2 identity, IPC, and Daemon lifecycle | Ed25519 bootstrap/rotation/revocation; framed protocol; Unix socket/Windows Named Pipe; application authorization shell; Daemon/service specs | P1 verified | mutual authentication and fail-closed endpoint tests; native IPC on three platforms; no TCP listener | `VERIFIED` |
 | P3 Fake runtime and Session control | Fake Provider subprocess; process manager; Session state machine; ring buffer; attachments; ControllerLease; input/resize/stop/kill/resume | P2 verified | two-client native-IPC scenario passes; observer/lease/idempotency/replay and bounded process behavior proven | `VERIFIED` |
 | P4 Vault and materialization recovery | locked/unlocked runtime; fake credential revision/CAS; atomic runtime home; cleanup/quarantine; failure injection | P3 verified | lock/restart boundary, fake credential revision/CAS, atomic runtime home, cleanup/quarantine tests pass | `VERIFIED` |
-| P5 CLI/TUI and platform exit | stable JSON/human commands; minimal TUI; service-spec commands; docs; complete three-platform E2E/CI/license/race evidence | P4 verified | Phase 1 exit scenario passes on macOS/Linux/Windows; full project checks and security review ready | `VERIFIED` |
+| P5 CLI/TUI and platform exit | stable JSON/human commands; minimal TUI; service-spec commands; docs; complete three-platform E2E/CI/license/race evidence | P4 verified | Phase 1 exit scenario passes on macOS/Linux/Windows; full project checks and security review ready | `APPROVED` |
 
 Each phase is implemented by one writer, sets `READY_FOR_VERIFY`, receives an
 independent phase verdict, and only then unlocks the next phase. After P5
@@ -126,3 +126,7 @@ verification, the required independent Security Gate must pass before ship.
 | 2026-07-14 23:40 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Rebound manual dashboard judgment to the persisted P5 `VERIFIED` verdict and advanced the next action to the independent Security Gate without closing ship/merge gates | dashboard manual/generated state; this file | focus expects `VERIFIED`; Phase 1 remains `in_progress`; Security Gate is open | security-review Phase 1 Device Kernel |
 | 2026-07-14 23:45 -0700 | operator-directed project-system writer | Promoted the independently verified P5 unit to the workflow's `READY_TO_SHIP` input for the required Security Gate; no implementation or verdict evidence changed | this file; dashboard manual state | Security Gate remains open; ship/merge still gated | security-review Phase 1 Device Kernel |
 | 2026-07-14 23:50 -0700 | Codex (GPT-5) as independent security-review | Reviewed the exact P5 head's trust boundaries, authentication/authorization, replay/idempotency, Vault/materialization, platform ACLs, redaction, and protected evidence; found method-only CLI idempotency keys and argv Vault secret exposure | `REVISE`; Security Gate remains open; no implementation files changed | `docs/reviews/phase1-device-kernel/2026-07-14-security-review.md`; `cmd/multidesk/commands.go`; `internal/app/session_service.go`; CI `29394552147`; Governance `29394552139` | feature-plan P5 CLI correction |
+| 2026-07-14 23:55 -0700 | Codex (GPT-5) as feature-plan | Scoped the two P1 corrections without expanding Phase 1: request-bound CLI idempotency and bounded stdin/no-echo Vault unlock; froze acceptance, rollback, and fresh three-platform/security evidence requirements | `NEEDS_REVIEW`; no implementation changed | `p5-cli-correction-plan.md`; `design.md`; `api.md`; `test.md`; this file | feature-review P5 CLI correction |
+| 2026-07-14 23:56 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Rebound manual dashboard judgment to the persisted Security Gate `REVISE` and feature-plan `NEEDS_REVIEW` state; no implementation or security verdict was changed | dashboard manual/generated state; this file | focus expects `NEEDS_REVIEW`; Security Gate remains open | feature-review P5 CLI correction |
+| 2026-07-14 23:58 -0700 | Codex (GPT-5) as independent feature-review | Re-reviewed the correction scope, contracts, failure modes, redaction, testing, rollback, and phase ordering; found no additional blocker and approved the bounded P5 build | `APPROVED`; Security Gate remains open until corrected implementation is independently reviewed | `docs/reviews/phase1-device-kernel/2026-07-14-feature-review-p5-cli-correction.md`; `p5-cli-correction-plan.md`; `design.md`; `api.md`; `test.md` | feature-build P5 CLI correction |
+| 2026-07-14 23:59 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Rebound manual dashboard judgment to the persisted P5 CLI correction `APPROVED` verdict without changing implementation or security evidence | dashboard manual/generated state; this file | focus expects `APPROVED`; Security Gate remains open | feature-build P5 CLI correction |

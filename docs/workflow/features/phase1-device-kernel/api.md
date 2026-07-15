@@ -8,7 +8,7 @@ The stable Phase 1 command surface is:
 multidesk init [--root DIR] [--json]
 multidesk client create|list|rotate|revoke [--root DIR] [--json]
 multidesk daemon install|uninstall|start|stop|status|serve [--root DIR] [--json]
-multidesk vault status|unlock|lock [--root DIR] [--json]
+multidesk vault status|unlock|lock [--root DIR] [--secret-stdin] [--json]
 multidesk run fake --workspace PATH [--profile ID] [--root DIR] [--json]
 multidesk sessions list|show|observe|attach|detach|stop|kill|resume [ID] [--root DIR] [--json]
 multidesk control acquire|heartbeat|release SESSION_ID [--revision N] [--root DIR] [--json]
@@ -21,7 +21,9 @@ not network APIs. Service install/uninstall defaults to rendering and validating
 user-level platform specifications. Host mutation requires an explicit flag and
 is excluded from automated tests and Phase 1 acceptance on the developer host.
 
-In Phase 1, `client list` is the authenticated metadata command. Client
+In Phase 1, `vault unlock` reads a bounded secret from stdin when
+`--secret-stdin` is supplied; argv secrets are rejected. `client list` is the
+authenticated metadata command. Client
 provisioning, rotation, and revocation remain offline-only administration
 operations and are rejected by the thin CLI rather than returning private key
 material over IPC or stdout.
@@ -105,7 +107,9 @@ revision no longer matches.
 
 ## Idempotency, ordering, and replay
 
-- Request IDs correlate one connection and are unique for its lifetime.
+- Request IDs correlate one connection and are unique for its lifetime. The
+  thin CLI derives a bounded request ID and idempotency key from the canonical
+  method/body/lease tuple.
 - Mutation idempotency keys are scoped to `(client_id, method, key)` and store a
   request digest plus bounded response metadata in the same transaction as the
   mutation. Reuse with another digest returns `conflict`.

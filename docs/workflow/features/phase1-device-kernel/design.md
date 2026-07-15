@@ -88,8 +88,10 @@ Every request carries a bounded request ID, method, body, idempotency key when
 required, and lease revision when required. The application service maps the
 method to its required capability; it never trusts a client-supplied capability
 label. Mutations are executed through an idempotency record and an explicit
-SQLite transaction. Authentication failures are generic and expose no device,
-client, or capability inventory.
+SQLite transaction. Thin CLI idempotency keys are derived from the canonical
+method/body/lease tuple so distinct operations cannot collide while exact
+retries replay safely. Authentication failures are generic and expose no
+device, client, or capability inventory.
 
 Frames use a four-byte unsigned big-endian length followed by canonical JSON.
 The maximum encoded frame is 256 KiB. Handshake, idle, read, write, and request
@@ -173,7 +175,8 @@ materialization remains part of the later security-owned Vault implementation.
   or downgrade.
 - Authorization is server-derived and deny-by-default. Lease-protected methods
   require the current holder and revision in addition to a capability.
-- Logs/audit rows exclude private keys, fake credential bytes, terminal input
+- Vault unlock input enters the CLI through bounded stdin/no-echo input, never
+  argv. Logs/audit rows exclude private keys, fake credential bytes, terminal input
   and output, raw frames, paths outside the Device root, and unbounded errors.
 - The Phase 1 manifest digest is integrity-only and carries no authenticity or
   production Vault-encryption claim.
