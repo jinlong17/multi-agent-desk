@@ -1128,7 +1128,9 @@ multi-agent-desk/
 
 ### Phase 0.5：Provider & Security Spikes
 
-与 Phase 1 并行，不允许其未决结果阻塞纯 Device Kernel，但必须阻塞对应 Provider/E2EE 设计冻结。
+状态：`COMPLETED`（2026-07-14，决策与兼容性证据门完成；不代表生产实现或发布验收完成）。
+
+原计划允许与 Phase 1 并行；所有阻塞决策现已由 ADR 0010-0016 收口，残余生产实现和平台验收已路由至 Phase 1-6。
 
 交付：
 
@@ -1142,6 +1144,8 @@ multi-agent-desk/
 出口：每个阻塞假设都有“成立/不成立、证据、fallback、支持版本”结论；E2EE 测试向量通过 Go 与 TypeScript 双实现。
 
 ### Phase 1：Device Kernel
+
+状态：`ACTIVE`（当前实现阶段）。
 
 交付：
 
@@ -1292,7 +1296,7 @@ Windows x64 的“必须”由两层证据组成：Phase 0.5 已完成 Windows b
 
 ### 20.6 E2E 验收场景
 
-1. Mac 添加两个 Codex 和两个 Claude 账号。
+1. Mac 添加一个 Codex 和一个 Claude 账号，并为每个账号创建两个用途不同的 Profile；v0.1 不要求验证两个同时在线的不同账号。
 2. 新 Linux 服务器通过一次性码配对。
 3. 用户只授权其中一个 Codex 和一个 Claude CredentialInstance。
 4. Linux CLI 只看到已授权账号可运行。
@@ -1383,7 +1387,7 @@ MultiAgentDesk 不 Fork 现有项目，建立独立统一内核。
 
 1. macOS Desktop 能安装并连接本机 Daemon；Windows 通过 CLI/Daemon + 浏览器完成全部稳定核心任务，Desktop 仅为 Experimental。
 2. Linux 可通过单个 `multidesk` 二进制安装和运行 Daemon。
-3. 至少管理两个 Codex Profile 和两个 Claude Profile；macOS Claude 的隔离机制必须由 Phase 0.5 Spike 证明并记录在 ADR/Compatibility Matrix。
+3. 至少管理两个 Codex Profile 和两个 Claude Profile；这些 Profile 可使用操作员批准的单一账号范围，不要求不同账号隔离。macOS Claude 的 Config Dir/Keychain credential-slot 边界必须遵守 ADR 0016 和 Compatibility Matrix。
 4. Web 能查看所有设备、账号、Profile、用量来源和 Session。
 5. 已批准的 Web/Desktop Device 能进入并控制 Linux 上的 Codex 和 Claude Session；仅 Passkey 登录但未配对的客户端不能解密。
 6. Codex 支持结构化事件和 Approval。

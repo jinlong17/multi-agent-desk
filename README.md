@@ -4,7 +4,8 @@ MultiAgentDesk is a terminal-first, self-hostable workspace for managing AI
 coding-agent profiles, sessions, usage, devices, and explicitly authorized
 credential grants across local machines and remote servers.
 
-The product is currently in Phase 0 and is not yet a usable application. The reviewed architecture baseline is
+The product is currently entering Phase 1 (Device Kernel) and is not yet a
+usable application. Phase 0 and the Phase 0.5 decision gates are complete; the reviewed architecture baseline is
 [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md); product code has
 not started.
 
@@ -30,8 +31,8 @@ scripts/dashboard/               state generation, verification, local server
 
 ## Quick start
 
-Requires Node.js 18 or newer; there are no npm dependencies for the workflow
-and dashboard tools.
+Requires Node.js 24 and pnpm 10.23.0 as pinned by the repository. The workflow
+and dashboard tools themselves do not add runtime application dependencies.
 
 ```bash
 npm run workflow:generate

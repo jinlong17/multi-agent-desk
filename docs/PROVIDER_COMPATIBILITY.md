@@ -22,7 +22,11 @@ platform, artifacts, and a workflow decision.
 | Claude profile auth health | CLI `2.1.207` macOS; `2.1.132` Linux | macOS 26.5.2 arm64 + Linux 5.4.0 x86_64 | macOS Config Dir/Keychain credential-slot isolation and scoped logout; seven-key `auth status --json`; Linux empty-root isolation | `spikes/claude/auth-profile-matrix.json`, `spikes/claude/2026-07-14-config-keychain-spike.md` | Supported for exact versions with one-account scope | official interactive login on each target profile; unknown schema fails as `auth_health_unknown` | 2026-07-14 |
 | Claude setup-token and long session | CLI `2.1.207` macOS | macOS 26.5.2 arm64 | PTY initiation/resize only; hCaptcha not bypassed; token issuance/injection/long-session/per-token revocation not verified | `spikes/claude/profile-session-control.json`, ADR 0016 | Unsupported as stable capability | target-profile official interactive login; no Claude setup-token CredentialGrant | 2026-07-14 |
 
-## Pending Phase 0.5 gates
+## Resolved Phase 0.5 decision gates
+
+All seven planned Phase 0.5 decisions are resolved. `GATE_RESOLVED` closes the
+design/compatibility decision only; production implementation and the retained
+platform/provider acceptance gates remain owned by Phase 1-6.
 
 | Gate | Owner | Status | Compatibility claim |
 |---|---|---|---|
