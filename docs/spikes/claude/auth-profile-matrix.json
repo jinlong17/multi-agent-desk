@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "recorded_at": "2026-07-14T21:55:00Z",
+  "recorded_at": "2026-07-15T02:30:40Z",
   "sanitized": true,
   "secret_values_recorded": false,
   "auth_status_contract": {
@@ -53,13 +53,18 @@
   "live_request": {
     "macos_authentication_error": false,
     "linux_authentication_error": false,
-    "quota_limited_until_local_1540": true,
-    "successful_inference_after_reset": false
+    "quota_or_session_limit_still_observed_at_local_1930": true,
+    "successful_inference": false,
+    "resumable_long_session_exercised": false,
+    "artifact": "docs/spikes/claude/profile-session-control.json"
   },
-  "remaining_gates": {
-    "second_distinct_account": true,
-    "setup_token_issue_and_injection": true,
-    "long_session": true,
-    "revocation": true
+  "decision_candidate": {
+    "operator_requires_second_distinct_account": false,
+    "profile_credential_slot_isolation_supported": true,
+    "setup_token_stable_supported": false,
+    "long_session_supported_by_spike": false,
+    "per_setup_token_revocation_supported": false,
+    "selected_supported_path": "official_interactive_login_per_target_profile",
+    "retry_wait_required": false
   }
 }

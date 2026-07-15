@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-07-15T02:30:40Z",
+  "sanitized": true,
+  "secret_values_recorded": false,
+  "profile_auth_status": {
+    "exit_zero": true,
+    "logged_in": true,
+    "json_keys": [
+      "apiProvider",
+      "authMethod",
+      "email",
+      "loggedIn",
+      "orgId",
+      "orgName",
+      "subscriptionType"
+    ]
+  },
+  "real_request_control": {
+    "payload_present": true,
+    "is_error": true,
+    "quota_or_session_limit": true,
+    "authentication_error": false,
+    "successful_inference": false,
+    "resumable_long_session_exercised": false
+  },
+  "compatibility_effect": {
+    "profile_auth_health_supported": true,
+    "long_session_supported_by_this_evidence": false,
+    "retry_wait_required": false,
+    "selected_fallback": "official_interactive_login_per_target_profile"
+  }
+}

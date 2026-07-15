@@ -3,15 +3,15 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0.5",
-  "current_status": "Phase 0.5 · Claude Config Dir/Keychain/PTY Spike 正在执行",
+  "current_status": "Phase 0.5 · Claude config/keychain 已形成交互登录 fallback 证据，等待安全审查",
   "current_owner": "provider",
-  "next_action": "complete post-quota inference, setup-token injection, long-session, and revocation evidence before security review",
+  "next_action": "security-review the per-profile official interactive-login boundary, then record the Claude compatibility decision",
   "manual_updated_at": "2026-07-14",
   "manual_updated_by": "operator-directed Claude provider-spike session (refresh recorded in spike-claude-config-keychain Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 0.5 · 验证 Claude Config Dir、Keychain、auth JSON 与 setup-token PTY"
+      "value": "Phase 0.5 · 收口 Claude config/keychain 与交互登录兼容边界"
     },
     {
       "label": "在哪条线",
@@ -23,7 +23,7 @@
     },
     {
       "label": "做到什么状态",
-      "value": "凭据槽隔离、scoped logout 与 JSON 契约已通过；token/长会话/吊销未完成"
+      "value": "配置槽位隔离与 auth JSON 已通过；setup-token/长会话/revocation 不列为稳定能力"
     }
   ],
   "phases": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "spike-claude-config-keychain",
-      "expected_status": "SPIKE_READY"
+      "expected_status": "EVIDENCE_READY"
     }
   ]
 }
