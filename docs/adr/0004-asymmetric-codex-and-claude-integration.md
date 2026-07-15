@@ -24,9 +24,10 @@ normalized only where semantics genuinely match.
 ADR 0014 resolves the Codex app-server capability and credential-write boundary
 for the exact tested versions: version-gated schema/usage methods and one
 canonical writable app-server/auth home, with no multi-writer or completed
-headless-login claim. Claude config/keychain isolation, auth
-status, setup-token, hooks, and PTY behavior remain pending
-`spike-claude-config-keychain`. Windows PTY transport uses the native ConPTY
+headless-login claim. ADR 0016 resolves Claude profile isolation and health as
+target-local official interactive login with setup-token CredentialGrant
+disabled; real PTY long-session behavior remains a Phase 3 acceptance item.
+Windows PTY transport uses the native ConPTY
 backend under [ADR 0012](0012-windows-conpty-pty-backend.md); Windows 11
 real-provider and UI acceptance remains an implementation/release gate. No
 undocumented Provider behavior is asserted by this ADR.

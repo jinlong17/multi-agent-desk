@@ -22,10 +22,11 @@ credential switch. Resume creates a new Session linked to the prior one.
 ## Spike-gated details
 
 ADR 0014 verifies Codex `account/rateLimits/read` and `account/usage/read` on
-the exact tested versions and selects a single-writer refresh boundary. Claude
-usage accuracy and other Provider selection signals remain pending their own
-evidence. This ADR still does not authorize automatic rotation or account
-switching.
+the exact tested versions and selects a single-writer refresh boundary. ADR
+0016 verifies Claude profile auth-health isolation but no official remaining
+quota signal; quota/session-limit errors never trigger another account. Other
+Provider selection signals remain pending. This ADR still does not authorize
+automatic rotation or account switching.
 
 ## Consequences
 

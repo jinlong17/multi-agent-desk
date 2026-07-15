@@ -3,15 +3,15 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0.5",
-  "current_status": "Phase 0.5 · Claude 交互登录边界安全审查已通过，等待 ADR 0016",
+  "current_status": "Phase 0.5 · Claude 交互登录边界已由 ADR 0016 收口",
   "current_owner": "provider",
-  "next_action": "record ADR 0016 for per-target-profile official interactive login, then consolidate Phase 0.5",
+  "next_action": "merge the final Claude decision, then audit and close Phase 0.5 before Phase 1 implementation",
   "manual_updated_at": "2026-07-14",
   "manual_updated_by": "operator-directed Claude feature-plan session (refresh recorded in spike-claude-config-keychain Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 0.5 · 收口最后一个 Claude 兼容性决策"
+      "value": "Phase 0.5 · 最后一个 Claude 兼容性门已收口，准备阶段整合"
     },
     {
       "label": "在哪条线",
@@ -23,7 +23,7 @@
     },
     {
       "label": "做到什么状态",
-      "value": "Codex/Windows 均 GATE_RESOLVED；Claude ACCEPTED，等待 ADR 0016"
+      "value": "Codex、Claude、Browser、E2EE 与 Windows 三项均 GATE_RESOLVED"
     }
   ],
   "phases": [
@@ -104,10 +104,18 @@
   "focus": [
     {
       "slug": "spike-claude-config-keychain",
-      "expected_status": "ACCEPTED"
+      "expected_status": "GATE_RESOLVED"
     },
     {
       "slug": "spike-codex-auth-refresh",
+      "expected_status": "GATE_RESOLVED"
+    },
+    {
+      "slug": "spike-browser-key-storage",
+      "expected_status": "GATE_RESOLVED"
+    },
+    {
+      "slug": "spike-e2ee-protocol-vectors",
       "expected_status": "GATE_RESOLVED"
     },
     {

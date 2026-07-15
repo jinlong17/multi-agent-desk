@@ -11,14 +11,14 @@
 | Impacted Modules | `core, desktop, security` |
 | Hypothesis | `On macOS, two CLAUDE_CONFIG_DIR profiles isolate accounts including Keychain entries; auth status is machine-readable JSON; setup-token works in an interactive PTY, survives long sessions, and revocation is observable` |
 | Time-box | `operator-scoped: one account + conservative interactive-login fallback` |
-| Current Phase | `SECURITY_REVIEW` |
-| Status | `ACCEPTED` |
-| Executor | `Codex (GPT-5), security-review` |
-| Updated | `2026-07-14 19:34 -0700` |
-| Suggested Next | `feature-plan` |
+| Current Phase | `DECISION` |
+| Status | `GATE_RESOLVED` |
+| Executor | `Codex (GPT-5), feature-plan` |
+| Updated | `2026-07-14 19:49 -0700` |
+| Suggested Next | `Phase 0.5 consolidation; apply ADR 0016 in Phase 3 and exclude Claude setup-token from Phase 5 stable grant` |
 | Security Gate | `resolved — ACCEPTED only for per-target-profile official interactive login; setup-token CredentialGrant remains unsupported` |
 | Evidence Path | `docs/spikes/claude/` |
-| Decision Record | `pending — PROVIDER_COMPATIBILITY.md entry` |
+| Decision Record | `docs/adr/0016-claude-profile-interactive-login-boundary.md`; `docs/PROVIDER_COMPATIBILITY.md` |
 
 ## Success and failure criteria
 
@@ -42,20 +42,22 @@
 | 2026-07-14 14:53 -0700 | `setup-token` in a real PTY with resize and sanitized capture | authorization flow started; process survived resize; no token persisted; stop escalated from TERM to KILL | `docs/spikes/claude/run_setup_token_pty_probe.py` |
 | 2026-07-14 14:55 -0700 | Real one-turn probes on macOS and Linux | both reached account quota/session limit until 15:40, not an authentication error | `docs/spikes/claude/2026-07-14-config-keychain-spike.md` |
 | 2026-07-14 19:31 -0700 | Sanitized macOS profile-session retry and operator one-account/fallback decision | auth JSON remained healthy; real request remained quota/session limited, not an auth error; no resume/long-session claim; setup-token excluded from stable support and per-profile interactive login selected | `docs/spikes/claude/profile-session-control.json` |
+| 2026-07-14 19:49 -0700 | Feature-plan decision after security-review `ACCEPTED` | ADR 0016 freezes target-local official interactive login, isolated Config Dir, version-gated/redacted auth health, one-account scope, disabled setup-token grant, and Phase 3 real-session acceptance | `docs/adr/0016-claude-profile-interactive-login-boundary.md`; `docs/PROVIDER_COMPATIBILITY.md` |
 
 ## Result, limitations, and fallback
 
-Evidence ready. Independent macOS Keychain credential slots and scoped logout
+Gate resolved. Independent macOS Keychain credential slots and scoped logout
 were observed for default/Profile A/Profile B, and JSON auth status was stable
 across the tested macOS/Linux versions. The operator does not require a second
 identity. Completed setup-token issuance/injection, long-session survival, and
-per-token revocation are unsupported rather than pending. The selected stable
-boundary is official interactive login per target profile/device; setup-token
-CredentialGrant remains experimental and fail-closed.
+per-token revocation remain unsupported. ADR 0016 selects official interactive
+login per target profile/device, redacted/version-gated auth health, and
+fail-closed setup-token CredentialGrant. Real PTY long-session behavior is a
+Phase 3 acceptance item.
 
 ## Risks and Blockers
 
-- Blocks Phase 3 design freeze only until security review accepts the per-profile interactive-login boundary.
+- No remaining Claude Spike blocker for Phase 3 design freeze; ADR 0016 obligations become Phase 3 acceptance criteria.
 - The environment has one Claude account; distinct identities are not proven or claimed, and the operator does not require them for v0.1.
 - Official docs do not expose per-setup-token revocation; global sign-out/admin access removal is not equivalent to a targetable product revocation contract.
 - Live inference remains account quota/session limited; auth JSON remains healthy and the design does not wait on a quota reset.
@@ -71,3 +73,4 @@ CredentialGrant remains experimental and fail-closed.
 | 2026-07-14 14:55 -0700 | Codex provider-spike | Refreshed the operator-owned dashboard to Phase 0.5 active with a status binding to this Spike | `docs/workflow/project/dashboard-state.json` | dashboard focus `SPIKE_READY` | continue provider-spike |
 | 2026-07-14 19:31 -0700 | Codex provider-spike | Applied the operator one-account scope, retained only secret-safe auth/session evidence, classified quota as non-auth failure, excluded unverified setup-token/long-session/revocation behavior, and selected official interactive login per target profile | `docs/spikes/claude/`; this file; dashboard | `EVIDENCE_READY`, gate remains `open` | security-review |
 | 2026-07-14 19:34 -0700 | Codex (GPT-5), security-review | Reviewed profile/Keychain trust boundaries, PII redaction, path isolation, login/account pinning, quota classification, setup-token exclusion, logout/revocation wording, and residual risk | `docs/reviews/spike-claude-config-keychain/2026-07-14-security-review.md`; this file | `ACCEPTED`; Security Gate resolved only for per-profile interactive login | feature-plan decision |
+| 2026-07-14 19:49 -0700 | Codex (GPT-5), feature-plan | Recorded ADR 0016, synchronized Provider compatibility, plan, threat model, related ADR markers, setup-token grant exclusion, Phase 3/5 gates, and operator dashboard binding | ADR 0016; compatibility; plan; threat model; dashboard; this file | `GATE_RESOLVED`; one-account scope and unsupported claims preserved | Phase 0.5 consolidation / Phase 3 and 5 |
