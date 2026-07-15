@@ -4,6 +4,7 @@ import (
 	"context"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -53,6 +54,9 @@ func TestManagerRunsRealFakeProviderSubprocess(t *testing.T) {
 	ctx := context.Background()
 	store, request, clientID := runtimeFixture(t)
 	executable := filepath.Join(t.TempDir(), "multidesk")
+	if runtime.GOOS == "windows" {
+		executable += ".exe"
+	}
 	build := exec.Command("go", "build", "-o", executable, "../../cmd/multidesk")
 	if output, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("build fake provider binary: %v\n%s", err, output)

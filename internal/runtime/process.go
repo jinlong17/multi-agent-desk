@@ -46,10 +46,11 @@ func StartProcess(executable string) (*Process, error) {
 		return nil, domain.NewError(domain.CodeInvalidArgument, "fake provider executable is required")
 	}
 	if stdruntime.GOOS == "windows" && !strings.HasSuffix(strings.ToLower(executable), ".exe") {
-		if _, err := os.Stat(executable); err != nil {
-			if _, exeErr := os.Stat(executable + ".exe"); exeErr == nil {
-				executable += ".exe"
-			}
+		// The Go tool may append .exe to an extensionless -o path. Prefer
+		// that concrete artifact even when the extensionless placeholder also
+		// exists, because CreateProcess does not execute the latter reliably.
+		if _, exeErr := os.Stat(executable + ".exe"); exeErr == nil {
+			executable += ".exe"
 		}
 	}
 	command := exec.Command(executable, "internal", "fake-provider")
