@@ -3,15 +3,15 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0.5",
-  "current_status": "Phase 0.5 · Windows Tauri Sidecar 安全审查已通过，等待 ADR 决策",
+  "current_status": "Phase 0.5 · Windows Tauri Sidecar 已由 ADR 0015 收口",
   "current_owner": "desktop",
-  "next_action": "record the Windows Sidecar lifecycle decision as ADR 0015 while preserving ADR 0014 Codex state",
+  "next_action": "merge the Windows Sidecar decision, then finish the remaining Claude compatibility gate and Phase 0.5 consolidation",
   "manual_updated_at": "2026-07-14",
   "manual_updated_by": "operator-directed Windows Sidecar feature-plan session (refresh recorded in spike-windows-desktop-sidecar Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 0.5 · 收口 Tauri Sidecar 打包、所有权与崩溃恢复决策"
+      "value": "Phase 0.5 · Windows 三项 Spike 已收口，继续剩余 Claude 与阶段整合"
     },
     {
       "label": "在哪条线",
@@ -23,7 +23,7 @@
     },
     {
       "label": "做到什么状态",
-      "value": "Codex GATE_RESOLVED；Sidecar ACCEPTED，等待 ADR 0015"
+      "value": "Codex GATE_RESOLVED；ConPTY/Named Pipe/Sidecar 均 GATE_RESOLVED"
     }
   ],
   "phases": [
@@ -116,7 +116,7 @@
     },
     {
       "slug": "spike-windows-desktop-sidecar",
-      "expected_status": "ACCEPTED"
+      "expected_status": "GATE_RESOLVED"
     }
   ]
 }

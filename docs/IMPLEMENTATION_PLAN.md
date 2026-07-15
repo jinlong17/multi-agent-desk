@@ -258,10 +258,11 @@ Tauri 2 仅负责：
 Daemon 发现和单实例顺序：
 
 1. Desktop 先探测平台系统服务的 IPC Endpoint。
-2. 已有系统 Daemon 时直接连接，Desktop 不管理其生命周期。
-3. 不存在系统 Daemon 时才启动自己的 Sidecar。
+2. 已有系统 Daemon 时先按 ADR 0013 双向认证并协商版本，再连接；Desktop 不管理其生命周期。
+3. 不存在系统 Daemon 时才按 ADR 0015 通过 Rust 固定 externalBin 名称启动已签名、来源/版本/架构校验的 Sidecar；Webview 不获得通用 shell 能力。
 4. Daemon 通过 Unix Socket/Named Pipe 占位和进程锁保证单实例。
-5. Desktop 退出时只停止由自己启动的 Sidecar，不停止系统服务。
+5. Desktop 退出、reload、detach 或崩溃不停止 Sidecar；重启后认证并复用同一实例。
+6. 显式 Stop 必须验证 Desktop ownership、Device/instance identity、Capability 和当前 Lease，只停止由该 Desktop 启动的 Daemon 树，绝不停止系统服务或其他 owner 的实例。
 
 Windows 本地 IPC 采用 ADR 0013 的原生 message-mode Named Pipe：必须使用
 protected current-logon SID DACL、Network deny、`PIPE_REJECT_REMOTE_CLIENTS`
@@ -270,6 +271,11 @@ protected current-logon SID DACL、Network deny、`PIPE_REJECT_REMOTE_CLIENTS`
 双向协议认证，每个写操作仍须校验 Capability 和 `ControllerLease`，同时
 执行 payload/schema 上限、deadline、并发/速率限制、取消与幂等。任何
 loopback fallback 必须具备等价认证边界且显式降级，禁止静默切换。
+
+Windows Sidecar 的安装目录必须由 ACL 保护；启动前在受保护的安装/更新
+事务中验证 publisher signature、release provenance、manifest digest、版本和
+架构。更新必须原子化并拒绝降级；旧 Daemon 跨 Desktop 更新继续运行时必须
+先完成协议/版本协商，不兼容或 ownership 不明确时 fail closed，禁止并排启动。
 
 Windows Desktop 在 v0.1 作为 Experimental 预览，不是发布阻塞项；Windows CLI/Daemon 和浏览器工作流仍是必须支持项。
 
@@ -1128,7 +1134,7 @@ multi-agent-desk/
 - Codex：ADR 0014 已验证精确版本的 app-server schema/Usage、file credential store 和短时刷新兼容性；采用单写者 CAS，device auth completion 与 multi-writer 不在支持声明内。
 - Claude：macOS 双 Config Dir/Keychain 隔离、`auth status` JSON、setup-token 交互 PTY/长会话/吊销。
 - Browser：Chrome/Edge、Safari、Firefox 的非可导出 Key 与 IndexedDB encrypted-key fallback。
-- Windows：ConPTY 原生传输和 Named Pipe 本地 IPC Spike 已通过，分别由 ADR 0012、ADR 0013 收口；Tauri Sidecar 最小原型仍须完成。Windows 11 x64 真实 Provider TUI/IME/辅助功能及 Named Pipe 多用户/服务上下文验收保留为发布前平台门。
+- Windows：ConPTY、Named Pipe 本地 IPC 和 Tauri Sidecar 生命周期已分别由 ADR 0012、0013、0015 收口；Windows 11 x64 签名安装/升级/回滚/卸载、真实 Provider TUI/IME/辅助功能、Named Pipe 多用户/服务上下文及 Sidecar logoff/sleep/reboot/安全软件验收保留为发布前平台门。
 - E2EE Protocol Spec、测试向量和一次独立密码学评审。
 - `docs/reviews/` Spike 报告与 `PROVIDER_COMPATIBILITY.md`。
 
@@ -1202,7 +1208,7 @@ multi-agent-desk/
 - 本地 Vault、CredentialMaterializationManager 和崩溃恢复。
 - Pinned Key 驱动的 E2EE CredentialBundle。
 - Mac Tauri Sidecar、托盘、Deep Link、通知、签名准备。
-- Windows Desktop 只提供 Experimental 预览，不作为出口条件。
+- Windows Desktop 按 ADR 0015 提供 discover-first、崩溃存活、认证重连的 Experimental 预览，不作为出口条件。
 
 出口：用户在 Mac 登录后，可将指定账号授权给指定 Linux Device；Control Plane 换钥攻击被拒绝；撤销后目标不能创建新 Session，并显示 Provider 侧吊销指引。
 
@@ -1213,7 +1219,7 @@ multi-agent-desk/
 - 端到端、安全、崩溃恢复、弱网和迁移测试。
 - Docker Compose、Caddy/Traefik TLS 示例。
 - macOS 签名和公证。
-- Windows Desktop Experimental 构建与签名流程准备（不阻塞 v0.1）。
+- Windows Desktop Experimental 构建与签名流程，以及 ADR 0015 安装/升级/回滚/卸载、multi-user、logoff、sleep/reboot、服务共存验收（不阻塞 v0.1 稳定核心）。
 - SBOM、Release Notes、安装/升级/卸载/数据保留文档。
 - `v0.1.0` GitHub Release。
 
@@ -1364,7 +1370,7 @@ MultiAgentDesk 不 Fork 现有项目，建立独立统一内核。
 | 并发 Token 刷新破坏 Vault | Critical | 单一 materialization writer、credentialRevision CAS、Provider Spike |
 | 浏览器无法安全保存 Device Key | High | WebCrypto/libsodium fallback；不满足条件时 metadata-only |
 | 跨平台 PTY 差异 | High | PTY 抽象、Windows 专项 CI、ANSI fixture |
-| Tauri 和 Go 双生命周期 | Medium | 单一 Daemon、Desktop 只启动/连接 Sidecar |
+| Tauri 和 Go 双生命周期 | Medium | ADR 0015 discover-first 单一 Daemon；Desktop exit 不停 daemon；显式认证 stop；签名/原子更新；服务 fallback |
 | v0.1 范围过大 | High | 按 Vertical Slice 出口推进，未通过不得扩 Provider |
 | 参考项目许可证污染 | High | Notices、来源审计、AGPL 只看架构 |
 | 被误解为额度规避工具 | High | 产品文案、无自动轮换、用户确认、公开安全边界 |
