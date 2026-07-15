@@ -3,15 +3,15 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0.5",
-  "current_status": "Phase 0.5 · 收口方案已批准，正在核对七项兼容性决策",
+  "current_status": "Phase 0.5 · 七项兼容性证据已对账，等待独立验证",
   "current_owner": "project-system",
-  "next_action": "run phase0-5-consolidation P1 evidence reconciliation",
+  "next_action": "run feature-verify P1 for phase0-5-consolidation",
   "manual_updated_at": "2026-07-14",
   "manual_updated_by": "operator-directed project-system writer (refresh recorded in phase0-5-consolidation Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 0.5 · 核对七个 Spike、ADR 0010-0016 与残余门禁"
+      "value": "Phase 0.5 · 独立验证七个 Spike、ADR 与残余门禁对账"
     },
     {
       "label": "在哪条线",
@@ -19,11 +19,11 @@
     },
     {
       "label": "用哪个入口",
-      "value": "feature-build P1 evidence reconciliation"
+      "value": "feature-verify P1 evidence reconciliation"
     },
     {
       "label": "做到什么状态",
-      "value": "方案 APPROVED；尚未把 Phase 0.5 标记为 completed"
+      "value": "P1 READY_FOR_VERIFY；尚未把 Phase 0.5 标记为 completed"
     }
   ],
   "phases": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "phase0-5-consolidation",
-      "expected_status": "APPROVED"
+      "expected_status": "READY_FOR_VERIFY"
     }
   ]
 }
