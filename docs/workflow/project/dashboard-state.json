@@ -3,15 +3,15 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0.5",
-  "current_status": "Phase 0.5 · Windows Named Pipe IPC 已由 ADR 0013 收口，转入 Tauri Sidecar Spike",
+  "current_status": "Phase 0.5 · Windows Tauri Sidecar 已进入 SPIKE_READY，安全门已打开",
   "current_owner": "desktop",
-  "next_action": "intake and run the Windows Tauri sidecar lifecycle Spike",
+  "next_action": "run the Tauri externalBin packaging, crash continuity, ownership, and cleanup probe",
   "manual_updated_at": "2026-07-14",
   "manual_updated_by": "operator-authorized direct-main Windows Spike execution (recorded in spike-windows-named-pipe-ipc Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 0.5 · 执行最后一个 Windows Tauri Sidecar 生命周期 Spike"
+      "value": "Phase 0.5 · 执行 Tauri Sidecar 打包与崩溃恢复实证"
     },
     {
       "label": "在哪条线",
@@ -23,7 +23,7 @@
     },
     {
       "label": "做到什么状态",
-      "value": "Named Pipe GATE_RESOLVED；Sidecar 仍为 DRAFT"
+      "value": "Sidecar SPIKE_READY：必须证明不重复启动、不越权停止和无后代孤儿"
     }
   ],
   "phases": [
@@ -112,7 +112,7 @@
     },
     {
       "slug": "spike-windows-desktop-sidecar",
-      "expected_status": "DRAFT"
+      "expected_status": "SPIKE_READY"
     }
   ]
 }
