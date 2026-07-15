@@ -10,10 +10,10 @@
 | Owner Module | `core` |
 | Impacted Modules | `security, provider, desktop, project-system` |
 | Current Phase | `P2 identity, IPC, and Daemon lifecycle` |
-| Status | `READY_FOR_VERIFY` |
-| Executor | `Codex (GPT-5) as feature-build P2` |
-| Updated | `2026-07-14 21:59 -0700` |
-| Suggested Next | `feature-verify P2 on Draft PR #13 with native Windows Named Pipe execution` |
+| Status | `BLOCKED` |
+| Executor | `Codex (GPT-5) as independent feature-verify P2 v1` |
+| Updated | `2026-07-14 22:04 -0700` |
+| Suggested Next | `feature-build P2 lifecycle correction` |
 | Branch / Worktree | `codex/core/phase1-device-kernel` / `/Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/phase1-device-kernel` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none — deterministic first-party Fake Provider only` |
@@ -54,10 +54,11 @@ verification, the required independent Security Gate must pass before ship.
 | 2026-07-14 21:25 -0700 | P1 Windows correction | replaced drive-ambiguous URI construction with explicit Unix, drive-rooted Windows, and UNC file-URI mapping; percent-encoded special path characters; added pure mapping positive/negative fixtures; reran local/race/vet/three-target compile, exact licenses, project/CI/scaffold/diff | pass locally; corrected head still requires a new actual Windows run | `internal/storage/store.go`; `internal/storage/store_test.go`; command output |
 | 2026-07-14 21:30 -0700 | P1 verify v3 | verified corrected exact head and actual macOS, Ubuntu, and Windows execution; inspected Windows Server 2025 log for domain, Store, migration, scaffold, and desktop results; confirmed all seven protected checks and Draft PR state | `VERIFIED`: all P1 acceptance passes; P2 unlocked; Security Gate remains open | `docs/reviews/phase1-device-kernel/2026-07-14-feature-verify-p1-v3.md`; CI `29388956859`; Governance `29388956809`; Windows job `87267956531` |
 | 2026-07-14 21:59 -0700 | P2 build | `go test ./...`; `go vet ./...`; race suites for domain/storage/device/app; darwin/arm64, linux/amd64, windows/amd64 Device cross-compile; exact `go-licenses check --include_tests ./...`; `npm run project:verify`; `npm run ci:verify`; `npm run scaffold:verify`; Unix Bootstrap/authenticated daemon round-trip; service-spec and authorization tests | pass locally; P2 implementation is ready for actual three-platform verification; no TCP listener or host service mutation added | `internal/device`; `internal/app`; `cmd/multidesk`; `docs/workflow/features/phase1-device-kernel/p2-as-built.md`; retained command output |
+| 2026-07-14 22:04 -0700 | P2 verify v1 | Draft PR #13 CI run `29390337206` reached the authenticated handler but macOS, Ubuntu, and Windows all failed the shutdown assertion because active connections remained blocked after listener close | `BLOCKED`; no platform-specific authentication failure inferred; active-connection closure required | `docs/reviews/phase1-device-kernel/2026-07-14-feature-verify-p2-v1.md`; jobs `87272170390`, `87272170409`, `87272170387` |
 
 ## Risks and Blockers
 
-- No P1 blocker. P1 is independently verified; P2 has no local build blocker and requires independent/native three-platform verification.
+- P1 remains independently verified. P2 is blocked by active-connection shutdown; the final Security Gate remains open.
 - Full SQLite migration, lock-contention, restart, and recovery behavior must be
   proven with project-owned temporary-directory tests; the planning smoke only
   proves driver configuration and three-platform production compilation.
@@ -91,4 +92,6 @@ verification, the required independent Security Gate must pass before ship.
 | 2026-07-14 21:30 -0700 | Codex (GPT-5) as independent feature-verify P1 v3 | Verified the exact corrected head, retained prior finding closure, inspected actual Windows Server 2025 domain/Store/migration/scaffold/desktop results, and confirmed all seven protected PR checks; modified only verdict surfaces | `docs/reviews/phase1-device-kernel/2026-07-14-feature-verify-p1-v3.md`, this file; GitHub runs `29388956859`, `29388956809` | `VERIFIED`; P2 unlocked; Draft PR #13 remains unmerged | feature-build P2 identity, IPC, and Daemon lifecycle |
 | 2026-07-14 21:30 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Rebound manual dashboard judgment to the persisted P1 `VERIFIED` verdict and exposed P2 as the next executable phase without advancing it or closing the Security Gate | dashboard manual/generated state; this file | focus expects `VERIFIED`; Phase 1 remains `in_progress`; P2 remains unstarted | feature-build P2 identity, IPC, and Daemon lifecycle |
 | 2026-07-14 21:59 -0700 | Codex (GPT-5) as feature-build P2 | Implemented Device identity bootstrap and CAS administration, strict versioned framed protocol, Ed25519 mutual handshake, revision-aware capability authorization, Unix socket and Windows protected Named Pipe adapters, bounded Daemon server/client, service-spec rendering, and minimal init/serve/status commands; added unit, integration, race, and Windows-native tests | `READY_FOR_VERIFY`; local full/race/vet, three-target compile, exact Go license, project/CI/scaffold checks pass; actual Windows runner remains required | `internal/device`; `internal/app`; `cmd/multidesk`; `docs/workflow/features/phase1-device-kernel/p2-as-built.md`; command output | feature-verify P2 on Draft PR #13 |
+| 2026-07-14 22:04 -0700 | Codex (GPT-5) as independent feature-verify P2 v1 | Recomputed the exact Draft PR head and inspected all three platform logs; persisted the common shutdown defect without changing implementation files | `BLOCKED`; active authenticated connections are not closed when Serve stops | `docs/reviews/phase1-device-kernel/2026-07-14-feature-verify-p2-v1.md`; this file; CI run `29390337206` | feature-build P2 lifecycle correction |
 | 2026-07-14 21:59 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Rebound manual dashboard judgment to the persisted P2 `READY_FOR_VERIFY` state without claiming native runner success or closing the Security Gate | dashboard manual/generated state; this file | focus expects `READY_FOR_VERIFY`; Phase 1 remains `in_progress`; P2 awaits independent three-platform verification | feature-verify P2 on Draft PR #13 |
+| 2026-07-14 22:04 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Rebound manual dashboard judgment to the persisted P2 `BLOCKED` verifier verdict without changing the finding or starting another phase | dashboard manual/generated state; this file | focus expects `BLOCKED`; Phase 1 remains `in_progress`; P2 lifecycle correction required | feature-build P2 lifecycle correction |
