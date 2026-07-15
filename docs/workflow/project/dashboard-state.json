@@ -3,19 +3,19 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0.5",
-  "current_status": "Phase 0.5 · Codex auth/refresh 已由 ADR 0014 收口",
-  "current_owner": "provider",
-  "next_action": "merge the Codex decision, then continue the remaining Claude and Windows Sidecar Spikes",
+  "current_status": "Phase 0.5 · Windows Tauri Sidecar 已由 ADR 0015 收口",
+  "current_owner": "desktop",
+  "next_action": "merge the Windows Sidecar decision, then finish the remaining Claude compatibility gate and Phase 0.5 consolidation",
   "manual_updated_at": "2026-07-14",
-  "manual_updated_by": "operator-directed Codex feature-plan session (refresh recorded in spike-codex-auth-refresh Work Log)",
+  "manual_updated_by": "operator-directed Windows Sidecar feature-plan session (refresh recorded in spike-windows-desktop-sidecar Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 0.5 · Codex 单写者兼容边界已完成，继续剩余 Provider/Windows Spike"
+      "value": "Phase 0.5 · Windows 三项 Spike 已收口，继续剩余 Claude 与阶段整合"
     },
     {
       "label": "在哪条线",
-      "value": "codex/provider/spike-codex-auth-refresh；双设备为 macOS + Linux"
+      "value": "codex/desktop/spike-windows-desktop-sidecar；Windows x64 CI + Windows 11 acceptance gate"
     },
     {
       "label": "用哪个入口",
@@ -23,7 +23,7 @@
     },
     {
       "label": "做到什么状态",
-      "value": "Codex GATE_RESOLVED；不声明多写者安全，采用单写者 revisioned-CAS"
+      "value": "Codex GATE_RESOLVED；ConPTY/Named Pipe/Sidecar 均 GATE_RESOLVED"
     }
   ],
   "phases": [
@@ -116,7 +116,7 @@
     },
     {
       "slug": "spike-windows-desktop-sidecar",
-      "expected_status": "DRAFT"
+      "expected_status": "GATE_RESOLVED"
     }
   ]
 }
