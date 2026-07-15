@@ -21,9 +21,11 @@ credential switch. Resume creates a new Session linked to the prior one.
 
 ## Spike-gated details
 
-Provider usage and health signals used by future recommendations remain
-pending Provider-specific Spike evidence. This ADR does not claim an official
-quota API or a safe refresh mechanism for any Provider.
+ADR 0014 verifies Codex `account/rateLimits/read` and `account/usage/read` on
+the exact tested versions and selects a single-writer refresh boundary. Claude
+usage accuracy and other Provider selection signals remain pending their own
+evidence. This ADR still does not authorize automatic rotation or account
+switching.
 
 ## Consequences
 

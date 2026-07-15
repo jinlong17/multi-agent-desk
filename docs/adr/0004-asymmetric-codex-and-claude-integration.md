@@ -21,8 +21,10 @@ normalized only where semantics genuinely match.
 
 ## Spike-gated details
 
-Codex schemas, usage methods, credential behavior, and refresh safety remain
-pending `spike-codex-auth-refresh`. Claude config/keychain isolation, auth
+ADR 0014 resolves the Codex app-server capability and credential-write boundary
+for the exact tested versions: version-gated schema/usage methods and one
+canonical writable app-server/auth home, with no multi-writer or completed
+headless-login claim. Claude config/keychain isolation, auth
 status, setup-token, hooks, and PTY behavior remain pending
 `spike-claude-config-keychain`. Windows PTY transport uses the native ConPTY
 backend under [ADR 0012](0012-windows-conpty-pty-backend.md); Windows 11
@@ -33,7 +35,7 @@ undocumented Provider behavior is asserted by this ADR.
 
 Capability snapshots are attached to sessions and UI behavior degrades
 explicitly when a Provider lacks a capability. Provider integration cannot be
-implemented or frozen ahead of the owning Spike evidence.
+implemented or frozen ahead of its owning evidence and compatibility boundary.
 
 ## References
 

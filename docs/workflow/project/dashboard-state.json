@@ -3,27 +3,27 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0.5",
-  "current_status": "Phase 0.5 · Windows Named Pipe IPC 已由 ADR 0013 收口，转入 Tauri Sidecar Spike",
-  "current_owner": "desktop",
-  "next_action": "intake and run the Windows Tauri sidecar lifecycle Spike",
+  "current_status": "Phase 0.5 · Codex auth/refresh 已由 ADR 0014 收口",
+  "current_owner": "provider",
+  "next_action": "merge the Codex decision, then continue the remaining Claude and Windows Sidecar Spikes",
   "manual_updated_at": "2026-07-14",
-  "manual_updated_by": "operator-authorized direct-main Windows Spike execution (recorded in spike-windows-named-pipe-ipc Work Log)",
+  "manual_updated_by": "operator-directed Codex feature-plan session (refresh recorded in spike-codex-auth-refresh Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 0.5 · 执行最后一个 Windows Tauri Sidecar 生命周期 Spike"
+      "value": "Phase 0.5 · Codex 单写者兼容边界已完成，继续剩余 Provider/Windows Spike"
     },
     {
       "label": "在哪条线",
-      "value": "main → codex/<module>/<feature>；并行 writer 使用独立 worktree"
+      "value": "codex/provider/spike-codex-auth-refresh；双设备为 macOS + Linux"
     },
     {
       "label": "用哪个入口",
-      "value": "剩余 Spike：feature-plan → provider-spike → security-review（如需）→ decision"
+      "value": "feature-plan intake → provider-spike → security-review → compatibility decision"
     },
     {
       "label": "做到什么状态",
-      "value": "Named Pipe GATE_RESOLVED；Sidecar 仍为 DRAFT"
+      "value": "Codex GATE_RESOLVED；不声明多写者安全，采用单写者 revisioned-CAS"
     }
   ],
   "phases": [
@@ -102,6 +102,10 @@
     "release"
   ],
   "focus": [
+    {
+      "slug": "spike-codex-auth-refresh",
+      "expected_status": "GATE_RESOLVED"
+    },
     {
       "slug": "spike-windows-conpty",
       "expected_status": "GATE_RESOLVED"

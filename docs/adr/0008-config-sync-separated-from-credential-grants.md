@@ -21,11 +21,11 @@ remote erasure of a secret already copied to a compromised device.
 
 ## Spike-gated details
 
-Envelope algorithms and vectors remain pending
-`spike-e2ee-protocol-vectors`; browser key storage remains pending
-`spike-browser-key-storage`; Provider credential layouts and refresh behavior
-remain pending `spike-codex-auth-refresh` and
-`spike-claude-config-keychain`. This ADR freezes none of those mechanisms.
+ADR 0011 resolves the pairwise envelope protocol, ADR 0010 resolves browser key
+storage modes, and ADR 0014 resolves the Codex credential-write boundary
+without permitting plaintext config sync or multi-writer refresh. Claude
+credential layouts and refresh behavior remain pending
+`spike-claude-config-keychain`.
 
 ## Consequences
 
