@@ -9,11 +9,11 @@
 | Title | `Phase 1 Device Kernel` |
 | Owner Module | `core` |
 | Impacted Modules | `security, provider, desktop, project-system` |
-| Current Phase | `P5 CLI correction hardening after verification finding` |
-| Status | `READY_FOR_VERIFY` |
-| Executor | `Codex (GPT-5) as feature-build P5 CLI correction hardening` |
-| Updated | `2026-07-15 00:18 -0700` |
-| Suggested Next | `feature-verify P5 CLI correction hardening` |
+| Current Phase | `Security Gate after P5 CLI correction hardening` |
+| Status | `READY_TO_SHIP` |
+| Executor | `Codex (GPT-5) as independent feature-verify P5 CLI correction hardening` |
+| Updated | `2026-07-15 00:32 -0700` |
+| Suggested Next | `security-review phase1-device-kernel` |
 | Branch / Worktree | `codex/core/phase1-device-kernel` / `/Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/phase1-device-kernel` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none — deterministic first-party Fake Provider only` |
@@ -27,7 +27,7 @@
 | P2 identity, IPC, and Daemon lifecycle | Ed25519 bootstrap/rotation/revocation; framed protocol; Unix socket/Windows Named Pipe; application authorization shell; Daemon/service specs | P1 verified | mutual authentication and fail-closed endpoint tests; native IPC on three platforms; no TCP listener | `VERIFIED` |
 | P3 Fake runtime and Session control | Fake Provider subprocess; process manager; Session state machine; ring buffer; attachments; ControllerLease; input/resize/stop/kill/resume | P2 verified | two-client native-IPC scenario passes; observer/lease/idempotency/replay and bounded process behavior proven | `VERIFIED` |
 | P4 Vault and materialization recovery | locked/unlocked runtime; fake credential revision/CAS; atomic runtime home; cleanup/quarantine; failure injection | P3 verified | lock/restart boundary, fake credential revision/CAS, atomic runtime home, cleanup/quarantine tests pass | `VERIFIED` |
-| P5 CLI/TUI and platform exit | stable JSON/human commands; minimal TUI; service-spec commands; docs; complete three-platform E2E/CI/license/race evidence | P4 verified | Phase 1 exit scenario passes on macOS/Linux/Windows; full project checks and security review ready | `READY_FOR_VERIFY` |
+| P5 CLI/TUI and platform exit | stable JSON/human commands; minimal TUI; service-spec commands; docs; complete three-platform E2E/CI/license/race evidence | P4 verified | Phase 1 exit scenario passes on macOS/Linux/Windows; full project checks and security review ready | `READY_TO_SHIP` |
 
 Each phase is implemented by one writer, sets `READY_FOR_VERIFY`, receives an
 independent phase verdict, and only then unlocks the next phase. After P5
@@ -134,3 +134,4 @@ verification, the required independent Security Gate must pass before ship.
 | 2026-07-15 00:07 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Rebound manual dashboard judgment to the persisted P5 CLI correction `READY_FOR_VERIFY` state; generated workflow mirrors and machine facts without claiming protected runner success | dashboard manual/generated state; this file | workflow generation and dashboard verification required; Security Gate remains open | feature-verify P5 CLI correction |
 | 2026-07-15 00:12 -0700 | Codex (GPT-5) as independent feature-verify P5 CLI correction | Recomputed exact head `a2898a6`, reran local full/race/vet/cross-target/license/project/CI/scaffold checks, and inspected protected macOS/Linux/Windows plus governance jobs; both scoped P1 findings are closed | `READY_TO_SHIP`; Security Gate remains required; no merge/release inferred | `docs/reviews/phase1-device-kernel/2026-07-15-feature-verify-p5-cli-correction-v1.md`; CI `29395736524`; Governance `29395736454` | security-review phase1-device-kernel |
 | 2026-07-15 00:18 -0700 | Codex (GPT-5) as feature-build P5 CLI correction hardening | Rejected positional argv values as well as the removed `--secret` flag for `vault unlock`; added a parser-boundary regression test and updated the as-built contract | `READY_FOR_VERIFY`; fresh protected three-platform evidence required; Security Gate remains open | `cmd/multidesk/commands.go`; `cmd/multidesk/main_test.go`; `p5-as-built.md`; this file | feature-verify P5 CLI correction hardening |
+| 2026-07-15 00:32 -0700 | Codex (GPT-5) as independent feature-verify P5 CLI correction hardening | Recomputed exact head `99fe917`, reran local full/race/vet/cross-target/license/project/CI/scaffold/workflow/dashboard checks, and inspected protected macOS/Linux/Windows plus governance jobs; no remaining P5 blocker | `READY_TO_SHIP`; Security Gate remains required; no merge/release inferred | `docs/reviews/phase1-device-kernel/2026-07-15-feature-verify-p5-cli-correction-v2.md`; CI `29396390634`; Governance `29396390660` | security-review phase1-device-kernel |
