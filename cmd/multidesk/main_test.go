@@ -60,3 +60,34 @@ func TestCLIRejectsUnsupportedClientProvisioningWithoutLeakingKey(t *testing.T) 
 		t.Fatalf("private key appeared in CLI output: %q", output)
 	}
 }
+
+func TestCLIRequestIdentityBindsBodyAndRevision(t *testing.T) {
+	firstID, firstKey := cliRequestIdentity("terminal.input", []byte(`{"session_id":"session-a","sequence":1,"payload":"a"}`), ptrInt64(1))
+	secondID, secondKey := cliRequestIdentity("terminal.input", []byte(`{"session_id":"session-a","sequence":2,"payload":"b"}`), ptrInt64(1))
+	retryID, retryKey := cliRequestIdentity("terminal.input", []byte(`{"session_id":"session-a","sequence":1,"payload":"a"}`), ptrInt64(1))
+	if firstID == secondID || firstKey == secondKey {
+		t.Fatal("different CLI operations reused the same request identity")
+	}
+	if firstID != retryID || firstKey != retryKey {
+		t.Fatal("exact CLI retry did not retain its request identity")
+	}
+}
+
+func TestVaultSecretReaderIsBoundedAndDoesNotEcho(t *testing.T) {
+	secret, err := readVaultSecret(strings.NewReader("unlock-value\n"))
+	if err != nil || secret != "unlock-value" {
+		t.Fatalf("stdin secret=%q err=%v", secret, err)
+	}
+	if _, err := readVaultSecret(strings.NewReader(strings.Repeat("x", maxVaultUnlockInput+1))); err == nil {
+		t.Fatal("oversized stdin secret accepted")
+	}
+}
+
+func TestVaultUnlockRejectsArgvSecret(t *testing.T) {
+	_, err := captureCLI(t, "vault", "unlock", "--root", filepath.Join(t.TempDir(), "device"), "--secret", "argv-secret")
+	if err == nil {
+		t.Fatal("argv Vault secret was accepted")
+	}
+}
+
+func ptrInt64(value int64) *int64 { return &value }

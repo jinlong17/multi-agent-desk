@@ -10,7 +10,8 @@ service used by the native E2E.
 - `daemon install|uninstall` renders the user-level launch specification for
   the current platform. It does not install, stop, or mutate a host service;
   `daemon serve` remains the explicit foreground entrypoint.
-- `vault status|unlock|lock` uses the Vault gate and idempotency boundary.
+- `vault status|unlock|lock` uses the Vault gate and idempotency boundary;
+  unlock reads a bounded value from `--secret-stdin` and rejects argv secrets.
 - `run fake`, `sessions list|show|observe|attach|detach|stop|kill|resume`,
   `control acquire|heartbeat|release`, and `terminal input|resize` map to the
   authenticated service methods with bounded flags and lease revisions.
@@ -21,9 +22,10 @@ service used by the native E2E.
 - `tui` is a minimal metadata view over `sessions.list`; it is intentionally
   not a terminal renderer or PTY/ConPTY implementation.
 
-Every JSON response uses `schema_version: 1`, a deterministic request ID,
-`ok`, and either `result` or `error`. Human output contains metadata only. No
-service command mutates the host in automated tests.
+Every JSON response uses `schema_version: 1`, a request ID and idempotency key
+bound to the canonical method/body/lease tuple, `ok`, and either `result` or
+`error`. Human output contains metadata only. No service command mutates the
+host in automated tests.
 
 ## Evidence and limits
 

@@ -3,15 +3,15 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "1",
-  "current_status": "Phase 1 · P5 CLI correction 已评审通过，等待实现",
+  "current_status": "Phase 1 · P5 CLI correction 已实现，等待验证",
   "current_owner": "core",
-  "next_action": "feature-build P5 CLI correction",
-  "manual_updated_at": "2026-07-14",
+  "next_action": "feature-verify P5 CLI correction",
+  "manual_updated_at": "2026-07-15",
   "manual_updated_by": "operator-directed core writer (refresh recorded in phase1-device-kernel Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 1 · P5 CLI correction，评审通过，等待实现"
+      "value": "Phase 1 · P5 CLI correction，已实现，等待验证"
     },
     {
       "label": "在哪条线",
@@ -19,11 +19,11 @@
     },
     {
       "label": "用哪个入口",
-      "value": "feature-build P5 CLI correction"
+      "value": "feature-verify P5 CLI correction"
     },
     {
       "label": "做到什么状态",
-      "value": "P5 APPROVED；Security Gate open"
+      "value": "P5 READY_FOR_VERIFY；Security Gate open"
     }
   ],
   "phases": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "phase1-device-kernel",
-      "expected_status": "APPROVED"
+      "expected_status": "READY_FOR_VERIFY"
     }
   ]
 }

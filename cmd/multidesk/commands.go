@@ -2,12 +2,16 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -75,7 +79,7 @@ func runVault(args []string, stdout, stderr *os.File) error {
 	flags := flag.NewFlagSet("vault "+args[0], flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	root := flags.String("root", "", "private Device root")
-	secret := flags.String("secret", "", "unlock input; use a secret manager for production secrets")
+	secretStdin := flags.Bool("secret-stdin", false, "read unlock input from stdin")
 	jsonOutput := flags.Bool("json", false, "JSON output")
 	if err := flags.Parse(args[1:]); err != nil || *root == "" {
 		return domain.NewError(domain.CodeInvalidArgument, "vault command requires --root")
@@ -84,10 +88,14 @@ func runVault(args []string, stdout, stderr *os.File) error {
 	case "status":
 		return runRPCCommand(*root, "vault.status", domain.CapabilityMetadataRead, nil, nil, false, *jsonOutput, stdout)
 	case "unlock":
-		if *secret == "" {
-			return domain.NewError(domain.CodeInvalidArgument, "vault unlock requires --secret")
+		if !*secretStdin {
+			return domain.NewError(domain.CodeInvalidArgument, "vault unlock requires --secret-stdin")
 		}
-		return runRPCCommand(*root, "vault.unlock", domain.CapabilityVaultControl, map[string]string{"secret": *secret}, nil, true, *jsonOutput, stdout)
+		secret, err := readVaultSecret(os.Stdin)
+		if err != nil {
+			return err
+		}
+		return runRPCCommand(*root, "vault.unlock", domain.CapabilityVaultControl, map[string]string{"secret": secret}, nil, true, *jsonOutput, stdout)
 	case "lock":
 		return runRPCCommand(*root, "vault.lock", domain.CapabilityVaultControl, nil, nil, true, *jsonOutput, stdout)
 	default:
@@ -276,13 +284,16 @@ func runRPCCommand(root, method string, capability domain.Capability, body any, 
 	if err != nil {
 		return err
 	}
-	requestID := "cli-" + strings.NewReplacer(".", "-", "_", "-").Replace(method)
+	requestID, idempotencyKey := cliRequestIdentity(method, rawBody, revision)
 	request := device.Request{ProtocolMajor: device.ProtocolMajor, RequestID: requestID, Method: method, Body: rawBody, LeaseRevision: revision}
 	if idempotent {
-		request.IdempotencyKey = requestID
+		request.IdempotencyKey = idempotencyKey
 	}
 	response, err := (&device.Client{Connection: connection}).Call(context.Background(), request)
 	if err != nil {
+		if jsonOutput {
+			_ = writeCLI(stdout, true, requestID, nil, err)
+		}
 		return err
 	}
 	var result any
@@ -292,4 +303,41 @@ func runRPCCommand(root, method string, capability domain.Capability, body any, 
 		}
 	}
 	return writeCLI(stdout, jsonOutput, requestID, result, nil)
+}
+
+func cliRequestIdentity(method string, body json.RawMessage, revision *int64) (string, string) {
+	hasher := sha256.New()
+	_, _ = hasher.Write([]byte(method))
+	_, _ = hasher.Write([]byte{0})
+	_, _ = hasher.Write(body)
+	_, _ = hasher.Write([]byte{0})
+	if revision != nil {
+		_, _ = hasher.Write([]byte(strconv.FormatInt(*revision, 10)))
+	}
+	digest := hex.EncodeToString(hasher.Sum(nil))
+	slug := strings.NewReplacer(".", "-", "_", "-").Replace(method)
+	if len(slug) > 48 {
+		slug = slug[:48]
+	}
+	return "cli-" + slug + "-" + digest[:20], "cli-" + digest
+}
+
+const maxVaultUnlockInput = 4096
+
+func readVaultSecret(reader io.Reader) (string, error) {
+	if reader == nil {
+		return "", domain.NewError(domain.CodeInvalidArgument, "vault unlock input is unavailable")
+	}
+	data, err := io.ReadAll(io.LimitReader(reader, maxVaultUnlockInput+1))
+	if err != nil {
+		return "", domain.NewError(domain.CodeInvalidArgument, "vault unlock input could not be read")
+	}
+	if len(data) > maxVaultUnlockInput {
+		return "", domain.NewError(domain.CodeInvalidArgument, "vault unlock input is too large")
+	}
+	secret := strings.TrimRight(string(data), "\r\n")
+	if secret == "" {
+		return "", domain.NewError(domain.CodeInvalidArgument, "vault unlock input is empty")
+	}
+	return secret, nil
 }

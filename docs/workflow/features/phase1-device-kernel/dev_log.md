@@ -10,10 +10,10 @@
 | Owner Module | `core` |
 | Impacted Modules | `security, provider, desktop, project-system` |
 | Current Phase | `P5 CLI correction after Security Gate` |
-| Status | `APPROVED` |
-| Executor | `Codex (GPT-5) as independent feature-review` |
-| Updated | `2026-07-14 23:58 -0700` |
-| Suggested Next | `feature-build P5 CLI correction` |
+| Status | `READY_FOR_VERIFY` |
+| Executor | `Codex (GPT-5) as feature-build P5 CLI correction` |
+| Updated | `2026-07-15 00:05 -0700` |
+| Suggested Next | `feature-verify P5 CLI correction` |
 | Branch / Worktree | `codex/core/phase1-device-kernel` / `/Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/phase1-device-kernel` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none — deterministic first-party Fake Provider only` |
@@ -27,7 +27,7 @@
 | P2 identity, IPC, and Daemon lifecycle | Ed25519 bootstrap/rotation/revocation; framed protocol; Unix socket/Windows Named Pipe; application authorization shell; Daemon/service specs | P1 verified | mutual authentication and fail-closed endpoint tests; native IPC on three platforms; no TCP listener | `VERIFIED` |
 | P3 Fake runtime and Session control | Fake Provider subprocess; process manager; Session state machine; ring buffer; attachments; ControllerLease; input/resize/stop/kill/resume | P2 verified | two-client native-IPC scenario passes; observer/lease/idempotency/replay and bounded process behavior proven | `VERIFIED` |
 | P4 Vault and materialization recovery | locked/unlocked runtime; fake credential revision/CAS; atomic runtime home; cleanup/quarantine; failure injection | P3 verified | lock/restart boundary, fake credential revision/CAS, atomic runtime home, cleanup/quarantine tests pass | `VERIFIED` |
-| P5 CLI/TUI and platform exit | stable JSON/human commands; minimal TUI; service-spec commands; docs; complete three-platform E2E/CI/license/race evidence | P4 verified | Phase 1 exit scenario passes on macOS/Linux/Windows; full project checks and security review ready | `APPROVED` |
+| P5 CLI/TUI and platform exit | stable JSON/human commands; minimal TUI; service-spec commands; docs; complete three-platform E2E/CI/license/race evidence | P4 verified | Phase 1 exit scenario passes on macOS/Linux/Windows; full project checks and security review ready | `READY_FOR_VERIFY` |
 
 Each phase is implemented by one writer, sets `READY_FOR_VERIFY`, receives an
 independent phase verdict, and only then unlocks the next phase. After P5
@@ -130,3 +130,5 @@ verification, the required independent Security Gate must pass before ship.
 | 2026-07-14 23:56 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Rebound manual dashboard judgment to the persisted Security Gate `REVISE` and feature-plan `NEEDS_REVIEW` state; no implementation or security verdict was changed | dashboard manual/generated state; this file | focus expects `NEEDS_REVIEW`; Security Gate remains open | feature-review P5 CLI correction |
 | 2026-07-14 23:58 -0700 | Codex (GPT-5) as independent feature-review | Re-reviewed the correction scope, contracts, failure modes, redaction, testing, rollback, and phase ordering; found no additional blocker and approved the bounded P5 build | `APPROVED`; Security Gate remains open until corrected implementation is independently reviewed | `docs/reviews/phase1-device-kernel/2026-07-14-feature-review-p5-cli-correction.md`; `p5-cli-correction-plan.md`; `design.md`; `api.md`; `test.md` | feature-build P5 CLI correction |
 | 2026-07-14 23:59 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Rebound manual dashboard judgment to the persisted P5 CLI correction `APPROVED` verdict without changing implementation or security evidence | dashboard manual/generated state; this file | focus expects `APPROVED`; Security Gate remains open | feature-build P5 CLI correction |
+| 2026-07-15 00:05 -0700 | Codex (GPT-5) as feature-build P5 CLI correction | Derived bounded request IDs/idempotency keys from canonical method/body/lease data, replaced argv Vault unlock with bounded `--secret-stdin`, added focused identity/input tests, and preserved all prior CLI/service boundaries | `READY_FOR_VERIFY`; local focused checks pass; protected three-platform evidence required | `cmd/multidesk/commands.go`; `cmd/multidesk/main_test.go`; `p5-as-built.md`; this file | feature-verify P5 CLI correction |
+| 2026-07-15 00:07 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Rebound manual dashboard judgment to the persisted P5 CLI correction `READY_FOR_VERIFY` state; generated workflow mirrors and machine facts without claiming protected runner success | dashboard manual/generated state; this file | workflow generation and dashboard verification required; Security Gate remains open | feature-verify P5 CLI correction |
