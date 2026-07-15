@@ -3,7 +3,7 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "1",
-  "current_status": "Phase 1 · P5 CLI/TUI 与 platform exit 已验证，等待 Security Gate",
+  "current_status": "Phase 1 · P5 CLI/TUI 与 platform exit 已验证，进入 Security Gate",
   "current_owner": "core",
   "next_action": "security-review Phase 1 Device Kernel",
   "manual_updated_at": "2026-07-14",
@@ -11,7 +11,7 @@
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 1 · P5 CLI/TUI 与 platform exit 已验证，等待 Security Gate"
+      "value": "Phase 1 · P5 CLI/TUI 与 platform exit 已验证，进入 Security Gate"
     },
     {
       "label": "在哪条线",
@@ -23,7 +23,7 @@
     },
     {
       "label": "做到什么状态",
-      "value": "P5 VERIFIED；Security Gate open"
+      "value": "P5 READY_TO_SHIP；Security Gate open"
     }
   ],
   "phases": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "phase1-device-kernel",
-      "expected_status": "VERIFIED"
+      "expected_status": "READY_TO_SHIP"
     }
   ]
 }

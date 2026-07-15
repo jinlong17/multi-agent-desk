@@ -10,9 +10,9 @@
 | Owner Module | `core` |
 | Impacted Modules | `security, provider, desktop, project-system` |
 | Current Phase | `Security Gate for Phase 1` |
-| Status | `VERIFIED` |
-| Executor | `Codex (GPT-5) as independent feature-verify P5 v1` |
-| Updated | `2026-07-14 23:40 -0700` |
+| Status | `READY_TO_SHIP` |
+| Executor | `operator-directed project-system writer after independent P5 verification` |
+| Updated | `2026-07-14 23:45 -0700` |
 | Suggested Next | `security-review Phase 1 Device Kernel` |
 | Branch / Worktree | `codex/core/phase1-device-kernel` / `/Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/phase1-device-kernel` |
 | Plan Version | `v0.2` |
@@ -124,3 +124,4 @@ verification, the required independent Security Gate must pass before ship.
 | 2026-07-14 23:31 -0700 | Codex (GPT-5) as feature-build P5 | Implemented authenticated thin CLI commands for Vault, Fake Session control, terminal control, client metadata, service-spec rendering, and a minimal TUI; added stable JSON/non-mutating service-spec tests and documented offline client provisioning limits; reran Go, race, vet, three-target compile, license, project, CI, scaffold, Web, and Desktop evidence | `READY_FOR_VERIFY`; local Phase 1 exit evidence is green; protected runner evidence remains required | `cmd/multidesk`; `internal/app/session_service.go`; `p5-as-built.md`; `api.md`; command tests | feature-verify P5 CLI/TUI and platform exit |
 | 2026-07-14 23:40 -0700 | Codex (GPT-5) as independent feature-verify P5 v1 | Recomputed exact head `f68e7b4`, inspected all three platform jobs including Windows CLI/device/vault output, and confirmed project, DCO, license, and link gates | `VERIFIED`; Phase 1 Security Gate is the only remaining gate; no ship/merge inference | `docs/reviews/phase1-device-kernel/2026-07-14-feature-verify-p5-v1.md`; CI `29394552147`; Governance `29394552139`; Windows job `87284979063` | security-review Phase 1 Device Kernel |
 | 2026-07-14 23:40 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Rebound manual dashboard judgment to the persisted P5 `VERIFIED` verdict and advanced the next action to the independent Security Gate without closing ship/merge gates | dashboard manual/generated state; this file | focus expects `VERIFIED`; Phase 1 remains `in_progress`; Security Gate is open | security-review Phase 1 Device Kernel |
+| 2026-07-14 23:45 -0700 | operator-directed project-system writer | Promoted the independently verified P5 unit to the workflow's `READY_TO_SHIP` input for the required Security Gate; no implementation or verdict evidence changed | this file; dashboard manual state | Security Gate remains open; ship/merge still gated | security-review Phase 1 Device Kernel |
