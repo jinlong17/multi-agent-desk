@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-07-15T02:30:40Z",
+  "sanitized": true,
+  "secret_values_recorded": false,
+  "auth_status_contract": {
+    "macos_version": "2.1.207",
+    "linux_version": "2.1.132",
+    "json_keys_equal": true,
+    "keys": [
+      "apiProvider",
+      "authMethod",
+      "email",
+      "loggedIn",
+      "orgId",
+      "orgName",
+      "subscriptionType"
+    ],
+    "same_account": true,
+    "same_organization": true
+  },
+  "macos_keychain_isolation": {
+    "platform": "macOS 26.5.2 arm64",
+    "default_profile_logged_in": true,
+    "empty_profile_a_inherited_login": false,
+    "empty_profile_b_inherited_login": false,
+    "profile_a_interactive_login_completed": true,
+    "profile_a_same_identity_as_default": true,
+    "profile_b_remained_logged_out": true,
+    "profile_a_credentials_file_present": false,
+    "profile_a_logout_completed": true,
+    "default_remained_logged_in_after_profile_a_logout": true,
+    "profile_a_logged_out_after_own_logout": true,
+    "isolation_observed": true,
+    "distinct_account_isolation_proven": false
+  },
+  "linux_config_dir_isolation": {
+    "platform": "Linux 5.4.0 x86_64",
+    "default_profile_logged_in": true,
+    "empty_profile_a_inherited_login": false,
+    "empty_profile_b_inherited_login": false,
+    "isolated_login_completed": false
+  },
+  "setup_token_pty": {
+    "version": "2.1.207",
+    "pty_allocated": true,
+    "authorization_url_detected": true,
+    "resize_24x80_to_50x140": true,
+    "alive_after_resize": true,
+    "credential_issued": false,
+    "sigterm_required_sigkill_escalation": true
+  },
+  "live_request": {
+    "macos_authentication_error": false,
+    "linux_authentication_error": false,
+    "quota_or_session_limit_still_observed_at_local_1930": true,
+    "successful_inference": false,
+    "resumable_long_session_exercised": false,
+    "artifact": "docs/spikes/claude/profile-session-control.json"
+  },
+  "decision_candidate": {
+    "operator_requires_second_distinct_account": false,
+    "profile_credential_slot_isolation_supported": true,
+    "setup_token_stable_supported": false,
+    "long_session_supported_by_spike": false,
+    "per_setup_token_revocation_supported": false,
+    "selected_supported_path": "official_interactive_login_per_target_profile",
+    "retry_wait_required": false
+  }
+}

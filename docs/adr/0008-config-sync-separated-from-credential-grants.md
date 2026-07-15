@@ -23,9 +23,9 @@ remote erasure of a secret already copied to a compromised device.
 
 ADR 0011 resolves the pairwise envelope protocol, ADR 0010 resolves browser key
 storage modes, and ADR 0014 resolves the Codex credential-write boundary
-without permitting plaintext config sync or multi-writer refresh. Claude
-credential layouts and refresh behavior remain pending
-`spike-claude-config-keychain`.
+without permitting plaintext config sync or multi-writer refresh. ADR 0016
+selects target-local Claude interactive login and explicitly excludes
+setup-token from stable v0.1 CredentialGrant until separate evidence and review.
 
 ## Consequences
 

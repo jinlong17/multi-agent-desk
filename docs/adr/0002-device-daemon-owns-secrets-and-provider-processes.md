@@ -21,9 +21,10 @@ plaintext credentials or Provider processes.
 ## Spike-gated details
 
 ADR 0014 resolves Codex credential layout and refresh concurrency by requiring
-one canonical writable app-server/auth home per CredentialInstance. Claude
-credential locations and auth behavior remain pending
-`spike-claude-config-keychain`. ADR 0013 resolves
+one canonical writable app-server/auth home per CredentialInstance. ADR 0016
+resolves Claude v0.1 authentication as target-local interactive login in an
+isolated config directory; stable setup-token materialization remains disabled.
+ADR 0013 resolves
 `spike-windows-named-pipe-ipc`: Phase 1 uses protected, local-only Named Pipes
 on Windows and Unix-domain sockets on macOS/Linux, with mutual protocol
 authentication and per-request capability/lease authorization above both
