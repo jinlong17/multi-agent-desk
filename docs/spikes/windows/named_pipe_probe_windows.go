@@ -139,8 +139,10 @@ type result struct {
 	MessageBoundaries      bool     `json:"message_boundaries_preserved"`
 	TranscriptSHA256       string   `json:"transcript_sha256"`
 	HandlesBefore          uint32   `json:"handles_before"`
+	HandlesMid             uint32   `json:"handles_mid"`
 	HandlesAfter           uint32   `json:"handles_after"`
-	HandleGrowth           int64    `json:"handle_growth"`
+	FirstHalfHandleGrowth  int64    `json:"first_half_handle_growth"`
+	SecondHalfHandleGrowth int64    `json:"second_half_handle_growth"`
 	ShutdownDurationMS     int64    `json:"shutdown_duration_ms"`
 	SecurityReviewRequired bool     `json:"security_review_required"`
 	Limitations            []string `json:"limitations"`
@@ -221,18 +223,26 @@ func parentMain(resultPath string, roundTrips int) error {
 
 	ready := make(chan connectionPlan)
 	serverDone := make(chan serverOutcome, 1)
-	go runServer(localPath, sa, plans, ready, serverDone)
 
 	executable, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("resolve probe executable: %w", err)
 	}
+	// Warm os/exec and the Go Windows poller before taking a baseline so
+	// process-lifetime runtime handles are not mistaken for connection leaks.
+	if err := exec.Command("cmd.exe", "/d", "/c", "exit 0").Run(); err != nil {
+		return fmt.Errorf("warm process launcher: %w", err)
+	}
+	runtime.GC()
+	time.Sleep(200 * time.Millisecond)
 	handlesBefore, err := processHandleCount()
 	if err != nil {
 		return err
 	}
+	go runServer(localPath, sa, plans, ready, serverDone)
 
 	completed := 0
+	var handlesMid uint32
 	for _, planned := range plans {
 		select {
 		case announced := <-ready:
@@ -280,6 +290,14 @@ func parentMain(resultPath string, roundTrips int) error {
 			return fmt.Errorf("client %d: %w; output=%s", planned.Sequence, err, output)
 		}
 		completed++
+		if completed == roundTrips/2 {
+			runtime.GC()
+			time.Sleep(200 * time.Millisecond)
+			handlesMid, err = processHandleCount()
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	shutdownStarted := time.Now()
@@ -293,13 +311,16 @@ func parentMain(resultPath string, roundTrips int) error {
 	if outcome.Err != nil {
 		return outcome.Err
 	}
+	runtime.GC()
+	time.Sleep(200 * time.Millisecond)
 	handlesAfter, err := processHandleCount()
 	if err != nil {
 		return err
 	}
-	handleGrowth := int64(handlesAfter) - int64(handlesBefore)
-	if handleGrowth > 8 {
-		return fmt.Errorf("unexpected handle growth: before=%d after=%d", handlesBefore, handlesAfter)
+	firstHalfGrowth := int64(handlesMid) - int64(handlesBefore)
+	secondHalfGrowth := int64(handlesAfter) - int64(handlesMid)
+	if secondHalfGrowth > 4 {
+		return fmt.Errorf("handles continued growing with client count: before=%d mid=%d after=%d", handlesBefore, handlesMid, handlesAfter)
 	}
 
 	stats := outcome.Stats
@@ -339,8 +360,10 @@ func parentMain(resultPath string, roundTrips int) error {
 		MessageBoundaries:      true,
 		TranscriptSHA256:       hex.EncodeToString(digest[:]),
 		HandlesBefore:          handlesBefore,
+		HandlesMid:             handlesMid,
 		HandlesAfter:           handlesAfter,
-		HandleGrowth:           handleGrowth,
+		FirstHalfHandleGrowth:  firstHalfGrowth,
+		SecondHalfHandleGrowth: secondHalfGrowth,
 		ShutdownDurationMS:     shutdownDuration.Milliseconds(),
 		SecurityReviewRequired: true,
 		Limitations: []string{
