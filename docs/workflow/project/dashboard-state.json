@@ -3,27 +3,27 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0.5",
-  "current_status": "Phase 0.5 · Windows Tauri Sidecar 实证通过，等待安全审查",
+  "current_status": "Phase 0.5 · Windows Tauri Sidecar 安全审查已通过，等待 ADR 决策",
   "current_owner": "desktop",
-  "next_action": "security-review signed packaged-binary, authenticated ownership, reconnect, and stop-authority requirements",
+  "next_action": "record the Windows Sidecar lifecycle decision as ADR 0015 while preserving ADR 0014 Codex state",
   "manual_updated_at": "2026-07-14",
-  "manual_updated_by": "operator-authorized direct-main Windows Spike execution (recorded in spike-windows-named-pipe-ipc Work Log)",
+  "manual_updated_by": "operator-directed Windows Sidecar feature-plan session (refresh recorded in spike-windows-desktop-sidecar Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 0.5 · 审查 Tauri Sidecar 打包、所有权与崩溃恢复证据"
+      "value": "Phase 0.5 · 收口 Tauri Sidecar 打包、所有权与崩溃恢复决策"
     },
     {
       "label": "在哪条线",
-      "value": "main → codex/<module>/<feature>；并行 writer 使用独立 worktree"
+      "value": "codex/desktop/spike-windows-desktop-sidecar；Windows x64 CI + Windows 11 acceptance gate"
     },
     {
       "label": "用哪个入口",
-      "value": "剩余 Spike：feature-plan → provider-spike → security-review（如需）→ decision"
+      "value": "feature-plan intake → provider-spike → security-review → compatibility decision"
     },
     {
       "label": "做到什么状态",
-      "value": "Sidecar EVIDENCE_READY：无重复启动、无越权停止、最终孤儿数为 0"
+      "value": "Codex GATE_RESOLVED；Sidecar ACCEPTED，等待 ADR 0015"
     }
   ],
   "phases": [
@@ -103,6 +103,10 @@
   ],
   "focus": [
     {
+      "slug": "spike-codex-auth-refresh",
+      "expected_status": "GATE_RESOLVED"
+    },
+    {
       "slug": "spike-windows-conpty",
       "expected_status": "GATE_RESOLVED"
     },
@@ -112,7 +116,7 @@
     },
     {
       "slug": "spike-windows-desktop-sidecar",
-      "expected_status": "EVIDENCE_READY"
+      "expected_status": "ACCEPTED"
     }
   ]
 }
