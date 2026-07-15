@@ -263,6 +263,14 @@ Daemon 发现和单实例顺序：
 4. Daemon 通过 Unix Socket/Named Pipe 占位和进程锁保证单实例。
 5. Desktop 退出时只停止由自己启动的 Sidecar，不停止系统服务。
 
+Windows 本地 IPC 采用 ADR 0013 的原生 message-mode Named Pipe：必须使用
+protected current-logon SID DACL、Network deny、`PIPE_REJECT_REMOTE_CLIENTS`
+和 `FILE_FLAG_FIRST_PIPE_INSTANCE`，并回读实际 DACL 后 fail closed。OS
+权限、PID 和 Session ID 只提供传输收窄与审计上下文；Daemon 与客户端仍须
+双向协议认证，每个写操作仍须校验 Capability 和 `ControllerLease`，同时
+执行 payload/schema 上限、deadline、并发/速率限制、取消与幂等。任何
+loopback fallback 必须具备等价认证边界且显式降级，禁止静默切换。
+
 Windows Desktop 在 v0.1 作为 Experimental 预览，不是发布阻塞项；Windows CLI/Daemon 和浏览器工作流仍是必须支持项。
 
 ## 6. 领域模型
@@ -1120,7 +1128,7 @@ multi-agent-desk/
 - Codex：app-server schema、Usage 方法、file credential store、headless device auth、双设备并发刷新 ≥48h。
 - Claude：macOS 双 Config Dir/Keychain 隔离、`auth status` JSON、setup-token 交互 PTY/长会话/吊销。
 - Browser：Chrome/Edge、Safari、Firefox 的非可导出 Key 与 IndexedDB encrypted-key fallback。
-- Windows：ConPTY 原生传输 Spike 已通过并由 ADR 0012 收口；Tauri Sidecar、Named Pipe 最小原型仍须完成。Windows 11 x64 真实 Provider TUI/IME/辅助功能验收保留为发布前平台门。
+- Windows：ConPTY 原生传输和 Named Pipe 本地 IPC Spike 已通过，分别由 ADR 0012、ADR 0013 收口；Tauri Sidecar 最小原型仍须完成。Windows 11 x64 真实 Provider TUI/IME/辅助功能及 Named Pipe 多用户/服务上下文验收保留为发布前平台门。
 - E2EE Protocol Spec、测试向量和一次独立密码学评审。
 - `docs/reviews/` Spike 报告与 `PROVIDER_COMPATIBILITY.md`。
 
@@ -1131,7 +1139,7 @@ multi-agent-desk/
 交付：
 
 - Domain model、Device SQLite 和 migration。
-- Local IPC、Daemon lifecycle、系统服务安装和 Vault locked/unlocked 状态。
+- Local IPC（macOS/Linux Unix-domain socket；Windows ADR 0013 Named Pipe）、Daemon lifecycle、系统服务安装和 Vault locked/unlocked 状态。
 - CLI/TUI 基础。
 - Fake Provider、Process Manager、Session 状态机、Attachment 和 ControllerLease。
 - CredentialMaterializationManager 的 Fake refresh/recovery 测试。

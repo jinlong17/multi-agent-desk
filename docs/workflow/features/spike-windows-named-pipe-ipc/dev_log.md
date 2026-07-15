@@ -11,14 +11,14 @@
 | Impacted Modules | `desktop` |
 | Hypothesis | `A local-only Windows Named Pipe with an explicit current-logon DACL can preserve daemon protocol message boundaries, authorize the local IPC trust boundary, survive repeated client reconnects, reject remote access, and shut down cleanly` |
 | Time-box | `2 days` |
-| Current Phase | `SECURITY_REVIEW` |
-| Status | `ACCEPTED` |
+| Current Phase | `DECISION` |
+| Status | `GATE_RESOLVED` |
 | Executor | `Codex (GPT-5)` |
-| Updated | `2026-07-14 17:30 -0700` |
-| Suggested Next | `feature-plan decision` |
+| Updated | `2026-07-14 17:36 -0700` |
+| Suggested Next | `Phase 1 cross-platform local IPC implementation and Windows 11 acceptance` |
 | Security Gate | `resolved — transport accepted only with mutual protocol authentication, fail-closed endpoint ownership, capability/lease checks, resource bounds, and Windows 11 multi-session acceptance` |
 | Evidence Path | `docs/spikes/windows/` |
-| Decision Record | `pending — platform matrix entry` |
+| Decision Record | `docs/adr/0013-windows-named-pipe-local-ipc.md + docs/PROVIDER_COMPATIBILITY.md + docs/THREAT_MODEL.md` |
 
 ## Success and failure criteria
 
@@ -55,7 +55,9 @@ recorded in the platform matrix.
 
 ## Risks and Blockers
 
-- Blocks Phase 1 Windows IPC design freeze.
+- Phase 1 Windows IPC design freeze is resolved. Production protocol controls
+  and Windows 11 multi-session/service acceptance remain implementation and
+  release gates.
 
 ## Work Log (append only)
 
@@ -65,3 +67,4 @@ recorded in the platform matrix.
 | 2026-07-14 17:03 -0700 | Codex (GPT-5), feature-plan spike intake | Confirmed sole `core` ownership; opened the mandatory security gate; froze current-logon DACL, remote rejection, framing, 100 reconnects, abrupt disconnect recovery, and bounded shutdown criteria; refreshed dashboard focus | this file; `docs/workflow/project/dashboard-state.json`; `codex/core/spike-windows-named-pipe-ipc` | `SPIKE_READY`; default Named Pipe DACL explicitly rejected | provider-spike |
 | 2026-07-14 17:22 -0700 | Codex (GPT-5), provider-spike | Ran native message-mode Named Pipe evidence on Windows x64; retained the failed startup-handle heuristic, corrected it to measure steady-state per-client growth, captured a passing 100-client result, and isolated mutually exclusive Windows Spike build tags | probe/workflow; `docs/spikes/windows/named-pipe-result.json`; `docs/spikes/windows/2026-07-14-windows-named-pipe-spike.md`; this file | `EVIDENCE_READY`; hypothesis supported within recorded limits | security-review |
 | 2026-07-14 17:30 -0700 | Codex (GPT-5), security-review | Reviewed the DACL, local/remote boundary, peer identity, endpoint ownership, resource exhaustion, service/multi-session behavior, auditability, and residual same-logon/admin risk | `docs/reviews/spike-windows-named-pipe-ipc/2026-07-14-security-review.md`; this file | `ACCEPTED`; no P0, with mandatory Phase 1 controls recorded | feature-plan decision |
+| 2026-07-14 17:36 -0700 | Codex (GPT-5), feature-plan decision | Selected native message-mode Named Pipes for Windows local IPC; bound protected DACL, remote rejection, first-instance ownership, mutual protocol authentication, capability/lease checks, resource bounds, redacted audit, and Windows 11 acceptance into architecture and threat records | ADR 0013; ADR index/0002; `docs/PROVIDER_COMPATIBILITY.md`; `docs/IMPLEMENTATION_PLAN.md`; `docs/THREAT_MODEL.md`; this file; dashboard state | `GATE_RESOLVED`; transport selected without overstating production or workstation readiness | Phase 1 implementation; Windows 11 acceptance |
