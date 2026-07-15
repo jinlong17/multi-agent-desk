@@ -117,6 +117,104 @@ func (s *Store) ClientIdentity(ctx context.Context, id domain.ID) (domain.Client
 	return client, nil
 }
 
+func (s *Store) ListClientIdentities(ctx context.Context) ([]domain.ClientIdentity, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT id, name, public_key, revision, status, capabilities_json, created_at, updated_at
+		FROM client_identities ORDER BY id`)
+	if err != nil {
+		return nil, domain.WrapError(domain.CodeConflict, "client identities could not be read", err)
+	}
+	defer rows.Close()
+	clients := make([]domain.ClientIdentity, 0)
+	for rows.Next() {
+		var client domain.ClientIdentity
+		var capabilities []byte
+		var createdAt, updatedAt string
+		if err := rows.Scan(&client.ID, &client.Name, &client.PublicKey, &client.Revision,
+			&client.Status, &capabilities, &createdAt, &updatedAt); err != nil {
+			return nil, domain.WrapError(domain.CodeConflict, "client identity could not be read", err)
+		}
+		if err := json.Unmarshal(capabilities, &client.Caps); err != nil {
+			return nil, domain.WrapError(domain.CodeSchemaIncompatible, "stored client capabilities are invalid", err)
+		}
+		client.CreatedAt, err = parseTime(createdAt)
+		if err != nil {
+			return nil, err
+		}
+		client.UpdatedAt, err = parseTime(updatedAt)
+		if err != nil {
+			return nil, err
+		}
+		clients = append(clients, client)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, domain.WrapError(domain.CodeConflict, "client identities could not be read", err)
+	}
+	return clients, nil
+}
+
+func (s *Store) RotateClientIdentity(ctx context.Context, id domain.ID, expectedRevision int64, publicKey []byte, at time.Time) (domain.ClientIdentity, error) {
+	if err := domain.ValidateID(id); err != nil {
+		return domain.ClientIdentity{}, err
+	}
+	if expectedRevision < 1 || len(publicKey) != 32 || at.IsZero() {
+		return domain.ClientIdentity{}, domain.NewError(domain.CodeInvalidArgument, "invalid client identity rotation")
+	}
+	err := s.withTx(ctx, func(tx *sql.Tx) error {
+		result, err := tx.ExecContext(ctx, `
+			UPDATE client_identities
+			SET public_key = ?, revision = revision + 1, updated_at = ?
+			WHERE id = ? AND status = 'active' AND revision = ?`,
+			publicKey, formatTime(at), id, expectedRevision)
+		if err != nil {
+			return writeError("client identity could not be rotated", err)
+		}
+		changed, err := result.RowsAffected()
+		if err != nil {
+			return writeError("client identity rotation result could not be read", err)
+		}
+		if changed != 1 {
+			return domain.NewError(domain.CodeConflict, "client identity revision changed")
+		}
+		return nil
+	})
+	if err != nil {
+		return domain.ClientIdentity{}, err
+	}
+	return s.ClientIdentity(ctx, id)
+}
+
+func (s *Store) RevokeClientIdentity(ctx context.Context, id domain.ID, expectedRevision int64, at time.Time) (domain.ClientIdentity, error) {
+	if err := domain.ValidateID(id); err != nil {
+		return domain.ClientIdentity{}, err
+	}
+	if expectedRevision < 1 || at.IsZero() {
+		return domain.ClientIdentity{}, domain.NewError(domain.CodeInvalidArgument, "invalid client identity revocation")
+	}
+	err := s.withTx(ctx, func(tx *sql.Tx) error {
+		result, err := tx.ExecContext(ctx, `
+			UPDATE client_identities
+			SET status = 'revoked', revision = revision + 1, updated_at = ?
+			WHERE id = ? AND status = 'active' AND revision = ?`,
+			formatTime(at), id, expectedRevision)
+		if err != nil {
+			return writeError("client identity could not be revoked", err)
+		}
+		changed, err := result.RowsAffected()
+		if err != nil {
+			return writeError("client identity revocation result could not be read", err)
+		}
+		if changed != 1 {
+			return domain.NewError(domain.CodeConflict, "client identity revision changed")
+		}
+		return nil
+	})
+	if err != nil {
+		return domain.ClientIdentity{}, err
+	}
+	return s.ClientIdentity(ctx, id)
+}
+
 func (s *Store) CreateWorkspace(ctx context.Context, workspace domain.Workspace) error {
 	if err := domain.ValidateID(workspace.ID); err != nil {
 		return err

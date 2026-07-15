@@ -9,16 +9,27 @@ import (
 type ErrorCode string
 
 const (
-	CodeInvalidArgument    ErrorCode = "invalid_argument"
-	CodeNotFound           ErrorCode = "not_found"
-	CodeAlreadyExists      ErrorCode = "already_exists"
-	CodeConflict           ErrorCode = "conflict"
-	CodePermissionDenied   ErrorCode = "permission_denied"
-	CodeSchemaIncompatible ErrorCode = "schema_incompatible"
-	CodeInvalidTransition  ErrorCode = "invalid_transition"
-	CodeLeaseRequired      ErrorCode = "lease_required"
-	CodeLeaseHeld          ErrorCode = "lease_held"
-	CodeStaleLease         ErrorCode = "stale_lease"
+	CodeInvalidArgument     ErrorCode = "invalid_argument"
+	CodeNotFound            ErrorCode = "not_found"
+	CodeAlreadyExists       ErrorCode = "already_exists"
+	CodeConflict            ErrorCode = "conflict"
+	CodeUnauthenticated     ErrorCode = "unauthenticated"
+	CodePermissionDenied    ErrorCode = "permission_denied"
+	CodeUnsupportedVersion  ErrorCode = "unsupported_version"
+	CodeMethodNotFound      ErrorCode = "method_not_found"
+	CodeFrameTooLarge       ErrorCode = "frame_too_large"
+	CodeDeadlineExceeded    ErrorCode = "deadline_exceeded"
+	CodeResourceExhausted   ErrorCode = "resource_exhausted"
+	CodeDaemonUnavailable   ErrorCode = "daemon_unavailable"
+	CodeSchemaIncompatible  ErrorCode = "schema_incompatible"
+	CodeInvalidTransition   ErrorCode = "invalid_transition"
+	CodeLeaseRequired       ErrorCode = "lease_required"
+	CodeLeaseHeld           ErrorCode = "lease_held"
+	CodeStaleLease          ErrorCode = "stale_lease"
+	CodeReplayUnavailable   ErrorCode = "replay_unavailable"
+	CodeVaultLocked         ErrorCode = "vault_locked"
+	CodeProviderFailed      ErrorCode = "provider_failed"
+	CodeUnsupportedPlatform ErrorCode = "unsupported_platform"
 )
 
 // Error is safe to return across a public command or protocol boundary.

@@ -9,11 +9,11 @@
 | Title | `Phase 1 Device Kernel` |
 | Owner Module | `core` |
 | Impacted Modules | `security, provider, desktop, project-system` |
-| Current Phase | `P1 domain and Device store` |
-| Status | `VERIFIED` |
-| Executor | `Codex (GPT-5) as independent feature-verify P1 v3` |
-| Updated | `2026-07-14 21:30 -0700` |
-| Suggested Next | `feature-build P2 identity, IPC, and Daemon lifecycle` |
+| Current Phase | `P2 identity, IPC, and Daemon lifecycle` |
+| Status | `READY_FOR_VERIFY` |
+| Executor | `Codex (GPT-5) as feature-build P2` |
+| Updated | `2026-07-14 21:59 -0700` |
+| Suggested Next | `feature-verify P2 on Draft PR #13 with native Windows Named Pipe execution` |
 | Branch / Worktree | `codex/core/phase1-device-kernel` / `/Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/phase1-device-kernel` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none — deterministic first-party Fake Provider only` |
@@ -24,7 +24,7 @@
 | Phase | Scope | Dependencies | Acceptance | Status |
 |---|---|---|---|---|
 | P1 domain and Device store | domain entities/invariants; SQLite driver, schema, migrations, repositories, transactions, future-schema/restart handling | approved plan | domain and storage suites pass on empty/current/restart/future state; WAL/FK/busy settings proven | `VERIFIED` |
-| P2 identity, IPC, and Daemon lifecycle | Ed25519 bootstrap/rotation/revocation; framed protocol; Unix socket/Windows Named Pipe; application authorization shell; Daemon/service specs | P1 verified | mutual authentication and fail-closed endpoint tests; native IPC on three platforms; no TCP listener | `PLANNED` |
+| P2 identity, IPC, and Daemon lifecycle | Ed25519 bootstrap/rotation/revocation; framed protocol; Unix socket/Windows Named Pipe; application authorization shell; Daemon/service specs | P1 verified | mutual authentication and fail-closed endpoint tests; native IPC on three platforms; no TCP listener | `READY_FOR_VERIFY` |
 | P3 Fake runtime and Session control | Fake Provider subprocess; process manager; Session state machine; ring buffer; attachments; ControllerLease; input/resize/stop/kill/resume | P2 verified | two-client native-IPC scenario passes; observer/lease/idempotency/replay and bounded process behavior proven | `PLANNED` |
 | P4 Vault and materialization recovery | locked/unlocked runtime; fake credential revision/CAS; atomic runtime home; cleanup/quarantine; failure injection | P3 verified | lock/restart boundary, single writer, permission, crash and stale-overwrite tests pass | `PLANNED` |
 | P5 CLI/TUI and platform exit | stable JSON/human commands; minimal TUI; service-spec commands; docs; complete three-platform E2E/CI/license/race evidence | P4 verified | Phase 1 exit scenario passes on macOS/Linux/Windows; full project checks and security review ready | `PLANNED` |
@@ -53,10 +53,11 @@ verification, the required independent Security Gate must pass before ship.
 | 2026-07-14 21:22 -0700 | P1 verify v2 | re-audited the three corrections; reran uncached local/race/governance evidence; pushed corrected head to Draft PR #13 and required actual macOS/Ubuntu/Windows execution | 6/7 protected checks pass; Windows job `87267159036` fails every Store test at database Ping while domain/migrations pass; macOS and Ubuntu Store suites pass | `docs/reviews/phase1-device-kernel/2026-07-14-feature-verify-p1-v2.md`; CI `29388679737`; Governance `29388679739` |
 | 2026-07-14 21:25 -0700 | P1 Windows correction | replaced drive-ambiguous URI construction with explicit Unix, drive-rooted Windows, and UNC file-URI mapping; percent-encoded special path characters; added pure mapping positive/negative fixtures; reran local/race/vet/three-target compile, exact licenses, project/CI/scaffold/diff | pass locally; corrected head still requires a new actual Windows run | `internal/storage/store.go`; `internal/storage/store_test.go`; command output |
 | 2026-07-14 21:30 -0700 | P1 verify v3 | verified corrected exact head and actual macOS, Ubuntu, and Windows execution; inspected Windows Server 2025 log for domain, Store, migration, scaffold, and desktop results; confirmed all seven protected checks and Draft PR state | `VERIFIED`: all P1 acceptance passes; P2 unlocked; Security Gate remains open | `docs/reviews/phase1-device-kernel/2026-07-14-feature-verify-p1-v3.md`; CI `29388956859`; Governance `29388956809`; Windows job `87267956531` |
+| 2026-07-14 21:59 -0700 | P2 build | `go test ./...`; `go vet ./...`; race suites for domain/storage/device/app; darwin/arm64, linux/amd64, windows/amd64 Device cross-compile; exact `go-licenses check --include_tests ./...`; `npm run project:verify`; `npm run ci:verify`; `npm run scaffold:verify`; Unix Bootstrap/authenticated daemon round-trip; service-spec and authorization tests | pass locally; P2 implementation is ready for actual three-platform verification; no TCP listener or host service mutation added | `internal/device`; `internal/app`; `cmd/multidesk`; `docs/workflow/features/phase1-device-kernel/p2-as-built.md`; retained command output |
 
 ## Risks and Blockers
 
-- No P1 blocker. P1 is independently verified and P2 is unlocked.
+- No P1 blocker. P1 is independently verified; P2 has no local build blocker and requires independent/native three-platform verification.
 - Full SQLite migration, lock-contention, restart, and recovery behavior must be
   proven with project-owned temporary-directory tests; the planning smoke only
   proves driver configuration and three-platform production compilation.
@@ -89,3 +90,4 @@ verification, the required independent Security Gate must pass before ship.
 | 2026-07-14 21:25 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Rebound dashboard focus from the persisted Windows block to the persisted corrected `READY_FOR_VERIFY` state; regenerated mirrors and facts without inferring a Windows pass | dashboard manual/generated state; this file | dashboard verification passes; actual runner remains required | feature-verify P1 on Draft PR #13 |
 | 2026-07-14 21:30 -0700 | Codex (GPT-5) as independent feature-verify P1 v3 | Verified the exact corrected head, retained prior finding closure, inspected actual Windows Server 2025 domain/Store/migration/scaffold/desktop results, and confirmed all seven protected PR checks; modified only verdict surfaces | `docs/reviews/phase1-device-kernel/2026-07-14-feature-verify-p1-v3.md`, this file; GitHub runs `29388956859`, `29388956809` | `VERIFIED`; P2 unlocked; Draft PR #13 remains unmerged | feature-build P2 identity, IPC, and Daemon lifecycle |
 | 2026-07-14 21:30 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Rebound manual dashboard judgment to the persisted P1 `VERIFIED` verdict and exposed P2 as the next executable phase without advancing it or closing the Security Gate | dashboard manual/generated state; this file | focus expects `VERIFIED`; Phase 1 remains `in_progress`; P2 remains unstarted | feature-build P2 identity, IPC, and Daemon lifecycle |
+| 2026-07-14 21:59 -0700 | Codex (GPT-5) as feature-build P2 | Implemented Device identity bootstrap and CAS administration, strict versioned framed protocol, Ed25519 mutual handshake, revision-aware capability authorization, Unix socket and Windows protected Named Pipe adapters, bounded Daemon server/client, service-spec rendering, and minimal init/serve/status commands; added unit, integration, race, and Windows-native tests | `READY_FOR_VERIFY`; local full/race/vet, three-target compile, exact Go license, project/CI/scaffold checks pass; actual Windows runner remains required | `internal/device`; `internal/app`; `cmd/multidesk`; `docs/workflow/features/phase1-device-kernel/p2-as-built.md`; command output | feature-verify P2 on Draft PR #13 |
