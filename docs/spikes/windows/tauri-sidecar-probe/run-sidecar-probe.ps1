@@ -50,8 +50,13 @@ function Invoke-HostMode(
   $env:MAD_STATE_DIR = $StateDir
   $env:MAD_OWNER_TOKEN = $OwnerToken
   $env:MAD_HOST_RESULT = $HostResult
-  & $HostExe | Out-Host
-  $exitCode = $LASTEXITCODE
+  # Wait for the Tauri host process itself, not a PowerShell output pipeline.
+  # In crash-continuity mode the surviving sidecar intentionally retains the
+  # inherited console handles; a pipeline would wait for EOF from that child
+  # and deadlock before the reconnect scenario can run.
+  $hostProcess = Start-Process -FilePath $HostExe -NoNewWindow -PassThru
+  $hostProcess.WaitForExit()
+  $exitCode = $hostProcess.ExitCode
   Remove-Item Env:MAD_HOST_MODE, Env:MAD_STATE_DIR, Env:MAD_OWNER_TOKEN, Env:MAD_HOST_RESULT -ErrorAction SilentlyContinue
   return $exitCode
 }
