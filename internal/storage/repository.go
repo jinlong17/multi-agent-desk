@@ -730,6 +730,104 @@ func (s *Store) ListSessions(ctx context.Context) ([]domain.Session, error) {
 	return sessions, nil
 }
 
+func (s *Store) CreateCredentialMaterialization(ctx context.Context, materialization domain.CredentialMaterialization) error {
+	if err := domain.ValidateID(materialization.LeaseID); err != nil {
+		return err
+	}
+	if err := domain.ValidateID(materialization.CredentialInstanceID); err != nil {
+		return err
+	}
+	if materialization.CredentialRevision < 1 || materialization.ManifestVersion != 1 || len(materialization.ManifestDigest) != 64 ||
+		materialization.State != domain.MaterializationPending || materialization.RefCount < 0 || materialization.CreatedAt.IsZero() || materialization.UpdatedAt.Before(materialization.CreatedAt) {
+		return domain.NewError(domain.CodeInvalidArgument, "invalid credential materialization")
+	}
+	return s.withTx(ctx, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, `
+			INSERT INTO credential_materializations(
+				lease_id, credential_instance_id, credential_revision, manifest_version,
+				manifest_digest, state, ref_count, created_at, updated_at
+			) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`, materialization.LeaseID, materialization.CredentialInstanceID,
+			materialization.CredentialRevision, materialization.ManifestVersion, materialization.ManifestDigest,
+			materialization.State, materialization.RefCount, formatTime(materialization.CreatedAt), formatTime(materialization.UpdatedAt))
+		return writeError("credential materialization could not be created", err)
+	})
+}
+
+func (s *Store) CredentialMaterialization(ctx context.Context, leaseID domain.ID) (domain.CredentialMaterialization, error) {
+	var materialization domain.CredentialMaterialization
+	var createdAt, updatedAt string
+	err := s.db.QueryRowContext(ctx, `
+		SELECT lease_id, credential_instance_id, credential_revision, manifest_version,
+			manifest_digest, state, ref_count, created_at, updated_at
+		FROM credential_materializations WHERE lease_id = ?`, leaseID).Scan(&materialization.LeaseID,
+		&materialization.CredentialInstanceID, &materialization.CredentialRevision, &materialization.ManifestVersion,
+		&materialization.ManifestDigest, &materialization.State, &materialization.RefCount, &createdAt, &updatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.CredentialMaterialization{}, domain.NewError(domain.CodeNotFound, "credential materialization not found")
+	}
+	if err != nil {
+		return domain.CredentialMaterialization{}, domain.WrapError(domain.CodeConflict, "credential materialization could not be read", err)
+	}
+	materialization.CreatedAt, err = parseTime(createdAt)
+	if err != nil {
+		return domain.CredentialMaterialization{}, err
+	}
+	materialization.UpdatedAt, err = parseTime(updatedAt)
+	if err != nil {
+		return domain.CredentialMaterialization{}, err
+	}
+	return materialization, nil
+}
+
+func (s *Store) ListCredentialMaterializations(ctx context.Context) ([]domain.CredentialMaterialization, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT lease_id FROM credential_materializations ORDER BY created_at, lease_id`)
+	if err != nil {
+		return nil, domain.WrapError(domain.CodeConflict, "credential materializations could not be listed", err)
+	}
+	var ids []domain.ID
+	for rows.Next() {
+		var id domain.ID
+		if err := rows.Scan(&id); err != nil {
+			_ = rows.Close()
+			return nil, domain.WrapError(domain.CodeConflict, "credential materialization list could not be read", err)
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		return nil, domain.WrapError(domain.CodeConflict, "credential materializations could not be listed", err)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, domain.WrapError(domain.CodeConflict, "credential materializations could not be listed", err)
+	}
+	result := make([]domain.CredentialMaterialization, 0, len(ids))
+	for _, id := range ids {
+		materialization, err := s.CredentialMaterialization(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, materialization)
+	}
+	return result, nil
+}
+
+func (s *Store) TransitionCredentialMaterialization(ctx context.Context, leaseID domain.ID, expected, next domain.MaterializationState, refCount int64, at time.Time) (domain.CredentialMaterialization, error) {
+	if refCount < 0 || at.IsZero() || next == "" {
+		return domain.CredentialMaterialization{}, domain.NewError(domain.CodeInvalidArgument, "invalid materialization transition")
+	}
+	result, err := s.db.ExecContext(ctx, `
+		UPDATE credential_materializations SET state = ?, ref_count = ?, updated_at = ?
+		WHERE lease_id = ? AND state = ?`, next, refCount, formatTime(at), leaseID, expected)
+	if err != nil {
+		return domain.CredentialMaterialization{}, domain.WrapError(domain.CodeMaterializationConflict, "credential materialization transition failed", err)
+	}
+	changed, err := result.RowsAffected()
+	if err != nil || changed != 1 {
+		return domain.CredentialMaterialization{}, domain.NewError(domain.CodeMaterializationConflict, "credential materialization state changed")
+	}
+	return s.CredentialMaterialization(ctx, leaseID)
+}
+
 func validCreatedUpdated(createdAt, updatedAt time.Time) bool {
 	return !createdAt.IsZero() && !updatedAt.IsZero() && !updatedAt.Before(createdAt)
 }

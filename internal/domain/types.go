@@ -227,3 +227,24 @@ type AuditEvent struct {
 	Metadata   json.RawMessage
 	CreatedAt  time.Time
 }
+
+type MaterializationState string
+
+const (
+	MaterializationPending     MaterializationState = "pending"
+	MaterializationActive      MaterializationState = "active"
+	MaterializationQuarantined MaterializationState = "quarantined"
+	MaterializationReleased    MaterializationState = "released"
+)
+
+type CredentialMaterialization struct {
+	LeaseID              ID
+	CredentialInstanceID ID
+	CredentialRevision   int64
+	ManifestVersion      int64
+	ManifestDigest       string
+	State                MaterializationState
+	RefCount             int64
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
+}

@@ -44,6 +44,7 @@ type Manager struct {
 	Store          *storage.Store
 	Executable     string
 	Now            func() time.Time
+	Vault          interface{ RequireUnlocked() error }
 	LeaseDuration  time.Duration
 	LeaseHeartbeat time.Duration
 	StopTimeout    time.Duration
@@ -74,6 +75,11 @@ func (m *Manager) now() time.Time {
 func (m *Manager) StartFake(ctx context.Context, request StartRequest) (domain.Session, error) {
 	if m == nil || m.Store == nil || m.Executable == "" || ctx == nil {
 		return domain.Session{}, domain.NewError(domain.CodeInvalidArgument, "runtime manager is incomplete")
+	}
+	if m.Vault != nil {
+		if err := m.Vault.RequireUnlocked(); err != nil {
+			return domain.Session{}, err
+		}
 	}
 	for _, id := range []domain.ID{request.DeviceID, request.CredentialInstanceID, request.RuntimeProfileID, request.WorkspaceID} {
 		if err := domain.ValidateID(id); err != nil {

@@ -15,11 +15,13 @@ import (
 	"github.com/jinlong17/multi-agent-desk/internal/domain"
 	"github.com/jinlong17/multi-agent-desk/internal/runtime"
 	"github.com/jinlong17/multi-agent-desk/internal/storage"
+	"github.com/jinlong17/multi-agent-desk/internal/vault"
 )
 
 type SessionService struct {
 	Store   *storage.Store
 	Runtime *runtime.Manager
+	Vault   *vault.Manager
 	Now     func() time.Time
 	mu      sync.Mutex
 }
@@ -52,7 +54,7 @@ func (s *SessionService) Handle(ctx context.Context, auth device.AuthContext, re
 
 func requiresIdempotency(method string) bool {
 	switch method {
-	case "sessions.start", "sessions.attach", "sessions.detach", "control.acquire", "terminal.input", "terminal.resize", "sessions.stop", "sessions.kill", "sessions.resume":
+	case "vault.unlock", "vault.lock", "sessions.start", "sessions.attach", "sessions.detach", "control.acquire", "terminal.input", "terminal.resize", "sessions.stop", "sessions.kill", "sessions.resume":
 		return true
 	default:
 		return false
@@ -102,6 +104,31 @@ func (s *SessionService) dispatch(ctx context.Context, auth device.AuthContext, 
 	switch request.Method {
 	case "daemon.status":
 		return map[string]any{"status": "ok", "schema_version": 1}, nil
+	case "vault.status":
+		if s.Vault == nil {
+			return map[string]any{"state": vault.StateLocked}, nil
+		}
+		return map[string]any{"state": s.Vault.Status()}, nil
+	case "vault.unlock":
+		if s.Vault == nil {
+			return nil, domain.NewError(domain.CodeVaultLocked, "vault is unavailable")
+		}
+		var body vaultBody
+		if err := decodeBody(request.Body, &body); err != nil {
+			return nil, err
+		}
+		if err := s.Vault.Unlock([]byte(body.Secret)); err != nil {
+			return nil, err
+		}
+		return map[string]any{"state": s.Vault.Status()}, nil
+	case "vault.lock":
+		if s.Vault == nil {
+			return nil, domain.NewError(domain.CodeVaultLocked, "vault is unavailable")
+		}
+		if err := s.Vault.Lock(); err != nil {
+			return nil, err
+		}
+		return map[string]any{"state": s.Vault.Status()}, nil
 	case "sessions.list":
 		sessions, err := s.Store.ListSessions(ctx)
 		if err != nil {
@@ -266,6 +293,9 @@ func (s *SessionService) dispatch(ctx context.Context, auth device.AuthContext, 
 
 type sessionBody struct {
 	SessionID domain.ID `json:"session_id"`
+}
+type vaultBody struct {
+	Secret string `json:"secret"`
 }
 type observeBody struct {
 	SessionID    domain.ID `json:"session_id"`

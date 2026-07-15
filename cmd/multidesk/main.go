@@ -16,6 +16,7 @@ import (
 	"github.com/jinlong17/multi-agent-desk/internal/domain"
 	runtimepkg "github.com/jinlong17/multi-agent-desk/internal/runtime"
 	"github.com/jinlong17/multi-agent-desk/internal/storage"
+	"github.com/jinlong17/multi-agent-desk/internal/vault"
 )
 
 func main() {
@@ -112,8 +113,11 @@ func runServe(args []string, stderr *os.File) error {
 	}
 	authorizer := app.Authorizer{Clients: store}
 	manager := runtimepkg.NewManager(store, os.Args[0])
+	vaultManager := vault.NewManager()
+	manager.Vault = vaultManager
 	defer manager.Close()
 	service := app.NewSessionService(store, manager)
+	service.Vault = vaultManager
 	server := &device.Server{Listener: listener, Authenticator: authenticator, Authorizer: authorizer.Authorize, Handler: service}
 	return server.Serve(ctx)
 }

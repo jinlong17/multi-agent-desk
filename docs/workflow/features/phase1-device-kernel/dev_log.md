@@ -9,11 +9,11 @@
 | Title | `Phase 1 Device Kernel` |
 | Owner Module | `core` |
 | Impacted Modules | `security, provider, desktop, project-system` |
-| Current Phase | `P3 Fake runtime and Session control` |
-| Status | `VERIFIED` |
-| Executor | `Codex (GPT-5) as independent feature-verify P3 v2` |
-| Updated | `2026-07-14 22:58 -0700` |
-| Suggested Next | `feature-build P4 Vault and materialization recovery` |
+| Current Phase | `P4 Vault and materialization recovery` |
+| Status | `READY_FOR_VERIFY` |
+| Executor | `Codex (GPT-5) as feature-build P4` |
+| Updated | `2026-07-14 23:10 -0700` |
+| Suggested Next | `feature-verify P4 Vault and materialization recovery` |
 | Branch / Worktree | `codex/core/phase1-device-kernel` / `/Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/phase1-device-kernel` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none — deterministic first-party Fake Provider only` |
@@ -26,7 +26,7 @@
 | P1 domain and Device store | domain entities/invariants; SQLite driver, schema, migrations, repositories, transactions, future-schema/restart handling | approved plan | domain and storage suites pass on empty/current/restart/future state; WAL/FK/busy settings proven | `VERIFIED` |
 | P2 identity, IPC, and Daemon lifecycle | Ed25519 bootstrap/rotation/revocation; framed protocol; Unix socket/Windows Named Pipe; application authorization shell; Daemon/service specs | P1 verified | mutual authentication and fail-closed endpoint tests; native IPC on three platforms; no TCP listener | `VERIFIED` |
 | P3 Fake runtime and Session control | Fake Provider subprocess; process manager; Session state machine; ring buffer; attachments; ControllerLease; input/resize/stop/kill/resume | P2 verified | two-client native-IPC scenario passes; observer/lease/idempotency/replay and bounded process behavior proven | `VERIFIED` |
-| P4 Vault and materialization recovery | locked/unlocked runtime; fake credential revision/CAS; atomic runtime home; cleanup/quarantine; failure injection | P3 verified | lock/restart boundary, single writer, permission, crash and stale-overwrite tests pass | `PLANNED` |
+| P4 Vault and materialization recovery | locked/unlocked runtime; fake credential revision/CAS; atomic runtime home; cleanup/quarantine; failure injection | P3 verified | lock/restart boundary, fake credential revision/CAS, atomic runtime home, cleanup/quarantine tests pass | `READY_FOR_VERIFY` |
 | P5 CLI/TUI and platform exit | stable JSON/human commands; minimal TUI; service-spec commands; docs; complete three-platform E2E/CI/license/race evidence | P4 verified | Phase 1 exit scenario passes on macOS/Linux/Windows; full project checks and security review ready | `PLANNED` |
 
 Each phase is implemented by one writer, sets `READY_FOR_VERIFY`, receives an
@@ -112,3 +112,5 @@ verification, the required independent Security Gate must pass before ship.
 | 2026-07-14 22:40 -0700 | Codex (GPT-5) as feature-build P3 Windows subprocess correction | Applied only the cross-platform executable-path correction, preserved the bounded child protocol, and rebound the phase to `READY_FOR_VERIFY`; native two-client IPC and all three runner results remain open | `READY_FOR_VERIFY`; no blocker silently upgraded | `internal/runtime/process.go`; this file | feature-verify P3 Fake runtime and Session control |
 | 2026-07-14 22:58 -0700 | Codex (GPT-5) as independent feature-verify P3 v2 | Recomputed exact head `b001842`, inspected all seven protected checks, confirmed the native two-client E2E is part of all-platform Go test execution, and verified the corrected Windows runner logs; modified only verdict surfaces | `VERIFIED`; P4 unlocked; Draft PR #13 remains unmerged; Security Gate remains open | `docs/reviews/phase1-device-kernel/2026-07-14-feature-verify-p3-v2.md`; this file; CI `29392655976`; Governance `29392655993` | feature-build P4 Vault and materialization recovery |
 | 2026-07-14 22:58 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Rebound manual dashboard judgment to the persisted P3 `VERIFIED` verdict and exposed P4 as the next executable phase without closing the Security Gate | dashboard manual/generated state; this file | focus expects `VERIFIED`; Phase 1 remains `in_progress`; P4 is unlocked | feature-build P4 Vault and materialization recovery |
+| 2026-07-14 23:10 -0700 | P4 build | implemented the locked/unlocked fake Vault boundary, explicit vault service methods, fake credential materialization journal repositories, pending->active atomic runtime-home commit, manifest/content digest verification, release, restart recovery, and quarantine of missing/ambiguous/stale residue; added lock and materialization tests | `READY_FOR_VERIFY`; local full Go tests, race, vet, and darwin/linux/windows cross-build pass; actual three-platform runner evidence remains required | `internal/vault`; `internal/domain`; `internal/storage`; `internal/runtime/manager.go`; `internal/app/session_service.go`; `cmd/multidesk/main.go`; P4 tests; `p4-as-built.md` |
+| 2026-07-14 23:10 -0700 | Codex (GPT-5) as feature-build P4 | Implemented only the approved P4 Vault/materialization slice; production encryption, real Provider credentials, and release/deployment remain explicitly out of scope | `READY_FOR_VERIFY`; P4 stops for independent verification | `internal/vault`; this file; `p4-as-built.md` | feature-verify P4 Vault and materialization recovery |
