@@ -11,12 +11,12 @@
 | Impacted Modules | `core` |
 | Hypothesis | `On Windows x64, Tauri 2.11.5 plus tauri-plugin-shell 2.3.5 externalBin can package and start a daemon sidecar; the selected continuity policy can preserve the daemon process tree across a Desktop crash, reconnect without spawning a duplicate, reject non-owner shutdown, and cooperatively stop only the owned sidecar tree` |
 | Time-box | `3 days` |
-| Current Phase | `EVIDENCE` |
-| Status | `EVIDENCE_READY` |
-| Executor | `Codex (GPT-5)` |
+| Current Phase | `SECURITY_REVIEW` |
+| Status | `ACCEPTED` |
+| Executor | `Codex (GPT-5), security-review` |
 | Updated | `2026-07-14 19:38 -0700` |
-| Suggested Next | `security-review` |
-| Security Gate | `open — packaged external-binary authenticity, process ownership, and stop authority are local code-execution trust boundaries` |
+| Suggested Next | `feature-plan` |
+| Security Gate | `resolved — ACCEPTED only with fixed Rust-side launch, signed/provenance-verified package, ADR 0013 authenticated ownership, atomic updates, and Windows 11 acceptance` |
 | Evidence Path | `docs/spikes/windows/` |
 | Decision Record | `pending — platform matrix entry` |
 
@@ -70,3 +70,4 @@ installed signed Daemon service.
 | 2026-07-10 21:50 -0700 | Claude Code (Fable 5), lifecycle-readiness P2 build | Spike created by R2 single-owner split of spike-windows-conpty-sidecar | this file | `DRAFT` | feature-plan |
 | 2026-07-14 17:43 -0700 | Codex (GPT-5), feature-plan spike intake | Confirmed sole `desktop` ownership with `core` impact; opened the external-binary/ownership security gate; froze actual Tauri externalBin packaging, plugin launch, crash survival, duplicate prevention, owner-only cooperative shutdown, descendant cleanup, and pre-existing-daemon criteria | this file; dashboard state; `codex/desktop/spike-windows-desktop-sidecar` | `SPIKE_READY`; Windows Server CI scope separated from Windows 11 installer/workstation acceptance | provider-spike |
 | 2026-07-14 19:38 -0700 | Codex (GPT-5), provider-spike | Built the pinned Tauri/NSIS externalBin fixture on Windows, corrected a harness-only pipe wait, reproduced owner/crash/reconnect/pre-existing-daemon semantics, persisted sanitized hashes/results, and refreshed dashboard binding | `ebbc219`; Actions `29383875862`; `docs/spikes/windows/`; dashboard; this file | `EVIDENCE_READY`; Security Gate remains open | security-review |
+| 2026-07-14 19:38 -0700 | Codex (GPT-5), security-review | Reviewed packaged-binary authenticity, fixed Rust launch, frontend shell exclusion, authenticated instance ownership, split-brain/stop authority, crash continuity, update/downgrade, audit safety, Windows 11 gaps, service fallback, and residual risk | `docs/reviews/spike-windows-desktop-sidecar/2026-07-14-security-review.md`; this file | `ACCEPTED`; Security Gate resolved for the constrained lifecycle decision | feature-plan decision |
