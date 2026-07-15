@@ -1,4 +1,4 @@
-//go:build windows
+//go:build windows && !named_pipe_spike
 
 // Command conpty-probe exercises the Windows pseudoconsole contract without
 // introducing a production dependency. It launches a full-screen fixture in a

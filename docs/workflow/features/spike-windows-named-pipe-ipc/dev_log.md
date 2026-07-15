@@ -11,11 +11,11 @@
 | Impacted Modules | `desktop` |
 | Hypothesis | `A local-only Windows Named Pipe with an explicit current-logon DACL can preserve daemon protocol message boundaries, authorize the local IPC trust boundary, survive repeated client reconnects, reject remote access, and shut down cleanly` |
 | Time-box | `2 days` |
-| Current Phase | `PROVIDER_SPIKE` |
-| Status | `SPIKE_READY` |
+| Current Phase | `EVIDENCE` |
+| Status | `EVIDENCE_READY` |
 | Executor | `Codex (GPT-5)` |
-| Updated | `2026-07-14 17:03 -0700` |
-| Suggested Next | `provider-spike` |
+| Updated | `2026-07-14 17:22 -0700` |
+| Suggested Next | `security-review` |
 | Security Gate | `open — local IPC client authorization and cross-client control are a trust boundary` |
 | Evidence Path | `docs/spikes/windows/` |
 | Decision Record | `pending — platform matrix entry` |
@@ -37,10 +37,21 @@
 
 | Time | Command/evidence | Result | Artifact |
 |---|---|---|---|
+| 2026-07-15 00:15Z | GitHub Actions run `29378469528`, `named-pipe-windows-x64` | Functional/security assertions passed; rejected by an over-broad startup handle-growth heuristic (`117` to `142`) | failed run log; retained as negative harness evidence |
+| 2026-07-15 00:17Z | GitHub Actions run `29378594831`, `named-pipe-windows-x64` | Passed on Windows `10.0.26100.32995`/amd64: protected current-logon DACL, anonymous/remote denial, 100 independent reconnects, abrupt-disconnect recovery, 71,741-byte message, no second-half handle growth, 0 ms shutdown | `docs/spikes/windows/named-pipe-result.json`; `docs/spikes/windows/2026-07-14-windows-named-pipe-spike.md` |
 
 ## Result, limitations, and fallback
 
-Pending. Fallback: TCP loopback with local access control, recorded in the platform matrix.
+Supported for the automated Windows x64 transport scope. Message-mode Named
+Pipes preserved framing and reconnect behavior, and the protected DACL plus
+remote rejection constrained transport access to the current logon SID.
+
+Limitations: the passing host is a GitHub Windows Server runner rather than a
+physical Windows 11 workstation; it tests one logon SID, not simultaneous user
+sessions; OS access control does not replace protocol authentication,
+authorization, lease enforcement, deadlines, rate limits, or payload bounds.
+Fallback: loopback transport with equivalent local access-control handshake,
+recorded in the platform matrix.
 
 ## Risks and Blockers
 
@@ -52,3 +63,4 @@ Pending. Fallback: TCP loopback with local access control, recorded in the platf
 |---|---|---|---|---|---|
 | 2026-07-11 09:20 -0700 | Claude Code (Fable 5), lifecycle-readiness P3 build | Spike created by R3 single-owner re-split of spike-windows-pty-ipc (IPC → core per module-registry signals) | this file | `DRAFT` | feature-plan |
 | 2026-07-14 17:03 -0700 | Codex (GPT-5), feature-plan spike intake | Confirmed sole `core` ownership; opened the mandatory security gate; froze current-logon DACL, remote rejection, framing, 100 reconnects, abrupt disconnect recovery, and bounded shutdown criteria; refreshed dashboard focus | this file; `docs/workflow/project/dashboard-state.json`; `codex/core/spike-windows-named-pipe-ipc` | `SPIKE_READY`; default Named Pipe DACL explicitly rejected | provider-spike |
+| 2026-07-14 17:22 -0700 | Codex (GPT-5), provider-spike | Ran native message-mode Named Pipe evidence on Windows x64; retained the failed startup-handle heuristic, corrected it to measure steady-state per-client growth, captured a passing 100-client result, and isolated mutually exclusive Windows Spike build tags | probe/workflow; `docs/spikes/windows/named-pipe-result.json`; `docs/spikes/windows/2026-07-14-windows-named-pipe-spike.md`; this file | `EVIDENCE_READY`; hypothesis supported within recorded limits | security-review |

@@ -1,4 +1,4 @@
-//go:build windows
+//go:build windows && named_pipe_spike
 
 // Command named-pipe-probe validates the Windows local daemon IPC mechanism.
 // It is Spike-only evidence, not production transport code.

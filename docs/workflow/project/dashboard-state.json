@@ -3,15 +3,15 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0.5",
-  "current_status": "Phase 0.5 · Windows Named Pipe IPC 已进入 SPIKE_READY，安全门已打开",
+  "current_status": "Phase 0.5 · Windows Named Pipe IPC 证据已就绪，进入安全审查",
   "current_owner": "core",
-  "next_action": "run the local-only Named Pipe framing, reconnect, DACL, remote-rejection, and teardown probe",
+  "next_action": "security-review the Named Pipe DACL and protocol-layer authorization obligations",
   "manual_updated_at": "2026-07-14",
   "manual_updated_by": "operator-authorized direct-main Windows Spike execution (recorded in spike-windows-named-pipe-ipc Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 0.5 · 执行 Windows Named Pipe 本地 IPC 与授权实证"
+      "value": "Phase 0.5 · 审查 Windows Named Pipe 本地 IPC 安全边界"
     },
     {
       "label": "在哪条线",
@@ -23,7 +23,7 @@
     },
     {
       "label": "做到什么状态",
-      "value": "Named Pipe SPIKE_READY：默认 DACL 禁用，必须证明同登录会话授权与拒绝远程访问"
+      "value": "Named Pipe EVIDENCE_READY：传输访问已收窄，待确认协议层授权义务"
     }
   ],
   "phases": [
@@ -108,7 +108,7 @@
     },
     {
       "slug": "spike-windows-named-pipe-ipc",
-      "expected_status": "SPIKE_READY"
+      "expected_status": "EVIDENCE_READY"
     }
   ]
 }

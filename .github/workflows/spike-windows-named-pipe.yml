@@ -47,7 +47,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force docs/spikes/windows/.bin | Out-Null
-          go build -trimpath -o docs/spikes/windows/.bin/named-pipe-probe.exe docs/spikes/windows/named_pipe_probe_windows.go
+          go build -tags named_pipe_spike -trimpath -o docs/spikes/windows/.bin/named-pipe-probe.exe docs/spikes/windows/named_pipe_probe_windows.go
       - name: Exercise framing, authorization, reconnect, and teardown behavior
         shell: pwsh
         run: >-
