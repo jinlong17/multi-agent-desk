@@ -1,0 +1,63 @@
+name: Windows Named Pipe spike
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/spike-windows-named-pipe.yml"
+      - "docs/spikes/windows/named_pipe_probe_windows.go"
+      - "docs/spikes/windows/named-pipe-result.json"
+      - "docs/spikes/windows/2026-07-14-windows-named-pipe-spike.md"
+      - "docs/workflow/features/spike-windows-named-pipe-ipc/**"
+      - "docs/reviews/spike-windows-named-pipe-ipc/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/spike-windows-named-pipe.yml"
+      - "docs/spikes/windows/named_pipe_probe_windows.go"
+      - "docs/spikes/windows/named-pipe-result.json"
+      - "docs/spikes/windows/2026-07-14-windows-named-pipe-spike.md"
+      - "docs/workflow/features/spike-windows-named-pipe-ipc/**"
+      - "docs/reviews/spike-windows-named-pipe-ipc/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-named-pipe-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  named-pipe:
+    name: named-pipe-windows-x64
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Setup Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: Build native Named Pipe probe
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force docs/spikes/windows/.bin | Out-Null
+          go build -tags named_pipe_spike -trimpath -o docs/spikes/windows/.bin/named-pipe-probe.exe docs/spikes/windows/named_pipe_probe_windows.go
+      - name: Exercise framing, authorization, reconnect, and teardown behavior
+        shell: pwsh
+        run: >-
+          docs/spikes/windows/.bin/named-pipe-probe.exe
+          -round-trips 100
+          -result docs/spikes/windows/named-pipe-result.json
+      - name: Upload sanitized evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: named-pipe-windows-x64
+          path: docs/spikes/windows/named-pipe-result.json
+          if-no-files-found: warn
