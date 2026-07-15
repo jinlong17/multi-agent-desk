@@ -3,15 +3,15 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "0.5",
-  "current_status": "Phase 0.5 · Windows Tauri Sidecar 已进入 SPIKE_READY，安全门已打开",
+  "current_status": "Phase 0.5 · Windows Tauri Sidecar 实证通过，等待安全审查",
   "current_owner": "desktop",
-  "next_action": "run the Tauri externalBin packaging, crash continuity, ownership, and cleanup probe",
+  "next_action": "security-review signed packaged-binary, authenticated ownership, reconnect, and stop-authority requirements",
   "manual_updated_at": "2026-07-14",
   "manual_updated_by": "operator-authorized direct-main Windows Spike execution (recorded in spike-windows-named-pipe-ipc Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 0.5 · 执行 Tauri Sidecar 打包与崩溃恢复实证"
+      "value": "Phase 0.5 · 审查 Tauri Sidecar 打包、所有权与崩溃恢复证据"
     },
     {
       "label": "在哪条线",
@@ -23,7 +23,7 @@
     },
     {
       "label": "做到什么状态",
-      "value": "Sidecar SPIKE_READY：必须证明不重复启动、不越权停止和无后代孤儿"
+      "value": "Sidecar EVIDENCE_READY：无重复启动、无越权停止、最终孤儿数为 0"
     }
   ],
   "phases": [
@@ -112,7 +112,7 @@
     },
     {
       "slug": "spike-windows-desktop-sidecar",
-      "expected_status": "SPIKE_READY"
+      "expected_status": "EVIDENCE_READY"
     }
   ]
 }
