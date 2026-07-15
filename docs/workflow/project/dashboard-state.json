@@ -2,28 +2,28 @@
   "schema_version": 1,
   "state_owner": "project-system",
   "plan_version": "v0.2",
-  "current_phase": "0.5",
-  "current_status": "Phase 0.5 · Claude 交互登录边界已由 ADR 0016 收口",
-  "current_owner": "provider",
-  "next_action": "merge the final Claude decision, then audit and close Phase 0.5 before Phase 1 implementation",
+  "current_phase": "1",
+  "current_status": "Phase 1 · Device Kernel 已激活，Phase 0.5 决策门已完成",
+  "current_owner": "core",
+  "next_action": "ship PR #11 after the final evidence head passes seven required checks",
   "manual_updated_at": "2026-07-14",
-  "manual_updated_by": "operator-directed Claude feature-plan session (refresh recorded in spike-claude-config-keychain Work Log)",
+  "manual_updated_by": "operator-directed project-system writer (refresh recorded in phase0-5-consolidation Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 0.5 · 最后一个 Claude 兼容性门已收口，准备阶段整合"
+      "value": "Phase 1 · 启动跨平台 Device Kernel"
     },
     {
       "label": "在哪条线",
-      "value": "codex/provider/spike-claude-config-keychain；macOS 主测 + Linux 对照"
+      "value": "codex/project-system/phase0-5-consolidation；P2 状态迁移"
     },
     {
       "label": "用哪个入口",
-      "value": "feature-plan intake → provider-spike → security-review → compatibility decision"
+      "value": "ship phase0-5-consolidation → feature-plan Phase 1"
     },
     {
       "label": "做到什么状态",
-      "value": "Codex、Claude、Browser、E2EE 与 Windows 三项均 GATE_RESOLVED"
+      "value": "Phase 0.5 completed；Phase 1 in_progress；P2 READY_TO_SHIP"
     }
   ],
   "phases": [
@@ -37,14 +37,14 @@
     {
       "id": "0.5",
       "title": "Provider & Security Spikes",
-      "state": "active",
+      "state": "completed",
       "depends": "Phase 0",
       "gate": "外部假设有可复现证据与 fallback"
     },
     {
       "id": "1",
       "title": "Device Kernel",
-      "state": "planned",
+      "state": "in_progress",
       "depends": "Phase 0",
       "gate": "Fake Session 跨平台闭环"
     },
@@ -103,32 +103,8 @@
   ],
   "focus": [
     {
-      "slug": "spike-claude-config-keychain",
-      "expected_status": "GATE_RESOLVED"
-    },
-    {
-      "slug": "spike-codex-auth-refresh",
-      "expected_status": "GATE_RESOLVED"
-    },
-    {
-      "slug": "spike-browser-key-storage",
-      "expected_status": "GATE_RESOLVED"
-    },
-    {
-      "slug": "spike-e2ee-protocol-vectors",
-      "expected_status": "GATE_RESOLVED"
-    },
-    {
-      "slug": "spike-windows-conpty",
-      "expected_status": "GATE_RESOLVED"
-    },
-    {
-      "slug": "spike-windows-named-pipe-ipc",
-      "expected_status": "GATE_RESOLVED"
-    },
-    {
-      "slug": "spike-windows-desktop-sidecar",
-      "expected_status": "GATE_RESOLVED"
+      "slug": "phase0-5-consolidation",
+      "expected_status": "READY_TO_SHIP"
     }
   ]
 }
