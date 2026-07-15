@@ -10,10 +10,10 @@
 | Owner Module | `core` |
 | Impacted Modules | `security, provider, desktop, project-system` |
 | Current Phase | `P1 domain and Device store` |
-| Status | `READY_FOR_VERIFY` |
-| Executor | `Codex (GPT-5) as feature-build P1` |
-| Updated | `2026-07-14 21:11 -0700` |
-| Suggested Next | `feature-verify P1 domain and Device store` |
+| Status | `BLOCKED` |
+| Executor | `Codex (GPT-5) as independent feature-verify P1` |
+| Updated | `2026-07-14 21:13 -0700` |
+| Suggested Next | `feature-build P1 correction` |
 | Branch / Worktree | `codex/core/phase1-device-kernel` / `/Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/phase1-device-kernel` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none — deterministic first-party Fake Provider only` |
@@ -48,6 +48,7 @@ verification, the required independent Security Gate must pass before ship.
 | 2026-07-14 21:08 -0700 | P1 build | `npm run project:verify`; `npm run ci:verify`; first `npm run scaffold:verify` | project/workflow/dashboard, CI contracts/fixtures/links/licenses, and Go checks passed; scaffold stopped at Web `tsc` because the new worktree had no `node_modules` | retained command output; no source failure inferred |
 | 2026-07-14 21:09 -0700 | P1 build | frozen `pnpm install`; `npm run scaffold:verify` | pass: Go/Web/Desktop checks and builds; no dependency version changed | workspace lockfile and command output |
 | 2026-07-14 21:11 -0700 | P1 build | final Go tests/vet/race; resume/lease/storage recovery regression; exact `go-licenses v2.0.1 check --include_tests`; project/link/diff checks | pass; one transient misplaced Resume validation compile error was corrected before final run; only the known x/sys assembly inspection warning remains | P1 source/tests and this log |
+| 2026-07-14 21:13 -0700 | P1 verify | independent exact-commit code/invariant audit plus full Go/vet/race/cross-build, license, project/CI/scaffold/link, migration, and boundary evidence review | automated checks pass, but three uncovered counterexamples block P1: Resume snapshot invention, non-monotonic reacquire after release, and unbounded invalid ID prefix | `docs/reviews/phase1-device-kernel/2026-07-14-feature-verify-p1.md` |
 
 ## Risks and Blockers
 
@@ -74,3 +75,5 @@ verification, the required independent Security Gate must pass before ship.
 | 2026-07-14 20:54 -0700 | Codex (GPT-5) as independent feature-review | Re-reviewed the complete plan and prior finding closure across scope, contracts, dependency compliance, manifest integrity, failure/recovery, security/privacy, migrations, compatibility, tests, rollback, and phase ordering; modified only verdict surfaces | `docs/reviews/phase1-device-kernel/2026-07-14-feature-review-v2.md`, this file | `APPROVED`; no blocking finding | feature-build P1 domain and Device store |
 | 2026-07-14 21:11 -0700 | Codex (GPT-5) as feature-build P1 | Implemented only the approved P1 slice: stable domain errors/IDs/capabilities, Session and ControllerLease invariants, three ordered checksum migrations, private single-connection WAL Store, transactional repositories/CAS, future/changed/interrupted schema refusal, restart persistence, as-built data model, and unit/integration/race/cross-build evidence; did not start IPC, Daemon, runtime, Vault, or CLI | `internal/domain`; `internal/storage`; `migrations/device`; `go.mod`; `go.sum`; `docs/DATA_MODEL.md`; this file | `READY_FOR_VERIFY`; all final scoped and repository checks pass | feature-verify P1 domain and Device store |
 | 2026-07-14 21:11 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Bound manual dashboard judgment to the persisted P1 `READY_FOR_VERIFY` verdict without advancing Phase 1 or P2; regenerated workflow mirrors and machine facts | `docs/workflow/project/dashboard-state.json`; generated dashboard state; this file | workflow generation and dashboard verification pass; branch `codex/core/phase1-device-kernel`; Phase 1 remains `in_progress` | feature-verify P1 domain and Device store |
+| 2026-07-14 21:13 -0700 | Codex (GPT-5) as independent feature-verify P1 | Recomputed P1 evidence and audited the exact commit for domain, migration, persistence, compatibility, security boundaries, and regression scope; found three reproducible counterexamples not covered by the green suite; modified only verdict surfaces | `docs/reviews/phase1-device-kernel/2026-07-14-feature-verify-p1.md`, this file | `BLOCKED`; no external dependency | feature-build P1 correction |
+| 2026-07-14 21:13 -0700 | operator-directed project-system writer via `mad-dashboard-sync` | Rebound manual dashboard judgment to the persisted P1 `BLOCKED` verifier verdict without changing the verdict or starting P2 | `docs/workflow/project/dashboard-state.json`; generated dashboard state; this file | focus expects `BLOCKED`; Phase 1 remains `in_progress` | feature-build P1 correction |
