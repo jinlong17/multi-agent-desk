@@ -3,15 +3,15 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "1",
-  "current_status": "Phase 1 · P2 Daemon 停止时活动连接未关闭，等待生命周期修正",
+  "current_status": "Phase 1 · P2 活动连接关闭修正已完成，等待三平台复核",
   "current_owner": "core",
-  "next_action": "run feature-build P2 lifecycle correction, then require fresh native three-platform execution",
+  "next_action": "run feature-verify P2 on Draft PR #13 and require fresh native macOS/Linux/Windows execution",
   "manual_updated_at": "2026-07-14",
   "manual_updated_by": "operator-directed core writer (refresh recorded in phase1-device-kernel Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 1 · 修正 P2 Daemon 活动连接关闭"
+      "value": "Phase 1 · 复核 P2 Daemon 活动连接关闭修正"
     },
     {
       "label": "在哪条线",
@@ -19,11 +19,11 @@
     },
     {
       "label": "用哪个入口",
-      "value": "feature-build P2 lifecycle correction"
+      "value": "feature-verify P2 on Draft PR #13"
     },
     {
       "label": "做到什么状态",
-      "value": "P2 BLOCKED；P1 VERIFIED；Security Gate open"
+      "value": "P2 READY_FOR_VERIFY；P1 VERIFIED；Security Gate open"
     }
   ],
   "phases": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "phase1-device-kernel",
-      "expected_status": "BLOCKED"
+      "expected_status": "READY_FOR_VERIFY"
     }
   ]
 }

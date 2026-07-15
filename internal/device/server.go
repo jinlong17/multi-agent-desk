@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net"
 	"os"
 	"sync"
 	"time"
@@ -30,12 +31,19 @@ type Server struct {
 	MaxConnections int
 
 	closeOnce sync.Once
+	activeMu  sync.Mutex
+	active    map[io.ReadWriteCloser]struct{}
 }
 
 func (s *Server) Serve(ctx context.Context) error {
 	if s.Listener == nil || s.Authenticator == nil || s.Handler == nil {
 		return domain.NewError(domain.CodeInvalidArgument, "daemon server is incomplete")
 	}
+	s.activeMu.Lock()
+	if s.active == nil {
+		s.active = make(map[io.ReadWriteCloser]struct{})
+	}
+	s.activeMu.Unlock()
 	maxConnections := s.MaxConnections
 	if maxConnections <= 0 {
 		maxConnections = 32
@@ -43,27 +51,65 @@ func (s *Server) Serve(ctx context.Context) error {
 	semaphore := make(chan struct{}, maxConnections)
 	serveDone := make(chan struct{})
 	defer close(serveDone)
+	defer s.closeActive()
 	go func() {
 		select {
 		case <-ctx.Done():
-			_ = s.Listener.Close()
+			_ = s.Close()
 		case <-serveDone:
 		}
 	}()
 	for {
 		connection, err := s.Listener.Accept()
 		if err != nil {
-			if ctx.Err() != nil || errors.Is(err, io.EOF) || errors.Is(err, os.ErrClosed) {
+			if ctx.Err() != nil || errors.Is(err, io.EOF) || errors.Is(err, os.ErrClosed) || errors.Is(err, net.ErrClosed) {
 				return nil
 			}
 			return domain.WrapError(domain.CodeDaemonUnavailable, "daemon endpoint accept failed", err)
 		}
 		select {
 		case semaphore <- struct{}{}:
-			go func() { defer func() { <-semaphore }(); _ = s.serveConnection(ctx, connection) }()
+			s.track(connection)
+			go func() { defer func() { s.untrack(connection); <-semaphore }(); _ = s.serveConnection(ctx, connection) }()
 		default:
 			_ = connection.Close()
 		}
+	}
+}
+
+func (s *Server) Close() error {
+	var err error
+	s.closeOnce.Do(func() {
+		if s.Listener != nil {
+			err = s.Listener.Close()
+		}
+		s.closeActive()
+	})
+	return err
+}
+
+func (s *Server) track(connection io.ReadWriteCloser) {
+	s.activeMu.Lock()
+	if s.active == nil {
+		s.active = make(map[io.ReadWriteCloser]struct{})
+	}
+	s.active[connection] = struct{}{}
+	s.activeMu.Unlock()
+}
+func (s *Server) untrack(connection io.ReadWriteCloser) {
+	s.activeMu.Lock()
+	delete(s.active, connection)
+	s.activeMu.Unlock()
+}
+func (s *Server) closeActive() {
+	s.activeMu.Lock()
+	connections := make([]io.ReadWriteCloser, 0, len(s.active))
+	for connection := range s.active {
+		connections = append(connections, connection)
+	}
+	s.activeMu.Unlock()
+	for _, connection := range connections {
+		_ = connection.Close()
 	}
 }
 
