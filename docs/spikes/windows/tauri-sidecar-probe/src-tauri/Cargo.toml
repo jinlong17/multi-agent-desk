@@ -1,0 +1,17 @@
+[package]
+name = "mad-tauri-sidecar-host"
+version = "0.0.0"
+description = "Windows Tauri sidecar lifecycle Spike host"
+edition = "2021"
+license = "Apache-2.0"
+
+[build-dependencies]
+tauri-build = "=2.6.3"
+
+[dependencies]
+hex = "0.4.3"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+sha2 = "0.10.9"
+tauri = "=2.11.5"
+tauri-plugin-shell = "=2.3.5"

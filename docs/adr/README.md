@@ -18,7 +18,25 @@ ADR 0001–0008 are reserved for the first batch defined in
 | [0007](0007-user-confirms-account-selection.md) | System recommends; user confirms account selection | Accepted |
 | [0008](0008-config-sync-separated-from-credential-grants.md) | Configuration sync is separate from credential grants | Accepted |
 | [0009](0009-repository-layout-authority.md) | Repository layout authority | Accepted |
+| [0010](0010-browser-device-key-storage-modes.md) | Browser device key storage modes | Accepted |
+| [0011](0011-pairwise-e2ee-session-protocol.md) | Pairwise E2EE session protocol | Accepted |
+| [0012](0012-windows-conpty-pty-backend.md) | Windows ConPTY PTY backend | Accepted |
+| [0013](0013-windows-named-pipe-local-ipc.md) | Windows Named Pipe local IPC | Accepted |
+| [0014](0014-codex-app-server-single-writer-auth.md) | Codex app-server single-writer authentication boundary | Accepted |
+| [0015](0015-windows-tauri-sidecar-lifecycle.md) | Windows Tauri sidecar lifecycle | Accepted |
 
 ADR 0001–0008 accept only the broad Plan v0.2 boundaries. Their
 `Spike-gated details` sections are authoritative markers for decisions that
 remain pending reproducible Phase 0.5 evidence.
+
+ADR 0010 through ADR 0015 are Phase 0.5 evidence-backed decisions. ADR 0010
+resolves browser key storage compatibility; ADR 0011 resolves the E2EE protocol
+candidate with per-peer roots and cross-language vectors; ADR 0012 selects the
+Windows ConPTY backend; ADR 0013 selects Windows Named Pipes with a protected
+current-logon boundary and mandatory protocol authorization; ADR 0014 selects
+one canonical writable Codex app-server/auth home per CredentialInstance. Both
+Windows transport ADRs preserve Windows 11 acceptance gates; ADR 0015 selects a
+discover-first, crash-surviving, authenticated Windows Desktop sidecar lifecycle
+and retains Experimental status. ADR 0014 does not claim multi-writer refresh
+or completed headless device auth. None of these ADRs claims that its production
+implementation is complete.

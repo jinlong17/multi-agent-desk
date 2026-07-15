@@ -19,10 +19,11 @@ physical layout is governed by [ADR 0009](0009-repository-layout-authority.md).
 
 ## Spike-gated details
 
-Tauri sidecar behavior on Windows remains pending
-`spike-windows-desktop-sidecar`. Browser key storage and E2EE implementation
-remain pending `spike-browser-key-storage` and
-`spike-e2ee-protocol-vectors`. This ADR does not claim those paths work.
+ADR 0015 resolves the Windows Tauri sidecar lifecycle as discover-first,
+crash-surviving, fixed Rust-side launch with authenticated ownership; signed
+Windows 11 release acceptance remains pending. ADR 0010 resolves browser key
+storage modes and ADR 0011 resolves the E2EE protocol candidate. Production
+implementation and release acceptance remain gated.
 
 ## Consequences
 

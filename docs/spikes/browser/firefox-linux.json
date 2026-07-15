@@ -1,0 +1,39 @@
+{
+  "browser": "Mozilla Firefox on Linux",
+  "browserVersion": "152.0.4",
+  "probe": {
+    "e2eeEligible": true,
+    "fallbackPath": true,
+    "indexedDbAvailable": true,
+    "metadataOnlyRequired": false,
+    "nativePath": true,
+    "schemaVersion": 1,
+    "secureContext": true,
+    "subtleCryptoAvailable": true,
+    "tests": {
+      "ed25519": {
+        "persistedAcrossReload": true,
+        "privateExportRejected": true,
+        "privateExtractable": false,
+        "signVerify": true
+      },
+      "encryptedFallback": {
+        "decryptMatches": true,
+        "persistedAcrossReload": true,
+        "wrappingKeyExportRejected": true,
+        "wrappingKeyExtractable": false
+      },
+      "x25519": {
+        "deriveMatches": true,
+        "persistedAcrossReload": true,
+        "privateExportRejected": true,
+        "privateExtractable": false
+      }
+    },
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64; rv:152.0) Gecko/20100101 Firefox/152.0"
+  },
+  "processRestarted": true,
+  "schemaVersion": 1,
+  "versionStableAcrossRestart": true,
+  "writeComplete": true
+}
