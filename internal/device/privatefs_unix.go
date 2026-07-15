@@ -14,7 +14,23 @@ func createPrivateDirectory(path string) error {
 	if err := os.Mkdir(path, 0o700); err != nil {
 		return domain.WrapError(domain.CodeConflict, "private directory could not be created", err)
 	}
+	return ProtectPrivateDirectory(path)
+}
+
+// ProtectPrivateDirectory applies and verifies the platform-private directory
+// boundary. Unix uses owner-only mode bits; Windows supplies the current-logon
+// DACL in the platform implementation.
+func ProtectPrivateDirectory(path string) error {
+	if err := os.Chmod(path, 0o700); err != nil {
+		return domain.WrapError(domain.CodePermissionDenied, "private directory permissions could not be restricted", err)
+	}
 	return verifyPrivateDirectory(path)
+}
+
+// WritePrivateFileAtomic writes a file under a protected directory and applies
+// the platform-specific private-file boundary.
+func WritePrivateFileAtomic(path string, data []byte) error {
+	return writePrivateFileAtomic(path, data)
 }
 
 func verifyPrivateDirectory(path string) error {

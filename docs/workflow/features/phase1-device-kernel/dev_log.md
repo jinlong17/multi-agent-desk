@@ -10,10 +10,10 @@
 | Owner Module | `core` |
 | Impacted Modules | `security, provider, desktop, project-system` |
 | Current Phase | `P4 Vault and materialization recovery` |
-| Status | `BLOCKED` |
-| Executor | `Codex (GPT-5) as independent feature-verify P4 v1` |
-| Updated | `2026-07-14 23:15 -0700` |
-| Suggested Next | `feature-build P4 Windows permissions correction` |
+| Status | `READY_FOR_VERIFY` |
+| Executor | `Codex (GPT-5) as feature-build P4 Windows permissions correction` |
+| Updated | `2026-07-14 23:19 -0700` |
+| Suggested Next | `feature-verify P4 Vault and materialization recovery v2` |
 | Branch / Worktree | `codex/core/phase1-device-kernel` / `/Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/phase1-device-kernel` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none — deterministic first-party Fake Provider only` |
@@ -26,7 +26,7 @@
 | P1 domain and Device store | domain entities/invariants; SQLite driver, schema, migrations, repositories, transactions, future-schema/restart handling | approved plan | domain and storage suites pass on empty/current/restart/future state; WAL/FK/busy settings proven | `VERIFIED` |
 | P2 identity, IPC, and Daemon lifecycle | Ed25519 bootstrap/rotation/revocation; framed protocol; Unix socket/Windows Named Pipe; application authorization shell; Daemon/service specs | P1 verified | mutual authentication and fail-closed endpoint tests; native IPC on three platforms; no TCP listener | `VERIFIED` |
 | P3 Fake runtime and Session control | Fake Provider subprocess; process manager; Session state machine; ring buffer; attachments; ControllerLease; input/resize/stop/kill/resume | P2 verified | two-client native-IPC scenario passes; observer/lease/idempotency/replay and bounded process behavior proven | `VERIFIED` |
-| P4 Vault and materialization recovery | locked/unlocked runtime; fake credential revision/CAS; atomic runtime home; cleanup/quarantine; failure injection | P3 verified | lock/restart boundary, fake credential revision/CAS, atomic runtime home, cleanup/quarantine tests pass | `BLOCKED` |
+| P4 Vault and materialization recovery | locked/unlocked runtime; fake credential revision/CAS; atomic runtime home; cleanup/quarantine; failure injection | P3 verified | lock/restart boundary, fake credential revision/CAS, atomic runtime home, cleanup/quarantine tests pass | `READY_FOR_VERIFY` |
 | P5 CLI/TUI and platform exit | stable JSON/human commands; minimal TUI; service-spec commands; docs; complete three-platform E2E/CI/license/race evidence | P4 verified | Phase 1 exit scenario passes on macOS/Linux/Windows; full project checks and security review ready | `PLANNED` |
 
 Each phase is implemented by one writer, sets `READY_FOR_VERIFY`, receives an
@@ -65,9 +65,10 @@ verification, the required independent Security Gate must pass before ship.
 
 ## Risks and Blockers
 
-- P1, P2, and P3 are independently verified. P4 is blocked by the protected
-  Windows materialization permission assertion; the final Security Gate remains
-  open.
+- P1, P2, and P3 are independently verified. P4's first protected verification
+  was blocked by a Windows mode-bit assertion; the platform-private DACL
+  boundary and platform-aware test are now corrected, and fresh runner evidence
+  is required. The final Security Gate remains open.
 - Full SQLite migration, lock-contention, restart, and recovery behavior must be
   proven with project-owned temporary-directory tests; the planning smoke only
   proves driver configuration and three-platform production compilation.
@@ -117,3 +118,4 @@ verification, the required independent Security Gate must pass before ship.
 | 2026-07-14 23:10 -0700 | P4 build | implemented the locked/unlocked fake Vault boundary, explicit vault service methods, fake credential materialization journal repositories, pending->active atomic runtime-home commit, manifest/content digest verification, release, restart recovery, and quarantine of missing/ambiguous/stale residue; added lock and materialization tests | `READY_FOR_VERIFY`; local full Go tests, race, vet, and darwin/linux/windows cross-build pass; actual three-platform runner evidence remains required | `internal/vault`; `internal/domain`; `internal/storage`; `internal/runtime/manager.go`; `internal/app/session_service.go`; `cmd/multidesk/main.go`; P4 tests; `p4-as-built.md` |
 | 2026-07-14 23:10 -0700 | Codex (GPT-5) as feature-build P4 | Implemented only the approved P4 Vault/materialization slice; production encryption, real Provider credentials, and release/deployment remain explicitly out of scope | `READY_FOR_VERIFY`; P4 stops for independent verification | `internal/vault`; this file; `p4-as-built.md` | feature-verify P4 Vault and materialization recovery |
 | 2026-07-14 23:15 -0700 | Codex (GPT-5) as independent feature-verify P4 v1 | Recomputed the exact P4 head and inspected the protected three-platform runs; Windows `internal/vault` failed because the test compared Unix `0600` mode bits with Windows' ordinary `0666` report, while macOS, Ubuntu, project, DCO, license, and link checks passed | `BLOCKED`; no Windows permission pass inferred; final Security Gate remains open | `docs/reviews/phase1-device-kernel/2026-07-14-feature-verify-p4-v1.md`; CI `29393403418`; Governance `29393403406`; Windows job `87281550000` | feature-build P4 Windows permissions correction |
+| 2026-07-14 23:19 -0700 | Codex (GPT-5) as feature-build P4 Windows permissions correction | Reused the existing platform-private filesystem boundary for materialization directories/files, applied the current-logon DACL on Windows, retained Unix `0600` evidence, added staging-path protection, and made the vault test platform-aware; local Go/full/vet and Windows cross-compiles pass | `READY_FOR_VERIFY`; no protected runner result inferred | `internal/device/privatefs_*`; `internal/vault/materialization.go`; `internal/vault/vault_test.go`; `p4-as-built.md` | feature-verify P4 Vault and materialization recovery v2 |

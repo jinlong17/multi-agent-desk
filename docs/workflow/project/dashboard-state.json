@@ -3,15 +3,15 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "1",
-  "current_status": "Phase 1 · P4 Vault 与 materialization recovery 在 Windows 验证阻塞",
+  "current_status": "Phase 1 · P4 Vault 与 materialization recovery 修正后等待验证",
   "current_owner": "core",
-  "next_action": "feature-build P4 Windows permissions correction, then rerun protected verification",
+  "next_action": "run feature-verify P4 Vault and materialization recovery v2 on Draft PR #13",
   "manual_updated_at": "2026-07-14",
   "manual_updated_by": "operator-directed core writer (refresh recorded in phase1-device-kernel Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 1 · P4 Vault 与 materialization recovery，Windows 验证阻塞"
+      "value": "Phase 1 · P4 Vault 与 materialization recovery，修正后等待验证"
     },
     {
       "label": "在哪条线",
@@ -23,7 +23,7 @@
     },
     {
       "label": "做到什么状态",
-      "value": "P4 BLOCKED；Windows mode-bit assertion；Security Gate open"
+      "value": "P4 READY_FOR_VERIFY；Windows DACL boundary corrected；Security Gate open"
     }
   ],
   "phases": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "phase1-device-kernel",
-      "expected_status": "BLOCKED"
+      "expected_status": "READY_FOR_VERIFY"
     }
   ]
 }

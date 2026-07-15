@@ -33,9 +33,13 @@ only runtime-home materialization writer.
 `internal/vault` tests prove locked/unlocked/restart behavior, atomic active
 commit, restrictive fake-content permissions, stale revision rejection,
 idempotent same-manifest replay, and quarantine after manifest corruption.
+The materializer reuses the platform-private filesystem boundary: Unix
+verifies owner-only mode bits, while Windows applies the current-logon DACL;
+Windows Go mode-bit reports are not treated as ACL evidence.
 Full Go tests, scoped race tests, `go vet`, and darwin/arm64, linux/amd64, and
 windows/amd64 builds pass locally.
 
 This is a fake Vault state/materialization boundary only. It does not claim
 Argon2id/OS-keychain integration, envelope encryption, real Provider
-credentials, Windows 11 multi-user behavior, release, or deployment.
+credentials, Windows 11 multi-user/service behavior beyond the current-logon
+DACL boundary, release, or deployment.

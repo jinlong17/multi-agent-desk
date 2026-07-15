@@ -20,6 +20,13 @@ func createPrivateDirectory(path string) error {
 	if err := os.Mkdir(path, 0o700); err != nil {
 		return domain.WrapError(domain.CodeConflict, "private directory could not be created", err)
 	}
+	return ProtectPrivateDirectory(path)
+}
+
+// ProtectPrivateDirectory applies the current-logon DACL to an existing
+// directory and verifies that it is a real directory. Windows mode bits are
+// intentionally not used as an access-control primitive.
+func ProtectPrivateDirectory(path string) error {
 	sa, cleanup, err := currentLogonSecurityAttributes()
 	if err != nil {
 		return domain.WrapError(domain.CodePermissionDenied, "private directory policy could not be created", err)
@@ -34,6 +41,12 @@ func createPrivateDirectory(path string) error {
 		return domain.WrapError(domain.CodePermissionDenied, "private directory policy could not be applied", callErr)
 	}
 	return verifyPrivateDirectory(path)
+}
+
+// WritePrivateFileAtomic writes a file with the current-logon DACL and commits
+// it with an atomic rename.
+func WritePrivateFileAtomic(path string, data []byte) error {
+	return writePrivateFileAtomic(path, data)
 }
 
 func verifyPrivateDirectory(path string) error {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -72,7 +73,7 @@ func TestMaterializerAtomicCommitAndQuarantine(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if info.Mode().Perm() != 0o600 {
+	if runtime.GOOS != "windows" && info.Mode().Perm() != 0o600 {
 		t.Fatalf("credential mode=%o", info.Mode().Perm())
 	}
 	repeated, err := materializer.Materialize(ctx, MaterializationRequest{LeaseID: leaseID, CredentialInstanceID: credentialID, CredentialRevision: 1, Content: []byte("fake-credential"), RefCount: 1})

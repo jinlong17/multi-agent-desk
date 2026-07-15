@@ -10,11 +10,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/jinlong17/multi-agent-desk/internal/device"
 	"github.com/jinlong17/multi-agent-desk/internal/domain"
 	"github.com/jinlong17/multi-agent-desk/internal/storage"
 )
@@ -127,6 +127,10 @@ func (m *Materializer) Materialize(ctx context.Context, request MaterializationR
 	if err := os.Mkdir(stagingPath, 0o700); err != nil {
 		_ = os.RemoveAll(staging)
 		return domain.CredentialMaterialization{}, domain.WrapError(domain.CodeConflict, "materialization staging path could not be created", err)
+	}
+	if err := restrictDir(stagingPath); err != nil {
+		_ = os.RemoveAll(staging)
+		return domain.CredentialMaterialization{}, err
 	}
 	if err := writePrivate(filepath.Join(stagingPath, "manifest.json"), manifestBytes); err != nil {
 		_ = os.RemoveAll(staging)
@@ -279,31 +283,11 @@ func (m *Materializer) quarantine(name string) error {
 }
 
 func writePrivate(path string, data []byte) error {
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
-	if err != nil {
-		return domain.WrapError(domain.CodeConflict, "materialization file could not be created", err)
-	}
-	defer file.Close()
-	if _, err := file.Write(data); err != nil {
-		return domain.WrapError(domain.CodeConflict, "materialization file could not be written", err)
-	}
-	if err := file.Sync(); err != nil {
-		return domain.WrapError(domain.CodeConflict, "materialization file could not be synced", err)
-	}
-	return nil
+	return device.WritePrivateFileAtomic(path, data)
 }
 
 func restrictDir(path string) error {
-	if err := os.Chmod(path, 0o700); err != nil {
-		return domain.WrapError(domain.CodePermissionDenied, "materialization directory permissions could not be restricted", err)
-	}
-	if runtime.GOOS != "windows" {
-		info, err := os.Lstat(path)
-		if err != nil || info.Mode()&os.ModeSymlink != 0 || !info.IsDir() || info.Mode().Perm()&0o077 != 0 {
-			return domain.NewError(domain.CodePermissionDenied, "materialization directory is not private")
-		}
-	}
-	return nil
+	return device.ProtectPrivateDirectory(path)
 }
 
 func readManifest(path string) (MaterializationManifest, error) {
