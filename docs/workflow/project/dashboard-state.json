@@ -3,15 +3,15 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "multi-account P1 reconciliation",
-  "current_status": "READY_FOR_VERIFY on final Phase 2 main",
+  "current_status": "VERIFIED on final Phase 2 main",
   "current_owner": "provider",
-  "next_action": "independently verify the multi-account P1 reconciliation; keep P2-P5 and Provider/Security gates closed",
+  "next_action": "revise and review the child Provider Spike assumptions before any separately approved P2 build",
   "manual_updated_at": "2026-07-16",
   "manual_updated_by": "operator-authorized provider reconciliation writer",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "多账号 P1 已重基并适配最终 Phase 2 main，等待独立验证"
+      "value": "多账号 P1 已重基、适配并独立验证通过"
     },
     {
       "label": "在哪条线",
@@ -19,11 +19,11 @@
     },
     {
       "label": "用哪个入口",
-      "value": "验证 0006 迁移、Phase 2 Codex/Vault 数据保全和 P1 元数据边界"
+      "value": "修订单账号优先约束下的 Provider Spike 与下一阶段计划"
     },
     {
       "label": "做到什么状态",
-      "value": "Phase 2 main=96ba36d 且远端全绿；multi-account P1 reconciliation=READY_FOR_VERIFY"
+      "value": "Phase 2 main=96ba36d 且远端全绿；multi-account P1 reconciliation=VERIFIED"
     }
   ],
   "phases": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "multi-account-usage-control",
-      "expected_status": "READY_FOR_VERIFY"
+      "expected_status": "VERIFIED"
     },
     {
       "slug": "spike-codex-distinct-account-homes",
