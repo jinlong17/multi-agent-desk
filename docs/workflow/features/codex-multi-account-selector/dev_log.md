@@ -9,11 +9,11 @@
 | Title | `Codex explicit multi-account selector` |
 | Owner Module | `provider` |
 | Impacted Modules | `core, security, desktop, project-system` |
-| Current Phase | `PLAN` |
-| Status | `NEEDS_REVIEW` |
-| Executor | `Codex (GPT-5) as feature-plan` |
-| Updated | `2026-07-16 17:04 PDT` |
-| Suggested Next | `feature-review` |
+| Current Phase | `REVIEW` |
+| Status | `REVISE` |
+| Executor | `Codex (GPT-5) as independent feature-review` |
+| Updated | `2026-07-16 17:10 PDT` |
+| Suggested Next | `feature-plan` |
 | Branch / Worktree | `planned codex/provider/codex-multi-account-selector; planning currently on codex/provider/multi-account-usage-control` |
 | Plan Version | `v1` |
 | Provider Gate | `resolved for exact Linux Codex CLI 0.144.2; macOS distinct-identity and real Windows Codex remain open capability gates` |
@@ -53,3 +53,4 @@ Each build run completes one approved phase and stops at `READY_FOR_VERIFY`.
 |---|---|---|---|---|---|
 | 2026-07-16 17:04 PDT | Codex (GPT-5) as feature-plan | Converted the accepted exact-Linux Provider decision into a three-phase selector plan: migration-backed explicit enrollment confirmation, revision-bound preview/start, alias-scoped auth/logout, no public raw-ID bypass, and truthful macOS/Windows gates | Feature Brief; `design.md`; `api.md`; `test.md`; this log | `NEEDS_REVIEW`; no production code, branch, Provider login, or support claim changed | independent `feature-review` |
 | 2026-07-16 17:07 PDT | Codex root as operator-directed provider planning writer via `mad-dashboard-sync` | Added this unit to dashboard focus at exact `NEEDS_REVIEW`, regenerated workflow/dashboard facts, and verified workflow, dashboard, local links, and diff integrity | `docs/workflow/project/dashboard-state.json`; generated dashboard unchanged | all checks PASS; dashboard states no build is authorized | independent `feature-review` |
+| 2026-07-16 17:10 PDT | Codex (GPT-5) as independent feature-review | Reviewed ownership, exact Provider scope, identity attestation, migration, preview/start authorization, raw-ID compatibility, logout races, platform gates, tests, rollback and phase ordering; modified only verdict surfaces | `docs/reviews/codex-multi-account-selector/2026-07-16-feature-review.md`; this log | `REVISE`; preview issuance/one-time consumption and the sole non-bypass start contract are not frozen; external compatibility drift timing also needs truthful wording | `feature-plan` resolves the ranked findings and re-enters `NEEDS_REVIEW` |
