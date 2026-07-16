@@ -8,7 +8,7 @@ import (
 	"github.com/jinlong17/multi-agent-desk/internal/domain"
 )
 
-func runAccounts(args []string, stdout, stderr *os.File) error {
+func runRegistryAccounts(args []string, stdout, stderr *os.File) error {
 	if len(args) == 0 {
 		return domain.NewError(domain.CodeInvalidArgument, "accounts command is required")
 	}
@@ -86,7 +86,7 @@ func runAccounts(args []string, stdout, stderr *os.File) error {
 	}
 }
 
-func runProfiles(args []string, stdout, stderr *os.File) error {
+func runRegistryProfiles(args []string, stdout, stderr *os.File) error {
 	if len(args) == 0 {
 		return domain.NewError(domain.CodeInvalidArgument, "profiles command is required")
 	}
@@ -182,7 +182,7 @@ func runProviderTarget(method string, args []string, stdout, stderr *os.File) er
 	return runRPCCommand(*root, method, domain.CapabilityClientAdmin, body, nil, false, *jsonOutput, stdout)
 }
 
-func runUsage(args []string, stdout, stderr *os.File) error {
+func runRegistryUsage(args []string, stdout, stderr *os.File) error {
 	flags := flag.NewFlagSet("usage", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	root := flags.String("root", "", "private Device root")

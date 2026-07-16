@@ -23,7 +23,7 @@ const (
 	DefaultBusyTimeout = 5 * time.Second
 	databaseFileMode   = 0o600
 	databaseDirMode    = 0o700
-	accountMigration   = 4
+	accountMigration   = 6
 )
 
 type Pragmas struct {
@@ -318,7 +318,8 @@ func (s *Store) preflightAccountMigration(ctx context.Context) error {
 	for rows.Next() {
 		var id domain.ID
 		var provider string
-		if err := rows.Scan(&id, &provider); err != nil || domain.ValidateID(id) != nil || provider != domain.ProviderFake {
+		if err := rows.Scan(&id, &provider); err != nil || domain.ValidateID(id) != nil ||
+			(provider != domain.ProviderFake && provider != domain.ProviderCodex) {
 			_ = rows.Close()
 			return domain.NewError(domain.CodeSchemaIncompatible, "account migration preflight rejected provider rows")
 		}

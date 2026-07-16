@@ -47,6 +47,20 @@ const (
 	CodeCredentialWriterConflict   ErrorCode = "credential_writer_conflict"
 	CodeCredentialRevisionConflict ErrorCode = "credential_revision_conflict"
 	CodeCredentialRecoveryRequired ErrorCode = "credential_recovery_required"
+	CodeAliasInvalid               ErrorCode = "alias_invalid"
+	CodeAliasConflict              ErrorCode = "alias_conflict"
+	CodeAccountNotFound            ErrorCode = "account_not_found"
+	CodeAccountDisabled            ErrorCode = "account_disabled"
+	CodeProfileNotFound            ErrorCode = "profile_not_found"
+	CodeProfileDisabled            ErrorCode = "profile_disabled"
+	CodeProfileBindingChanged      ErrorCode = "profile_binding_changed"
+	CodeProfileInUse               ErrorCode = "profile_in_use"
+	CodeActiveSessions             ErrorCode = "active_sessions"
+	CodeProviderUnavailable        ErrorCode = "provider_capability_unavailable"
+	CodeProviderCleanupRequired    ErrorCode = "provider_cleanup_required"
+	CodeUsageNotObservedYet        ErrorCode = "usage_not_observed_yet"
+	CodeUsageStale                 ErrorCode = "usage_stale"
+	CodeSyncConflict               ErrorCode = "sync_conflict"
 )
 
 // Error is safe to return across a public command or protocol boundary.

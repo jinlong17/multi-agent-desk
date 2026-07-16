@@ -51,17 +51,21 @@ or alias interfaces.
 
 ## Migration and Fake compatibility
 
-Device migration `0004_accounts_usage.sql` adds Accounts, public Profile
-metadata, Usage tables, tombstones, and Session account binding. Existing Fake
-data migrates to one deterministic internal Fake Account per Device. Existing
-Profile, CredentialInstance, and Session IDs and tuples are preserved; internal
-Fake Profiles have null aliases and the shipped explicit-ID `run fake` path
+Device migration `0006_accounts_usage.sql` reconciles the P1 metadata model on
+top of the shipped Phase 2 schema version 5. It extends Accounts and public
+Profile metadata, adds structured Usage windows and tombstones, and preserves
+the Phase 2 Codex Account, RuntimeProfile, CredentialInstance, Vault linkage,
+Usage rows, and Session account binding. Existing Fake data migrates to one
+deterministic internal Fake Account per Device. Existing Profile,
+CredentialInstance, and Session IDs and tuples are preserved; internal Fake
+Profiles have null aliases and the shipped explicit-ID `run fake` path
 continues to work.
 
 The migration runner performs the connection-scoped foreign-key suspension
-needed by the table rebuild, runs preflight and post-copy checks, verifies
-`foreign_key_check`, restores foreign-key enforcement, and remains restart
-idempotent.
+needed by the version-6 table rebuild, runs preflight and post-copy checks,
+verifies `foreign_key_check`, restores foreign-key enforcement, and remains
+restart idempotent. The migration creates no Provider credential, Provider
+Home, Vault item, or real Provider process.
 
 ## Local IPC and CLI surface
 

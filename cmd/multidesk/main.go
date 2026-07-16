@@ -60,11 +60,11 @@ func run(args []string, stdout, stderr *os.File) error {
 	case "run":
 		return runSessionStart(args[1:], stdout, stderr)
 	case "accounts":
-		return runAccounts(args[1:], stdout, stderr)
+		return runRegistryAccounts(args[1:], stdout, stderr)
 	case "profiles":
-		return runProfiles(args[1:], stdout, stderr)
+		return runRegistryProfiles(args[1:], stdout, stderr)
 	case "usage":
-		return runUsage(args[1:], stdout, stderr)
+		return runRegistryUsage(args[1:], stdout, stderr)
 	case "provider":
 		return runProvider(args[1:], stdout, stderr)
 	case "approvals":

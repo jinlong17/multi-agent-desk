@@ -104,7 +104,7 @@ func TestNativeTwoClientFakeSessionControl(t *testing.T) {
 		t.Fatal(err)
 	}
 	observerClient := &device.Client{Connection: observerConnection, Auth: observerAuth}
-	badStartBody, _ := device.JSONBody(map[string]any{"device_id": bootstrap.DeviceID,
+	badStartBody, _ := device.JSONBody(map[string]any{"device_id": bootstrap.DeviceID, "provider": domain.ProviderFake,
 		"credential_instance_id": credentialID, "runtime_profile_id": publicProfileID,
 		"workspace_id": workspaceID, "capabilities": []domain.Capability{domain.CapabilitySessionResume}})
 	badResponse, badErr := ownerClient.Call(ctx, device.Request{ProtocolMajor: device.ProtocolMajor,

@@ -411,9 +411,10 @@ The API schema begins at version 1 and uses cursor pagination. Provider
 fixtures are pinned to exact versions. New Usage window kinds and fields are
 additive; unknown kinds round-trip without reinterpretation.
 
-The current local `user-operations-guide` branch is not part of remote `main`.
-This feature must not cherry-pick it implicitly. User-guide integration is a
-separate explicit branch/integration action after the product state is updated.
+The cross-platform user operations guide is now integrated on remote `main`.
+P1 reconciliation preserves that documentation as the project-level source of
+truth; P5 may extend it only after the later Provider and Security gates are
+independently resolved.
 
 ## Rollback
 

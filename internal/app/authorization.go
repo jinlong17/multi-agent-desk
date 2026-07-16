@@ -23,7 +23,7 @@ func RequiredCapability(method string) (domain.Capability, error) {
 		"accounts.list", "accounts.show", "profiles.list", "profiles.show",
 		"profiles.resolveAlias", "usage.list":
 		return domain.CapabilityMetadataRead, nil
-	case "accounts.list", "accounts.show", "accounts.create", "accounts.disable", "profiles.list", "profiles.create", "profiles.edit", "profiles.delete", "credentials.status":
+	case "credentials.status":
 		return domain.CapabilityMetadataRead, nil
 	case "provider.describe", "provider.health", "profile.validate":
 		return domain.CapabilityProviderMetadataRead, nil

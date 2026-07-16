@@ -20,5 +20,9 @@ Phase 1 starts with:
    v1 envelopes, fail-closed credential-revocation reservations, owner-bound
    Codex enrollment state, and durable two-stage Approval dispatch metadata for
    Phase 2 P2B.
+6. `0006_accounts_usage.sql` — Phase 2-compatible public Codex/Claude registry
+   metadata, explicit profile aliases and revisions, generic Usage windows,
+   deterministic internal Fake backfill, replay deduplication, and tombstones;
+   it creates no real Provider credential or runtime home.
 
 No migration stores real Provider credentials or terminal payloads.

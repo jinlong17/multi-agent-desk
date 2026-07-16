@@ -67,7 +67,7 @@ func TestManualRegistryPaginationRevisionAndAtomicDeletion(t *testing.T) {
 	var listed []domain.Account
 	cursor := ""
 	for {
-		page, err := store.ListAccounts(ctx, AccountListOptions{Limit: 3, Cursor: cursor})
+		page, err := store.ListAccountPage(ctx, AccountListOptions{Limit: 3, Cursor: cursor})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -115,11 +115,11 @@ func TestManualRegistryPaginationRevisionAndAtomicDeletion(t *testing.T) {
 	if _, _, err := store.CreateAccountWithDefaultProfile(ctx, conflictAccount, conflictProfile); domain.CodeOf(err) != domain.CodeAliasConflict {
 		t.Fatalf("case-folded alias conflict got %v", err)
 	}
-	firstPage, err := store.ListAccounts(ctx, AccountListOptions{Limit: 3})
+	firstPage, err := store.ListAccountPage(ctx, AccountListOptions{Limit: 3})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := store.ListAccounts(ctx, AccountListOptions{Provider: domain.ProviderCodex, Limit: 3, Cursor: firstPage.NextCursor}); domain.CodeOf(err) != domain.CodeInvalidArgument {
+	if _, err := store.ListAccountPage(ctx, AccountListOptions{Provider: domain.ProviderCodex, Limit: 3, Cursor: firstPage.NextCursor}); domain.CodeOf(err) != domain.CodeInvalidArgument {
 		t.Fatalf("filter/cursor reuse got %v", err)
 	}
 
@@ -159,7 +159,7 @@ func TestManualRegistryPaginationRevisionAndAtomicDeletion(t *testing.T) {
 	if _, err := store.CreateProfile(ctx, second, extra); err != nil {
 		t.Fatal(err)
 	}
-	disabled, err := store.SetAccountEnabled(ctx, second.ID, second.Revision, false, base.Add(7*time.Minute))
+	disabled, err := store.SetAccountEnabledRevision(ctx, second.ID, second.Revision, false, base.Add(7*time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -190,15 +190,15 @@ func TestGenericUsageWindowsRoundTripUnknownAndMissingValues(t *testing.T) {
 			{ProviderLimitID: "primary", Kind: domain.UsageWindowRolling, Label: "5 hours", DurationSeconds: &duration, UsedPercent: &used, RemainingPercent: &remaining, ResetsAt: &reset},
 			{ProviderLimitID: "future", Kind: domain.UsageWindowUnknown, Label: "Provider window"},
 		}}
-	if err := store.CreateUsageSnapshot(ctx, snapshot); err != nil {
+	if err := store.CreateUsageSnapshotWithWindows(ctx, snapshot); err != nil {
 		t.Fatal(err)
 	}
 	replay := snapshot
 	replay.ID = numberedID("usage", 2)
-	if err := store.CreateUsageSnapshot(ctx, replay); err != nil {
+	if err := store.CreateUsageSnapshotWithWindows(ctx, replay); err != nil {
 		t.Fatalf("usage replay was not idempotent: %v", err)
 	}
-	got, err := store.ListUsageSnapshots(ctx, account.ID)
+	got, err := store.ListUsageSnapshotsWithWindows(ctx, account.ID)
 	if err != nil || len(got) != 1 || len(got[0].Windows) != 2 {
 		t.Fatalf("usage got %+v, %v", got, err)
 	}
@@ -240,7 +240,7 @@ func directoryNames(path string) ([]string, error) {
 	return result, nil
 }
 
-func TestMigrationV4PreservesPopulatedFakeTuplesAndIsIdempotent(t *testing.T) {
+func TestMigrationV6PreservesPopulatedFakeTuplesAndIsIdempotent(t *testing.T) {
 	ctx := context.Background()
 	dir := filepath.Join(t.TempDir(), "device")
 	if err := os.MkdirAll(dir, 0o700); err != nil {
@@ -314,6 +314,9 @@ func TestMigrationV4PreservesPopulatedFakeTuplesAndIsIdempotent(t *testing.T) {
 	var internal bool
 	if err := store.db.QueryRowContext(ctx, "SELECT provider, internal FROM accounts WHERE id = ?", internalAccount).Scan(&provider, &internal); err != nil || provider != domain.ProviderFake || !internal {
 		t.Fatalf("synthetic account invalid: provider=%s internal=%v err=%v", provider, internal, err)
+	}
+	if _, err := store.PublicAccount(ctx, internalAccount); domain.CodeOf(err) != domain.CodeAccountNotFound {
+		t.Fatalf("internal account became publicly addressable: %v", err)
 	}
 	for _, expected := range []struct {
 		session, profile, credential domain.ID

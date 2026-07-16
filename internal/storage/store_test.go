@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -104,15 +105,15 @@ func TestOpenConfiguresAndRestartsDeviceDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if version != 5 {
-		t.Fatalf("got schema version %d, want 5", version)
+	if version != 6 {
+		t.Fatalf("got schema version %d, want 6", version)
 	}
 	var migrationCount int
 	if err := store.db.QueryRowContext(ctx, "SELECT count(*) FROM schema_migrations").Scan(&migrationCount); err != nil {
 		t.Fatal(err)
 	}
-	if migrationCount != 5 {
-		t.Fatalf("got %d applied migrations, want 5", migrationCount)
+	if migrationCount != 6 {
+		t.Fatalf("got %d applied migrations, want 6", migrationCount)
 	}
 	if runtime.GOOS != "windows" {
 		info, err := os.Stat(path)
@@ -134,7 +135,7 @@ func TestOpenConfiguresAndRestartsDeviceDatabase(t *testing.T) {
 	if err := reopened.db.QueryRowContext(ctx, "SELECT count(*) FROM schema_migrations").Scan(&migrationCount); err != nil {
 		t.Fatal(err)
 	}
-	if migrationCount != 5 {
+	if migrationCount != 6 {
 		t.Fatalf("restart reapplied migrations: count=%d", migrationCount)
 	}
 }
@@ -216,7 +217,7 @@ func TestCodexMigrationPreservesLegacyFakeRows(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(migrations) != 5 {
+	if len(migrations) != 6 {
 		t.Fatalf("migration count=%d", len(migrations))
 	}
 	if _, err := raw.ExecContext(ctx, "PRAGMA foreign_keys=ON"); err != nil {
@@ -269,14 +270,15 @@ func TestCodexMigrationPreservesLegacyFakeRows(t *testing.T) {
 	}
 	store, err := Open(ctx, path)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("open upgraded store: %v (cause: %v)", err, errors.Unwrap(err))
 	}
 	defer store.Close()
-	if version, err := store.SchemaVersion(ctx); err != nil || version != 5 {
+	if version, err := store.SchemaVersion(ctx); err != nil || version != 6 {
 		t.Fatalf("upgraded schema=%d err=%v", version, err)
 	}
 	profile, err := store.RuntimeProfile(ctx, profileID)
-	if err != nil || profile.Provider != domain.ProviderFake || profile.AccountID != "" {
+	internalAccountID := storageID("account", storageHexA)
+	if err != nil || profile.Provider != domain.ProviderFake || profile.AccountID != internalAccountID || !profile.Internal {
 		t.Fatalf("legacy profile=%+v err=%v", profile, err)
 	}
 	credential, err := store.CredentialInstance(ctx, credentialID)
@@ -284,8 +286,123 @@ func TestCodexMigrationPreservesLegacyFakeRows(t *testing.T) {
 		t.Fatalf("legacy credential=%+v err=%v", credential, err)
 	}
 	session, err := store.Session(ctx, sessionID)
-	if err != nil || session.Provider != domain.ProviderFake || session.AccountID != "" {
+	if err != nil || session.Provider != domain.ProviderFake || session.AccountID != internalAccountID {
 		t.Fatalf("legacy session=%+v err=%v", session, err)
+	}
+}
+
+func TestAccountsUsageMigrationPreservesPhase2CodexRowsAndVaultLinks(t *testing.T) {
+	ctx := context.Background()
+	root := filepath.Join(t.TempDir(), "device")
+	if err := os.Mkdir(root, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(root, "device.db")
+	raw, err := sql.Open("sqlite", "file:"+path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw.SetMaxOpenConns(1)
+	partial := &Store{db: raw, path: path}
+	if err := partial.configure(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := raw.ExecContext(ctx, `CREATE TABLE schema_migrations(
+		version INTEGER PRIMARY KEY CHECK (version >= 1), name TEXT NOT NULL UNIQUE,
+		checksum TEXT NOT NULL CHECK (length(checksum) = 64), applied_at TEXT NOT NULL)`); err != nil {
+		t.Fatal(err)
+	}
+	migrations, err := devicemigrations.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations[:5] {
+		if err := partial.applyMigration(ctx, migration); err != nil {
+			t.Fatalf("apply %s: %v", migration.Name, err)
+		}
+	}
+	deviceID := storageID("device", storageHexA)
+	accountID := storageID("account", storageHexB)
+	profileID := storageID("profile", storageHexA)
+	credentialID := storageID("credential", storageHexA)
+	now := "2026-07-16T00:00:00Z"
+	if _, err := raw.ExecContext(ctx, `INSERT INTO device_identity(
+		id, kind, display_name, signing_public_key, created_at, updated_at
+	) VALUES(?, 'daemon', 'phase2', ?, ?, ?)`, deviceID, make([]byte, 32), now, now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := raw.ExecContext(ctx, `INSERT INTO accounts(
+		id, provider, display_name, provider_subject_digest, enabled, created_at, updated_at
+	) VALUES(?, 'codex', 'Phase 2 Codex', ?, 1, ?, ?)`, accountID, storageDigestA, now, now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := raw.ExecContext(ctx, `INSERT INTO runtime_profiles(
+		id, device_id, account_id, name, provider, settings_json, created_at, updated_at
+	) VALUES(?, ?, ?, 'phase2', 'codex', '{}', ?, ?)`, profileID, deviceID, accountID, now, now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := raw.ExecContext(ctx, `INSERT INTO credential_instances(
+		id, device_id, account_id, provider, auth_method, secret_ref, status,
+		credential_revision, secret_digest, created_at, updated_at
+	) VALUES(?, ?, ?, 'codex', 'interactive', 'vault:phase2', 'healthy', 1, ?, ?, ?)`,
+		credentialID, deviceID, accountID, storageDigestA, now, now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := raw.ExecContext(ctx, `INSERT INTO vault_items(
+		credential_instance_id, account_id, device_id, provider, envelope_version,
+		credential_revision, cipher_name, payload_nonce, payload_ciphertext,
+		wrap_name, wrap_nonce, wrapped_dek, aad_digest, secret_digest, created_at, updated_at
+	) VALUES(?, ?, ?, 'codex', 1, 1, 'aes-256-gcm', ?, ?, 'aes-256-gcm', ?, ?, ?, ?, ?, ?)`,
+		credentialID, accountID, deviceID, make([]byte, 12), make([]byte, 18),
+		make([]byte, 12), make([]byte, 48), storageDigestA, storageDigestA, now, now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := raw.ExecContext(ctx, `INSERT INTO usage_snapshots(
+		id, provider, account_id, device_id, source, confidence, window_kind,
+		observed_at, source_version, capability_status, error_code
+	) VALUES(?, 'codex', ?, ?, 'official', 'high', 'daily', ?, '0.144.2', 'supported', '')`,
+		storageID("usage", storageHexA), accountID, deviceID, now); err != nil {
+		t.Fatal(err)
+	}
+	if err := raw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	store, err := Open(ctx, path)
+	if err != nil {
+		t.Fatalf("open Phase 2 upgrade: %v (cause: %v)", err, errors.Unwrap(err))
+	}
+	defer store.Close()
+	account, err := store.Account(ctx, accountID)
+	if err != nil || account.Provider != domain.ProviderCodex || account.Internal || account.Revision != 1 {
+		t.Fatalf("account=%+v err=%v", account, err)
+	}
+	profile, err := store.RuntimeProfile(ctx, profileID)
+	if err != nil || profile.AccountID != accountID || profile.Provider != domain.ProviderCodex || profile.Internal {
+		t.Fatalf("profile=%+v err=%v", profile, err)
+	}
+	credential, err := store.CredentialInstance(ctx, credentialID)
+	if err != nil || credential.AccountID != accountID || credential.CredentialRevision != 1 {
+		t.Fatalf("credential=%+v err=%v", credential, err)
+	}
+	var vaultCount, usageCount, violations int
+	if err := store.db.QueryRowContext(ctx, "SELECT count(*) FROM vault_items WHERE credential_instance_id = ?", credentialID).Scan(&vaultCount); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.db.QueryRowContext(ctx, "SELECT count(*) FROM usage_snapshots WHERE account_id = ? AND provider_version = '0.144.2'", accountID).Scan(&usageCount); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := store.db.QueryContext(ctx, "PRAGMA foreign_key_check")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for rows.Next() {
+		violations++
+	}
+	if err := rows.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if vaultCount != 1 || usageCount != 1 || violations != 0 {
+		t.Fatalf("vault=%d usage=%d foreign_key_violations=%d", vaultCount, usageCount, violations)
 	}
 }
 
@@ -294,8 +411,8 @@ func TestMigrationFailureRollsBackDDLAndLedger(t *testing.T) {
 	ctx := context.Background()
 	contents := []byte("CREATE TABLE should_rollback(id INTEGER); THIS IS NOT SQL;")
 	migration := devicemigrations.Migration{
-		Version:  6,
-		Name:     "0006_invalid.sql",
+		Version:  7,
+		Name:     "0007_invalid.sql",
 		SQL:      string(contents),
 		Checksum: sha256.Sum256(contents),
 	}
@@ -310,7 +427,7 @@ func TestMigrationFailureRollsBackDDLAndLedger(t *testing.T) {
 		t.Fatal("failed migration left partial DDL")
 	}
 	var ledgerCount int
-	if err := store.db.QueryRowContext(ctx, "SELECT count(*) FROM schema_migrations WHERE version=6").Scan(&ledgerCount); err != nil {
+	if err := store.db.QueryRowContext(ctx, "SELECT count(*) FROM schema_migrations WHERE version=7").Scan(&ledgerCount); err != nil {
 		t.Fatal(err)
 	}
 	if ledgerCount != 0 {
@@ -320,7 +437,7 @@ func TestMigrationFailureRollsBackDDLAndLedger(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if version != 5 {
+	if version != 6 {
 		t.Fatalf("failed migration changed user_version to %d", version)
 	}
 }

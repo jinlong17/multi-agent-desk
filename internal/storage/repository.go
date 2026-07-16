@@ -276,14 +276,20 @@ func (s *Store) CreateAccount(ctx context.Context, account domain.Account) error
 		// explicit subsequent operation through SetAccountEnabled.
 		account.Enabled = true
 	}
+	if account.Revision == 0 {
+		account.Revision = 1
+	}
 	if err := domain.ValidateAccount(account); err != nil {
 		return err
 	}
 	return s.withTx(ctx, func(tx *sql.Tx) error {
 		_, err := tx.ExecContext(ctx, `
-			INSERT INTO accounts(id, provider, display_name, provider_subject_digest, enabled, created_at, updated_at)
-			VALUES(?, ?, ?, NULLIF(?, ''), ?, ?, ?)`,
-			account.ID, account.Provider, account.DisplayName, account.ProviderSubjectDigest, boolInt(account.Enabled),
+			INSERT INTO accounts(
+				id, provider, display_name, provider_subject_digest, subscription_hint,
+				internal, enabled, revision, created_at, updated_at
+			) VALUES(?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`,
+			account.ID, account.Provider, account.DisplayName, account.ProviderSubjectDigest, account.SubscriptionHint,
+			boolInt(account.Enabled), account.Revision,
 			formatTime(account.CreatedAt), formatTime(account.UpdatedAt))
 		return writeError("account could not be created", err)
 	})
@@ -292,13 +298,15 @@ func (s *Store) CreateAccount(ctx context.Context, account domain.Account) error
 func (s *Store) Account(ctx context.Context, id domain.ID) (domain.Account, error) {
 	var account domain.Account
 	var digest sql.NullString
-	var enabled int
 	var createdAt, updatedAt string
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, provider, display_name, provider_subject_digest, enabled, created_at, updated_at
-		FROM accounts WHERE id = ?`, id).Scan(&account.ID, &account.Provider, &account.DisplayName, &digest, &enabled, &createdAt, &updatedAt)
+		SELECT id, provider, display_name, provider_subject_digest, subscription_hint,
+			internal, enabled, revision, created_at, updated_at
+		FROM accounts WHERE id = ?`, id).Scan(
+		&account.ID, &account.Provider, &account.DisplayName, &digest, &account.SubscriptionHint,
+		&account.Internal, &account.Enabled, &account.Revision, &createdAt, &updatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
-		return domain.Account{}, domain.NewError(domain.CodeNotFound, "account not found")
+		return domain.Account{}, domain.NewError(domain.CodeAccountNotFound, "account not found")
 	}
 	if err != nil {
 		return domain.Account{}, domain.WrapError(domain.CodeConflict, "account could not be read", err)
@@ -306,7 +314,6 @@ func (s *Store) Account(ctx context.Context, id domain.ID) (domain.Account, erro
 	if digest.Valid {
 		account.ProviderSubjectDigest = digest.String
 	}
-	account.Enabled = enabled == 1
 	account.CreatedAt, err = parseTime(createdAt)
 	if err != nil {
 		return domain.Account{}, err
@@ -319,7 +326,7 @@ func (s *Store) Account(ctx context.Context, id domain.ID) (domain.Account, erro
 }
 
 func (s *Store) ListAccounts(ctx context.Context) ([]domain.Account, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT id FROM accounts ORDER BY display_name, id`)
+	rows, err := s.db.QueryContext(ctx, `SELECT id FROM accounts WHERE internal = 0 ORDER BY display_name, id`)
 	if err != nil {
 		return nil, domain.WrapError(domain.CodeConflict, "accounts could not be listed", err)
 	}
@@ -353,7 +360,7 @@ func (s *Store) SetAccountEnabled(ctx context.Context, id domain.ID, enabled boo
 	if at.IsZero() {
 		return domain.Account{}, domain.NewError(domain.CodeInvalidArgument, "account update requires a timestamp")
 	}
-	result, err := s.db.ExecContext(ctx, `UPDATE accounts SET enabled = ?, updated_at = ? WHERE id = ?`, boolInt(enabled), formatTime(at), id)
+	result, err := s.db.ExecContext(ctx, `UPDATE accounts SET enabled = ?, revision = revision + 1, updated_at = ? WHERE id = ? AND internal = 0`, boolInt(enabled), formatTime(at), id)
 	if err != nil {
 		return domain.Account{}, writeError("account status could not be updated", err)
 	}
@@ -389,18 +396,27 @@ func (s *Store) CreateRuntimeProfile(ctx context.Context, profile domain.Runtime
 	}
 	profile.CredentialInstanceID = ""
 	profile.SelectorAlias, profile.SelectorKey = "", ""
-	profile.Internal, profile.Enabled = true, true
+	profile.Internal = profile.Provider == domain.ProviderFake
+	profile.Enabled = true
 	if profile.Revision == 0 {
 		profile.Revision = 1
 	}
 	return s.withTx(ctx, func(tx *sql.Tx) error {
-		if err := validateAccountForProvider(ctx, tx, profile.Provider, profile.AccountID); err != nil {
+		if profile.Provider == domain.ProviderFake {
+			if err := ensureFakeAccountTx(ctx, tx, profile.AccountID, profile.DeviceID, profile.CreatedAt, profile.UpdatedAt); err != nil {
+				return err
+			}
+		} else if err := validateAccountForProvider(ctx, tx, profile.Provider, profile.AccountID); err != nil {
 			return err
 		}
 		_, err := tx.ExecContext(ctx, `
-			INSERT INTO runtime_profiles(id, device_id, account_id, name, provider, settings_json, created_at, updated_at)
-			VALUES(?, ?, NULLIF(?, ''), ?, ?, ?, ?, ?)`,
+			INSERT INTO runtime_profiles(
+				id, device_id, account_id, credential_instance_id, name, provider,
+				selector_alias, selector_key, settings_json, internal, enabled, revision,
+				created_at, updated_at
+			) VALUES(?, ?, ?, NULL, ?, ?, NULL, NULL, ?, ?, 1, ?, ?, ?)`,
 			profile.ID, profile.DeviceID, profile.AccountID, profile.Name, profile.Provider, profile.Settings,
+			profile.Internal, profile.Revision,
 			formatTime(profile.CreatedAt), formatTime(profile.UpdatedAt),
 		)
 		return writeError("runtime profile could not be created", err)
@@ -411,11 +427,16 @@ func (s *Store) RuntimeProfile(ctx context.Context, id domain.ID) (domain.Runtim
 	var profile domain.RuntimeProfile
 	var settings []byte
 	var accountID sql.NullString
+	var credentialID, alias, aliasKey sql.NullString
 	var createdAt, updatedAt string
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, device_id, account_id, name, provider, settings_json, created_at, updated_at
+		SELECT id, device_id, account_id, credential_instance_id, name, provider,
+			selector_alias, selector_key, settings_json, internal, enabled, revision,
+			created_at, updated_at
 		FROM runtime_profiles WHERE id = ?`, id).Scan(
-		&profile.ID, &profile.DeviceID, &accountID, &profile.Name, &profile.Provider, &settings, &createdAt, &updatedAt,
+		&profile.ID, &profile.DeviceID, &accountID, &credentialID, &profile.Name, &profile.Provider,
+		&alias, &aliasKey, &settings, &profile.Internal, &profile.Enabled, &profile.Revision,
+		&createdAt, &updatedAt,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return domain.RuntimeProfile{}, domain.NewError(domain.CodeNotFound, "runtime profile not found")
@@ -553,15 +574,6 @@ func (s *Store) CreateCredentialInstance(ctx context.Context, credential domain.
 		!validCredentialStatus(credential.Status) || !validCreatedUpdated(credential.CreatedAt, credential.UpdatedAt) {
 		return domain.NewError(domain.CodeInvalidArgument, "invalid credential instance")
 	}
-	if credential.AccountID == "" {
-		credential.AccountID = fakeAccountID(credential.DeviceID)
-	}
-	if domain.ValidateID(credential.AccountID) != nil {
-		return domain.NewError(domain.CodeInvalidArgument, "invalid credential account")
-	}
-	if credential.Availability == "" {
-		credential.Availability = domain.AvailabilityUnknown
-	}
 	return s.withTx(ctx, func(tx *sql.Tx) error {
 		if err := validateAccountForProvider(ctx, tx, credential.Provider, credential.AccountID); err != nil {
 			return err
@@ -605,10 +617,6 @@ func (s *Store) CredentialInstance(ctx context.Context, id domain.ID) (domain.Cr
 		return domain.CredentialInstance{}, err
 	}
 	credential.UpdatedAt, err = parseTime(updatedAt)
-	if err != nil {
-		return domain.CredentialInstance{}, err
-	}
-	credential.LastValidatedAt, err = parseOptionalTime(validatedAt)
 	if err != nil {
 		return domain.CredentialInstance{}, err
 	}
@@ -689,6 +697,9 @@ func (s *Store) UpdateCredentialRevisionCAS(ctx context.Context, id domain.ID, e
 }
 
 func (s *Store) CreateSession(ctx context.Context, session domain.Session) error {
+	if session.Provider == domain.ProviderFake && session.AccountID == "" {
+		session.AccountID = fakeAccountID(session.DeviceID)
+	}
 	validated, err := domain.NewSession(session)
 	if err != nil {
 		return err
@@ -1365,6 +1376,10 @@ func (s *Store) CreateUsageSnapshot(ctx context.Context, snapshot domain.UsageSn
 	if err := domain.ValidateUsageSnapshot(snapshot); err != nil {
 		return err
 	}
+	availability := domain.AvailabilityUnknown
+	if snapshot.CapabilityStatus == domain.UsageSupported {
+		availability = domain.AvailabilityAvailable
+	}
 	return s.withTx(ctx, func(tx *sql.Tx) error {
 		if err := validateAccountForProvider(ctx, tx, snapshot.Provider, snapshot.AccountID); err != nil {
 			return err
@@ -1380,12 +1395,13 @@ func (s *Store) CreateUsageSnapshot(ctx context.Context, snapshot domain.UsageSn
 			INSERT INTO usage_snapshots(
 				id, provider, account_id, device_id, source, confidence, window_kind,
 				used_value, limit_value, used_percent, resets_at, observed_at,
-				raw_reference_hash, source_version, capability_status, error_code
-			) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULLIF(?, ''), ?, ?, ?)`,
+				raw_reference_hash, source_version, capability_status, error_code,
+				provider_version, availability, stale_at
+			) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			snapshot.ID, snapshot.Provider, snapshot.AccountID, snapshot.DeviceID, snapshot.Source, snapshot.Confidence,
 			snapshot.WindowKind, optionalFloat(snapshot.UsedValue), optionalFloat(snapshot.LimitValue), optionalFloat(snapshot.UsedPercent),
 			optionalTimeValue(snapshot.ResetsAt), formatTime(snapshot.ObservedAt), snapshot.RawReferenceHash, snapshot.SourceVersion,
-			snapshot.CapabilityStatus, snapshot.ErrorCode)
+			snapshot.CapabilityStatus, snapshot.ErrorCode, snapshot.SourceVersion, availability, formatTime(snapshot.ObservedAt))
 		return writeError("usage snapshot could not be created", err)
 	})
 }
