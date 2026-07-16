@@ -2,16 +2,16 @@
   "schema_version": 1,
   "state_owner": "project-system",
   "plan_version": "v0.2",
-  "current_phase": "multi-account Provider decision reconciliation",
-  "current_status": "P1 VERIFIED; both Provider child gates GATE_RESOLVED",
+  "current_phase": "Codex multi-account selector plan",
+  "current_status": "NEEDS_REVIEW; no build authorized",
   "current_owner": "provider",
-  "next_action": "create separately reviewable Codex P2 and Claude API-key/cloud phase units before any build",
+  "next_action": "run independent feature-review for codex-multi-account-selector",
   "manual_updated_at": "2026-07-16",
-  "manual_updated_by": "operator-authorized provider decision writer",
+  "manual_updated_by": "operator-authorized provider planning writer",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "两个 Provider 子门已关闭：Codex 精确 Linux 支持，Claude 订阅稳定方案否决"
+      "value": "Codex 显式多账号选择器计划已完成，等待独立评审"
     },
     {
       "label": "在哪条线",
@@ -19,11 +19,11 @@
     },
     {
       "label": "用哪个入口",
-      "value": "分别建立并评审 Codex P2 与 Claude API Key/云提供商阶段单元"
+      "value": "评审确认流程、预览 TOCTOU、公开 raw-ID 边界与平台能力门"
     },
     {
       "label": "做到什么状态",
-      "value": "P1=VERIFIED；Codex=GATE_RESOLVED；Claude subscription policy=GATE_RESOLVED"
+      "value": "父 P1=VERIFIED；两子门=GATE_RESOLVED；Codex selector=NEEDS_REVIEW"
     }
   ],
   "phases": [
@@ -102,6 +102,10 @@
     "release"
   ],
   "focus": [
+    {
+      "slug": "codex-multi-account-selector",
+      "expected_status": "NEEDS_REVIEW"
+    },
     {
       "slug": "multi-account-usage-control",
       "expected_status": "VERIFIED"
