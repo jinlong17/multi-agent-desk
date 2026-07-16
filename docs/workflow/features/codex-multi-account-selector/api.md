@@ -22,7 +22,7 @@ Response fields are bounded safe metadata:
 ```json
 {
   "schema_version": 1,
-  "preview_id": "preview_<digest>",
+  "preview_id": "preview_<opaque>",
   "expires_at": "RFC3339",
   "provider": "codex",
   "account_id": "account_<opaque>",
@@ -59,7 +59,7 @@ Capability: `session.start`
   "provider": "codex",
   "profile_selector": "@A",
   "workspace_id": "workspace_<opaque>",
-  "preview_id": "preview_<digest>",
+  "preview_id": "preview_<opaque>",
   "confirmation": {
     "confirmed": true,
     "account_id": "account_<opaque>",
@@ -161,8 +161,13 @@ Raw Provider messages and identity/auth fields never appear in these errors.
 
 ## Ordering and idempotency
 
-- Preview IDs bind client, tuple/revisions, compatibility, latest selected
-  Usage snapshot, expiry, and workspace.
+- Preview IDs are random server-issued records. The stored row binds client,
+  tuple/revisions, compatibility fingerprints, latest selected Usage snapshot,
+  expiry, and workspace. Client-computable digests are never accepted.
+- Start performs Provider preflight before the transaction, then atomically
+  validates/consumes the preview and inserts the starting Session. Same-request
+  lost-response replay returns the recorded Session; another request/client or
+  a forged/expired/consumed preview fails.
 - Repeated `auth.confirm` with the same request returns the committed revision;
   a different selector/body returns conflict.
 - Start confirmation is single-use only at the Session insertion boundary;
@@ -173,6 +178,18 @@ Raw Provider messages and identity/auth fields never appear in these errors.
 - Alias/profile/credential mutation, Vault revision change, Usage snapshot
   selection change when explicitly bound, or compatibility drift invalidates
   the preview.
+- Compatibility drift before preview consumption creates no Session. Drift
+  detected by the final runtime fingerprint check after reservation transitions
+  the recorded Session to `failed` and performs no credential commit.
+
+## Legacy raw-ID compatibility
+
+There is no public or debug IPC bypass. `session.start` for Provider `codex`
+requires `profile_selector`, a valid daemon-issued `preview_id`, and the full
+confirmation on every request. The old raw-ID-only CLI/RPC form returns
+`identity_confirmation_required` before Session insert. Phase 2 live and
+integration harnesses seed a public alias and use preview/confirmation. Direct
+runtime-manager unit tests are not an application authorization surface.
 
 ## CLI
 

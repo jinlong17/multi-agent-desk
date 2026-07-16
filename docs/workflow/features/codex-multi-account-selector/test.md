@@ -6,19 +6,20 @@
 |---|---|---|
 | Selector | canonical/case/Unicode/path/flag/shell corpus; ambiguous and internal aliases | exactly one public Profile or typed failure; no command evaluation |
 | Preview | enabled valid tuple with 0/1/many Usage rows | latest account-bound snapshot selected; bounded labels/freshness; no PII |
-| TOCTOU | mutate alias, Account/Profile revision, Credential revision/status, Workspace, Usage binding or compatibility after preview | `profile_binding_changed`; zero Session/materialization/process |
+| TOCTOU | mutate alias, Account/Profile revision, Credential revision/status, Workspace, Usage binding or compatibility after preview | pre-reservation failure creates zero Session/materialization/process; post-reservation binary race records failed Session and no credential commit |
+| Preview authority | forged/random ID, cross-client use, restart/expiry, two requests racing one preview, same-request lost-response replay | only daemon-issued owner-bound row works; one Session; exact replay returns it |
 | Confirmation | missing/false/replayed/expired/wrong-client/wrong-selector confirmation | fail closed; no Credential seal or Session start |
 | Enrollment | official-login success then confirm/cancel/timeout/restart | only confirmed exact tuple seals; staging removed in every terminal path |
 | Logout race | active/starting/stopping Session; start after revocation reservation | logout blocked or start denied; no cross-Credential mutation |
 | Writer | concurrent A/B, same-Credential double start, stale lock/revision | A/B independent; one writer per Credential; ambiguity quarantined |
 | Compatibility | Linux exact, macOS pending, Windows unsupported, unknown CLI/schema | only exact Linux path launches; others return typed capability state |
 | Redaction | DB/audit/errors/dashboard/fixtures/debug output scan | no Provider identity, auth JSON, token, URL/code, Cookie, transcript/content |
-| Existing behavior | Phase 2 raw acceptance path through internal test capability; P1 registry and Fake path | tests remain deterministic; no public raw-ID bypass |
+| Existing behavior | Phase 2 harness seeded with public alias and preview; direct CLI/RPC raw-ID attempt; P1 registry/Fake path | harness remains deterministic; raw-ID start fails before Session; Fake unchanged |
 
 ## Unit and property tests
 
-- Canonical selector parsing, bounded labels, preview digest stability, expiry,
-  and client/tuple/revision binding.
+- Canonical selector parsing, bounded labels, preview record validation/expiry,
+  random ID validation, and client/tuple/revision binding.
 - Confirmation struct validation and error taxonomy.
 - Enrollment state machine adds `awaiting_confirmation` without allowing direct
   `begun -> succeeded`; terminal and idempotent transitions remain valid.
@@ -41,6 +42,9 @@
    and revocation reservation under the single SQLite writer.
 5. Expire/cancel/recover every enrollment state and prove no private staging
    directory or unconfirmed Vault item survives.
+6. Persist preview rows across restart; reject forged/cross-client/expired IDs;
+   atomically resolve two-start races; return the same Session for exact
+   idempotent replay; clean expired/consumed rows after bounded retention.
 
 ## Integration tests
 
@@ -58,6 +62,12 @@ Use authenticated native IPC and synthetic Provider fixtures:
    auth/provider failures.
 5. Stop/logout/re-login B while A stays running; compare safe digests and rows,
    then restart Daemon and repeat.
+6. Attempt the legacy raw-ID-only CLI and direct authenticated RPC form with a
+   client that has `session.start`; prove `identity_confirmation_required` and
+   zero Session/process/materialization.
+7. Replace/change the accepted Provider binary before preview consumption and
+   after Session reservation. Verify respectively zero Session and one failed
+   Session, with no Vault revision or retained materialization in either case.
 
 ## Live Linux acceptance
 
