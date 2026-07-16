@@ -34,8 +34,9 @@ share the one app-server owner.
 
 ### Enrollment confirmation
 
-Add migration `0007_codex_identity_confirmation.sql` with an
-`awaiting_confirmation` auth-enrollment state and safe confirmation fields:
+Add migration `0007_codex_selector_confirmation.sql` with an
+`awaiting_confirmation` auth-enrollment state, safe confirmation fields, and
+the bounded Session preview table described below:
 
 ```text
 confirmation_account_id
@@ -83,16 +84,45 @@ provider_version / compatibility_status / capability_snapshot
 usage_snapshot_id? / usage_observed_at? / usage_stale
 ```
 
-`preview_id` is a digest of the canonical safe fields plus the authenticated
-client ID and a short expiry. It is not an authorization token. Session start
-still re-resolves the selector and validates every field/revision in the same
-store transaction that reserves/creates the starting Session.
+Migration 7 adds `session_start_previews`:
+
+```text
+id                              # random preview_<opaque>, primary key
+client_id                       # authenticated issuer/consumer
+provider                        # codex only in this feature
+account_id / account_revision
+runtime_profile_id / profile_revision
+credential_instance_id / credential_revision
+device_id / workspace_id
+usage_snapshot_id?              # exact selected snapshot or null
+provider_version
+binary_fingerprint / schema_fingerprint / capability_digest
+created_at / expires_at
+consumed_at?
+consumed_request_digest? / session_id?
+```
+
+`preview_id` is random and server-issued. The row, not a client-computable
+digest, proves issuance and binds the authenticated client, tuple, revisions,
+workspace, exact compatibility and ten-minute expiry. Preview rows contain
+only opaque IDs, revisions, fingerprints and timestamps; internal display
+labels are reconstructed for the response and are not duplicated in the row.
+
+Session start performs an exact Provider preflight before opening the store
+transaction, then calls one storage operation that validates the preview owner,
+expiry, unconsumed state, tuple/revisions, revocation state and preflight
+fingerprints; marks the preview consumed with the request digest/Session ID;
+and inserts the starting Session. Lost-response replay with the same request
+digest returns the same Session. Cross-client use, a forged/random ID, expiry,
+or a second different request fails. Consumed/expired previews are retained for
+bounded idempotency/audit time, then deleted without affecting Sessions.
 
 The request contains the selector, workspace, preview ID, and explicit
-confirmation. Any drift returns `profile_binding_changed` before runtime
-materialization. A disabled Account/Profile, revoked/unhealthy Credential,
-Vault lock, unsupported version/platform, or ambiguous selector also fails
-before a Session row or writer lock is created.
+confirmation. Any database or preflight drift returns
+`profile_binding_changed` before the preview transaction, Session row, or
+runtime materialization. A disabled Account/Profile, revoked/unhealthy
+Credential, Vault lock, unsupported version/platform, or ambiguous selector
+also fails before preview consumption.
 
 ## CLI and TUI flow
 
@@ -117,10 +147,14 @@ accepts `--yes`. TUI uses the same preview/confirm RPCs and displays a blocking
 confirmation panel. Shell aliases/display names are data, never evaluated
 command fragments.
 
-The legacy raw-ID `run codex` command becomes a compatibility-test surface
-requiring an internal-only capability and explicit debug build/test plumbing;
-normal public clients must use selector preview/confirmation. This prevents a
-raw-ID product bypass while retaining deterministic Provider acceptance tests.
+There is one daemon start contract: every Codex Session start, including live
+acceptance tests, requires a daemon-issued preview and confirmation. Opaque IDs
+remain fields inside the preview/confirmation; they are not an alternate start
+path. The legacy CLI raw-ID-only invocation is rejected with
+`identity_confirmation_required` before Session insert. The Phase 2 acceptance
+harness seeds a public Account/Profile alias and obtains a preview instead of
+using a debug capability. Internal runtime unit tests may call the runtime
+manager directly, but no IPC/CLI identity can bypass preview consumption.
 
 ## Compatibility policy
 
@@ -136,8 +170,11 @@ raw-ID product bypass while retaining deterministic Provider acceptance tests.
 
 ## Concurrency and failure handling
 
-- Preview is read-only and bounded to 10 minutes; start performs all authority
-  checks again.
+- Preview creation is a bounded metadata write with ten-minute expiry; start
+  performs all authority checks again and consumes it once transactionally.
+- Daemon restart preserves unexpired preview rows; cleanup expires them without
+  authorizing a start. Two requests racing one preview yield one Session, while
+  idempotent replay of the winning request returns that Session.
 - One active enrollment per Profile; the enrollment owner client and exact
   tuple are immutable.
 - Logout transactionally reserves Credential revocation, blocks active or
@@ -149,6 +186,18 @@ raw-ID product bypass while retaining deterministic Provider acceptance tests.
 - Daemon restart expires unconfirmed enrollment staging; it never guesses that
   browser success means operator confirmation.
 - Provider crash/refresh ambiguity follows ADR 0014 quarantine/re-login.
+
+### External compatibility recheck
+
+Preview preflight records the exact binary fingerprint, canonical schema
+fingerprint and capability digest. Start preflights again before the preview
+transaction. Drift detected there returns a typed compatibility error with no
+Session. After the transaction reserves a Session, `Runtime.StartReserved`
+rechecks the same fingerprint immediately before materialization/spawn. Drift
+or process/filesystem failure after reservation transitions that Session to
+`failed`, consumes no Provider mutation, releases any acquired materialization,
+and never pretends that cross-system work was atomic. Tests distinguish
+"pre-reservation: no Session" from "post-reservation: failed Session."
 
 ## Audit and redaction
 
