@@ -116,6 +116,35 @@ empty-home handshake smoke pass. Windows is build/protocol evidence only, the
 currently bundled macOS `0.144.5` is not allowlisted, and final feature Security
 Review remains a separate gate.
 
+## Distinct-account managed Home addendum (2026-07-16)
+
+The security-reviewed `spike-codex-distinct-account-homes` evidence extends
+this decision for the exact Linux `x86_64` Codex CLI `0.144.2` arm:
+
+- two operator-owned official interactive identities may coexist only as two
+  distinct CredentialInstances, Vault items, canonical Homes, writer leases,
+  app-server runtimes, Account bindings, and monotonic revision streams;
+- active Sessions block logout, and revocation reservation prevents a new
+  Session from racing target-scoped Home/Vault cleanup;
+- logout/re-login is CredentialInstance-scoped and must never stop, revoke,
+  mutate, or rotate another Account; re-login may reuse the selected
+  CredentialInstance only through revision CAS;
+- concurrent Usage remains advisory, source/freshness labelled, and bound to
+  the selected Account. It never authorizes automatic account rotation or a
+  mid-Session identity switch;
+- before an alias/selector launch becomes a stable product path, the
+  post-login Provider identity must be bound to the intended Account with a
+  privacy-preserving stable identifier or explicit operator confirmation.
+  Email and display-name PII are not identity keys, and internal metadata tuple
+  equality alone is not proof of the upstream account choice.
+
+This addendum does not accept macOS distinct-identity behavior, real Windows
+Codex behavior, passive-soak stability, multi-writer refresh, or versions
+outside the exact compatibility row. The fallback remains one explicitly
+selected, officially logged-in target-local managed Home with no automatic
+switch and fail-closed quarantine/re-login on identity, version, or revision
+ambiguity.
+
 ## Evidence
 
 - `docs/spikes/codex/2026-07-14-auth-refresh-spike.md`
@@ -123,3 +152,6 @@ Review remains a separate gate.
 - `docs/spikes/codex/two-device-short-run.json`
 - `docs/reviews/spike-codex-auth-refresh/2026-07-14-security-review.md`
 - `docs/reviews/phase2-codex-vertical-slice/2026-07-16-feature-verify-p3b.md`
+- `docs/spikes/codex-distinct-accounts/2026-07-16-distinct-account-homes-spike.md`
+- `docs/spikes/codex-distinct-accounts/2026-07-16-distinct-account-homes.json`
+- `docs/reviews/spike-codex-distinct-account-homes/2026-07-16-security-review.md`
