@@ -43,6 +43,10 @@ func ProtectPrivateDirectory(path string) error {
 	return verifyPrivateDirectory(path)
 }
 
+func VerifyPrivateDirectory(path string) error { return verifyPrivateDirectory(path) }
+
+func VerifyPrivateFile(path string) error { return verifyPrivateFile(path) }
+
 // WritePrivateFileAtomic writes a file with the current-logon DACL and commits
 // it with an atomic rename.
 func WritePrivateFileAtomic(path string, data []byte) error {

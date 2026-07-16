@@ -16,6 +16,7 @@ const (
 type Session struct {
 	ID                   ID
 	DeviceID             ID
+	AccountID            ID
 	Provider             string
 	CredentialInstanceID ID
 	RuntimeProfileID     ID
@@ -59,8 +60,22 @@ func NewSession(session Session) (Session, error) {
 			return Session{}, err
 		}
 	}
+	if session.AccountID != "" {
+		if err := ValidateID(session.AccountID); err != nil {
+			return Session{}, err
+		}
+	}
 	if session.Provider == "" || session.StartedAt.IsZero() {
 		return Session{}, NewError(CodeInvalidArgument, "session requires provider and start time")
+	}
+	if len(session.ProviderSessionID) > 256 {
+		return Session{}, NewError(CodeInvalidArgument, "provider session identity is too large")
+	}
+	if session.Provider == ProviderCodex && session.AccountID == "" {
+		return Session{}, NewError(CodeInvalidArgument, "codex session requires an account")
+	}
+	if !ProviderKnown(session.Provider) {
+		return Session{}, NewError(CodeInvalidArgument, "session provider is unsupported")
 	}
 	if session.ResumedFromSessionID != "" {
 		if err := ValidateID(session.ResumedFromSessionID); err != nil {
@@ -140,6 +155,7 @@ func (s Session) Resume(newID ID, at time.Time) (Session, error) {
 	resumed := Session{
 		ID:                   newID,
 		DeviceID:             s.DeviceID,
+		AccountID:            s.AccountID,
 		Provider:             s.Provider,
 		CredentialInstanceID: s.CredentialInstanceID,
 		RuntimeProfileID:     s.RuntimeProfileID,

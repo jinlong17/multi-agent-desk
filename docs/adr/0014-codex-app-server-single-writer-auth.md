@@ -39,6 +39,9 @@ The Codex adapter must:
 - generate or load the schema for the exact CLI version and enable only methods
   whose schema and fixture replay pass; an unknown version is probed or
   downgraded, never assumed compatible;
+- identify generated schema through canonical JSON hashing (sorted relative
+  paths plus canonical parsed content), because raw aggregate-schema object
+  ordering is not deterministic; reject duplicate/invalid JSON and symlinks;
 - report successful `account/rateLimits/read` and `account/usage/read` values as
   `official/high` with source version and freshness, without using them to
   rotate or silently switch accounts;
@@ -58,6 +61,9 @@ The Codex adapter must:
 - support official interactive login as the stable path. Device-auth initiation
   may be exposed as experimental, but completed headless login is not a
   compatibility claim until separately evidenced.
+- treat Provider-initiated Approval as a JSON-RPC server request whose request
+  ID is preserved through local ControllerLease and idempotency authorization;
+  never invent a client Approval method alias from a notification fixture.
 
 The Control Plane never becomes a credential writer and never receives
 Provider plaintext. Credential grants remain target-bound E2EE operations to
@@ -89,9 +95,31 @@ credentials already copied by an authorized or compromised host.
 - The evidence does not support multi-writer refresh, completed headless device
   login, 48-hour stability, or versions/platforms outside the matrix.
 
+## Phase 2 implementation evidence (2026-07-16)
+
+The Phase 2 Codex vertical slice implements this decision for exact CLI
+`0.144.2`:
+
+- a private portable Vault and owner-bound official interactive enrollment;
+- one materialized writable `CODEX_HOME` and one shared app-server per
+  `CredentialInstance`, with lease refresh, digest validation, revision CAS,
+  quarantine, and bounded cleanup;
+- strict schema/version/profile/account/workspace binding, bounded
+  credential-free proxy inheritance, and auth-only Vault import;
+- per-Session thread bindings, second-CLI lease/input/observe, official Usage,
+  request-ID-preserving Approval dispatch, and binding-scoped stop/kill;
+- typed unsupported behavior for conversation resize, Provider continuation,
+  permissions Approval, session-persistent decisions, and policy amendments.
+
+The exact Linux `0.144.2` live exit and macOS `0.144.2` canonical-schema /
+empty-home handshake smoke pass. Windows is build/protocol evidence only, the
+currently bundled macOS `0.144.5` is not allowlisted, and final feature Security
+Review remains a separate gate.
+
 ## Evidence
 
 - `docs/spikes/codex/2026-07-14-auth-refresh-spike.md`
 - `docs/spikes/codex/app-server-account-matrix.json`
 - `docs/spikes/codex/two-device-short-run.json`
 - `docs/reviews/spike-codex-auth-refresh/2026-07-14-security-review.md`
+- `docs/reviews/phase2-codex-vertical-slice/2026-07-16-feature-verify-p3b.md`

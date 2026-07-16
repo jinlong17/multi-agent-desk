@@ -27,6 +27,10 @@ func ProtectPrivateDirectory(path string) error {
 	return verifyPrivateDirectory(path)
 }
 
+func VerifyPrivateDirectory(path string) error { return verifyPrivateDirectory(path) }
+
+func VerifyPrivateFile(path string) error { return verifyPrivateFile(path) }
+
 // WritePrivateFileAtomic writes a file under a protected directory and applies
 // the platform-specific private-file boundary.
 func WritePrivateFileAtomic(path string, data []byte) error {

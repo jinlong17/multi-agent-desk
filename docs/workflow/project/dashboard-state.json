@@ -2,28 +2,28 @@
   "schema_version": 1,
   "state_owner": "project-system",
   "plan_version": "v0.2",
-  "current_phase": "1",
-  "current_status": "Phase 1 Device Kernel 已合并到 main",
-  "current_owner": "core",
-  "next_action": "feature-plan Phase 2 Codex Vertical Slice",
-  "manual_updated_at": "2026-07-15",
-  "manual_updated_by": "operator-directed core writer (refresh recorded in phase1-device-kernel Work Log)",
+  "current_phase": "2",
+  "current_status": "Phase 2 Codex Vertical Slice SHIPPED locally; remote integration in progress",
+  "current_owner": "provider",
+  "next_action": "verify reconciliation, push Phase 2, open protected PR",
+  "manual_updated_at": "2026-07-16",
+  "manual_updated_by": "operator-authorized remote-integration sequence (recorded in Phase 2 Work Log and readiness record)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 1 Device Kernel 已合并到 main"
+      "value": "Phase 2 已完成本地 Ship，正在收口文档并进入远端受保护 PR"
     },
     {
       "label": "在哪条线",
-      "value": "codex/core/phase1-device-kernel"
+      "value": "codex/provider/phase2-codex-vertical-slice"
     },
     {
       "label": "用哪个入口",
-      "value": "feature-plan Phase 2 Codex Vertical Slice"
+      "value": "验证文档/看板后 push Phase 2 并创建 PR"
     },
     {
       "label": "做到什么状态",
-      "value": "Phase 1 SHIPPED；main 36efca8；无 release/deploy"
+      "value": "P0-P4/P4S verified；Security ACCEPTED；local SHIPPED"
     }
   ],
   "phases": [
@@ -51,9 +51,9 @@
     {
       "id": "2",
       "title": "Codex Vertical Slice",
-      "state": "gated",
+      "state": "completed",
       "depends": "Phase 1 + Codex spikes",
-      "gate": "真实 Codex attach/approval/resume"
+      "gate": "P2B production Vault source + P3A daemon runtime + P3B Linux exit"
     },
     {
       "id": "3",
@@ -103,7 +103,7 @@
   ],
   "focus": [
     {
-      "slug": "phase1-device-kernel",
+      "slug": "phase2-codex-vertical-slice",
       "expected_status": "SHIPPED"
     }
   ]

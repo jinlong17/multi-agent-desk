@@ -7,16 +7,56 @@ import (
 	"time"
 
 	"github.com/jinlong17/multi-agent-desk/internal/domain"
+	"github.com/jinlong17/multi-agent-desk/internal/providers/codex"
 	"github.com/jinlong17/multi-agent-desk/internal/storage"
 )
 
 type StartRequest struct {
 	DeviceID             domain.ID
+	Provider             string
+	AccountID            domain.ID
 	CredentialInstanceID domain.ID
 	RuntimeProfileID     domain.ID
 	WorkspaceID          domain.ID
 	Capabilities         []domain.Capability
 	ResumedFromSessionID domain.ID
+}
+
+// Start is the P0 provider gate. Fake remains fully runnable; Codex records
+// are representable in the Device store but cannot start until the versioned
+// app-server adapter lands in a later approved phase.
+func (m *Manager) Start(ctx context.Context, request StartRequest) (domain.Session, error) {
+	if m == nil || m.Store == nil {
+		return domain.Session{}, domain.NewError(domain.CodeInvalidArgument, "runtime manager is incomplete")
+	}
+	profile, err := m.Store.RuntimeProfile(ctx, request.RuntimeProfileID)
+	if err != nil {
+		return domain.Session{}, err
+	}
+	if request.Provider != "" && request.Provider != profile.Provider {
+		return domain.Session{}, domain.NewError(domain.CodeConflict, "requested provider does not match the stored RuntimeProfile")
+	}
+	request.Provider = profile.Provider
+	if request.Provider == domain.ProviderFake {
+		return m.StartFake(ctx, request)
+	}
+	if request.Provider == domain.ProviderCodex {
+		if m == nil || m.Codex == nil {
+			return domain.Session{}, domain.NewError(domain.CodeProviderUnsupported, "codex runtime bridge is unavailable")
+		}
+		session, err := m.Codex.Start(ctx, codex.RuntimeStartRequest{DeviceID: request.DeviceID, AccountID: request.AccountID,
+			CredentialInstanceID: request.CredentialInstanceID, RuntimeProfileID: request.RuntimeProfileID, WorkspaceID: request.WorkspaceID})
+		if err != nil {
+			return domain.Session{}, err
+		}
+		m.mu.Lock()
+		if m.rings[session.ID] == nil {
+			m.rings[session.ID] = NewDefaultRingBuffer()
+		}
+		m.mu.Unlock()
+		return session, nil
+	}
+	return domain.Session{}, domain.NewError(domain.CodeInvalidArgument, "provider is unsupported")
 }
 
 type InputRequest struct {
@@ -48,12 +88,40 @@ type Manager struct {
 	LeaseDuration  time.Duration
 	LeaseHeartbeat time.Duration
 	StopTimeout    time.Duration
+	Codex          *codex.RuntimeManager
 
 	mu        sync.Mutex
 	processes map[domain.ID]*Process
 	rings     map[domain.ID]*RingBuffer
 	eventSeq  map[domain.ID]int64
 	inputSeq  map[string]int64
+}
+
+func (m *Manager) RegisterCodex(manager *codex.RuntimeManager) {
+	if m == nil {
+		return
+	}
+	m.Codex = manager
+	if manager != nil {
+		manager.EventSink = m.appendCodexEvent
+	}
+}
+
+func (m *Manager) appendCodexEvent(sessionID domain.ID, kind string, metadata any, output []byte) {
+	if len(output) == 0 {
+		m.appendEvent(sessionID, kind, metadata)
+		return
+	}
+	m.mu.Lock()
+	ring := m.rings[sessionID]
+	if ring == nil {
+		ring = NewDefaultRingBuffer()
+		m.rings[sessionID] = ring
+	}
+	m.mu.Unlock()
+	for _, chunk := range ring.Append(output) {
+		m.appendEvent(sessionID, kind, map[string]any{"sequence": chunk.Sequence, "bytes": len(chunk.Data)})
+	}
 }
 
 func NewManager(store *storage.Store, executable string) *Manager {
@@ -95,6 +163,7 @@ func (m *Manager) StartFake(ctx context.Context, request StartRequest) (domain.S
 		return domain.Session{}, err
 	}
 	session := domain.Session{ID: sessionID, DeviceID: request.DeviceID, Provider: "fake",
+		AccountID:            request.AccountID,
 		CredentialInstanceID: request.CredentialInstanceID, RuntimeProfileID: request.RuntimeProfileID,
 		WorkspaceID: request.WorkspaceID, ResumedFromSessionID: request.ResumedFromSessionID,
 		Status: domain.SessionStarting, StartedAt: m.now(), CapabilitySnapshot: caps}
@@ -324,6 +393,22 @@ func (m *Manager) Input(ctx context.Context, request InputRequest) (InputResult,
 	}
 	process := m.processes[request.SessionID]
 	m.mu.Unlock()
+	session, err := m.Store.Session(ctx, request.SessionID)
+	if err != nil {
+		return InputResult{}, err
+	}
+	if session.Provider == domain.ProviderCodex {
+		if m.Codex == nil {
+			return InputResult{}, domain.NewError(domain.CodeProviderUnsupported, "codex runtime bridge is unavailable")
+		}
+		if err := m.Codex.Input(ctx, codex.RuntimeInputRequest{SessionID: request.SessionID, Payload: request.Payload}); err != nil {
+			return InputResult{}, err
+		}
+		m.mu.Lock()
+		m.inputSeq[key] = expected + 1
+		m.mu.Unlock()
+		return InputResult{Sequence: request.Sequence}, nil
+	}
 	if process == nil {
 		return InputResult{}, domain.NewError(domain.CodeNotFound, "session process not found")
 	}
@@ -343,6 +428,16 @@ func (m *Manager) Resize(ctx context.Context, request ResizeRequest) error {
 	if err := m.requireLease(ctx, request.SessionID, request.ClientID, request.Revision); err != nil {
 		return err
 	}
+	session, err := m.Store.Session(ctx, request.SessionID)
+	if err != nil {
+		return err
+	}
+	if session.Provider == domain.ProviderCodex {
+		if m.Codex == nil {
+			return domain.NewError(domain.CodeProviderUnsupported, "codex runtime bridge is unavailable")
+		}
+		return m.Codex.Resize(request.SessionID)
+	}
 	process, err := m.process(request.SessionID)
 	if err != nil {
 		return err
@@ -360,6 +455,15 @@ func (m *Manager) Stop(ctx context.Context, sessionID, clientID domain.ID, revis
 	}
 	if session.Status.Terminal() || session.Status == domain.SessionStopping {
 		return session, nil
+	}
+	if session.Provider == domain.ProviderCodex {
+		if m.Codex == nil {
+			return domain.Session{}, domain.NewError(domain.CodeProviderUnsupported, "codex runtime bridge is unavailable")
+		}
+		if err := m.Codex.Stop(ctx, sessionID, false); err != nil {
+			return domain.Session{}, err
+		}
+		return m.Store.Session(ctx, sessionID)
 	}
 	if _, err := m.Store.TransitionSession(ctx, sessionID, session.Status, domain.SessionStopping, m.now(), nil, ""); err != nil {
 		return domain.Session{}, err
@@ -406,6 +510,15 @@ func (m *Manager) Kill(ctx context.Context, sessionID, clientID domain.ID, revis
 	if session.Status.Terminal() {
 		return session, nil
 	}
+	if session.Provider == domain.ProviderCodex {
+		if m.Codex == nil {
+			return domain.Session{}, domain.NewError(domain.CodeProviderUnsupported, "codex runtime bridge is unavailable")
+		}
+		if err := m.Codex.Stop(ctx, sessionID, true); err != nil {
+			return domain.Session{}, err
+		}
+		return m.Store.Session(ctx, sessionID)
+	}
 	process, processErr := m.process(sessionID)
 	if processErr == nil {
 		if err := process.Kill(); err != nil {
@@ -425,6 +538,9 @@ func (m *Manager) Resume(ctx context.Context, sourceID domain.ID) (domain.Sessio
 	if err != nil {
 		return domain.Session{}, err
 	}
+	if source.Provider != domain.ProviderFake {
+		return domain.Session{}, domain.NewError(domain.CodeProviderResumeUnsupported, "provider continuation is not verified")
+	}
 	id, err := domain.NewID("session")
 	if err != nil {
 		return domain.Session{}, err
@@ -439,6 +555,9 @@ func (m *Manager) Resume(ctx context.Context, sourceID domain.ID) (domain.Sessio
 }
 
 func (m *Manager) Close() {
+	if m != nil && m.Codex != nil {
+		m.Codex.Close()
+	}
 	m.mu.Lock()
 	processes := make([]*Process, 0, len(m.processes))
 	for _, process := range m.processes {

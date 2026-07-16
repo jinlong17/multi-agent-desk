@@ -7,8 +7,8 @@ func TestListIsContiguousAndStable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(migrations) != 3 {
-		t.Fatalf("got %d migrations, want 3", len(migrations))
+	if len(migrations) != 5 {
+		t.Fatalf("got %d migrations, want 5", len(migrations))
 	}
 	for index, migration := range migrations {
 		if migration.Version != index+1 || migration.Name == "" || migration.SQL == "" {

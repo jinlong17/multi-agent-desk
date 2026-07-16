@@ -59,8 +59,13 @@ type BootstrapResult struct {
 }
 
 var ownerCapabilities = []domain.Capability{
+	domain.CapabilityApprovalRead,
+	domain.CapabilityApprovalRespond,
 	domain.CapabilityClientAdmin,
 	domain.CapabilityMetadataRead,
+	domain.CapabilityProviderAuth,
+	domain.CapabilityProviderMetadataRead,
+	domain.CapabilityProviderUsageRead,
 	domain.CapabilitySessionControl,
 	domain.CapabilitySessionControlAcquire,
 	domain.CapabilitySessionObserve,

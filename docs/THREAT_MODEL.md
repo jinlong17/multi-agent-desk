@@ -1,7 +1,7 @@
 # MultiAgentDesk threat model
 
-- Status: Phase 0 model with evidence-backed browser storage and E2EE protocol decisions; production mitigations are not yet verified
-- Date: 2026-07-14
+- Status: Phase 0 model with evidence-backed decisions plus verified Phase 1 Device Kernel and exact Phase 2 Codex `0.144.2` implementation evidence; later remote, Desktop, release, and non-Codex mitigations remain open
+- Date: 2026-07-16
 - Owner module: `security`
 - Baseline: [Implementation Plan v0.2](IMPLEMENTATION_PLAN.md),
   [security invariants](../CLAUDE.md), and [ADR index](adr/README.md)
@@ -13,12 +13,14 @@ Plane, built-in Provider processes, local Vault/materialization, device pairing,
 CredentialGrant, metadata sync, ciphertext relay, and dependency/update
 boundaries.
 
-It does not prove that planned controls are implemented. ADR 0010 selects the
-browser key-storage modes and ADR 0011 selects the E2EE protocol candidate from
-reproducible Spike evidence, but neither is production runtime evidence. This
-model does not attest a Provider credential format, validate Windows
-ConPTY/Named Pipe/Tauri behavior, or promise that revocation remotely erases a
-secret already copied to another device.
+It does not prove that every planned control is implemented. ADR 0010 selects
+the browser key-storage modes and ADR 0011 selects the E2EE protocol candidate
+from reproducible Spike evidence, but neither is production runtime evidence.
+This model attests only the exact Phase 2 Codex `0.144.2` credential/runtime
+boundary recorded in the compatibility matrix. It does not establish real
+Windows Codex behavior, complete Windows 11 ConPTY/Named Pipe/Tauri acceptance,
+or promise that revocation remotely erases a secret already copied to another
+device.
 
 Evidence states used below:
 
@@ -27,6 +29,9 @@ Evidence states used below:
 - **pending evidence**: the named Spike must resolve the mechanism or claim;
 - **verified design evidence**: a linked, reproducible Spike proves the stated
   compatibility/protocol property, not production implementation;
+- **verified implementation evidence**: repository tests plus a linked exact
+  live receipt prove the named implementation boundary, not broader release
+  readiness;
 - **deferred**: explicitly open acceptance outside the current environment.
 
 Unknown, planned, pending, partial, and deferred evidence never count as pass.
@@ -94,12 +99,12 @@ Unknown, planned, pending, partial, and deferred evidence never count as pass.
 | T-01 | Compromised Control Plane substitutes a Device key | credential/session decryption by attacker or unauthorized grants | local pin match; key change is a new device; attestation only from directly pinned approver; fingerprint ceremony | verified design evidence: ADR 0011 and `spike-e2ee-protocol-vectors`; production enforcement planned | user may approve a malicious fingerprint; compromised pinned approver can attest a bad key |
 | T-02 | Relay replays/reorders/tampers with enrollment, grant, command, or terminal envelopes | duplicated grant, stale control, forged state, content corruption | pairwise root; authenticated source/target/purpose/audience/epoch/message ID; JCS AAD; nonce recomputation; durable replay window | verified design evidence and negative vectors in `spike-e2ee-protocol-vectors`; production persistence planned | availability attacks and bounded state loss remain possible |
 | T-03 | Control Plane DB/log/queue captures Provider credential or terminal plaintext | broad remote secret/content disclosure | data-classification allowlist, ciphertext-only protected payloads, redaction tests, no plaintext trace | planned | metadata, traffic patterns, device/account/session identifiers remain exposed |
-| T-04 | Vault or Device DB is copied, permissions are weak, or unlock material leaks | offline credential/key theft | OS key store or password-derived wrapping, authenticated encryption, restrictive permissions, explicit locked state | browser storage modes have verified design evidence in ADR 0010; Daemon/Desktop Vault implementation remains planned | host root/admin, unlocked-process compromise, weak user password, and memory disclosure remain |
-| T-05 | Daemon crash or concurrent refresh writes an older credential over a newer one | account lockout, stale token reuse, credential corruption | single materialization writer, monotonic `credentialRevision` CAS, digest validation, transactional recovery, quarantine ambiguous leases | Codex design evidence verified by ADR 0014; Claude ADR 0016 uses target-local interactive login and disables stable setup-token materialization; production enforcement planned | Provider-side mutation can remain ambiguous and require re-login; multi-writer Codex refresh and Claude setup-token grant are unsupported |
-| T-06 | Materialized auth home, temp file, process env, crash dump, or backup exposes plaintext | local credential theft | per-session least-privilege directory, minimal env, cleanup after process exit, quarantine on uncertain recovery, secret-safe diagnostics | Codex `0600` layout observed under ADR 0014; Claude Config Dir/Keychain slot isolation observed under ADR 0016; production cleanup/redaction remains planned | **Provider-readable plaintext/authenticated state exists at runtime; host root/admin or Provider compromise can copy/use it** |
+| T-04 | Vault or Device DB is copied, permissions are weak, or unlock material leaks | offline credential/key theft | OS key store or password-derived wrapping, authenticated encryption, restrictive permissions, explicit locked state | verified implementation evidence for Phase 2 portable Argon2id/AES-GCM Vault v1 and private files on macOS/Linux/Windows tests; OS key-store wrapping remains later | host root/admin, unlocked-process compromise, weak user password, and memory disclosure remain |
+| T-05 | Daemon crash or concurrent refresh writes an older credential over a newer one | account lockout, stale token reuse, credential corruption | single materialization writer, monotonic `credentialRevision` CAS, digest validation, transactional recovery, quarantine ambiguous leases | verified implementation evidence for exact Codex `0.144.2` single-writer lease/CAS/recovery and Linux live use; Claude remains governed by ADR 0016 target-local login | Provider-side mutation can remain ambiguous and require re-login; multi-writer Codex refresh and Claude setup-token grant are unsupported |
+| T-06 | Materialized auth home, temp file, process env, crash dump, or backup exposes plaintext | local credential theft | per-session least-privilege directory, minimal env, cleanup after process exit, quarantine on uncertain recovery, secret-safe diagnostics | verified implementation evidence for exact private Codex enrollment/materialization, bounded credential-free proxy inheritance, auth-only Vault import, cleanup, and empty live daemon log; Claude production cleanup remains later | **Provider-readable plaintext/authenticated state exists at runtime; host root/admin, Provider compromise, backup, or crash tooling can copy/use it** |
 | T-07 | Unauthorized local process connects to IPC, impersonates a pipe endpoint, or steals a ControllerLease | session observation/input/resize/stop/kill by attacker | 0600 Unix socket; protected current-logon Named Pipe with Network deny, remote rejection, and first-instance fail-closed ownership; mutual peer authentication; request capability checks; expiring lease with owner identity; bounds and audit events | Windows transport verified by ADR 0013 and `spike-windows-named-pipe-ipc`; protocol authorization and Unix/Windows production enforcement planned for Phase 1 | same-logon malware and root/admin can race availability or act with the user's local authority |
 | T-08 | Multiple clients race control, stale lease holder sends input, or detach kills the process | command confusion, loss of work, unintended termination | single ControllerLease, monotonic lease revision/expiry, explicit acquire/release, detach separate from process lifecycle, idempotent stop/kill | planned for Phase 1 | network partitions can delay awareness; forced takeover may discard unsent input |
-| T-09 | Provider binary/path/config arguments are malicious or wrong account files are reused | code execution, secret crossover, wrong-account actions | explicit binary path/version evidence, argument/env construction without shell injection, isolated runtime homes, pinned session account/profile/capabilities | Codex boundary accepted by ADR 0014; Claude target-profile Config Dir/version/account boundary accepted by ADR 0016; production enforcement planned | a user-approved or compromised Provider binary executes with granted local access |
+| T-09 | Provider binary/path/config arguments are malicious or wrong account files are reused | code execution, secret crossover, wrong-account actions | explicit binary path/version evidence, argument/env construction without shell injection, isolated runtime homes, pinned session account/profile/capabilities | verified implementation evidence for exact Codex `0.144.2` path/version/schema, safe env, daemon-owned profile/account/workspace, and Linux live binding; exact macOS schema smoke passes; real Windows Codex and Claude production enforcement remain open | a user-approved or compromised Provider binary executes with granted local access |
 | T-10 | Hostile terminal/model output injects control sequences or content into TUI/Web/Desktop | UI spoofing, clipboard abuse, XSS, data exfiltration | terminal parser hardening, output encoding, strict CSP, no untrusted HTML, bounded buffers, security tests | ConPTY mechanism evidence is verified by ADR 0012; production provider, renderer, IME/accessibility, and parser enforcement remain planned | terminal emulation and browser dependencies retain parser bugs |
 | T-11 | Web XSS or malicious dependency accesses enrolled Device keys and decrypted content | live session/credential grant compromise | no third-party scripts, strict CSP/Trusted Types where supported, dependency audit, non-exportable keys, metadata-only fallback | storage compatibility verified by ADR 0010; origin hardening and production enforcement planned | active same-origin code can use keys/content even if key bytes are non-exportable |
 | T-12 | CredentialGrant targets wrong/revoked/incapable device or is replayed | unauthorized credential copy | explicit user confirmation, `credentials.store` capability, direct pin/attestation validation, target-bound HPKE, revision/expiry/replay checks, signed receipt; exclude unverified Provider formats | pin/attestation/HPKE mechanism verified by ADR 0011; ADR 0016 excludes Claude setup-token from stable grant; implementation remains planned | user error or already compromised approved target remains; **revocation cannot erase copied plaintext** |
@@ -131,7 +136,7 @@ Unknown, planned, pending, partial, and deferred evidence never count as pass.
 
 | Area | Required evidence | Current state |
 |---|---|---|
-| Codex credential store, auth refresh, concurrent revision behavior | [`spike-codex-auth-refresh`](workflow/features/spike-codex-auth-refresh/dev_log.md) | `GATE_RESOLVED`; ADR 0014 selects one canonical writable app-server/auth home and interactive-login fallback; multi-writer and completed device-auth unsupported |
+| Codex credential store, auth refresh, concurrent revision behavior | [`spike-codex-auth-refresh`](workflow/features/spike-codex-auth-refresh/dev_log.md) | `GATE_RESOLVED`; ADR 0014 is implemented for the exact Phase 2 `0.144.2` Linux vertical slice with macOS schema smoke; multi-writer, completed device-auth, other versions, and real Windows Codex remain unsupported |
 | Claude config/keychain isolation, auth status/setup token, refresh behavior | [`spike-claude-config-keychain`](workflow/features/spike-claude-config-keychain/dev_log.md) | `GATE_RESOLVED`; ADR 0016 selects target-local interactive login and version-gated/redacted auth health; setup-token grant, distinct-account isolation, and long session unsupported by Spike |
 | Browser non-exportable/wrapped key storage and metadata-only fallback | [`spike-browser-key-storage`](workflow/features/spike-browser-key-storage/dev_log.md) | `GATE_RESOLVED`; verified design evidence in ADR 0010; production implementation pending |
 | E2EE envelope, AAD binding, replay, pairwise roots, vectors, and security review | [`spike-e2ee-protocol-vectors`](workflow/features/spike-e2ee-protocol-vectors/dev_log.md) | `GATE_RESOLVED`; verified design evidence in ADR 0011; production implementation pending |
