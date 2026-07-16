@@ -175,16 +175,12 @@ func (s *ProviderSession) RespondApproval(ctx context.Context, providerApprovalI
 	return nil
 }
 
-func (s *ProviderSession) Stop(ctx context.Context) error {
+func (s *ProviderSession) Stop(_ context.Context) error {
 	if s == nil || s.stopped {
 		return nil
 	}
-	if !s.Config.Capabilities.Allows("session/stop") {
-		s.stopped = true
-		return domain.NewError(domain.CodeProviderUnsupported, "codex app-server stop method is not verified")
-	}
 	s.stopped = true
-	return s.Client.Call(ctx, "session/stop", map[string]any{}, nil)
+	return domain.NewError(domain.CodeProviderControlUnsupported, "codex has no verified session/stop method")
 }
 
 func (s *ProviderSession) Resume(_ context.Context) error {

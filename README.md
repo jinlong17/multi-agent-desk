@@ -4,10 +4,13 @@ MultiAgentDesk is a terminal-first, self-hostable workspace for managing AI
 coding-agent profiles, sessions, usage, devices, and explicitly authorized
 credential grants across local machines and remote servers.
 
-The product is currently entering Phase 1 (Device Kernel) and is not yet a
-usable application. Phase 0 and the Phase 0.5 decision gates are complete; the reviewed architecture baseline is
-[`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md); product code has
-not started.
+The product is pre-release and is not yet a supported end-user application.
+Phase 0, the Phase 0.5 decision gates, and the Phase 1 Device Kernel are
+complete. The Phase 2 Codex vertical slice has independently verified its
+credentialed Linux exit through P3B; platform-matrix reconciliation, final
+Security Review, Ship, packaging, and deployment are still gated. The reviewed
+architecture baseline is [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md),
+and the resumable current state is recorded in the feature `dev_log.md` files.
 
 MultiAgentDesk is local-first and self-hostable. It does not automate account
 rotation, bypass quotas or rate limits, proxy Provider requests, scrape browser

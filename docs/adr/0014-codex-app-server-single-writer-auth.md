@@ -95,9 +95,31 @@ credentials already copied by an authorized or compromised host.
 - The evidence does not support multi-writer refresh, completed headless device
   login, 48-hour stability, or versions/platforms outside the matrix.
 
+## Phase 2 implementation evidence (2026-07-16)
+
+The Phase 2 Codex vertical slice implements this decision for exact CLI
+`0.144.2`:
+
+- a private portable Vault and owner-bound official interactive enrollment;
+- one materialized writable `CODEX_HOME` and one shared app-server per
+  `CredentialInstance`, with lease refresh, digest validation, revision CAS,
+  quarantine, and bounded cleanup;
+- strict schema/version/profile/account/workspace binding, bounded
+  credential-free proxy inheritance, and auth-only Vault import;
+- per-Session thread bindings, second-CLI lease/input/observe, official Usage,
+  request-ID-preserving Approval dispatch, and binding-scoped stop/kill;
+- typed unsupported behavior for conversation resize, Provider continuation,
+  permissions Approval, session-persistent decisions, and policy amendments.
+
+The exact Linux `0.144.2` live exit and macOS `0.144.2` canonical-schema /
+empty-home handshake smoke pass. Windows is build/protocol evidence only, the
+currently bundled macOS `0.144.5` is not allowlisted, and final feature Security
+Review remains a separate gate.
+
 ## Evidence
 
 - `docs/spikes/codex/2026-07-14-auth-refresh-spike.md`
 - `docs/spikes/codex/app-server-account-matrix.json`
 - `docs/spikes/codex/two-device-short-run.json`
 - `docs/reviews/spike-codex-auth-refresh/2026-07-14-security-review.md`
+- `docs/reviews/phase2-codex-vertical-slice/2026-07-16-feature-verify-p3b.md`

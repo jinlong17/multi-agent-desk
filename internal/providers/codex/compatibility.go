@@ -21,7 +21,8 @@ var compatibilityRows = []CompatibilityRow{
 		Version:           "0.144.2",
 		SchemaFingerprint: "a1a35476587fe9bbfbe9e291b5200b8bc541df8c00241fe578d285ff26996e1c",
 		Methods: []string{MethodAccountRead, MethodAccountRateLimits, MethodAccountUsage, MethodRefreshAuthTokens,
-			MethodApprovalCommand, MethodApprovalFileChange, MethodApprovalPermissions},
+			MethodApprovalCommand, MethodApprovalFileChange, MethodApprovalPermissions,
+			MethodThreadStart, MethodTurnStart, MethodTurnInterrupt},
 	},
 }
 

@@ -250,6 +250,21 @@ input is rejected; `turn/steer` remains disabled until a separate exact fixture
 and live gate. `turn/interrupt` is enabled only by an exact compatibility row
 and fixture. Every event/request must match the binding's thread and active turn.
 
+Official login, enrollment-validation, and runtime children share one internal
+network-environment builder. It may inherit bounded credential-free HTTP(S)
+proxy URLs and a bounded `NO_PROXY` list consisting only of validated domain,
+IP, CIDR, and optional-port entries. Opaque values, userinfo, URL/path/query /
+fragment syntax, key/value content, whitespace/control characters, excessive
+counts/sizes, and unrelated environment variables are omitted. This is an
+internal process contract and does not add a client-configurable API field.
+
+`NO_PROXY` is all-or-nothing: total length `1..4096`, entry count `1..64`, and
+entry length `1..255` ASCII bytes. Entries are exactly `*`, `net.ParseIP`
+IPv4/unbracketed-IPv6, `net.ParseCIDR` IPv4/IPv6, RFC1123-like ASCII DNS names
+with optional leading `.`/`*.`, DNS/IPv4 plus decimal port `1..65535`, or
+bracketed IPv6 plus that port. Any invalid entry omits the entire variable.
+The detailed label and forbidden-syntax table in `design.md` is normative.
+
 ## Provider event envelope
 
 ```text

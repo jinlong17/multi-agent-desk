@@ -21,6 +21,7 @@ import (
 
 	"github.com/jinlong17/multi-agent-desk/internal/device"
 	"github.com/jinlong17/multi-agent-desk/internal/domain"
+	"github.com/jinlong17/multi-agent-desk/internal/providers/codex"
 )
 
 func runClient(args []string, stdout, stderr *os.File) error {
@@ -409,6 +410,7 @@ func loginEnvironment(staging string) []string {
 			result = append(result, name+"="+value)
 		}
 	}
+	result = append(result, codex.NetworkEnvironment(os.Getenv)...)
 	return result
 }
 

@@ -155,4 +155,28 @@ func TestOfficialCodexLoginHonorsEnrollmentDeadline(t *testing.T) {
 	}
 }
 
+func TestLoginEnvironmentAllowsSafeProxyAndDropsSecretVariables(t *testing.T) {
+	for _, name := range []string{"http_proxy", "HTTP_PROXY", "https_proxy", "HTTPS_PROXY", "all_proxy", "ALL_PROXY", "no_proxy", "NO_PROXY"} {
+		t.Setenv(name, "")
+	}
+	t.Setenv("https_proxy", "http://proxy.internal:8080")
+	t.Setenv("NO_PROXY", "localhost")
+	t.Setenv("OPENAI_API_KEY", "must-not-be-inherited")
+	environment := loginEnvironment(t.TempDir())
+	want := map[string]bool{"https_proxy=http://proxy.internal:8080": false, "NO_PROXY=localhost": false}
+	for _, value := range environment {
+		if _, ok := want[value]; ok {
+			want[value] = true
+		}
+		if strings.HasPrefix(value, "OPENAI_API_KEY=") {
+			t.Fatalf("secret variable was inherited: %q", value)
+		}
+	}
+	for value, present := range want {
+		if !present {
+			t.Fatalf("safe network setting missing: %q from %v", value, environment)
+		}
+	}
+}
+
 func ptrInt64(value int64) *int64 { return &value }

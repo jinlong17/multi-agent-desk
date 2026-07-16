@@ -213,6 +213,104 @@ func TestHandshakeConsumesOnlyOnePersistentFrameAtATime(t *testing.T) {
 	}
 }
 
+func TestClientSingleReaderMultiplexesConcurrentCallsAndInbound(t *testing.T) {
+	clientConn, serverConn := net.Pipe()
+	defer clientConn.Close()
+	defer serverConn.Close()
+	serverDone := make(chan error, 1)
+	go func() {
+		reader := NewFrameReader(serverConn)
+		initializeFrame, err := reader.Read()
+		if err != nil {
+			serverDone <- err
+			return
+		}
+		var initialize RPCRequest
+		if err := DecodeObject(initializeFrame, &initialize); err != nil {
+			serverDone <- err
+			return
+		}
+		initializeResult := json.RawMessage(`{"userAgent":"Codex/0.144.2","codexHome":"/tmp/codex","platformFamily":"unix","platformOs":"linux"}`)
+		if err := WriteFrame(serverConn, RPCResponse{JSONRPC: "2.0", ID: json.RawMessage(fmt.Sprint(initialize.ID)), Result: initializeResult}); err != nil {
+			serverDone <- err
+			return
+		}
+		if _, err := reader.Read(); err != nil { // initialized notification
+			serverDone <- err
+			return
+		}
+		requests := make([]RPCRequest, 0, 2)
+		for len(requests) < 2 {
+			frame, err := reader.Read()
+			if err != nil {
+				serverDone <- err
+				return
+			}
+			var request RPCRequest
+			if err := DecodeObject(frame, &request); err != nil {
+				serverDone <- err
+				return
+			}
+			requests = append(requests, request)
+		}
+		if err := WriteFrame(serverConn, RPCRequest{JSONRPC: "2.0", Method: "turn/started", Params: map[string]any{"turnId": "turn-1"}}); err != nil {
+			serverDone <- err
+			return
+		}
+		for index := len(requests) - 1; index >= 0; index-- {
+			result := json.RawMessage(fmt.Sprintf(`{"method":%q}`, requests[index].Method))
+			if err := WriteFrame(serverConn, RPCResponse{JSONRPC: "2.0", ID: json.RawMessage(fmt.Sprint(requests[index].ID)), Result: result}); err != nil {
+				serverDone <- err
+				return
+			}
+		}
+		serverDone <- nil
+	}()
+
+	client := NewClient(clientConn, clientConn)
+	client.MaxWait = time.Second
+	if err := client.ConfigureMethods([]string{MethodAccountRead, MethodAccountUsage}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.Handshake(context.Background(), InitializeParams{ClientInfo: ClientInfo{Name: "test", Version: "1"}, Capabilities: &InitializeCapabilities{}}); err != nil {
+		t.Fatal(err)
+	}
+	type callOutput struct {
+		Method string `json:"method"`
+	}
+	readResult := make(chan callOutput, 1)
+	usageResult := make(chan callOutput, 1)
+	errors := make(chan error, 2)
+	go func() {
+		var output callOutput
+		errors <- client.Call(context.Background(), MethodAccountRead, map[string]any{}, &output)
+		readResult <- output
+	}()
+	go func() {
+		var output callOutput
+		errors <- client.Call(context.Background(), MethodAccountUsage, map[string]any{}, &output)
+		usageResult <- output
+	}()
+	frame, err := client.ReadInbound(context.Background())
+	if err != nil || !strings.Contains(string(frame), `"method":"turn/started"`) {
+		t.Fatalf("inbound=%s err=%v", frame, err)
+	}
+	for range 2 {
+		if err := <-errors; err != nil {
+			t.Fatal(err)
+		}
+	}
+	if output := <-readResult; output.Method != MethodAccountRead {
+		t.Fatalf("read output=%+v", output)
+	}
+	if output := <-usageResult; output.Method != MethodAccountUsage {
+		t.Fatalf("usage output=%+v", output)
+	}
+	if err := <-serverDone; err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestReplayFixturesAndFailClosedMapping(t *testing.T) {
 	for _, version := range []string{"0.142.5", "0.143.0", "0.144.2"} {
 		result, err := ReplayFixture(version)
@@ -225,5 +323,72 @@ func TestReplayFixturesAndFailClosedMapping(t *testing.T) {
 	}
 	if _, err := DecodeUsageResponse([]byte(`{"dailyUsageBuckets":[],"summary":{"unmapped":1}}`), "0.144.2", time.Now()); domain.CodeOf(err) != domain.CodeProviderVersionUnsupported {
 		t.Fatalf("unmapped Usage field err=%v", err)
+	}
+	if event, err := MapEvent(MethodConfigWarning, []byte(`{"details":"ignored","summary":"ignored"}`), "0.144.2", time.Now()); err != nil || event.Method != MethodConfigWarning || event.ThreadID != "" {
+		t.Fatalf("config warning event=%+v err=%v", event, err)
+	}
+	if _, err := MapEvent(MethodConfigWarning, []byte(`{"details":"ignored","summary":"ignored","unmapped":true}`), "0.144.2", time.Now()); domain.CodeOf(err) != domain.CodeProviderProtocolError {
+		t.Fatalf("unmapped config warning err=%v", err)
+	}
+	for _, frame := range []string{
+		`{"dailyUsageBuckets":[{"startDate":"2026-07-15","tokenCount":1}],"summary":{"lifetimeTokens":1}}`,
+		`{"dailyUsageBuckets":[{"startDate":"not-a-date","tokens":1}],"summary":{"lifetimeTokens":1}}`,
+		`{"dailyUsageBuckets":[],"summary":{"lifetimeTokens":"1"}}`,
+	} {
+		if _, err := DecodeUsageResponse([]byte(frame), "0.144.2", time.Now()); domain.CodeOf(err) != domain.CodeProviderVersionUnsupported {
+			t.Fatalf("changed Usage schema frame=%s err=%v", frame, err)
+		}
+	}
+}
+
+func TestObservedStatusEventsValidateShapeWithoutRetainingPayload(t *testing.T) {
+	tests := []struct {
+		method   string
+		frame    string
+		threadID string
+		turnID   string
+	}{
+		{MethodRemoteControlStatus, `{"environmentId":null,"installationId":"i","serverName":"s","status":"connected"}`, "", ""},
+		{MethodAccountRateLimitsUpdated, `{"rateLimits":{"primary":null}}`, "", ""},
+		{MethodMCPStartupStatus, `{"error":null,"failureReason":null,"name":"mcp","status":"ready","threadId":"thread-1"}`, "thread-1", ""},
+		{MethodThreadStatusChanged, `{"status":"active","threadId":"thread-1"}`, "thread-1", ""},
+		{MethodItemStarted, `{"item":{"id":"item-1"},"startedAtMs":1,"threadId":"thread-1","turnId":"turn-1"}`, "thread-1", "turn-1"},
+		{MethodItemCompleted, `{"completedAtMs":2,"item":{"id":"item-1"},"threadId":"thread-1","turnId":"turn-1"}`, "thread-1", "turn-1"},
+		{MethodThreadTokenUsage, `{"threadId":"thread-1","tokenUsage":{"total":1},"turnId":"turn-1"}`, "thread-1", "turn-1"},
+		{MethodServerRequestResolved, `{"requestId":1,"threadId":"thread-1"}`, "thread-1", ""},
+		{MethodFileChangeOutputDelta, `{"delta":"ignored","itemId":"item-1","threadId":"thread-1","turnId":"turn-1"}`, "thread-1", "turn-1"},
+		{MethodFileChangePatchUpdated, `{"changes":[{"path":"ignored"}],"itemId":"item-1","threadId":"thread-1","turnId":"turn-1"}`, "thread-1", "turn-1"},
+		{MethodTurnDiffUpdated, `{"diff":"ignored","threadId":"thread-1","turnId":"turn-1"}`, "thread-1", "turn-1"},
+	}
+	for _, test := range tests {
+		t.Run(test.method, func(t *testing.T) {
+			event, err := MapEvent(test.method, []byte(test.frame), "0.144.2", time.Now())
+			if err != nil || event.ThreadID != test.threadID || event.TurnID != test.turnID || event.Text != "" || event.Usage != nil || event.ProviderApprovalID != "" {
+				t.Fatalf("event=%+v err=%v", event, err)
+			}
+			var object map[string]json.RawMessage
+			if err := json.Unmarshal([]byte(test.frame), &object); err != nil {
+				t.Fatal(err)
+			}
+			object["unmapped"] = json.RawMessage("true")
+			changed, _ := json.Marshal(object)
+			if _, err := MapEvent(test.method, changed, "0.144.2", time.Now()); domain.CodeOf(err) != domain.CodeProviderProtocolError {
+				t.Fatalf("unmapped field code=%v err=%v", domain.CodeOf(err), err)
+			}
+		})
+	}
+}
+
+func TestCommandApprovalRejectsPolicyAmendmentsButAllowsNull(t *testing.T) {
+	base := `"threadId":"thread-1","turnId":"turn-1","itemId":"item-1","startedAtMs":1`
+	for _, field := range []string{"proposedExecpolicyAmendment", "proposedNetworkPolicyAmendments"} {
+		frame := []byte(`{` + base + `,"` + field + `":{"enabled":true}}`)
+		if _, err := DecodeApprovalServerRequest(MethodApprovalCommand, frame); domain.CodeOf(err) != domain.CodeProviderVersionUnsupported {
+			t.Fatalf("non-null %s err=%v", field, err)
+		}
+	}
+	frame := []byte(`{` + base + `,"proposedExecpolicyAmendment":null,"proposedNetworkPolicyAmendments":null}`)
+	if approval, err := DecodeApprovalServerRequest(MethodApprovalCommand, frame); err != nil || approval.Kind != "commandExecution" {
+		t.Fatalf("null amendments approval=%+v err=%v", approval, err)
 	}
 }

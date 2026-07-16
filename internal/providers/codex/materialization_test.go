@@ -190,6 +190,79 @@ func TestCredentialMaterializationRefreshRequiresAtomicVaultSink(t *testing.T) {
 	}
 }
 
+func TestReadEnrollmentAuthAllowsOfficialRuntimeResidue(t *testing.T) {
+	home := t.TempDir()
+	if err := os.Chmod(home, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"log", "tmp", ".tmp", "skills"} {
+		if err := os.Mkdir(filepath.Join(home, name), 0o770); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.Mkdir(filepath.Join(home, "tmp", "arg0"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(home, "log", "codex-login.log"), []byte("runtime residue is ignored"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"state_5.sqlite", "goals_1.sqlite", "installation_id", "config.toml"} {
+		if err := os.WriteFile(filepath.Join(home, name), []byte("runtime residue is ignored"), 0o640); err != nil {
+			t.Fatal(err)
+		}
+	}
+	want := []byte(`{"tokens":{"access":"synthetic"}}`)
+	if err := os.WriteFile(filepath.Join(home, "auth.json"), want, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	got, err := ReadEnrollmentAuth(home)
+	if err != nil || string(got) != string(want) {
+		t.Fatalf("auth=%q err=%v", got, err)
+	}
+}
+
+func TestReadEnrollmentAuthRejectsMissingOrInvalidCredential(t *testing.T) {
+	tests := []struct {
+		name  string
+		setup func(*testing.T, string)
+	}{
+		{name: "missing auth", setup: func(t *testing.T, home string) {
+			if err := os.Mkdir(filepath.Join(home, "log"), 0o700); err != nil {
+				t.Fatal(err)
+			}
+		}},
+		{name: "auth is a directory", setup: func(t *testing.T, home string) {
+			if err := os.Mkdir(filepath.Join(home, "auth.json"), 0o700); err != nil {
+				t.Fatal(err)
+			}
+		}},
+		{name: "invalid auth", setup: func(t *testing.T, home string) {
+			if err := os.WriteFile(filepath.Join(home, "auth.json"), []byte("not-json"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+		}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			home := t.TempDir()
+			if err := os.Chmod(home, 0o700); err != nil {
+				t.Fatal(err)
+			}
+			test.setup(t, home)
+			if _, err := ReadEnrollmentAuth(home); domain.CodeOf(err) != domain.CodeCredentialRecoveryRequired {
+				t.Fatalf("code=%v err=%v", domain.CodeOf(err), err)
+			}
+		})
+	}
+}
+
+func writeEnrollmentAuthFixture(t *testing.T, home string) {
+	t.Helper()
+	if err := os.WriteFile(filepath.Join(home, "auth.json"), []byte(`{"token":"synthetic"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestCredentialMaterializationRejectsDuplicateJSONAndUnexpectedFiles(t *testing.T) {
 	ctx := context.Background()
 	store, credentialID, _ := setupCodexCredential(t)

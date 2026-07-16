@@ -15,6 +15,7 @@ import (
 	"github.com/jinlong17/multi-agent-desk/internal/app"
 	"github.com/jinlong17/multi-agent-desk/internal/device"
 	"github.com/jinlong17/multi-agent-desk/internal/domain"
+	"github.com/jinlong17/multi-agent-desk/internal/providers/codex"
 	runtimepkg "github.com/jinlong17/multi-agent-desk/internal/runtime"
 	"github.com/jinlong17/multi-agent-desk/internal/storage"
 	"github.com/jinlong17/multi-agent-desk/internal/vault"
@@ -149,10 +150,17 @@ func runServe(args []string, stderr *os.File) error {
 		return err
 	}
 	manager.Vault = vaultManager
+	credentialHomeRoot := filepath.Join(*root, "codex-home")
+	credentialSource := codex.NewVaultCredentialSource(vaultManager)
+	materializer := codex.NewCredentialMaterializationManager(store, credentialHomeRoot, vaultManager, credentialSource)
+	if err := materializer.Recover(ctx); err != nil {
+		return err
+	}
+	manager.RegisterCodex(codex.NewRuntimeManager(store, materializer))
 	defer manager.Close()
 	service := app.NewSessionService(store, manager)
 	service.Vault = vaultManager
-	service.CredentialHomeRoot = filepath.Join(*root, "codex-home")
+	service.CredentialHomeRoot = credentialHomeRoot
 	if err := service.RecoverPendingApprovals(ctx); err != nil {
 		return err
 	}

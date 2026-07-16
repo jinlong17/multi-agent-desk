@@ -503,10 +503,10 @@ func ReadEnrollmentAuth(home string) ([]byte, error) {
 	if device.VerifyPrivateDirectory(home) != nil {
 		return nil, domain.NewError(domain.CodeCredentialRecoveryRequired, "enrollment staging is not private")
 	}
-	entries, err := os.ReadDir(home)
-	if err != nil || len(entries) != 1 || entries[0].Name() != "auth.json" || entries[0].Type()&os.ModeSymlink != 0 {
-		return nil, domain.NewError(domain.CodeCredentialRecoveryRequired, "enrollment staging is invalid")
-	}
+	// Official login and app-server validation both create non-credential
+	// runtime state under CODEX_HOME. None of it is imported: validation is
+	// intentionally scoped to the exact auth.json path, and the daemon removes
+	// the complete private staging directory after the terminal transition.
 	path := filepath.Join(home, "auth.json")
 	if _, _, err := validateAuthFile(path); err != nil {
 		return nil, domain.NewError(domain.CodeCredentialRecoveryRequired, "enrollment credential is invalid")

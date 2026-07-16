@@ -26,7 +26,7 @@ func ValidateEnrollment(ctx context.Context, descriptor BinaryDescriptor, home s
 	validateCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(validateCtx, descriptor.Path, "app-server")
-	cmd.Env = []string{"CODEX_HOME=" + home, "HOME=" + os.Getenv("HOME"), "PATH=" + os.Getenv("PATH")}
+	cmd.Env = append([]string{"CODEX_HOME=" + home, "HOME=" + os.Getenv("HOME"), "PATH=" + os.Getenv("PATH")}, NetworkEnvironment(os.Getenv)...)
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return domain.NewError(domain.CodeProviderFailed, "codex validation stdin failed")

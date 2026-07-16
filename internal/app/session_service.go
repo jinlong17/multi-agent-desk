@@ -693,6 +693,14 @@ func (s *SessionService) dispatch(ctx context.Context, auth device.AuthContext, 
 		if body.AccountID == "" {
 			return map[string]any{"provider": domain.ProviderCodex, "available": false, "capability_status": domain.UsageUnavailable, "snapshots": []any{}}, nil
 		}
+		capabilityStatus := domain.UsageUnavailable
+		if s.Runtime != nil && s.Runtime.Codex != nil {
+			if snapshot, readErr := s.Runtime.Codex.ReadUsage(ctx, body.AccountID); readErr == nil {
+				capabilityStatus = snapshot.CapabilityStatus
+			} else if domain.CodeOf(readErr) != domain.CodeUsageUnavailable {
+				return nil, readErr
+			}
+		}
 		snapshots, err := s.Store.ListUsageSnapshots(ctx, body.AccountID)
 		if err != nil {
 			return nil, err
@@ -701,7 +709,8 @@ func (s *SessionService) dispatch(ctx context.Context, auth device.AuthContext, 
 		for _, snapshot := range snapshots {
 			result = append(result, usageView(snapshot))
 		}
-		return map[string]any{"provider": domain.ProviderCodex, "available": len(result) > 0, "snapshots": result}, nil
+		return map[string]any{"provider": domain.ProviderCodex, "available": capabilityStatus == domain.UsageSupported,
+			"capability_status": capabilityStatus, "snapshots": result}, nil
 	case "approval.list", "approval.observe":
 		var body sessionBody
 		if err := decodeBody(request.Body, &body); err != nil {
@@ -739,7 +748,17 @@ func (s *SessionService) dispatch(ctx context.Context, auth device.AuthContext, 
 		if err := lease.RequireControl(auth.ClientID, revision, s.now()); err != nil {
 			return nil, domain.NewError(domain.CodeApprovalLeaseRequired, "controller lease is required for approval response")
 		}
-		return nil, domain.NewError(domain.CodeProviderUnsupported, "approval dispatch requires the P3A runtime bridge")
+		if s.Runtime == nil || s.Runtime.Codex == nil {
+			return nil, domain.NewError(domain.CodeProviderUnsupported, "approval dispatch requires the Codex runtime bridge")
+		}
+		decision := domain.ApprovalDecision(body.Decision)
+		approval, err := s.Runtime.Codex.RespondApproval(ctx, codex.ApprovalDispatchRequest{SessionID: body.SessionID,
+			ApprovalID: body.ApprovalID, ProviderApprovalID: body.ProviderApprovalID, ResponderID: auth.ClientID,
+			ResponseKey: request.IdempotencyKey, Decision: decision, LeaseRevision: revision})
+		if err != nil {
+			return nil, err
+		}
+		return approvalView(approval), nil
 	case "sessions.show":
 		var body sessionBody
 		if err := decodeBody(request.Body, &body); err != nil {

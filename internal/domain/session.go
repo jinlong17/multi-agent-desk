@@ -68,6 +68,9 @@ func NewSession(session Session) (Session, error) {
 	if session.Provider == "" || session.StartedAt.IsZero() {
 		return Session{}, NewError(CodeInvalidArgument, "session requires provider and start time")
 	}
+	if len(session.ProviderSessionID) > 256 {
+		return Session{}, NewError(CodeInvalidArgument, "provider session identity is too large")
+	}
 	if session.Provider == ProviderCodex && session.AccountID == "" {
 		return Session{}, NewError(CodeInvalidArgument, "codex session requires an account")
 	}

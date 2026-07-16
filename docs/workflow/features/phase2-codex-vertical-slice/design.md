@@ -340,9 +340,40 @@ only blocker.
 | P3A Daemon runtime bridge | CredentialRuntime/SessionBinding, single-reader JSON-RPC, thread/turn routing, event/Usage persistence, exact Approval dispatch table, daemon-owned capabilities, input/stop/kill and typed resize unsupported | P1/P2B; exact method rows and `0005` dispatch state | two same-credential Sessions share one child; stopping one preserves the other; concurrent calls/events, crash fan-out, dispatch ambiguity, and Fake regression tests pass | unregister Codex runtime; retain readable data; stop shared runtime only after last reference |
 | P3B Live Linux exit | pinned real app-server, structured events/Approval/Usage, second CLI attach/replay/lease/turn input, typed resize unsupported, stop/kill, frozen resume result | P3A; exact Linux schema/version; credentialed test environment | reproducible sanitized Linux exit; no unsupported continuation or terminal capability claim | feature-gate Codex; preserve evidence; no remote rollout |
 | P4 Matrix and handoff | macOS smoke, Windows Go/IPC CI, exact compatibility rows, security review package, user-facing readiness notes | P3; platform environments; docs | compatibility matrix and verification report match actual evidence; Security Gate accepted | retain only the verified platform/version rows and mark others unsupported |
+| P4S Security remediation | restrict inherited `NO_PROXY` to bounded network entries; security-redact operator identity/MFA metadata; rerun changed/untracked artifact scans and Provider health evidence | P4 `READY_TO_SHIP`; 2026-07-16 Security Review `REVISE` | structural host/IP/CIDR/optional-port grammar and adversarial tests pass across all official child paths; repository evidence contains no account/MFA identifier; independent verification and Security Review accept the closure | remove `NO_PROXY` inheritance if a portable safe grammar cannot be proven; retain generic event outcomes without personal identifiers |
 
 Only one phase may be built at a time. A phase completes at `READY_FOR_VERIFY`
 and stops for an independent `feature-verify`; no test result authorizes Ship.
+
+### P4S exact `NO_PROXY` contract
+
+The inherited raw value is 1–4096 bytes and contains 1–64 comma-separated,
+non-empty entries. Each entry is 1–255 ASCII bytes with no whitespace or
+control characters. Accepted entry forms are exactly:
+
+1. `*` by itself;
+2. an IPv4 or unbracketed IPv6 literal accepted by `net.ParseIP`;
+3. an IPv4 or IPv6 CIDR accepted by `net.ParseCIDR`;
+4. an ASCII DNS name/suffix with optional leading `.` or `*.`, total base name
+   at most 253 bytes, labels 1–63 bytes, alphanumeric endpoints, and only ASCII
+   alphanumeric or `-` internally (`localhost` is valid);
+5. an optional decimal port `1..65535` on a DNS/IPv4 entry, or on bracketed
+   IPv6 as `[address]:port`.
+
+Schemes, userinfo, `=`, query/fragment, paths except the slash inside a valid
+CIDR, zone IDs, Unicode, ambiguous/unbracketed IPv6 ports, empty labels, and
+out-of-range ports fail closed. The exact original value is inherited only when
+every entry passes; otherwise the complete variable is omitted. If the real
+Linux value cannot pass this grammar, P4S removes `NO_PROXY` inheritance and
+must rerun the live Provider-health gate instead of widening the grammar.
+
+Artifact scanning covers every modified and untracked text artifact. Any
+token-shaped value, email, account display-name marker, or phone/MFA digits are
+failures. The sole synthetic identifier-shaped exception is the credentialed
+proxy rejection input in `internal/providers/codex/environment_test.go`; the
+scanner reports that file as `synthetic-security-fixture` without printing the
+matching line. Every other match fails, including matches in documentation and
+review reports.
 
 ## Failure and recovery
 
@@ -371,8 +402,15 @@ and stops for an independent `feature-verify`; no test result authorizes Ship.
 - Use argument vectors and environment/file-descriptor injection with an
   explicit allowlist. Avoid shell expansion and inherited secret-bearing
   environment variables.
+- HTTP(S) proxy URLs may be inherited only when bounded and credential-free.
+  `NO_PROXY` is not opaque: split it into a bounded number of bounded
+  host/IP/CIDR/optional-port entries, reject non-network syntax, and pass the
+  same validated result to login, enrollment validation, and runtime children.
 - Audit only event kinds, capability decisions, version/fingerprint, redacted
   error codes, lease/revision transitions, and bounded sizes.
+- Evidence may record that an operator explicitly selected an account and
+  completed MFA, but never the account display name, email, phone digits, OAuth
+  URL, authorization code, or token-shaped value.
 - Treat the app-server and host as capable of reading materialized credentials;
   this plan reduces accidental disclosure and stale overwrites, not compromise
   impact.

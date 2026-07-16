@@ -770,6 +770,30 @@ func (s *Store) TransitionSession(ctx context.Context, id domain.ID, expected, n
 	return session, nil
 }
 
+// SetSessionProviderSessionID records the bounded Provider thread identity
+// while the local Session is still starting. It cannot be rewritten after the
+// Session advances or by a second thread/start result.
+func (s *Store) SetSessionProviderSessionID(ctx context.Context, id domain.ID, expected domain.SessionStatus, providerSessionID string) (domain.Session, error) {
+	if err := domain.ValidateID(id); err != nil {
+		return domain.Session{}, err
+	}
+	if expected != domain.SessionStarting || providerSessionID == "" || len(providerSessionID) > 256 {
+		return domain.Session{}, domain.NewError(domain.CodeInvalidArgument, "provider session identity is invalid")
+	}
+	result, err := s.db.ExecContext(ctx, `UPDATE sessions SET provider_session_id=? WHERE id=? AND provider='codex' AND status=? AND coalesce(provider_session_id,'')=''`, providerSessionID, id, expected)
+	if err != nil {
+		return domain.Session{}, writeError("provider session identity could not be persisted", err)
+	}
+	changed, err := result.RowsAffected()
+	if err != nil {
+		return domain.Session{}, writeError("provider session identity result could not be read", err)
+	}
+	if changed != 1 {
+		return domain.Session{}, domain.NewError(domain.CodeConflict, "provider session identity changed")
+	}
+	return s.Session(ctx, id)
+}
+
 func (s *Store) CreateAttachment(ctx context.Context, attachment domain.SessionAttachment) error {
 	if err := domain.ValidateID(attachment.ID); err != nil {
 		return err

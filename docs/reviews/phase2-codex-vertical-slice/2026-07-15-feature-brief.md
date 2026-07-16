@@ -245,6 +245,18 @@ and no-mutation Resume exit before another build.
 - [ ] `docs/PROVIDER_COMPATIBILITY.md`, the feature Evidence Ledger, and the
       verification report contain exact versions, platforms, commands, and
       sanitized artifacts; no unsupported method or stability claim is added.
+- [ ] Official login, enrollment validation, and runtime inherit the same
+      bounded network environment: credential-free HTTP(S) proxy URLs plus
+      structurally validated domain/IP/CIDR/optional-port `NO_PROXY` entries;
+      arbitrary opaque values never cross into the Provider child.
+      Normative bounds are total `1..4096`, `1..64` entries, `1..255` bytes per
+      ASCII entry, DNS labels `1..63`, base DNS name at most `253`, and decimal
+      port `1..65535`; any invalid entry omits the whole variable.
+- [ ] All modified and untracked evidence is free of account display names,
+      emails, phone/MFA digits, OAuth material, and token-shaped values while
+      retaining only the generic owner-selection/MFA-completion outcome.
+      The sole identifier-shaped exception is the named synthetic rejection
+      fixture in `environment_test.go`, classified by file without printing it.
 
 ## Risks and open questions
 

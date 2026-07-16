@@ -140,10 +140,40 @@ The live test is a release-blocking Phase 2 exit criterion but is not itself a
 release authorization. If no credentialed Linux environment is available, the
 feature remains `BLOCKED` at verification with a named clearing role.
 
+### P3B sanitized live receipt (2026-07-16)
+
+- Linux x86_64 ran exact Codex `0.144.2` with canonical schema fingerprint
+  `a1a35476587fe9bbfbe9e291b5200b8bc541df8c00241fe578d285ff26996e1c`.
+- Official owner-bound login imported only bounded private `auth.json` into the
+  local Vault at credential revision 2; login/app-server residue was ignored
+  and the complete staging directory was removed.
+- A second CLI attached, replayed, acquired/heartbeated the lease, sent a turn,
+  and observed chunks reconstructing exactly `P3B_LINUX_OK`; resize returned
+  `provider_control_unsupported`.
+- Official Usage persisted a high-confidence `0.144.2` snapshot. A standard
+  read-only fileChange Approval reached pending, was claimed and written once,
+  completed as approved, and produced the exact disposable file while the
+  Session stayed running.
+- Binding stop produced `exited`; binding kill produced `killed`; Resume returned
+  `provider_resume_unsupported` with local Session count unchanged (`16 -> 16`).
+  The final Profile was restored to `on-request` / `workspace-write`, temporary
+  shape diagnostics were removed, and the final daemon log was empty.
+
 ## Security/adversarial tests
 
 - Attempt path traversal, symlink replacement, permission weakening, inherited
   secret environment, and shell metacharacter injection in binary/profile paths.
+- For `NO_PROXY`, accept only a bounded list of domain, IPv4, IPv6, CIDR, and
+  optional-port network entries. Reject empty entries, userinfo, key/value,
+  URL/path/query/fragment syntax, whitespace/control characters, excessive
+  entry count/entry size, and ambiguous ports. Prove login, validation, and
+  runtime all consume the same validator.
+  Positive rows: `*`, `localhost`, `.example.com`, `*.example.com`, IPv4,
+  unbracketed IPv6, IPv4/IPv6 CIDR, `host:1`, `host:65535`, IPv4+port, and
+  `[IPv6]:port`. Negative rows: 0/65 entries, 0/256-byte entry, 4097-byte total,
+  empty list item, ASCII/Unicode whitespace, control, Unicode domain, empty /
+  oversized/hyphen-ended label, schemes, userinfo, `=`, path, query, fragment,
+  zone ID, invalid CIDR, unbracketed IPv6+port, and port `0`/`65536`/non-decimal.
 - Start a second writer, mutate auth state after lease acquisition, return a
   stale CAS revision, and kill the writer at each commit boundary.
 - Send malformed/oversized/duplicate-key app-server frames and unknown Approval
@@ -158,8 +188,13 @@ feature remains `BLOCKED` at verification with a named clearing role.
   inject unknown RuntimeProfile fields or `danger-full-access`, enable
   `turn/steer`, or answer permissions/session-persistent Approval; verify each
   fails closed before a Provider frame.
-- Search all new artifacts and generated dashboard state for secret-like values
-  and forbidden multi-writer/48-hour/device-auth claims.
+- Search every modified and untracked artifact plus generated dashboard state
+  for token/email/account-display-name/phone-or-MFA metadata and forbidden
+  multi-writer/48-hour/device-auth claims. The scan reports only file names and
+  classifications, never matching secret content.
+  The only allowed identifier-shaped hit is the exact synthetic rejection
+  fixture in `internal/providers/codex/environment_test.go`, reported as
+  `synthetic-security-fixture`; any other hit fails the phase.
 
 ## Failure injection and recovery
 
@@ -178,6 +213,23 @@ reconciliation, or a new Provider turn.
 | macOS | Go/unit/fixture/security + exact supported Codex smoke | supported only for recorded versions/paths |
 | Linux | Go/unit/fixture/security + required real vertical-slice exit | Phase 2 exit platform; exact version/schema must be recorded |
 | Windows | Go/unit/fixture/security, Named Pipe/CLI build, cross-compile/CI | no real Codex support claim; Phase 1 baseline remains required |
+
+### P4 platform-matrix receipt (2026-07-16)
+
+- macOS 26.5.2 arm64: an isolated official npm Codex `0.144.2` binary passed
+  `TestConfiguredCodexBinaryCanonicalSchemaProbe` and
+  `TestConfiguredCodexBinaryEmptyHomeHandshake`; the current ChatGPT-bundled
+  `0.144.5` is outside the allowlist and remains unsupported.
+- Windows amd64: current Provider, runtime, app, and device test packages all
+  compile as Windows test executables; `go build ./cmd/...` passes with
+  `GOOS=windows GOARCH=amd64 CGO_ENABLED=0`. The unchanged native Phase 1 IPC
+  baseline is retained by successful Actions run `29469271422`, Windows job
+  `87528995056`. This is build/protocol evidence only, not real Windows Codex
+  execution.
+- Linux x86_64: exact credentialed `0.144.2` P3B live receipt remains the only
+  real Provider support claim in this feature.
+- P4 documentation, ADR, threat-model, compatibility, README, secret-like diff
+  scan, and Security Review handoff must remain consistent with these limits.
 
 ## Verification commands
 

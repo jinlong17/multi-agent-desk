@@ -103,7 +103,7 @@ func TestProviderSessionStopsAndResumesFailClosed(t *testing.T) {
 		t.Fatalf("resume err=%v", err)
 	}
 	// A session that has not completed initialize cannot send a Provider stop.
-	if err := session.Stop(context.Background()); domain.CodeOf(err) != domain.CodeProviderUnsupported {
+	if err := session.Stop(context.Background()); domain.CodeOf(err) != domain.CodeProviderControlUnsupported {
 		t.Fatalf("stop err=%v", err)
 	}
 }
