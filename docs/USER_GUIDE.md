@@ -1,8 +1,8 @@
 # MultiAgentDesk 用户操作手册（预发布）
 
-> 当前状态（2026-07-16）：Phase 1 Device Kernel 已进入远端 `main`；Phase 2
-> Codex Vertical Slice 已在功能分支完成本地 Ship、独立验证和 Security
-> Review，正在进行受保护分支集成。仓库可从源码构建开发者预览，但仍没有
+> 当前状态（2026-07-16）：Phase 1 Device Kernel 与 Phase 2 Codex Vertical
+> Slice 均已进入远端 `main`；Phase 2 已完成本地 Ship、独立验证、Security
+> Review 和七项检查保护的 PR 集成。仓库可从源码构建开发者预览，但仍没有
 > 受支持的安装包、正式 Release、Control Plane、Web 远程终端或 Desktop
 > 成品。不要把开发者预览当成生产版本。
 
@@ -50,7 +50,7 @@ MultiAgentDesk 不会自动轮换账号、规避额度或限流、代理 Provide
 | 能力 | 目标平台 | 解锁阶段 | 当前状态 |
 |---|---|---|---|
 | CLI / Device Daemon | macOS、Windows、Linux | Phase 1 | 开发者预览；三平台基础已验证 |
-| Codex 真实 Session | Linux x86_64、CLI `0.144.2` | Phase 2 + Codex Spike | 本地 Ship；远端集成中 |
+| Codex 真实 Session | Linux x86_64、CLI `0.144.2` | Phase 2 + Codex Spike | 已进入 `main` 的源码开发者预览 |
 | Codex schema/handshake | macOS arm64、CLI `0.144.2` | Phase 2 | 已验证 smoke；非完整 Session 支持 |
 | Windows Codex | Windows amd64 | 后续平台验收 | build/protocol only；真实运行不支持 |
 | Claude Code PTY Session | macOS、Windows、Linux | Phase 3 + Claude/ConPTY Spike | 待验证 |

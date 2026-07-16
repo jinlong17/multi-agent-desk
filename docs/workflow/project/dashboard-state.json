@@ -3,27 +3,27 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "2",
-  "current_status": "Phase 2 Codex Vertical Slice SHIPPED locally; remote integration in progress",
+  "current_status": "Phase 2 Codex Vertical Slice SHIPPED and integrated on remote main",
   "current_owner": "provider",
-  "next_action": "verify reconciliation, push Phase 2, open protected PR",
+  "next_action": "preserve and reconcile multi-account P1 onto final main before later Provider work",
   "manual_updated_at": "2026-07-16",
-  "manual_updated_by": "operator-authorized remote-integration sequence (recorded in Phase 2 Work Log and readiness record)",
+  "manual_updated_by": "operator-authorized remote-integration sequence (PR #19 and Phase 2 remote receipt)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 2 已完成本地 Ship，正在收口文档并进入远端受保护 PR"
+      "value": "Phase 2 已完成本地 Ship，并通过受保护 PR #19 进入远端 main"
     },
     {
       "label": "在哪条线",
-      "value": "codex/provider/phase2-codex-vertical-slice"
+      "value": "codex/project-system/phase2-remote-receipt"
     },
     {
       "label": "用哪个入口",
-      "value": "验证文档/看板后 push Phase 2 并创建 PR"
+      "value": "固化远端回执并审计最终 main，然后重基 multi-account P1"
     },
     {
       "label": "做到什么状态",
-      "value": "P0-P4/P4S verified；Security ACCEPTED；local SHIPPED"
+      "value": "P0-P4/P4S verified；Security ACCEPTED；SHIPPED；main=250bf57"
     }
   ],
   "phases": [

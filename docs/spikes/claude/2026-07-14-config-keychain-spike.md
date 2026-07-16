@@ -15,20 +15,29 @@ and reduced to booleans.
 
 ## Current official contract
 
-- [Environment variables](https://code.claude.com/docs/en/env-vars) documents
-  `CLAUDE_CONFIG_DIR` as the configuration root and explicitly calls it useful
-  for multiple accounts. It also says macOS credentials live in Keychain while
-  Linux/Windows credentials live under the selected config directory.
-- [CLI reference](https://code.claude.com/docs/en/cli-reference) documents
+- The official Environment variables page available during the experiment
+  documented `CLAUDE_CONFIG_DIR` as the configuration root and explicitly
+  called it useful for multiple accounts. It also said macOS credentials live
+  in Keychain while Linux/Windows credentials live under the selected config
+  directory.
+- The official CLI reference available during the experiment documented
   `claude auth status` as JSON with exit `0` when logged in and exit `1` when
-  logged out, and documents `claude setup-token` as an interactive command.
-- [Authentication](https://code.claude.com/docs/en/authentication) documents a
-  one-year, inference-only setup token, precedence through
+  logged out, and documented `claude setup-token` as an interactive command.
+- The official Authentication page available during the experiment documented
+  a one-year, inference-only setup token, precedence through
   `CLAUDE_CODE_OAUTH_TOKEN`, and that the token is printed but not saved.
 - The official authentication page does not provide a per-token revocation
   command or API. General documentation only makes global sign-out/admin access
   removal observable as revoked OAuth. The stable design therefore does not
   depend on setup-token distribution.
+
+Those exact claims are retained as dated Spike evidence, not as a promise that
+the documentation locations are permanent. On 2026-07-16 the prior
+`code.claude.com` endpoints redirected outside the documentation site and
+failed the repository HTTP-link gate. They were retired from live links; future
+compatibility work must revalidate the current official CLI and documentation.
+The stable upstream project entry is the
+[official Claude Code repository](https://github.com/anthropics/claude-code).
 
 ## Environments
 
