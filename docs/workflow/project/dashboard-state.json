@@ -2,16 +2,16 @@
   "schema_version": 1,
   "state_owner": "project-system",
   "plan_version": "v0.2",
-  "current_phase": "Claude distinct-account Provider Spike",
-  "current_status": "EVIDENCE_READY: stable subscription product surface falsified by current Provider policy",
+  "current_phase": "multi-account Provider decision reconciliation",
+  "current_status": "P1 VERIFIED; both Provider child gates GATE_RESOLVED",
   "current_owner": "provider",
-  "next_action": "run Security Review on the Claude policy/technical boundary and API-key fallback",
+  "next_action": "create separately reviewable Codex P2 and Claude API-key/cloud phase units before any build",
   "manual_updated_at": "2026-07-16",
-  "manual_updated_by": "operator-authorized provider-spike writer",
+  "manual_updated_by": "operator-authorized provider decision writer",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Claude 订阅多账号稳定产品方案在当前 Provider 政策门被否决"
+      "value": "两个 Provider 子门已关闭：Codex 精确 Linux 支持，Claude 订阅稳定方案否决"
     },
     {
       "label": "在哪条线",
@@ -19,11 +19,11 @@
     },
     {
       "label": "用哪个入口",
-      "value": "安全审查 Claude 政策边界，并冻结 API Key/云提供商回退"
+      "value": "分别建立并评审 Codex P2 与 Claude API Key/云提供商阶段单元"
     },
     {
       "label": "做到什么状态",
-      "value": "P1=VERIFIED；Codex=GATE_RESOLVED；Claude policy evidence=EVIDENCE_READY"
+      "value": "P1=VERIFIED；Codex=GATE_RESOLVED；Claude subscription policy=GATE_RESOLVED"
     }
   ],
   "phases": [
@@ -112,7 +112,7 @@
     },
     {
       "slug": "spike-claude-distinct-account-usage",
-      "expected_status": "EVIDENCE_READY"
+      "expected_status": "GATE_RESOLVED"
     }
   ]
 }

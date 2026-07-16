@@ -9,24 +9,24 @@
 | Title | `多账号用量看板与显式调用` |
 | Owner Module | `provider` |
 | Impacted Modules | `core, web, desktop, security, control-plane, project-system` |
-| Current Phase | `VERIFY P1 RECONCILIATION` |
+| Current Phase | `PLAN NEXT PHASE UNITS` |
 | Status | `VERIFIED` |
-| Executor | `Codex (GPT-5) as independent feature-verify` |
-| Updated | `2026-07-16 13:13 PDT` |
-| Suggested Next | `feature-build for the next approved phase only after both child Provider Spikes resolve and that phase plan is independently approved` |
+| Executor | `Codex (GPT-5) as feature-plan Provider decision reconciliation` |
+| Updated | `2026-07-16 16:53 PDT` |
+| Suggested Next | `feature-build only after a separately reviewable Codex P2 or Claude API-key/cloud phase unit reaches APPROVED; no next build is currently authorized` |
 | Branch / Worktree | `codex/provider/multi-account-usage-control @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/multi-account-usage-control` |
-| Plan Version | `v0.3 + Phase 2 reconciliation overlay` |
-| Provider Gate | `open — distinct-account Codex and Claude Spikes; Claude usage/policy evidence` |
+| Plan Version | `v0.4 Provider-decision overlay; P2/P3 child phase units pending review` |
+| Provider Gate | `resolved at decision level — Codex exact Linux 0.144.2 supported with limits; stable managed Claude subscription login/Usage unsupported; Claude API-key/cloud path requires a new feature lifecycle` |
 | Security Gate | `open — credentials, login isolation, usage privacy, deletion/revocation and remote authorization` |
 
 ## Phase Plan
 
 | Phase | Scope | Dependencies | Acceptance | Status |
 |---|---|---|---|---|
-| P0 Provider evidence (separate Spike units) | two distinct Codex Homes; two distinct Claude Config Dirs; quota schemas; Claude policy/monthly limits | approved Spike intakes; operator-owned accounts | both Spikes reach Security-reviewed decision; unsupported fields retain fallback | `SPIKE_READY in child units; may run alongside P1` |
+| P0 Provider evidence (separate Spike units) | two distinct Codex Homes; two distinct Claude Config Dirs; quota schemas; Claude policy/monthly limits | approved Spike intakes; operator-owned accounts | both Spikes reach Security-reviewed decision; unsupported fields retain fallback | `GATE_RESOLVED — Codex exact Linux accepted; Claude stable subscription surface rejected with API-key/cloud or direct-CLI fallback` |
 | P1 manual registry and usage contracts | Account/Profile/alias domain; forward migration; CRUD/storage/IPC/CLI; generic stored Usage; Session preview binding; no real Provider launch | feature-review approval; Phase 1 shipped | 8+ mixed Profiles, pagination, migration/restart, alias/no-rotation/security tests, three-platform CI | `VERIFIED — original P1 acceptance and shipped Phase 2 Codex/Vault/runtime contracts both preserved after reconciliation` |
-| P2 Codex multi-account vertical slice | managed per-credential `CODEX_HOME`; login/status/logout; app-server usage; explicit `@alias` run/shell | P1 verified; Codex Spike gate resolved; ADR 0014 | two different accounts isolated on Mac/Linux; official windows shown; real Session pinned; no second refresh writer | `GATED` |
-| P3 Claude multi-account vertical slice | per-profile `CLAUDE_CONFIG_DIR`; login/status/logout; PTY; status-line usage; explicit alias | P1 verified; Claude Spike + policy gate resolved; ADR decision | two identities isolated; real PTY/session; 5h/7d truthful; monthly supported or explicit unavailable | `GATED` |
+| P2 Codex multi-account vertical slice | managed per-credential `CODEX_HOME`; login/status/logout; app-server usage; explicit `@alias` run/shell | P1 verified; Codex Spike `GATE_RESOLVED`; ADR 0014 addendum | exact Linux `0.144.2` two-account path; privacy-preserving post-login identity confirmation; explicit selector; no second writer/auto-rotation; macOS/Windows remain capability-gated | `PLAN REVISION REQUIRED — create a separately reviewable phase unit before build` |
+| P3 Claude provider vertical slice | user-supplied Claude Console API key or supported cloud provider; explicit auth/billing source; PTY; Provider-native usage/cost; explicit alias | P1 verified; Claude subscription Spike `GATE_RESOLVED` negative decision; ADR 0016 narrowing | no managed subscription OAuth/Usage; Vault-backed key/cloud identity; real PTY/session; truthful Provider-native usage/cost or unavailable | `REPLAN REQUIRED — new credential/billing Feature Brief and Security Gate before build` |
 | P4 unified metadata and Web/Desktop dashboard | Control Plane metadata sync; Accounts/Usage pages; manual actions; responsive/accessibility | P2 and P3 verified or explicitly capability-gated; Phase 4a contracts | 6+/201 account UI, source/freshness/unknown states, no Provider browser secrets | `GATED` |
 | P5 remote authorization and operations guide | target-device login/grant UX; Mac/Linux/Windows instructions; revocation; existing guide integration | P2/P3/P4 verified; CredentialGrant security gate; explicit branch integration | target-local fallback always works; supported grants are scoped/E2EE; guide/dashboard match truth | `GATED` |
 
@@ -58,18 +58,19 @@ own security review and feature-plan decision complete.
 
 ## Risks and Blockers
 
-- Original P1 is independently `VERIFIED` on `cb93c02`; both earlier blockers
-  remain documented and were reproduced as cleared. The rebased reconciliation
-  is `READY_FOR_VERIFY`, so no compatibility, ship, merge, or push claim is made
-  until a fresh independent verdict.
-- Stable Codex distinct-account support requires two real-account evidence; the
-  existing Spike used the same account on two devices.
-- Stable Claude multi-account support requires two real identities; existing
-  ADR 0016 explicitly scoped v0.1 to one identity.
-- Claude subscription login/rate-limit surfacing has an open Provider policy
-  gate. No stable claim is permitted without an accepted applicability record.
-- Claude monthly Agent SDK credit exists in official product documentation but
-  no supported machine-readable remaining/reset contract is established.
+- Original P1 and its final-Phase-2 reconciliation are independently
+  `VERIFIED`; both earlier blockers remain documented and cleared. This does
+  not approve P2/P3 implementation, merge, push, ship, or release.
+- Codex distinct-account evidence is accepted only for exact Linux CLI
+  `0.144.2`. macOS distinct-identity, real Windows Codex, passive soak, and
+  stable alias launch remain outside the compatibility claim until separately
+  planned and accepted.
+- Stable managed Claude subscription login/Usage is security-reviewed as
+  unsupported under current Provider guidance. Direct official CLI remains
+  external; API-key/cloud integration is not implemented or approved by the
+  fallback decision.
+- The announced Claude Agent SDK monthly-credit change is paused and the credit
+  unavailable. No monthly remaining/reset product field is supported.
 - The cross-platform user operations guide is integrated on final remote
   `main`; this reconciliation preserves it and does not broaden its claims.
 - P1 must not expand into real login or Provider process launch before P0/P2/P3
@@ -97,3 +98,5 @@ own security review and feature-plan decision complete.
 | 2026-07-16 13:10 PDT | Codex root as operator-directed provider writer via `mad-dashboard-sync` | Rebound manual dashboard judgment to the exact reconciliation state and child Spike gates, regenerated workflow/dashboard facts, and ran Go, race, three-OS command builds, Web, Desktop/Rust, layout, Actions, CODEOWNERS, fixtures, links and license checks | `dashboard-state.json`; generated workflow/dashboard facts; command output; this log | all checks pass; `READY_FOR_VERIFY` is reflected without claiming P2, merge, ship, release or deployment | independent `feature-verify` of the reconciliation |
 | 2026-07-16 13:13 PDT | Codex (GPT-5) as independent feature-verify | Re-inspected the reconciliation commit against original P1 acceptance and final Phase 2 contracts; repeated migration, registry, replay, tuple-isolation and authenticated IPC probes; reran the full platform/project matrix; modified only this verdict authority and the verification report | `docs/reviews/multi-account-usage-control/2026-07-16-feature-verify.md`; this log | `VERIFIED`; no reconciliation finding remains, while P2-P5 and Provider/Security gates stay open | operator dashboard refresh, then feature-plan/review updates for the child Spike assumptions |
 | 2026-07-16 13:14 PDT | Codex root as operator-directed provider writer via `mad-dashboard-sync` | Rebound manual dashboard focus to the independent reconciliation verdict and retained both child Provider Spikes as the next gated work | `docs/workflow/project/dashboard-state.json`; generated dashboard facts; this log | dashboard authority now says `VERIFIED`; no P2 build, push, merge, ship, release or deployment is implied | revise and independently review the child Spike assumptions |
+| 2026-07-16 16:53 PDT | Codex (GPT-5) as feature-plan Provider decision reconciliation | Reconciled both child Spike decisions into the parent phase truth: exact Linux Codex support with identity-confirmation/platform limits, and a security-reviewed negative Claude subscription decision with direct-CLI or separately planned API-key/cloud fallback | child Spike logs/reviews; ADR 0014/0016; compatibility matrix; this log | parent P0 Provider decisions resolved; P1 remains `VERIFIED`; P2 requires a new reviewable phase unit and P3 must be re-planned rather than built from the superseded subscription scope | create and independently review the P2/P3 phase units |
+| 2026-07-16 16:56 PDT | Codex root as operator-directed provider decision writer via `mad-dashboard-sync` | Rebound dashboard focus to parent P1 `VERIFIED` plus both child `GATE_RESOLVED` decisions, named the two separately reviewable next phase units, regenerated machine facts, and verified workflow/dashboard/link/diff integrity | `docs/workflow/project/dashboard-state.json`; generated dashboard unchanged | all checks PASS; no next `feature-build` is authorized until a child phase unit reaches `APPROVED` | create Codex P2 and Claude API-key/cloud Feature Briefs and run their independent reviews |
