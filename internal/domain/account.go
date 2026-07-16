@@ -7,26 +7,7 @@ import (
 	"time"
 )
 
-const (
-	ProviderFake   = "fake"
-	ProviderCodex  = "codex"
-	ProviderClaude = "claude"
-)
-
 var selectorAliasPattern = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_-]{0,31}$`)
-
-type Account struct {
-	ID                    ID
-	Provider              string
-	DisplayName           string
-	ProviderSubjectDigest string
-	SubscriptionHint      string
-	Internal              bool
-	Enabled               bool
-	Revision              int64
-	CreatedAt             time.Time
-	UpdatedAt             time.Time
-}
 
 func NewAccount(account Account) (Account, error) {
 	if ValidateID(account.ID) != nil || !ValidProvider(account.Provider) ||
@@ -42,7 +23,7 @@ func NewAccount(account Account) (Account, error) {
 }
 
 func ValidProvider(provider string) bool {
-	return provider == ProviderFake || provider == ProviderCodex || provider == ProviderClaude
+	return ProviderKnown(provider)
 }
 
 func PublicProvider(provider string) bool {
@@ -86,24 +67,6 @@ func validAvailability(value Availability) bool {
 	}
 }
 
-type UsageSource string
-
-const (
-	UsageSourceOfficial      UsageSource = "official"
-	UsageSourceCLIDerived    UsageSource = "cli_derived"
-	UsageSourceLocalEstimate UsageSource = "local_estimate"
-	UsageSourceUnavailable   UsageSource = "unavailable"
-)
-
-type UsageConfidence string
-
-const (
-	UsageConfidenceHigh   UsageConfidence = "high"
-	UsageConfidenceMedium UsageConfidence = "medium"
-	UsageConfidenceLow    UsageConfidence = "low"
-	UsageConfidenceNone   UsageConfidence = "none"
-)
-
 type UsageWindowKind string
 
 const (
@@ -124,22 +87,6 @@ type UsageWindow struct {
 	UsedPercent      *float64
 	RemainingPercent *float64
 	ResetsAt         *time.Time
-}
-
-type UsageSnapshot struct {
-	ID                   ID
-	AccountID            ID
-	CredentialInstanceID ID
-	DeviceID             ID
-	Provider             string
-	ProviderVersion      string
-	Source               UsageSource
-	Confidence           UsageConfidence
-	Availability         Availability
-	ObservedAt           time.Time
-	StaleAt              time.Time
-	RawReferenceHash     string
-	Windows              []UsageWindow
 }
 
 func NewUsageSnapshot(snapshot UsageSnapshot) (UsageSnapshot, error) {

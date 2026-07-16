@@ -9,13 +9,13 @@
 | Title | `多账号用量看板与显式调用` |
 | Owner Module | `provider` |
 | Impacted Modules | `core, web, desktop, security, control-plane, project-system` |
-| Current Phase | `VERIFY P1` |
-| Status | `VERIFIED` |
-| Executor | `Codex (GPT-5) as independent feature-verify` |
-| Updated | `2026-07-15 02:58 PDT` |
-| Suggested Next | `feature-build for the next approved phase; P2 remains blocked until both child Provider Spikes resolve and its plan is independently approved` |
+| Current Phase | `BUILD P1 RECONCILIATION` |
+| Status | `READY_FOR_VERIFY` |
+| Executor | `Codex (GPT-5) as operator-authorized provider reconciliation writer` |
+| Updated | `2026-07-16 13:05 PDT` |
+| Suggested Next | `independent feature-verify of the Phase 2 reconciliation; P2 remains blocked until child Provider decisions and a separately approved plan` |
 | Branch / Worktree | `codex/provider/multi-account-usage-control @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/multi-account-usage-control` |
-| Plan Version | `v0.3 + 2026-07-15 priority overlay` |
+| Plan Version | `v0.3 + Phase 2 reconciliation overlay` |
 | Provider Gate | `open — distinct-account Codex and Claude Spikes; Claude usage/policy evidence` |
 | Security Gate | `open — credentials, login isolation, usage privacy, deletion/revocation and remote authorization` |
 
@@ -24,7 +24,7 @@
 | Phase | Scope | Dependencies | Acceptance | Status |
 |---|---|---|---|---|
 | P0 Provider evidence (separate Spike units) | two distinct Codex Homes; two distinct Claude Config Dirs; quota schemas; Claude policy/monthly limits | approved Spike intakes; operator-owned accounts | both Spikes reach Security-reviewed decision; unsupported fields retain fallback | `SPIKE_READY in child units; may run alongside P1` |
-| P1 manual registry and usage contracts | Account/Profile/alias domain; forward migration; CRUD/storage/IPC/CLI; generic stored Usage; Session preview binding; no real Provider launch | feature-review approval; Phase 1 shipped | 8+ mixed Profiles, pagination, migration/restart, alias/no-rotation/security tests, three-platform CI | `VERIFIED — both prior independent findings reproduced as cleared` |
+| P1 manual registry and usage contracts | Account/Profile/alias domain; forward migration; CRUD/storage/IPC/CLI; generic stored Usage; Session preview binding; no real Provider launch | feature-review approval; Phase 1 shipped | 8+ mixed Profiles, pagination, migration/restart, alias/no-rotation/security tests, three-platform CI | `READY_FOR_VERIFY — original P1 verified on cb93c02; Phase 2 schema/runtime reconciliation requires an independent verdict` |
 | P2 Codex multi-account vertical slice | managed per-credential `CODEX_HOME`; login/status/logout; app-server usage; explicit `@alias` run/shell | P1 verified; Codex Spike gate resolved; ADR 0014 | two different accounts isolated on Mac/Linux; official windows shown; real Session pinned; no second refresh writer | `GATED` |
 | P3 Claude multi-account vertical slice | per-profile `CLAUDE_CONFIG_DIR`; login/status/logout; PTY; status-line usage; explicit alias | P1 verified; Claude Spike + policy gate resolved; ADR decision | two identities isolated; real PTY/session; 5h/7d truthful; monthly supported or explicit unavailable | `GATED` |
 | P4 unified metadata and Web/Desktop dashboard | Control Plane metadata sync; Accounts/Usage pages; manual actions; responsive/accessibility | P2 and P3 verified or explicitly capability-gated; Phase 4a contracts | 6+/201 account UI, source/freshness/unknown states, no Provider browser secrets | `GATED` |
@@ -52,12 +52,15 @@ own security review and feature-plan decision complete.
 | 2026-07-15 02:55 PDT | VERIFY P1 RERUN | replayed both original failures through the Store and an authenticated temporary daemon/CLI; inspected the fresh migration index and also ran the valid internal Fake path | pass: duplicate Usage ID safely leaves exactly one observation; mixed Fake Credential/public Codex Profile returns `conflict` with zero Sessions; valid internal Fake Profile reaches `running`; unique replay index present | independent targeted tests and sanitized temporary Device under `/private/tmp` |
 | 2026-07-15 02:58 PDT | VERIFY P1 RERUN | full Go test/vet/race, three-platform storage cross-compile, migration/restart, workflow/dashboard/CI/link/layout/format/license, Web TypeScript, Rust format/check and diff validation | pass; dashboard static matched `READY_FOR_VERIFY` before this atomic verdict transition; 209 Markdown files checked | independent command output; isolated temporary build targets |
 | 2026-07-16 12:40 PDT | PRE-REBASE PRESERVATION | fresh full Go test/vet/race; macOS/Linux/Windows command builds; workflow/dashboard/Actions/CODEOWNERS/fixtures/local links/licenses; diff integrity on the original `cb93c02` base | all pass; the verified 28-path P1 worktree is safe to preserve as one signed commit before reconciling onto final Phase 2 main | command output; pre-rebase branch/worktree audit |
+| 2026-07-16 13:05 PDT | BUILD P1 RECONCILIATION | preserved original P1 as signed `1ac1f41`, rebased it as `eeeb558` onto final `origin/main@96ba36d`, resolved shared Account/Profile/Usage/domain/API surfaces, and moved the colliding migration to `0006_accounts_usage.sql` | Phase 2 Codex Account/Profile/Credential/Vault/Usage rows are preserved by an exact schema-v5 migration test; internal Fake rows remain private; no P2 Provider launch or credential Home is created | implementation diff; `p1-as-built.md`; reconciliation build report |
+| 2026-07-16 13:05 PDT | BUILD P1 RECONCILIATION | `go test -count=1 ./...`; `go vet ./...`; `go test -count=1 -race ./...`; Darwin arm64/Linux amd64/Windows amd64 `go build ./cmd/...`; repeated migration/account tests; `git diff --check` | pass; code is ready for an independent reconciliation verdict before any push, merge, or later Provider phase | local command output |
 
 ## Risks and Blockers
 
-- P1 is independently `VERIFIED`; both earlier blockers remain documented and
-  were reproduced as cleared. Later Provider/product phases and the Security
-  Gate remain open; no ship, merge, or push is authorized.
+- Original P1 is independently `VERIFIED` on `cb93c02`; both earlier blockers
+  remain documented and were reproduced as cleared. The rebased reconciliation
+  is `READY_FOR_VERIFY`, so no compatibility, ship, merge, or push claim is made
+  until a fresh independent verdict.
 - Stable Codex distinct-account support requires two real-account evidence; the
   existing Spike used the same account on two devices.
 - Stable Claude multi-account support requires two real identities; existing
@@ -66,8 +69,8 @@ own security review and feature-plan decision complete.
   gate. No stable claim is permitted without an accepted applicability record.
 - Claude monthly Agent SDK credit exists in official product documentation but
   no supported machine-readable remaining/reset contract is established.
-- Current local `user-operations-guide` changes are not on remote `main`; they
-  must remain separate until the operator authorizes integration.
+- The cross-platform user operations guide is integrated on final remote
+  `main`; this reconciliation preserves it and does not broaden its claims.
 - P1 must not expand into real login or Provider process launch before P0/P2/P3
   gates.
 
@@ -89,3 +92,5 @@ own security review and feature-plan decision complete.
 | 2026-07-15 02:58 PDT | Codex (GPT-5) as independent feature-verify | Re-inspected the clearing diff and migration, replayed both original blockers through targeted tests and a fresh authenticated daemon, proved the valid internal Fake path still runs, and reran the proportionate regression/project matrix; modified only the verification report and this state authority in one verdict step | `docs/reviews/multi-account-usage-control/2026-07-15-feature-verify.md`; this log | `VERIFIED`; both prior findings are independently closed, while P2-P5 and Provider/Security gates remain open | refresh dashboard focus to `VERIFIED`; run both child `provider-spike` units before any separately approved P2 build |
 | 2026-07-15 03:00 PDT | Codex root as operator-directed provider writer via `mad-dashboard-sync` | Rebound the highest-priority manual dashboard focus to the independent `VERIFIED` P1 verdict, named both child Provider Spikes as the next executable work, and kept every real-login/quota/UI/remote/Security gate explicit | `docs/workflow/project/dashboard-state.json`; generated dashboard state; this log | dashboard and feature authority agree: P1 foundation verified, full product not implemented, no push/merge/ship authorized | execute both child `provider-spike` units, then independently plan/review P2/P3 |
 | 2026-07-16 12:40 PDT | Codex (GPT-5) as operator-authorized provider reconciliation writer | Re-audited the previously uncommitted P1 work against its original Phase 1 base and reran the full local regression/platform/governance matrix before history movement | all 28 modified/untracked paths in this worktree; command output; this log | P1 remains `VERIFIED` on its original base and is ready for a signed preservation commit; no Phase 2 compatibility claim is made yet | commit exact P1 state, then rebase onto final `origin/main` and resolve migration/schema overlap without starting P2 |
+| 2026-07-16 13:05 PDT | Codex (GPT-5) as operator-authorized provider reconciliation writer | Preserved original P1, rebased onto final Phase 2 main, unified the overlapping domain/storage/IPC/CLI contracts, introduced version-6 forward migration with Phase 2 row/Vault preservation coverage, and reran the full Go/race/three-OS build matrix | signed preservation `1ac1f41`, rebased `eeeb558`; implementation, migration, tests, docs and reconciliation report | `READY_FOR_VERIFY`; original P1 behavior and shipped Phase 2 behavior pass locally; P2-P5 and Provider/Security gates stay open | independent `feature-verify` of reconciliation, then operator dashboard refresh |
+| 2026-07-16 13:10 PDT | Codex root as operator-directed provider writer via `mad-dashboard-sync` | Rebound manual dashboard judgment to the exact reconciliation state and child Spike gates, regenerated workflow/dashboard facts, and ran Go, race, three-OS command builds, Web, Desktop/Rust, layout, Actions, CODEOWNERS, fixtures, links and license checks | `dashboard-state.json`; generated workflow/dashboard facts; command output; this log | all checks pass; `READY_FOR_VERIFY` is reflected without claiming P2, merge, ship, release or deployment | independent `feature-verify` of the reconciliation |

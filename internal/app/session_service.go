@@ -254,6 +254,9 @@ func (s *SessionService) withIdempotency(ctx context.Context, clientID domain.ID
 }
 
 func (s *SessionService) dispatch(ctx context.Context, auth device.AuthContext, request device.Request) (any, error) {
+	if registryMethod(request.Method) {
+		return s.handleAccountMethod(ctx, request)
+	}
 	switch request.Method {
 	case "daemon.status":
 		return map[string]any{"status": "ok", "schema_version": 1}, nil
@@ -774,6 +777,39 @@ func (s *SessionService) dispatch(ctx context.Context, auth device.AuthContext, 
 		if err := decodeBody(request.Body, &body); err != nil {
 			return nil, err
 		}
+		if body.ProfileSelector != "" {
+			binding, err := s.Store.ResolveProfile(ctx, body.ProfileSelector)
+			if err != nil {
+				return nil, err
+			}
+			if !binding.Account.Enabled {
+				return nil, domain.NewError(domain.CodeAccountDisabled, "account is disabled")
+			}
+			if !binding.Profile.Enabled {
+				return nil, domain.NewError(domain.CodeProfileDisabled, "profile is disabled")
+			}
+			if body.Confirmation != nil {
+				var credentialID domain.ID
+				if binding.Credential != nil {
+					credentialID = binding.Credential.ID
+				}
+				if body.Confirmation.AccountID != binding.Account.ID ||
+					body.Confirmation.RuntimeProfileID != binding.Profile.ID ||
+					body.Confirmation.CredentialInstanceID != credentialID {
+					return nil, domain.NewError(domain.CodeProfileBindingChanged, "profile binding changed after preview")
+				}
+				if body.Confirmation.UsageSnapshotID != "" {
+					snapshots, err := s.Store.ListUsageSnapshotsWithWindows(ctx, binding.Account.ID)
+					if err != nil {
+						return nil, err
+					}
+					if len(snapshots) == 0 || snapshots[0].ID != body.Confirmation.UsageSnapshotID {
+						return nil, domain.NewError(domain.CodeProfileBindingChanged, "usage snapshot changed after preview")
+					}
+				}
+			}
+			return nil, domain.NewError(domain.CodeProviderUnavailable, "explicit multi-account provider launch remains gated after P1")
+		}
 		session, err := s.Runtime.Start(ctx, runtime.StartRequest{Provider: body.Provider, AccountID: body.AccountID, DeviceID: body.DeviceID,
 			CredentialInstanceID: body.CredentialInstanceID, RuntimeProfileID: body.RuntimeProfileID,
 			WorkspaceID: body.WorkspaceID, Capabilities: body.Capabilities})
@@ -998,13 +1034,25 @@ type attachBody struct {
 	Mode      string    `json:"mode,omitempty"`
 }
 type startBody struct {
-	DeviceID             domain.ID           `json:"device_id"`
-	Provider             string              `json:"provider,omitempty"`
-	AccountID            domain.ID           `json:"account_id,omitempty"`
-	CredentialInstanceID domain.ID           `json:"credential_instance_id"`
-	RuntimeProfileID     domain.ID           `json:"runtime_profile_id"`
-	WorkspaceID          domain.ID           `json:"workspace_id"`
-	Capabilities         []domain.Capability `json:"capabilities"`
+	DeviceID             domain.ID            `json:"device_id"`
+	Provider             string               `json:"provider,omitempty"`
+	AccountID            domain.ID            `json:"account_id,omitempty"`
+	CredentialInstanceID domain.ID            `json:"credential_instance_id"`
+	RuntimeProfileID     domain.ID            `json:"runtime_profile_id"`
+	WorkspaceID          domain.ID            `json:"workspace_id"`
+	Capabilities         []domain.Capability  `json:"capabilities"`
+	ProfileSelector      string               `json:"profile_selector,omitempty"`
+	WorkspacePath        string               `json:"workspace_path,omitempty"`
+	Confirmation         *profileConfirmation `json:"confirmation,omitempty"`
+	ProviderArgs         []string             `json:"provider_args,omitempty"`
+	NonInteractive       bool                 `json:"non_interactive,omitempty"`
+}
+
+type profileConfirmation struct {
+	AccountID            domain.ID `json:"account_id"`
+	CredentialInstanceID domain.ID `json:"credential_instance_id"`
+	RuntimeProfileID     domain.ID `json:"runtime_profile_id"`
+	UsageSnapshotID      domain.ID `json:"usage_snapshot_id"`
 }
 type inputBody struct {
 	SessionID domain.ID `json:"session_id"`

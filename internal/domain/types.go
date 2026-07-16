@@ -170,14 +170,20 @@ type Workspace struct {
 }
 
 type RuntimeProfile struct {
-	ID        ID
-	DeviceID  ID
-	AccountID ID
-	Name      string
-	Provider  string
-	Settings  json.RawMessage
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID                   ID
+	DeviceID             ID
+	AccountID            ID
+	CredentialInstanceID ID
+	Name                 string
+	Provider             string
+	SelectorAlias        string
+	SelectorKey          string
+	Settings             json.RawMessage
+	Internal             bool
+	Enabled              bool
+	Revision             int64
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
 }
 
 type CredentialStatus string
@@ -191,7 +197,6 @@ const (
 
 type CredentialInstance struct {
 	ID                 ID
-	AccountID          ID
 	DeviceID           ID
 	AccountID          ID
 	Provider           string
@@ -214,7 +219,10 @@ type Account struct {
 	Provider              string
 	DisplayName           string
 	ProviderSubjectDigest string
+	SubscriptionHint      string
+	Internal              bool
 	Enabled               bool
+	Revision              int64
 	CreatedAt             time.Time
 	UpdatedAt             time.Time
 }
@@ -270,6 +278,7 @@ const (
 	UsageSourceCLIDerived    UsageSource = "cli_derived"
 	UsageSourceLocalEstimate UsageSource = "local_estimate"
 	UsageSourceUnofficial    UsageSource = "unofficial"
+	UsageSourceUnavailable   UsageSource = "unavailable"
 )
 
 type UsageConfidence string
@@ -278,6 +287,7 @@ const (
 	UsageConfidenceHigh   UsageConfidence = "high"
 	UsageConfidenceMedium UsageConfidence = "medium"
 	UsageConfidenceLow    UsageConfidence = "low"
+	UsageConfidenceNone   UsageConfidence = "none"
 )
 
 type UsageCapabilityStatus string
@@ -292,22 +302,27 @@ const (
 // UsageSnapshot is an evidence-bearing, secret-free projection. Numeric
 // values remain optional because an unavailable Provider method is not zero.
 type UsageSnapshot struct {
-	ID               ID
-	Provider         string
-	AccountID        ID
-	DeviceID         ID
-	Source           UsageSource
-	Confidence       UsageConfidence
-	WindowKind       string
-	UsedValue        *float64
-	LimitValue       *float64
-	UsedPercent      *float64
-	ResetsAt         *time.Time
-	ObservedAt       time.Time
-	RawReferenceHash string
-	SourceVersion    string
-	CapabilityStatus UsageCapabilityStatus
-	ErrorCode        ErrorCode
+	ID                   ID
+	Provider             string
+	AccountID            ID
+	CredentialInstanceID ID
+	DeviceID             ID
+	Source               UsageSource
+	Confidence           UsageConfidence
+	WindowKind           string
+	UsedValue            *float64
+	LimitValue           *float64
+	UsedPercent          *float64
+	ResetsAt             *time.Time
+	ObservedAt           time.Time
+	RawReferenceHash     string
+	SourceVersion        string
+	CapabilityStatus     UsageCapabilityStatus
+	ErrorCode            ErrorCode
+	ProviderVersion      string
+	Availability         Availability
+	StaleAt              time.Time
+	Windows              []UsageWindow
 }
 
 type AttachmentMode string

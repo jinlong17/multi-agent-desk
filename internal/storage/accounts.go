@@ -117,16 +117,6 @@ func (s *Store) CreateAccountWithDefaultProfile(ctx context.Context, account dom
 	return account, profile, err
 }
 
-func (s *Store) Account(ctx context.Context, id domain.ID) (domain.Account, error) {
-	if domain.ValidateID(id) != nil {
-		return domain.Account{}, domain.NewError(domain.CodeAccountNotFound, "account not found")
-	}
-	return scanAccount(s.db.QueryRowContext(ctx, `
-		SELECT id, provider, display_name, provider_subject_digest, subscription_hint,
-			internal, enabled, revision, created_at, updated_at
-		FROM accounts WHERE id = ? AND internal = 0`, id))
-}
-
 func (s *Store) AccountBySelector(ctx context.Context, selector string) (domain.Account, error) {
 	if strings.HasPrefix(selector, "@") {
 		binding, err := s.ResolveProfile(ctx, selector)
@@ -135,10 +125,21 @@ func (s *Store) AccountBySelector(ctx context.Context, selector string) (domain.
 		}
 		return binding.Account, nil
 	}
-	return s.Account(ctx, domain.ID(selector))
+	return s.PublicAccount(ctx, domain.ID(selector))
 }
 
-func (s *Store) ListAccounts(ctx context.Context, options AccountListOptions) (AccountPage, error) {
+func (s *Store) PublicAccount(ctx context.Context, id domain.ID) (domain.Account, error) {
+	account, err := s.Account(ctx, id)
+	if err != nil {
+		return domain.Account{}, err
+	}
+	if account.Internal {
+		return domain.Account{}, domain.NewError(domain.CodeAccountNotFound, "account not found")
+	}
+	return account, nil
+}
+
+func (s *Store) ListAccountPage(ctx context.Context, options AccountListOptions) (AccountPage, error) {
 	limit, err := pageLimit(options.Limit)
 	if err != nil {
 		return AccountPage{}, err
@@ -219,7 +220,7 @@ func (s *Store) UpdateAccount(ctx context.Context, id domain.ID, expectedRevisio
 	return account, nil
 }
 
-func (s *Store) SetAccountEnabled(ctx context.Context, id domain.ID, expectedRevision int64, enabled bool, at time.Time) (domain.Account, error) {
+func (s *Store) SetAccountEnabledRevision(ctx context.Context, id domain.ID, expectedRevision int64, enabled bool, at time.Time) (domain.Account, error) {
 	if expectedRevision < 1 || at.IsZero() {
 		return domain.Account{}, domain.NewError(domain.CodeInvalidArgument, "invalid account state update")
 	}
@@ -548,7 +549,7 @@ func (s *Store) DeleteAccount(ctx context.Context, id domain.ID, expectedRevisio
 	})
 }
 
-func (s *Store) CreateUsageSnapshot(ctx context.Context, snapshot domain.UsageSnapshot) error {
+func (s *Store) CreateUsageSnapshotWithWindows(ctx context.Context, snapshot domain.UsageSnapshot) error {
 	validated, err := domain.NewUsageSnapshot(snapshot)
 	if err != nil {
 		return err
@@ -597,7 +598,7 @@ func (s *Store) CreateUsageSnapshot(ctx context.Context, snapshot domain.UsageSn
 			) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, validated.ID, index,
 				window.ProviderLimitID, window.Kind, window.Label, window.DurationSeconds,
 				window.UsedValue, window.LimitValue, window.UsedPercent,
-				window.RemainingPercent, optionalTimeValue(window.ResetsAt)); err != nil {
+				window.RemainingPercent, optionalUsageTimeValue(window.ResetsAt)); err != nil {
 				return writeError("usage window could not be created", err)
 			}
 		}
@@ -605,7 +606,7 @@ func (s *Store) CreateUsageSnapshot(ctx context.Context, snapshot domain.UsageSn
 	})
 }
 
-func (s *Store) ListUsageSnapshots(ctx context.Context, accountID domain.ID) ([]domain.UsageSnapshot, error) {
+func (s *Store) ListUsageSnapshotsWithWindows(ctx context.Context, accountID domain.ID) ([]domain.UsageSnapshot, error) {
 	if accountID != "" && domain.ValidateID(accountID) != nil {
 		return nil, domain.NewError(domain.CodeInvalidArgument, "usage account filter is invalid")
 	}
@@ -841,7 +842,7 @@ func decodePageCursor(value, filter string) (pageCursor, error) {
 	return cursor, nil
 }
 
-func optionalTimeValue(value *time.Time) any {
+func optionalUsageTimeValue(value *time.Time) any {
 	if value == nil {
 		return nil
 	}

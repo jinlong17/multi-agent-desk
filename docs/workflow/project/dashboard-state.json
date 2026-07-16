@@ -2,35 +2,35 @@
   "schema_version": 1,
   "state_owner": "project-system",
   "plan_version": "v0.2",
-  "current_phase": "2",
-  "current_status": "Phase 2 Codex Vertical Slice SHIPPED and integrated on remote main",
+  "current_phase": "multi-account P1 reconciliation",
+  "current_status": "READY_FOR_VERIFY on final Phase 2 main",
   "current_owner": "provider",
-  "next_action": "preserve and reconcile multi-account P1 onto final main before later Provider work",
+  "next_action": "independently verify the multi-account P1 reconciliation; keep P2-P5 and Provider/Security gates closed",
   "manual_updated_at": "2026-07-16",
-  "manual_updated_by": "operator-authorized remote-integration sequence (PR #19 and Phase 2 remote receipt)",
+  "manual_updated_by": "operator-authorized provider reconciliation writer",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 2 已完成本地 Ship，并通过受保护 PR #19 进入远端 main"
+      "value": "多账号 P1 已重基并适配最终 Phase 2 main，等待独立验证"
     },
     {
       "label": "在哪条线",
-      "value": "codex/project-system/phase2-remote-receipt"
+      "value": "codex/provider/multi-account-usage-control"
     },
     {
       "label": "用哪个入口",
-      "value": "固化远端回执并审计最终 main，然后重基 multi-account P1"
+      "value": "验证 0006 迁移、Phase 2 Codex/Vault 数据保全和 P1 元数据边界"
     },
     {
       "label": "做到什么状态",
-      "value": "P0-P4/P4S verified；Security ACCEPTED；SHIPPED；main=250bf57"
+      "value": "Phase 2 main=96ba36d 且远端全绿；multi-account P1 reconciliation=READY_FOR_VERIFY"
     }
   ],
   "phases": [
     {
       "id": "0",
       "title": "仓库与治理基线",
-      "state": "in_progress",
+      "state": "completed",
       "depends": "Plan v0.2",
       "gate": "monorepo 空构建和治理检查通过"
     },
@@ -103,8 +103,16 @@
   ],
   "focus": [
     {
-      "slug": "phase2-codex-vertical-slice",
-      "expected_status": "SHIPPED"
+      "slug": "multi-account-usage-control",
+      "expected_status": "READY_FOR_VERIFY"
+    },
+    {
+      "slug": "spike-codex-distinct-account-homes",
+      "expected_status": "SPIKE_READY"
+    },
+    {
+      "slug": "spike-claude-distinct-account-usage",
+      "expected_status": "SPIKE_READY"
     }
   ]
 }

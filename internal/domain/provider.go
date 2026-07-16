@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	ProviderFake  = "fake"
-	ProviderCodex = "codex"
+	ProviderFake   = "fake"
+	ProviderCodex  = "codex"
+	ProviderClaude = "claude"
 )
 
 const (
@@ -18,7 +19,7 @@ const (
 )
 
 func ProviderKnown(provider string) bool {
-	return provider == ProviderFake || provider == ProviderCodex
+	return provider == ProviderFake || provider == ProviderCodex || provider == ProviderClaude
 }
 
 func AuthMethodKnown(method string) bool {
@@ -34,7 +35,8 @@ func ValidateAccount(account Account) error {
 	if err := ValidateID(account.ID); err != nil {
 		return err
 	}
-	if account.Provider != ProviderCodex || strings.TrimSpace(account.DisplayName) == "" || len(account.DisplayName) > 128 ||
+	if !PublicProvider(account.Provider) || account.Internal || strings.TrimSpace(account.DisplayName) == "" || len(account.DisplayName) > 128 ||
+		len(account.SubscriptionHint) > 64 || account.Revision < 1 ||
 		!validCreatedUpdated(account.CreatedAt, account.UpdatedAt) {
 		return NewError(CodeInvalidArgument, "invalid account")
 	}
