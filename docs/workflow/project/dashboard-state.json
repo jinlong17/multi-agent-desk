@@ -3,15 +3,15 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "2",
-  "current_status": "Phase 2 Codex Vertical Slice ACCEPTED; awaiting explicit Ship authorization",
+  "current_status": "Phase 2 Codex Vertical Slice SHIPPED locally",
   "current_owner": "provider",
-  "next_action": "run ship only after explicit human authorization",
+  "next_action": "none for local Ship; remote integration requires separate authorization",
   "manual_updated_at": "2026-07-16",
-  "manual_updated_by": "operator-directed Security ACCEPTED sync (recorded in phase2-codex-vertical-slice Work Log)",
+  "manual_updated_by": "operator-authorized local Ship (recorded in phase2-codex-vertical-slice Work Log and receipt)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 2 P4S 安全复审已接受，等待显式 Ship 授权"
+      "value": "Phase 2 Codex Vertical Slice 已完成本地 Ship"
     },
     {
       "label": "在哪条线",
@@ -19,11 +19,11 @@
     },
     {
       "label": "用哪个入口",
-      "value": "仅在人工明确授权后运行 ship"
+      "value": "本地无后续；远端集成需单独授权"
     },
     {
       "label": "做到什么状态",
-      "value": "P0-P4/P4S 已验证；Security ACCEPTED；尚未 Ship"
+      "value": "P0-P4/P4S verified；Security ACCEPTED；local SHIPPED"
     }
   ],
   "phases": [
@@ -51,7 +51,7 @@
     {
       "id": "2",
       "title": "Codex Vertical Slice",
-      "state": "active",
+      "state": "completed",
       "depends": "Phase 1 + Codex spikes",
       "gate": "P2B production Vault source + P3A daemon runtime + P3B Linux exit"
     },
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "phase2-codex-vertical-slice",
-      "expected_status": "ACCEPTED"
+      "expected_status": "SHIPPED"
     }
   ]
 }

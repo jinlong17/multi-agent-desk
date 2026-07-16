@@ -9,11 +9,11 @@
 | Title | `Codex Vertical Slice` |
 | Owner Module | `provider` |
 | Impacted Modules | `core`, `security`, `project-system` |
-| Current Phase | `SECURITY REVIEW P4S CLOSURE` |
-| Status | `ACCEPTED` |
-| Executor | `Codex (GPT-5) as security-review` |
-| Updated | `2026-07-16 03:25 PDT` |
-| Suggested Next | `ship only with explicit human authorization` |
+| Current Phase | `SHIP` |
+| Status | `SHIPPED` |
+| Executor | `Codex (GPT-5) as ship` |
+| Updated | `2026-07-16 11:06 PDT` |
+| Suggested Next | `none for local Ship; remote integration requires separate authorization` |
 | Branch / Worktree | `codex/provider/phase2-codex-vertical-slice @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/phase2-codex-vertical-slice` |
 | Plan Version | `v0.7` |
 | Provider Gate | `exact Linux 0.144.2 live exit, exact macOS 0.144.2 schema/handshake smoke, Windows build/protocol baseline, and compatibility reconciliation are complete; real Windows Codex remains unsupported` |
@@ -231,17 +231,18 @@
 | 2026-07-16 03:24 PDT | Codex (GPT-5) as operator-directed project-system sync | Updated the operator-owned dashboard from P4S `READY_FOR_VERIFY` to the independent `READY_TO_SHIP` verdict and selected only the mandatory Security re-review | `docs/workflow/project/dashboard-state.json`; generated dashboard state (ignored); this file | dashboard and dev log agree; no Security acceptance, risk acceptance, Ship, merge, push, release, or deploy judgment changed | `security-review` P4S closure |
 | 2026-07-16 03:25 PDT | Codex (GPT-5) as security-review | Re-reviewed both prior P1 clearing conditions, the exact parser and three shared child call sites, classified changed/untracked scan, focused full security race suite, deployed exact Linux health, daemon log, residual risks, and P4S verification evidence without modifying plan, implementation, compatibility, dashboard, generated, Git, or remote configuration | `docs/reviews/phase2-codex-vertical-slice/2026-07-16-security-review-v2.md`; this file | `ACCEPTED`; Security Gate resolved with no finding; Ship remains an explicit human gate | `ship` only with explicit human authorization |
 | 2026-07-16 03:26 PDT | Codex (GPT-5) as operator-directed project-system sync | Updated the operator-owned dashboard from P4S `READY_TO_SHIP` with an open gate to the Security Review `ACCEPTED` verdict and retained Ship as the sole explicit human action | `docs/workflow/project/dashboard-state.json`; generated dashboard state (ignored); this file | dashboard and dev log agree; no Ship, risk acceptance, commit, merge, push, release, or deploy occurred | await explicit `ship` authorization |
+| 2026-07-16 11:06 PDT | Codex (GPT-5) as ship and operator-directed project-system writer | After explicit local Ship authorization, rechecked branch/remote/diff/untracked files, required docs, licenses, version posture, rollback, final verification and Security acceptance; created signed-off product commit `9f82fb6`; persisted the local-only Ship receipt and `SHIPPED` dashboard state | `9f82fb6`; `docs/reviews/phase2-codex-vertical-slice/2026-07-16-ship-receipt.md`; this file; `docs/workflow/project/dashboard-state.json`; generated dashboard state (ignored) | `SHIPPED` locally; no push, PR, merge, tag, release, package publication, or deployment performed | none for local Ship; remote integration requires separate authorization |
 
 ## Handoff
 
-**Target**: `phase2-codex-vertical-slice credential/runtime and evidence boundary`
-**Completed**: `security-review`
-**Verdict**: `ACCEPTED`
-**Summary**: `Both prior P1 findings are closed: Provider children receive only structurally validated NO_PROXY entries, repository evidence is identifier-safe, and all fresh security/live checks pass.`
-**Findings**: `none.`
-**Evidence**: `P4S parser/tests and shared call sites; focused full security race suite; classified changed/untracked scan; exact Linux 0.144.2 supported health; zero-byte daemon log; P4S verification matrix.`
-**Residual Risk**: `runtime-readable credentials under host or Provider compromise; unsupported multi-writer/device-auth/continuation/real-Windows/remote-grant/release boundaries; non-PQ remote SSH key exchange.`
+**Target**: `phase2-codex-vertical-slice`
+**Completed**: `ship`
+**Status**: `SHIPPED`
+**Summary**: `Phase 2 was shipped locally as signed-off product and governance commits after final verification and Security acceptance; no remote or release action was performed.`
+**Commit/Release**: `local product 9f82fb6; receipt commit contains this file; no push/PR/merge/tag/release/deployment`
+**Tests**: `full Go/vet/race; focused P4S race; macOS/Linux/Windows builds; exact Linux and macOS live evidence; license/workflow/dashboard/CI/link/diff/sensitive checks — pass.`
+**Blockers**: `none for local Ship; any push, PR, merge, tag, release, or deployment requires separate explicit authorization.`
 
 ### Next Step
 
-Run `ship` only after explicit human authorization.
+`None for local Ship; optional remote integration requires separate explicit authorization.`
