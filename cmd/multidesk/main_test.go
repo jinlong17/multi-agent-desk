@@ -163,18 +163,23 @@ func TestLoginEnvironmentAllowsSafeProxyAndDropsSecretVariables(t *testing.T) {
 	t.Setenv("NO_PROXY", "localhost")
 	t.Setenv("OPENAI_API_KEY", "must-not-be-inherited")
 	environment := loginEnvironment(t.TempDir())
-	want := map[string]bool{"https_proxy=http://proxy.internal:8080": false, "NO_PROXY=localhost": false}
+	want := map[string]string{"https_proxy": "http://proxy.internal:8080", "no_proxy": "localhost"}
+	found := make(map[string]bool, len(want))
 	for _, value := range environment {
-		if _, ok := want[value]; ok {
-			want[value] = true
+		name, setting, ok := strings.Cut(value, "=")
+		if ok {
+			name = strings.ToLower(name)
+			if expected, present := want[name]; present && setting == expected {
+				found[name] = true
+			}
 		}
 		if strings.HasPrefix(value, "OPENAI_API_KEY=") {
 			t.Fatalf("secret variable was inherited: %q", value)
 		}
 	}
-	for value, present := range want {
-		if !present {
-			t.Fatalf("safe network setting missing: %q from %v", value, environment)
+	for name, expected := range want {
+		if !found[name] {
+			t.Fatalf("safe network setting missing: %s=%q from %v", name, expected, environment)
 		}
 	}
 }

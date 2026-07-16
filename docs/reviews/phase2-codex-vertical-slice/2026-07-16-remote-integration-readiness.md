@@ -80,3 +80,15 @@ compatibility. Those require their own completed steps and receipts.
 The current reconciliation changes are documentation, dashboard, and evidence
 only; no Provider implementation or security verdict changed after the accepted
 P4S head.
+
+## Protected PR portability correction
+
+PR #19's first protected CI run `29526029227` passed project verification,
+Ubuntu, and all governance jobs but exposed a Windows-only assertion error in
+`TestLoginEnvironmentAllowsSafeProxyAndDropsSecretVariables`. Windows treats
+environment-variable names case-insensitively, so the safe `NO_PROXY=localhost`
+setting was returned as `no_proxy=localhost`; the production value was present
+and no secret was inherited. The test now compares only the allowlisted proxy
+names case-insensitively, continues to require exact values, and continues to
+reject inherited `OPENAI_API_KEY`. A fresh protected run is mandatory before
+merge; the failed run is not accepted as Ship evidence.
