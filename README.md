@@ -6,9 +6,10 @@ credential grants across local machines and remote servers.
 
 The product is pre-release and is not yet a supported end-user application.
 Phase 0, the Phase 0.5 decision gates, and the Phase 1 Device Kernel are
-complete. The Phase 2 Codex vertical slice has independently verified its
-credentialed Linux exit through P3B; platform-matrix reconciliation, final
-Security Review, Ship, packaging, and deployment are still gated. The reviewed
+complete on remote `main`. The Phase 2 Codex vertical slice is locally
+`SHIPPED`: its credentialed Linux exit, platform matrix, final verification,
+and Security Review are complete. Remote protected-branch integration remains
+in progress; packaging and deployment are still gated. The reviewed
 architecture baseline is [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md),
 and the resumable current state is recorded in the feature `dev_log.md` files.
 
@@ -18,11 +19,11 @@ cookies, or silently switch credentials during a Session.
 
 ## User documentation
 
-See the [pre-release user operations guide](docs/USER_GUIDE.md) for the planned
-install-to-session workflow, device pairing, credential grants, revocation,
-offline behavior, and troubleshooting. The guide distinguishes commands that
-can be run today from v0.1 product commands that remain gated by implementation
-and verification.
+See the [pre-release user operations guide](docs/USER_GUIDE.md) for the current
+source-built Phase 1/2 developer preview plus the planned install-to-session,
+device-pairing, credential-grant, revocation, offline, and troubleshooting
+workflow. The guide distinguishes exact commands available in the current
+source tree from v0.1 product capabilities that remain gated.
 
 ## Development system
 

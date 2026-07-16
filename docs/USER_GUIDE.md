@@ -1,20 +1,21 @@
 # MultiAgentDesk 用户操作手册（预发布）
 
-> 当前状态（2026-07-14）：MultiAgentDesk 仍处于 Phase 0，产品代码尚未
-> 开始，**现在还不能安装或运行 `multidesk` 产品功能**。本手册先把 v0.1
-> 的用户操作路径固定下来，帮助你理解将来如何使用，也避免把规划命令误当
-> 成当前已经可用的功能。
+> 当前状态（2026-07-16）：Phase 1 Device Kernel 已进入远端 `main`；Phase 2
+> Codex Vertical Slice 已在功能分支完成本地 Ship、独立验证和 Security
+> Review，正在进行受保护分支集成。仓库可从源码构建开发者预览，但仍没有
+> 受支持的安装包、正式 Release、Control Plane、Web 远程终端或 Desktop
+> 成品。不要把开发者预览当成生产版本。
 
 ## 1. 先判断你现在能做什么
 
 | 标记 | 含义 |
 |---|---|
-| **当前可执行** | 仓库开发工具已经存在，可用于查看项目进度和验证文档/工作流 |
+| **当前可执行** | 仓库开发工具，以及从源码构建的 Phase 1/2 本地开发者预览 |
 | **规划中** | 已写入 v0.1 实施计划，但对应产品代码尚不可用 |
 | **待验证** | 还需要对应 Phase、Provider Spike、安全审查或跨平台测试证明 |
 | **Experimental** | 计划提供预览，但不属于 v0.1 稳定承诺 |
 
-当前唯一可执行的用户可见入口是本地开发看板：
+无需构建产品即可运行的入口是本地开发看板：
 
 ```bash
 npm run project:verify
@@ -22,8 +23,8 @@ npm run dashboard:serve
 ```
 
 然后打开 `http://127.0.0.1:4178`。这组命令只展示仓库开发状态，不会启动
-MultiAgentDesk 产品。需要 Node.js 18 或更新版本；如果当前 shell 没有
-`npm`，请先安装/启用 Node.js 运行时。
+MultiAgentDesk 产品。仓库要求 Node.js 24 和 pnpm 10.23.0；如果当前 shell
+没有 `npm`，可使用仓库配置的 bundled Node/pnpm 运行相同脚本。
 
 ## 2. v0.1 计划解决什么问题
 
@@ -48,8 +49,10 @@ MultiAgentDesk 不会自动轮换账号、规避额度或限流、代理 Provide
 
 | 能力 | 目标平台 | 解锁阶段 | 当前状态 |
 |---|---|---|---|
-| CLI / Device Daemon | macOS、Windows、Linux | Phase 1 | 规划中 |
-| Codex 真实 Session | 受支持的本地/远程设备 | Phase 2 + Codex Spike | 待验证 |
+| CLI / Device Daemon | macOS、Windows、Linux | Phase 1 | 开发者预览；三平台基础已验证 |
+| Codex 真实 Session | Linux x86_64、CLI `0.144.2` | Phase 2 + Codex Spike | 本地 Ship；远端集成中 |
+| Codex schema/handshake | macOS arm64、CLI `0.144.2` | Phase 2 | 已验证 smoke；非完整 Session 支持 |
+| Windows Codex | Windows amd64 | 后续平台验收 | build/protocol only；真实运行不支持 |
 | Claude Code PTY Session | macOS、Windows、Linux | Phase 3 + Claude/ConPTY Spike | 待验证 |
 | Control Plane 元数据页面 | Linux 自托管 Server + 浏览器 | Phase 4a | 规划中 |
 | Web 远程终端、审批和控制权 | 现代桌面浏览器 | Phase 4b + E2EE/Browser Spike | 待验证 |
@@ -76,16 +79,16 @@ MultiAgentDesk 不会自动轮换账号、规避额度或限流、代理 Provide
 最终的安装、升级、卸载和数据保留步骤由 Phase 6 提供。在 Phase 6 验证前，
 不要根据本手册自行下载来源不明的二进制。
 
-## 5. 初始化本地设备和 Daemon（规划中，Phase 1）
+## 5. 初始化本地设备和 Daemon（开发者预览）
 
-以下是实施计划冻结的命令入口，**当前不可执行**：
+当前没有安装包。开发者可以从已验证源码构建并使用显式 Device root：
 
 ```bash
-multidesk init
-multidesk daemon install
-multidesk daemon start
-multidesk daemon status
-multidesk vault status
+go build -o ./bin/multidesk ./cmd/multidesk
+./bin/multidesk init --root <device-root> --name "My Device" --json
+./bin/multidesk daemon serve --root <device-root>
+./bin/multidesk daemon status --root <device-root> --json
+./bin/multidesk vault status --root <device-root> --json
 ```
 
 计划行为：
@@ -95,26 +98,33 @@ multidesk vault status
 3. CLI 通过本地 IPC 与 Daemon 通信，不直接把 SQLite 当作 UI API。
 4. Vault 锁定时仍可查看非秘密元数据，但不能启动需要凭据的新 Session。
 
-Headless Linux 解锁计划使用标准输入，而不是命令参数：
+首次 Vault 初始化需要从标准输入读取两次匹配密码；后续解锁读取一次。密码
+不得放进 argv、脚本日志或 shell history：
 
 ```bash
-multidesk vault unlock --password-stdin
+./bin/multidesk vault initialize --root <device-root> --password-stdin
+./bin/multidesk vault unlock --root <device-root> --secret-stdin
 ```
 
 自动解锁会降低安全边界。只有理解“它只能保护静态数据库，不能抵抗主机
 root 或磁盘读取”后，才考虑受限 keyfile 或 systemd `LoadCredential=`。
 
-## 6. 登录 Provider 和管理账号（规划中，Phase 2/3）
+## 6. 登录 Provider 和管理账号
 
-以下命令当前不可执行：
+Codex Phase 2 开发者预览提供以下薄 CLI；Claude 登录仍属于 Phase 3：
 
 ```bash
-multidesk login codex
-multidesk login claude
-multidesk accounts list
-multidesk accounts show
-multidesk usage
+./bin/multidesk accounts create --root <device-root> --provider codex --name <display-name> --json
+./bin/multidesk accounts list --root <device-root> --json
+./bin/multidesk auth begin --root <device-root> --profile-id <profile-id> --json
+./bin/multidesk auth status --root <device-root> --credential-id <credential-id> --json
+./bin/multidesk provider health --root <device-root> --json
+./bin/multidesk usage --root <device-root> --provider codex --account <account-id> --json
 ```
+
+`auth begin` 只启动官方、owner-bound、十分钟有效的 `codex login` 流程；不会
+读取浏览器 Cookie 或接收 raw token 参数。稳定支持范围只包括 Linux x86_64
+Codex CLI `0.144.2`，其他版本/schema 必须明确返回 unsupported。
 
 计划流程：
 
@@ -124,18 +134,19 @@ multidesk usage
 4. 查看 Usage 时同时核对来源和采集时间。Claude Code 没有经过验证的官方
    订阅剩余额度时，界面不得把估算值标成“官方”。
 
-Codex 的 file credential store、headless device auth 和并发刷新行为，
-Claude 的 Config Dir/Keychain 隔离、`auth status` 和 setup-token 路径，必须
-先通过各自 Spike；手册不会预先承诺其中任何一种隔离方式已经可靠。
+Codex 采用单个 CredentialInstance 单写者、revision CAS 和隔离
+`CODEX_HOME`；multi-writer refresh 与已完成 device auth 不受支持。Claude 的
+Config Dir/Keychain 隔离、`auth status` 和 setup-token 路径仍以 Phase 3
+计划与 ADR 0016 为准。
 
-## 7. 创建 Runtime Profile（规划中，Phase 1–3）
-
-以下命令当前不可执行：
+## 7. 创建 Runtime Profile（开发者预览）
 
 ```bash
-multidesk profiles create
-multidesk profiles list
-multidesk profiles validate
+./bin/multidesk profiles create --root <device-root> --device-id <device-id> \
+  --account-id <account-id> --provider codex --name <profile-name> \
+  --settings '{"approval_policy":"on-request","sandbox":"workspace-write"}' --json
+./bin/multidesk profiles list --root <device-root> --json
+./bin/multidesk profiles validate --root <device-root> --json <profile-id>
 ```
 
 创建时按交互提示选择 Provider、账号、模型偏好、非秘密环境变量、MCP、Skill、
@@ -145,18 +156,23 @@ Hook 和工作区默认值。每个 Profile 应使用独立运行目录：Codex 
 不要在 Profile 的非秘密环境变量里保存 Token、Cookie、恢复码或 setup-token。
 修改 Profile 只影响以后启动的 Session，不应改变已经运行的 Session。
 
-## 8. 启动和控制 Session（规划中，Phase 1–3）
+## 8. 启动和控制 Session（Codex 开发者预览）
 
-以下命令当前不可执行；占位符不是实际 ID：
+以下命令已存在于 Phase 2 源码；占位符不是实际 ID。真实 Codex 支持仍受
+精确 Linux `0.144.2` 兼容矩阵约束，Claude 命令尚未实现：
 
 ```bash
-multidesk run codex --profile <profile-name> --workspace <path>
-multidesk run claude --profile <profile-name> --workspace <path>
-multidesk sessions list
-multidesk sessions show <session-id>
-multidesk attach <session-id>
-multidesk control acquire <session-id>
-multidesk control release <session-id>
+./bin/multidesk run codex --root <device-root> --workspace <workspace-id> \
+  --device-id <device-id> --credential-id <credential-id> \
+  --profile-id <profile-id> --account-id <account-id> --json
+./bin/multidesk sessions list --root <device-root> --json
+./bin/multidesk sessions attach --root <device-root> --mode observer --json <session-id>
+./bin/multidesk sessions observe --root <device-root> --from-sequence 0 --json <session-id>
+./bin/multidesk control acquire --root <device-root> --json <session-id>
+./bin/multidesk terminal input --root <device-root> --revision <lease-revision> \
+  --sequence 1 --payload <text> --json <session-id>
+./bin/multidesk sessions stop --root <device-root> --revision <lease-revision> \
+  --json <session-id>
 ```
 
 启动前必须显示并让用户确认：Provider、Account、RuntimeProfile、Device、Usage

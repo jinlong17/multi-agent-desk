@@ -1190,13 +1190,19 @@ multi-agent-desk/
 
 阻塞依赖：Phase 0.5 的 Codex auth、刷新和 app-server schema 结论。
 
-当前状态：`FEATURE_PLAN v0.5 NEEDS_REVIEW`（2026-07-15）。P0/P1 已验证；
-P2A 仅验证了 materialization manager 的确定性合同；P3 protocol adapter
-已修正 schema/initialize/Approval server-request 语义，但尚未注册到 daemon
-runtime。Phase 1 Vault 仍只有 locked/unlocked 状态，`auth.begin`、生产
-CredentialSource、Approval Provider dispatch、thread/turn runtime ownership
-均未实现。因此真实 Linux exit 不是当前唯一 blocker，禁止提前声称 Codex
-Session 可运行。
+当前状态：`SHIPPED locally`（2026-07-16，Plan v0.7；远端受保护分支集成
+进行中）。P0、P1、P2A、P2B、P3A、P3B、P4 和安全修复 P4S 均已独立验证；
+最终 Security Review 为 `ACCEPTED`。本地产品提交为 `9f82fb6`，本地 Ship
+receipt 提交为 `5407842`。这表示 Phase 2 的开发出口已完成，不表示已经进入
+远端 `main`、生成安装包、发布版本或完成部署。
+
+支持声明保持窄化：真实 Credential/Vault/Session/第二 CLI/Usage/标准
+Approval/stop/kill 闭环仅对 Linux x86_64 Codex CLI `0.144.2` 成立；macOS
+arm64 `0.144.2` 只有 canonical-schema 与 empty-home handshake smoke；Windows
+只有当前代码的 build/protocol 与既有原生 IPC CI 基线，不声明真实 Windows
+Codex 支持。conversation resize 和 Provider continuation 仍为 typed
+unsupported；multi-writer refresh、device-auth completion、动态 policy
+amendment 与 permissions grant 仍不在支持范围内。
 
 交付：
 

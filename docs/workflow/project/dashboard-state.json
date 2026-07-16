@@ -3,15 +3,15 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "2",
-  "current_status": "Phase 2 Codex Vertical Slice SHIPPED locally",
+  "current_status": "Phase 2 Codex Vertical Slice SHIPPED locally; remote integration in progress",
   "current_owner": "provider",
-  "next_action": "none for local Ship; remote integration requires separate authorization",
+  "next_action": "verify reconciliation, push Phase 2, open protected PR",
   "manual_updated_at": "2026-07-16",
-  "manual_updated_by": "operator-authorized local Ship (recorded in phase2-codex-vertical-slice Work Log and receipt)",
+  "manual_updated_by": "operator-authorized remote-integration sequence (recorded in Phase 2 Work Log and readiness record)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 2 Codex Vertical Slice 已完成本地 Ship"
+      "value": "Phase 2 已完成本地 Ship，正在收口文档并进入远端受保护 PR"
     },
     {
       "label": "在哪条线",
@@ -19,7 +19,7 @@
     },
     {
       "label": "用哪个入口",
-      "value": "本地无后续；远端集成需单独授权"
+      "value": "验证文档/看板后 push Phase 2 并创建 PR"
     },
     {
       "label": "做到什么状态",

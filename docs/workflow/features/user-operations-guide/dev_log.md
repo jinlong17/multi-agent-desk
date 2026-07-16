@@ -9,12 +9,12 @@
 | Title | `面向用户的操作手册与看板入口` |
 | Owner Module | `project-system` |
 | Impacted Modules | `core`, `provider`, `control-plane`, `web`, `desktop`, `security` |
-| Current Phase | `SHIP` |
+| Current Phase | `SHIP MAINTENANCE` |
 | Status | `SHIPPED` |
-| Executor | `Codex (GPT-5) as ship` |
-| Updated | `2026-07-14 15:27 PDT` |
-| Suggested Next | `none (push/merge require separate human authorization)` |
-| Branch / Worktree | `codex/project-system/user-operations-guide @ /Users/jinlong/Desktop/jinlong_project/multi-agent-desk` |
+| Executor | `Codex (GPT-5) as operator-directed project-system maintenance` |
+| Updated | `2026-07-16 11:43 PDT` |
+| Suggested Next | `integrate through the authorized Phase 2 protected PR` |
+| Branch / Worktree | `codex/provider/phase2-codex-vertical-slice @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/phase2-codex-vertical-slice` |
 | Plan Version | `v0.2` |
 | Provider Gate | `none (claims remain gated by owning spikes)` |
 | Security Gate | `none` |
@@ -23,7 +23,7 @@
 
 | Phase | Scope | Dependencies | Acceptance | Status |
 |---|---|---|---|---|
-| P1 | Canonical pre-release user guide; README and implementation-plan discovery; dashboard required-doc/static entry/verifier; generated state | Reviewed Plan v0.2; live Phase 0 status; approved feature plan | Guide is truthful and task-complete; links resolve; dashboard negative assertion and repository verification pass | `SHIPPED` (`9285341`) |
+| P1 | Canonical pre-release user guide; README and implementation-plan discovery; dashboard required-doc/static entry/verifier; generated state | Reviewed Plan v0.2; current Phase 1/2 truth; approved feature plan | Guide is truthful and task-complete; links resolve; dashboard negative assertion and repository verification pass | `SHIPPED`; current integration cherry-picks `1d71dba` / `78fe5de` |
 
 ## Evidence Ledger
 
@@ -40,6 +40,8 @@
 | 2026-07-14 15:20 PDT | P1 VERIFY | bundled-Node Markdown link scanner and in-memory required-doc mutations | pass: 8 files, 0 broken links; positive guide fact accepted; missing and empty guide facts rejected | `docs/reviews/user-operations-guide/2026-07-14-feature-verify.md` |
 | 2026-07-14 15:20 PDT | P1 VERIFY | isolated temporary-clone equivalents for `workflow:generate`, `workflow:verify`, `dashboard`, and `dashboard:verify` | pass: mirrors generate cleanly; workflow and dashboard verification pass without modifying protected generated state in this worktree | `docs/reviews/user-operations-guide/2026-07-14-feature-verify.md` |
 | 2026-07-14 15:27 PDT | SHIP | branch/remote/exact diff/untracked/DCO/docs/license/security-gate/version/release-receipt/rollback audit; content commit `9285341` | pass: 13 exact feature files committed with DCO sign-off; docs-only change adds no dependency/license or product version; no secrets; gates `none`; rollback is file-local revert; `.agents/skills/` excluded; no push/merge/tag/publish/deploy | commit `9285341` and this Ship receipt |
+| 2026-07-16 11:43 PDT | MAINTENANCE | reconciled the guide against shipped Phase 1 and locally shipped Phase 2 code, exact CLI parsers, current toolchain, compatibility matrix, and remote-integration facts | guide now distinguishes current source-built Device/Codex developer-preview commands from Phase 3–6 plans; no install/release/deploy claim added | `docs/USER_GUIDE.md`; README; implementation plan; Phase 2 readiness record |
+| 2026-07-16 11:51 PDT | MAINTENANCE VERIFY | full Go/vet/race; three-platform command builds; workflow/dashboard generation and verification; Actions/CODEOWNERS/fixture/link/license checks; `git diff --check` | all pass; links=`238`, licenses=`5` pnpm groups/`418` Cargo packages; guide is a required non-empty dashboard document | Phase 2 integration command output |
 
 ## Risks and Blockers
 
@@ -58,3 +60,5 @@
 | 2026-07-14 15:20 PDT | Codex (GPT-5) as feature-verify | Independently inspected the P1 diff and build receipt; reran whitespace, link, required-doc negative, workflow, and dashboard checks, including the full generator chain in an isolated temporary clone | `docs/reviews/user-operations-guide/2026-07-14-feature-verify.md`; this log | `READY_TO_SHIP`; all final-phase acceptance criteria pass and no findings remain | `ship` only with explicit human authorization |
 | 2026-07-14 15:22 PDT | Codex root as operator-directed writer | Refreshed generated dashboard facts after the final verification transition; preserved operator-owned priority, phase, risk, focus, Ship, and release judgment | `docs/prototypes/dev-dashboard/state.generated.js`; this log | dashboard now reads `user-operations-guide` as `READY_TO_SHIP`; static verification passes | await explicit human Ship request |
 | 2026-07-14 15:27 PDT | Codex (GPT-5) as ship | Operator explicitly requested Ship; audited exact scope and committed the independently verified user-guide feature with DCO sign-off, then recorded this release receipt after commit success | commit `9285341`; this log | `SHIPPED`; local commit only, with no push, merge, tag, publish, deploy, release, priority, or risk mutation | none; remote actions require separate human authorization |
+| 2026-07-16 11:43 PDT | Codex (GPT-5) as operator-directed project-system maintenance | Reused both signed-off user-guide commits on the authorized Phase 2 integration branch, updated stale Phase 0/Node 18/planned-only claims to exact Phase 1/2 developer-preview truth, and preserved Phase 3–6 gates | `1d71dba`; `78fe5de`; `docs/USER_GUIDE.md`; README; implementation plan; this log | remains `SHIPPED`; content is ready for the Phase 2 protected PR after verification | run documentation/dashboard verification, then Phase 2 remote PR |
+| 2026-07-16 11:51 PDT | Codex (GPT-5) as operator-directed project-system maintenance | Verified the reconciled guide and dashboard discovery against the full repository, race, platform-build, workflow, CI-contract, link, and license matrix | command output; this log | all checks pass; user guide remains `SHIPPED` and is ready to travel with the Phase 2 PR | commit reconciliation and open the authorized protected PR |
