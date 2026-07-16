@@ -11,13 +11,13 @@
 | Impacted Modules | `core, desktop, web, security` |
 | Hypothesis | `Two different operator-owned Claude.ai accounts can remain simultaneously authenticated under separate CLAUDE_CONFIG_DIR profiles with scoped logout and real-request identity isolation, while official status-line events yield account-bound 5-hour/7-day usage windows without hidden quota-consuming probes and the stable product policy boundary can be documented` |
 | Time-box | `8 hands-on hours plus Provider policy review; requires two accounts and one Linux target` |
-| Current Phase | `INTAKE` |
-| Status | `SPIKE_READY` |
-| Executor | `Codex (GPT-5) as feature-plan spike intake` |
-| Updated | `2026-07-15 01:31 PDT` |
-| Suggested Next | `provider-spike` |
+| Current Phase | `PROVIDER SPIKE` |
+| Status | `EVIDENCE_READY` |
+| Executor | `Codex (GPT-5) as provider-spike` |
+| Updated | `2026-07-16 16:43 PDT` |
+| Suggested Next | `security-review` |
 | Security Gate | `open — distinct OAuth identities, macOS Keychain slots, auth/usage PII, PTY/status-line events, policy and logout are in scope` |
-| Evidence Path | `docs/spikes/claude-distinct-accounts/` |
+| Evidence Path | `docs/spikes/claude-distinct-accounts/2026-07-16-policy-and-isolation-spike.md`; sanitized JSON sibling |
 | Decision Record | `pending — ADR 0016 addendum or replacement plus PROVIDER_COMPATIBILITY.md` |
 
 ## Success and failure criteria
@@ -48,17 +48,24 @@
 | 2026-07-15 01:18 PDT | official env/auth/CLI/status-line/errors/Agent SDK/legal docs | `CLAUDE_CONFIG_DIR` explicitly supports side-by-side accounts; status-line documents 5h/7d used/reset fields after first response; monthly `claude -p` credit is described but no machine remaining/reset contract established; third-party login/rate-limit policy needs applicability decision | official URLs in parent Feature Brief |
 | 2026-07-15 01:20 PDT | prior ADR 0016/Spike audit | same-account Keychain slot isolation and scoped logout passed; distinct identities, completed setup-token, long session and stable subscription dashboard were not claimed | prior Claude Spike and ADR 0016 |
 | 2026-07-15 01:31 PDT | feature-plan intake | distinct-account/status-line/no-hidden-probe/policy hypothesis frozen; Security Gate opened | this log |
+| 2026-07-16 16:43 PDT | current official login/policy, Agent SDK, environment, status-line and API-key precedence documents; sanitized macOS `2.1.207` and Linux `2.1.132` auth-contract/empty-root/override checks | stable third-party subscription surface falsified at policy gate: products/tools for others are directed to API-key or supported-cloud auth; third-party subscription use is discretionary, can change billing, and is not a stable entitlement; no second login or quota-consuming request run | `docs/spikes/claude-distinct-accounts/2026-07-16-policy-and-isolation-spike.md`; sanitized JSON sibling |
 
 ## Result, limitations, and fallback
 
-Not run. Until accepted evidence exists, stable MultiAgentDesk must retain ADR
-0016's target-local interactive-login boundary and must not claim distinct
-Claude identities, setup-token CredentialGrant, official monthly remaining
-credit or a stable subscription rate-limit dashboard. P1 may implement generic
-metadata/Usage contracts. Missing windows display unknown/unavailable. If the
-policy gate fails, Claude subscription login/usage stays outside the stable
-product; direct official CLI use and API-key/provider integrations remain the
-documented alternatives.
+The stable-product hypothesis is falsified at the Provider policy boundary.
+Current official guidance directs developers building a product/tool for
+others to API-key or supported-cloud authentication. Subscription use from
+third-party tools is discretionary, may draw usage credits, and is not a stable
+entitlement. The announced Agent SDK monthly-credit change is paused and that
+credit is unavailable.
+
+Technical `CLAUDE_CONFIG_DIR` isolation remains documented and prior
+same-account slot/logout evidence remains valid, but two distinct identities
+were not tested because a successful technical run cannot close the policy
+gate. No quota-only request was issued. Stable fallback is direct official CLI
+use outside MultiAgentDesk or user-supplied API-key/cloud-provider integration
+with explicit billing source. Subscription login/usage remains outside the
+stable product absent explicit Anthropic approval.
 
 ## Risks and Blockers
 
@@ -79,3 +86,5 @@ documented alternatives.
 | Time | Executor | Action | Files/commit | Result | Next |
 |---|---|---|---|---|---|
 | 2026-07-15 01:31 PDT | Codex (GPT-5) as feature-plan spike intake | Reopened the prior one-account Claude boundary for the operator's new multi-account priority, added the newly documented status-line usage contract and Provider policy gate, and froze two-platform/no-hidden-probe acceptance | this log; parent Feature Brief/design/test | `SPIKE_READY` | `provider-spike` after operator supplies/selects two test accounts and Linux target; policy evidence gathered in parallel |
+| 2026-07-16 16:43 PDT | Codex (GPT-5) as provider-spike | Revalidated official policy and technical contracts, pinned current macOS/Linux CLI versions and hashes, confirmed sanitized seven-key auth status, empty-root isolation and absent credential-provider overrides, then stopped before second-account login or any quota-only request because the stable-product policy failure was decisive | spike report; sanitized JSON; `docs/PROVIDER_COMPATIBILITY.md` | `EVIDENCE_READY`; stable managed subscription login/Usage surface falsified; technical distinct-account support remains unclaimed; API-key/cloud-provider or direct official CLI fallback is deterministic | `security-review` |
+| 2026-07-16 16:47 PDT | Codex root as operator-directed provider-spike writer via `mad-dashboard-sync` | Bound manual dashboard focus to the Claude Spike's exact `EVIDENCE_READY` policy verdict, preserved Codex `GATE_RESOLVED` and parent P1 `VERIFIED`, regenerated machine facts, and verified workflow/dashboard/link/diff integrity | `docs/workflow/project/dashboard-state.json`; generated dashboard unchanged | all checks PASS; the dashboard names Security Review and the API-key/cloud fallback instead of requesting a needless second subscription login | `security-review` |
