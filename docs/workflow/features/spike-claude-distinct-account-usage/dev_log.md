@@ -11,14 +11,14 @@
 | Impacted Modules | `core, desktop, web, security` |
 | Hypothesis | `Two different operator-owned Claude.ai accounts can remain simultaneously authenticated under separate CLAUDE_CONFIG_DIR profiles with scoped logout and real-request identity isolation, while official status-line events yield account-bound 5-hour/7-day usage windows without hidden quota-consuming probes and the stable product policy boundary can be documented` |
 | Time-box | `8 hands-on hours plus Provider policy review; requires two accounts and one Linux target` |
-| Current Phase | `SECURITY REVIEW` |
-| Status | `ACCEPTED` |
-| Executor | `Codex (GPT-5) as security-review` |
-| Updated | `2026-07-16 16:49 PDT` |
-| Suggested Next | `feature-plan decision` |
+| Current Phase | `DECISION` |
+| Status | `GATE_RESOLVED` |
+| Executor | `Codex (GPT-5) as feature-plan decision` |
+| Updated | `2026-07-16 16:53 PDT` |
+| Suggested Next | `re-plan parent Claude phase around a separately reviewed API-key/cloud-provider feature; keep subscription management disabled` |
 | Security Gate | `resolved — negative policy decision accepted; stable managed subscription login/Usage remains disabled; ADR 0016 must be narrowed and API-key/cloud authentication requires a separate credential/billing lifecycle` |
 | Evidence Path | `docs/spikes/claude-distinct-accounts/2026-07-16-policy-and-isolation-spike.md`; sanitized JSON sibling |
-| Decision Record | `pending — ADR 0016 addendum or replacement plus PROVIDER_COMPATIBILITY.md` |
+| Decision Record | `ADR 0016 policy narrowing; PROVIDER_COMPATIBILITY.md security-reviewed unsupported subscription row` |
 
 ## Success and failure criteria
 
@@ -89,3 +89,4 @@ stable product absent explicit Anthropic approval.
 | 2026-07-16 16:43 PDT | Codex (GPT-5) as provider-spike | Revalidated official policy and technical contracts, pinned current macOS/Linux CLI versions and hashes, confirmed sanitized seven-key auth status, empty-root isolation and absent credential-provider overrides, then stopped before second-account login or any quota-only request because the stable-product policy failure was decisive | spike report; sanitized JSON; `docs/PROVIDER_COMPATIBILITY.md` | `EVIDENCE_READY`; stable managed subscription login/Usage surface falsified; technical distinct-account support remains unclaimed; API-key/cloud-provider or direct official CLI fallback is deterministic | `security-review` |
 | 2026-07-16 16:47 PDT | Codex root as operator-directed provider-spike writer via `mad-dashboard-sync` | Bound manual dashboard focus to the Claude Spike's exact `EVIDENCE_READY` policy verdict, preserved Codex `GATE_RESOLVED` and parent P1 `VERIFIED`, regenerated machine facts, and verified workflow/dashboard/link/diff integrity | `docs/workflow/project/dashboard-state.json`; generated dashboard unchanged | all checks PASS; the dashboard names Security Review and the API-key/cloud fallback instead of requesting a needless second subscription login | `security-review` |
 | 2026-07-16 16:49 PDT | Codex (GPT-5) as security-review | Independently reviewed current Anthropic third-party/subscription/API-key guidance, earlier config/Keychain evidence, status-line data exposure, credential/billing boundaries, redaction, fallback scope, and residual risk; verified that the result fails closed without technical or product overclaim | `docs/reviews/spike-claude-distinct-account-usage/2026-07-16-security-review.md`; this log | `ACCEPTED`; P0/P1 none for the negative decision; stable subscription management remains disabled and API-key/cloud requires a separate lifecycle | `feature-plan decision` |
+| 2026-07-16 16:53 PDT | Codex (GPT-5) as feature-plan decision | Narrowed ADR 0016 so prior Config Dir/Keychain evidence remains mechanism-only while stable managed subscription login/Usage is disabled; finalized the compatibility row and froze direct-official-CLI plus separately planned API-key/cloud fallbacks | ADR 0016; `docs/PROVIDER_COMPATIBILITY.md`; this log | `GATE_RESOLVED`; the negative decision closes the Spike without claiming distinct identities, Usage values, monthly credit, subscription routing, or API-key implementation | re-plan parent Claude phase and independently review it |

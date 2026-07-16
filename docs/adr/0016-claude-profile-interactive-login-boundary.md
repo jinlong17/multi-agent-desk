@@ -4,7 +4,7 @@
 - Date: 2026-07-14
 - Owner: `provider`
 - Impacted modules: `core`, `desktop`, `security`
-- Security gate: accepted by `docs/reviews/spike-claude-config-keychain/2026-07-14-security-review.md`
+- Security gate: initial mechanism accepted by `docs/reviews/spike-claude-config-keychain/2026-07-14-security-review.md`; stable subscription-product boundary narrowed by `docs/reviews/spike-claude-distinct-account-usage/2026-07-16-security-review.md`
 
 ## Context
 
@@ -63,6 +63,44 @@ Phase 3 must prove real Claude PTY input, resize, reconnect/replay, stop, and
 long-session behavior on the target Linux profile. Those are implementation
 acceptance items, not claims from this Spike.
 
+## 2026-07-16 policy narrowing
+
+The accepted `spike-claude-distinct-account-usage` decision supersedes the
+portion of the 2026-07-14 decision that described target-profile Claude.ai
+subscription login as a stable MultiAgentDesk-managed product path.
+
+Current official Anthropic guidance says subscription use is designed for
+native Anthropic applications, treats open-source and other software as
+third-party tools, and directs developers building products/tools for others
+to Claude Console API-key or supported-cloud authentication. Subscription use
+from a third-party tool may be allowed only at Anthropic's discretion and may
+draw usage credits. A successful local login is therefore not sufficient
+authorization for a stable managed product surface.
+
+The narrowed decision is:
+
+- `CLAUDE_CONFIG_DIR` and the seven-key auth-health schema remain exact-version
+  mechanism evidence and may describe direct official-CLI/external or
+  explicitly experimental behavior;
+- MultiAgentDesk does not stably manage Claude subscription OAuth enrollment,
+  subscription credentials, distinct subscription accounts, subscription
+  traffic, or a 5h/7d subscription Usage dashboard without explicit Anthropic
+  integration approval and a fresh Provider/Security lifecycle;
+- direct official Claude Code subscription use remains outside the managed
+  stable surface; MultiAgentDesk must not impersonate, proxy, pool, export,
+  rotate, or route subscription credentials/traffic;
+- the stable product candidate is a separately planned user-supplied Claude
+  Console API-key or supported-cloud adapter with explicit auth and billing
+  source confirmation. This ADR does not approve or implement that new
+  credential path;
+- setup-token, `CLAUDE_CODE_OAUTH_TOKEN`, Keychain copying, hidden quota probes,
+  automatic account rotation, private endpoint parsing, and fabricated monthly
+  remaining credit remain unsupported.
+
+The previous Phase 3 subscription acceptance text is no longer build-ready.
+Phase 3 must be re-planned and independently reviewed around the API-key/cloud
+boundary before implementation.
+
 ## Consequences
 
 ### Positive
@@ -91,3 +129,6 @@ acceptance items, not claims from this Spike.
 - `docs/spikes/claude/auth-profile-matrix.json`
 - `docs/spikes/claude/profile-session-control.json`
 - `docs/reviews/spike-claude-config-keychain/2026-07-14-security-review.md`
+- `docs/spikes/claude-distinct-accounts/2026-07-16-policy-and-isolation-spike.md`
+- `docs/spikes/claude-distinct-accounts/2026-07-16-policy-and-isolation.json`
+- `docs/reviews/spike-claude-distinct-account-usage/2026-07-16-security-review.md`
