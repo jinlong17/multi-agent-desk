@@ -3,15 +3,15 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "2",
-  "current_status": "Phase 2 Codex Vertical Slice P2B BLOCKED on Linux/Windows native test evidence",
+  "current_status": "Phase 2 Codex Vertical Slice P2B READY_FOR_VERIFY with three-platform CI evidence",
   "current_owner": "provider",
-  "next_action": "obtain native Linux/Windows P2B CI test receipts, then rerun independent feature-verify P2B",
+  "next_action": "independent feature-verify P2B against GitHub Actions run 29469271422",
   "manual_updated_at": "2026-07-15",
-  "manual_updated_by": "operator-directed post-verification BLOCKED sync (recorded in phase2-codex-vertical-slice Work Log)",
+  "manual_updated_by": "operator-directed P2B CI evidence clearing sync (recorded in phase2-codex-vertical-slice Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 2 P2B 实现检查通过，补齐 Linux/Windows 原生测试回执"
+      "value": "Phase 2 P2B 三平台 CI 回执已齐，等待独立复核"
     },
     {
       "label": "在哪条线",
@@ -19,11 +19,11 @@
     },
     {
       "label": "用哪个入口",
-      "value": "原 writer 获取 Linux/Windows CI 回执后重跑 feature-verify P2B"
+      "value": "feature-verify P2B 复核 GitHub Actions run 29469271422"
     },
     {
       "label": "做到什么状态",
-      "value": "P0/P1/P2A verified；P2B BLOCKED（仅跨平台测试证据）；无 Ship/release/deploy"
+      "value": "P0/P1/P2A verified；P2B READY_FOR_VERIFY（三平台 CI 全绿）；无 Ship/release/deploy"
     }
   ],
   "phases": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "phase2-codex-vertical-slice",
-      "expected_status": "BLOCKED"
+      "expected_status": "READY_FOR_VERIFY"
     }
   ]
 }
