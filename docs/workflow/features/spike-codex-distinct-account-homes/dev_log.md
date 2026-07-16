@@ -11,12 +11,12 @@
 | Impacted Modules | `core, desktop, security` |
 | Hypothesis | `Two different operator-owned Codex accounts can remain simultaneously authenticated in two Daemon-managed CODEX_HOME directories, with app-server identity/usage and scoped logout bound to the intended Home and no cross-profile credential mutation on macOS and Linux` |
 | Time-box | `8 hands-on hours plus up to 24 hours passive observation; requires two accounts and one Linux target` |
-| Current Phase | `PROVIDER SPIKE` |
-| Status | `EVIDENCE_READY` |
-| Executor | `Codex (GPT-5) as provider-spike` |
-| Updated | `2026-07-16 16:31 PDT` |
-| Suggested Next | `security-review` |
-| Security Gate | `open — distinct OAuth identities, file credentials, refresh ownership, browser callback binding and logout are in scope` |
+| Current Phase | `SECURITY REVIEW` |
+| Status | `ACCEPTED` |
+| Executor | `Codex (GPT-5) as security-review` |
+| Updated | `2026-07-16 16:37 PDT` |
+| Suggested Next | `feature-plan decision` |
+| Security Gate | `resolved — exact Linux 0.144.2 evidence accepted; future stable launch must add privacy-preserving post-login identity binding/confirmation and retain explicit selection, no auto-rotation, exact-version fail-closed behavior, and separate macOS/Windows/soak gates` |
 | Evidence Path | `docs/spikes/codex-distinct-accounts/2026-07-16-distinct-account-homes-spike.md`; sanitized JSON sibling |
 | Decision Record | `pending — ADR 0014 addendum or new ADR plus PROVIDER_COMPATIBILITY.md` |
 
@@ -79,3 +79,4 @@ identity/revision ambiguity. Device auth remains experimental.
 | 2026-07-15 01:31 PDT | Codex (GPT-5) as feature-plan spike intake | Created a bounded distinct-account Codex hypothesis from the new P0 requirement, retained ADR 0014, defined two-platform canaries and opened the required Security Gate | this log; parent Feature Brief/design/test | `SPIKE_READY` | `provider-spike` after operator supplies/selects two test accounts and Linux target |
 | 2026-07-16 16:31 PDT | Codex (GPT-5) as provider-spike | Ran the exact Linux `0.144.2` two-identity official-login experiment, verified isolated `0600` Homes, distinct concurrent Provider sessions, concurrent account-bound Usage, active-logout fail-closed behavior, scoped B stop/logout/re-login with revision `2 -> 3`, unchanged A bytes/session/Usage, then stopped both Sessions, removed materializations, stopped the Daemon, and retained only sanitized evidence | spike report; sanitized JSON; `docs/PROVIDER_COMPATIBILITY.md` | `EVIDENCE_READY`; exact Linux arm supported without persisting identity or secret material; macOS distinct-identity, Windows, and passive-soak claims remain open | `security-review` |
 | 2026-07-16 16:34 PDT | Codex (GPT-5) as operator-directed provider-spike writer | Bound dashboard manual focus to this unit's `EVIDENCE_READY` state, regenerated workflow/dashboard facts, and verified dashboard plus all local Markdown links with the bundled Node runtime | `docs/workflow/project/dashboard-state.json`; generated dashboard unchanged | workflow verify PASS; dashboard verify PASS; `252` Markdown files link-clean | `security-review` |
+| 2026-07-16 16:37 PDT | Codex (GPT-5) as security-review | Independently reviewed official-login ownership/expiry, callback trust, binary pinning, enrollment cleanup, Vault/materialization permissions and CAS, Account/Profile/Credential/Usage binding, scoped revocation race/replay behavior, redaction, and residual risk; ran targeted Go and race suites | `docs/reviews/spike-codex-distinct-account-homes/2026-07-16-security-review.md`; this log | `ACCEPTED`; P0/P1 none for the bounded exact-Linux evidence; P2 decision constraints preserve explicit identity confirmation, no auto-rotation, exact-version failure, separate platform/soak gates, and SSH hardening | `feature-plan decision` |
