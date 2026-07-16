@@ -3,15 +3,15 @@
   "state_owner": "project-system",
   "plan_version": "v0.2",
   "current_phase": "2",
-  "current_status": "Phase 2 Codex Vertical Slice P2B READY_FOR_VERIFY with three-platform CI evidence",
+  "current_status": "Phase 2 Codex Vertical Slice P2B VERIFIED",
   "current_owner": "provider",
-  "next_action": "independent feature-verify P2B against GitHub Actions run 29469271422",
+  "next_action": "feature-build Phase 2 P3A daemon runtime bridge",
   "manual_updated_at": "2026-07-15",
-  "manual_updated_by": "operator-directed P2B CI evidence clearing sync (recorded in phase2-codex-vertical-slice Work Log)",
+  "manual_updated_by": "operator-directed post-P2B verification sync (recorded in phase2-codex-vertical-slice Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 2 P2B 三平台 CI 回执已齐，等待独立复核"
+      "value": "Phase 2 P2B 已验证，开始 P3A daemon runtime bridge"
     },
     {
       "label": "在哪条线",
@@ -19,11 +19,11 @@
     },
     {
       "label": "用哪个入口",
-      "value": "feature-verify P2B 复核 GitHub Actions run 29469271422"
+      "value": "feature-build Phase 2 P3A"
     },
     {
       "label": "做到什么状态",
-      "value": "P0/P1/P2A verified；P2B READY_FOR_VERIFY（三平台 CI 全绿）；无 Ship/release/deploy"
+      "value": "P0/P1/P2A/P2B verified；P3A planned；无 Ship/release/deploy"
     }
   ],
   "phases": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "phase2-codex-vertical-slice",
-      "expected_status": "READY_FOR_VERIFY"
+      "expected_status": "VERIFIED"
     }
   ]
 }

@@ -9,11 +9,11 @@
 | Title | `Codex Vertical Slice` |
 | Owner Module | `provider` |
 | Impacted Modules | `core`, `security`, `project-system` |
-| Current Phase | `FEATURE BUILD P2B EVIDENCE CLEARING` |
-| Status | `READY_FOR_VERIFY` |
-| Executor | `Codex (GPT-5) as original feature-build writer` |
-| Updated | `2026-07-15 20:39 PDT` |
-| Suggested Next | `independent feature-verify P2B against GitHub three-platform CI receipts` |
+| Current Phase | `FEATURE VERIFY P2B` |
+| Status | `VERIFIED` |
+| Executor | `Codex (GPT-5) as independent feature-verify` |
+| Updated | `2026-07-15 20:43 PDT` |
+| Suggested Next | `feature-build P3A` |
 | Branch / Worktree | `codex/provider/phase2-codex-vertical-slice @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/phase2-codex-vertical-slice` |
 | Plan Version | `v0.5` |
 | Provider Gate | `canonical macOS schema/method and 0.144.2 Approval/turn contracts resolved; daemon-owned mapping is frozen for P3A; exact Linux version and credentialed live acceptance remain open for P3B` |
@@ -26,7 +26,7 @@
 | P0 | Provider/account/profile/session schema expansion, migration/future-schema policy, local Account/Profile/Credential management, Approval/Usage records, capabilities, local IPC methods/CLI, retention and restart semantics | Phase 1 Device Kernel; implementation-plan domain/API tables | Fake data round-trip remains green; Codex rows can be created/read through Store and authenticated IPC; Account/Profile metadata is secret-free; Approval/Usage auth/idempotency tests pass | `verified` |
 | P1 | Binary discovery, exact-version probe, stdio JSONL framing, initialize handshake, schema fingerprint/allowlist, sanitized fixtures, Approval/Usage schema mapping | P0; Codex Spike matrix; ADR 0014 | Recorded versions replay; malformed/unknown schema and unmapped Approval fields fail closed | `verified` |
 | P2A | Materialization manager contract: isolated home, one writer, digest/structure validation, revisioned CAS, quarantine/recovery | P0/P1; ADR 0014 | deterministic permissions, conflict, CAS, recovery, and secret-safety contracts pass | `verified` |
-| P2B | Empty-schema forward-only `0005`; atomic first-use Vault initialization; portable Vault v1/item CAS; owner-bound exact-`codex login` enrollment; Approval dispatch constraints including cancel | P2A; implementation-plan Vault contract; independent review | first/concurrent/crash/corrupt init; exact crypto/bounds/tamper/item-CAS; cancel durable-state/idempotency; macOS/Linux/Windows portable round-trip; enrollment failure preserves prior revision | `ready_for_verify` |
+| P2B | Empty-schema forward-only `0005`; atomic first-use Vault initialization; portable Vault v1/item CAS; owner-bound exact-`codex login` enrollment; Approval dispatch constraints including cancel | P2A; implementation-plan Vault contract; independent review | first/concurrent/crash/corrupt init; exact crypto/bounds/tamper/item-CAS; cancel durable-state/idempotency; macOS/Linux/Windows portable round-trip; enrollment failure preserves prior revision | `verified` |
 | P3A | One CredentialRuntime per CredentialInstance plus per-Session bindings; daemon-owned profile/capability mapping; single-reader JSON-RPC; exact Approval dispatch; Usage/input/binding stop/kill; typed resize unsupported | P1/P2B; exact schema rows; `0005` dispatch state | two same-credential Sessions share one child and stop independently; daemon override negatives, concurrent routing, crash fan-out, approve/deny/cancel stored results, and Fake regression pass | `planned` |
 | P3B | Real pinned-Linux Session with second CLI attach/replay/lease/turn input, typed resize unsupported, structured Approval/Usage, binding stop/kill, frozen Resume result | P3A; exact Linux schema and credentialed environment | sanitized real Linux exit; typed unsupported proves zero Provider frame, zero new local Session, and no false recovery claim unless continuation is separately proven | `planned` |
 | P4 | macOS compatibility smoke, Windows CI/protocol baseline, exact matrix rows, verification/security handoff | P3; platform environments; independent feature-verify/security-review | docs and compatibility matrix match evidence; Security Gate accepted | `planned` |
@@ -142,17 +142,19 @@
 | 2026-07-15 20:27 PDT | Codex (GPT-5) as independent feature-verify | Re-inspected the final refrozen P2B implementation and reran the full native macOS, race, platform-build, regression, formatting, workflow, dashboard, and CI contract matrix; compared executed evidence to the approved three-platform portable-backend acceptance | `docs/reviews/phase2-codex-vertical-slice/2026-07-15-feature-verify-p2b.md`; this file | `BLOCKED` on evidence only: all executed checks pass, but native Linux and Windows Vault/initialization/auth tests have not run; cross-builds are insufficient | original writer obtains native Linux/Windows CI results, then independent `feature-verify P2B` reruns |
 | 2026-07-15 20:31 PDT | Codex (GPT-5) as operator-directed project-system sync | Updated only the operator-owned dashboard status/focus from stale `READY_FOR_VERIFY` to the independent P2B `BLOCKED` evidence verdict, then regenerated and verified machine facts | `docs/workflow/project/dashboard-state.json`; generated dashboard state (ignored); this file | manual focus truthfully binds `phase2-codex-vertical-slice=BLOCKED`; no code verdict, priority, risk, phase-completion, Ship, merge, push, release, or deploy judgment changed | obtain native Linux/Windows P2B CI receipts, then rerun independent `feature-verify P2B` |
 | 2026-07-15 20:39 PDT | Codex (GPT-5) as original feature-build writer | Added the existing three-platform CI matrix's missing uncached Go test step, committed/pushed only the feature branch, dispatched CI at `31e501d`, retained exact Linux/Windows/macOS job receipts, cleared the named evidence condition, restored the last non-blocked `READY_FOR_VERIFY` status, and synchronized the manual dashboard focus | `.github/workflows/ci.yml`; commit `31e501d`; GitHub Actions run `29469271422`; `docs/workflow/project/dashboard-state.json`; this file | all native platform Go suites and full CI jobs passed; no PR, main merge, Ship, release, or deploy occurred | independent `feature-verify P2B` against the retained CI receipts |
+| 2026-07-15 20:43 PDT | Codex (GPT-5) as independent feature-verify | Independently inspected GitHub Actions run `29469271422`, its exact code SHA and native runner job/step receipts; confirmed current HEAD is a clean pushed docs-only descendant; reran the local Go and repository authority/governance checks; persisted the closure verdict | `docs/reviews/phase2-codex-vertical-slice/2026-07-15-feature-verify-p2b-v2.md`; this file | `VERIFIED`; the mandatory macOS/Linux/Windows portable-backend execution evidence is complete and every fresh authority/regression check passed | `feature-build P3A` |
+| 2026-07-15 20:46 PDT | Codex (GPT-5) as operator-directed project-system sync | Reconciled the P2B Phase Plan row, copied the verifier's exact Handoff into the resumable authority, updated the manual dashboard status/focus to `VERIFIED`, and regenerated machine facts | `docs/workflow/features/phase2-codex-vertical-slice/dev_log.md`; `docs/workflow/project/dashboard-state.json`; generated dashboard state (ignored) | P2B authority and dashboard agree on `VERIFIED`; no priority/risk/phase completion beyond the verifier verdict, main merge, Ship, release, or deploy judgment changed | `feature-build P3A` |
 
 ## Handoff
 
 **Target**: `phase2-codex-vertical-slice`
-**Completed**: `feature-build / P2B evidence clearing`
-**Status**: `READY_FOR_VERIFY`
-**Summary**: `Cleared the sole P2B evidence blocker by executing the full uncached Go suite successfully on native GitHub macOS, Linux, and Windows runners for code SHA 31e501d.`
-**Files Written**: `.github/workflows/ci.yml`; `docs/workflow/features/phase2-codex-vertical-slice/dev_log.md`; `docs/workflow/project/dashboard-state.json`.
-**Tests**: `GitHub Actions run 29469271422: project-verify, build-ubuntu, build-windows, and build-macos all passed; each platform build job passed go test -count=1 ./...`.
-**Blockers**: `none for P2B verification; credentialed Linux live acceptance and real Windows Codex compatibility remain later gates and are not claimed.`
+**Completed**: `feature-verify / P2B`
+**Verdict**: `VERIFIED`
+**Summary**: `P2B implementation and evidence pass, including the exact uncached Go suite on native Ubuntu, Windows, and macOS runners for code SHA 31e501d.`
+**Evidence**: [GitHub Actions run 29469271422](https://github.com/jinlong17/multi-agent-desk/actions/runs/29469271422); native job IDs `87528995063`, `87528995056`, `87528995072`; fresh local Go, vet, workflow, dashboard, CI-governance, link, license, and diff checks — all passed.
+**Findings**: `none for P2B; prior three-platform execution evidence blocker is cleared.`
+**Blockers**: `none for P2B; P3B live-provider evidence and final Security Review remain later gates.`
 
 ### Next Step
 
-Run independent `feature-verify` for `phase2-codex-vertical-slice` P2B against GitHub Actions run `29469271422`.
+Run `feature-build` for `phase2-codex-vertical-slice` P3A.
