@@ -2,16 +2,16 @@
   "schema_version": 1,
   "state_owner": "project-system",
   "plan_version": "v0.2",
-  "current_phase": "multi-account P1 reconciliation",
-  "current_status": "VERIFIED on final Phase 2 main",
+  "current_phase": "Codex distinct-account Provider Spike",
+  "current_status": "EVIDENCE_READY for exact Linux 0.144.2; Security Review pending",
   "current_owner": "provider",
-  "next_action": "revise and review the child Provider Spike assumptions before any separately approved P2 build",
+  "next_action": "run Security Review for the sanitized Codex distinct-account Linux evidence",
   "manual_updated_at": "2026-07-16",
-  "manual_updated_by": "operator-authorized provider reconciliation writer",
+  "manual_updated_by": "operator-authorized provider-spike writer",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "多账号 P1 已重基、适配并独立验证通过"
+      "value": "Codex 双真实账号 Linux 隔离证据已就绪，进入安全审查"
     },
     {
       "label": "在哪条线",
@@ -19,11 +19,11 @@
     },
     {
       "label": "用哪个入口",
-      "value": "修订单账号优先约束下的 Provider Spike 与下一阶段计划"
+      "value": "审查脱敏证据、OAuth 回调边界、定向注销与单写者约束"
     },
     {
       "label": "做到什么状态",
-      "value": "Phase 2 main=96ba36d 且远端全绿；multi-account P1 reconciliation=VERIFIED"
+      "value": "Phase 2 main=96ba36d 全绿；P1=VERIFIED；Codex distinct-account Linux=EVIDENCE_READY"
     }
   ],
   "phases": [
@@ -108,7 +108,7 @@
     },
     {
       "slug": "spike-codex-distinct-account-homes",
-      "expected_status": "SPIKE_READY"
+      "expected_status": "EVIDENCE_READY"
     },
     {
       "slug": "spike-claude-distinct-account-usage",
