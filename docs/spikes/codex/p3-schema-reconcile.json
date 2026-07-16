@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-07-16T00:12:00Z",
+  "sanitized": true,
+  "secret_values_recorded": false,
+  "environment": {
+    "platform": "macOS 26.5.2 arm64",
+    "bundled_binary_version": "0.144.2",
+    "auth_mode": "empty_disposable_CODEX_HOME"
+  },
+  "raw_fingerprint_finding": {
+    "file_count": 267,
+    "same_binary_same_semantic_schema": true,
+    "raw_hashes_equal": false,
+    "differing_file": "codex_app_server_protocol.v2.schemas.json",
+    "difference_class": "JSON object definition order only",
+    "raw_hash_usable_as_compatibility_key": false
+  },
+  "canonical_fingerprint_contract": {
+    "algorithm": "sort relative paths; parse each JSON with duplicate-key rejection; recursively sort object keys; compact encode; hash path + NUL + canonical bytes with SHA-256",
+    "bundled_0_144_2_two_runs_equal": true,
+    "bundled_matches_exact_npm_0_144_2": true,
+    "rows": [
+      {
+        "version": "0.142.5",
+        "schema_file_count": 267,
+        "canonical_schema_sha256": "e29e1e39ef9a45a003170856bb95ac665e3ab06a0ae6c346fbaec854767d7c61"
+      },
+      {
+        "version": "0.143.0",
+        "schema_file_count": 267,
+        "canonical_schema_sha256": "289e8c92a09b65a11cbaa32b879e43bf2e07bbab84511bdaabaa93cbd658c287"
+      },
+      {
+        "version": "0.144.2",
+        "schema_file_count": 267,
+        "canonical_schema_sha256": "a1a35476587fe9bbfbe9e291b5200b8bc541df8c00241fe578d285ff26996e1c"
+      }
+    ]
+  },
+  "initialize": {
+    "request_required": ["clientInfo.name", "clientInfo.version"],
+    "capability_mode": "experimentalApi_false",
+    "result_keys": ["codexHome", "platformFamily", "platformOs", "userAgent"],
+    "succeeded": true
+  },
+  "empty_home_account_replay": {
+    "account_read": {
+      "account_is_null": true,
+      "requiresOpenaiAuth": true
+    },
+    "rate_limits_read": "authentication_required",
+    "usage_read": "authentication_required"
+  },
+  "verified_client_methods": [
+    "account/rateLimits/read",
+    "account/read",
+    "account/usage/read",
+    "thread/resume",
+    "thread/start",
+    "turn/interrupt",
+    "turn/start"
+  ],
+  "verified_server_approval_requests": [
+    "item/commandExecution/requestApproval",
+    "item/fileChange/requestApproval",
+    "item/permissions/requestApproval"
+  ],
+  "falsified_adapter_assumptions": [
+    "initialize params use clientName/clientVersion",
+    "initialize result returns protocolVersion/serverVersion/methods",
+    "Approval arrives as approval/request notification",
+    "Approval response uses approval/respond client method",
+    "raw generated-schema bytes have a stable fingerprint"
+  ],
+  "limitations": [
+    "no credential file was read",
+    "no authenticated Usage or Rate Limit value was captured",
+    "no real Approval or turn was started",
+    "no Linux binary or second CLI was exercised"
+  ]
+}

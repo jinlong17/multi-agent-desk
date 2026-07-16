@@ -21,19 +21,31 @@ func RequiredCapability(method string) (domain.Capability, error) {
 	switch method {
 	case "daemon.status", "vault.status", "sessions.list", "sessions.show", "sessions.observe":
 		return domain.CapabilityMetadataRead, nil
+	case "accounts.list", "accounts.show", "accounts.create", "accounts.disable", "profiles.list", "profiles.create", "profiles.edit", "profiles.delete", "credentials.status":
+		return domain.CapabilityMetadataRead, nil
+	case "provider.describe", "provider.health", "profile.validate":
+		return domain.CapabilityProviderMetadataRead, nil
+	case "auth.begin", "auth.complete", "auth.cancel", "auth.status", "auth.logout":
+		return domain.CapabilityProviderAuth, nil
+	case "usage.read":
+		return domain.CapabilityProviderUsageRead, nil
+	case "approval.list", "approval.observe":
+		return domain.CapabilityApprovalRead, nil
+	case "approval.respond":
+		return domain.CapabilityApprovalRespond, nil
 	case "sessions.attach", "sessions.detach":
 		return domain.CapabilitySessionObserve, nil
-	case "vault.unlock", "vault.lock":
+	case "vault.initialize", "vault.unlock", "vault.lock":
 		return domain.CapabilityVaultControl, nil
-	case "sessions.start":
+	case "sessions.start", "session.start":
 		return domain.CapabilitySessionStart, nil
 	case "control.acquire":
 		return domain.CapabilitySessionControlAcquire, nil
-	case "control.heartbeat", "control.release", "sessions.stop", "sessions.kill":
+	case "control.heartbeat", "control.release", "sessions.stop", "sessions.kill", "session.stop":
 		return domain.CapabilitySessionControl, nil
-	case "terminal.input", "terminal.resize":
+	case "terminal.input", "terminal.resize", "session.input", "session.resize":
 		return domain.CapabilityTerminalControl, nil
-	case "sessions.resume":
+	case "sessions.resume", "session.resume":
 		return domain.CapabilitySessionResume, nil
 	case "client.create", "client.list", "client.rotate", "client.revoke":
 		return domain.CapabilityClientAdmin, nil

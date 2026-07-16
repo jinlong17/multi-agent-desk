@@ -1,0 +1,4 @@
+{"kind":"initialize","method":"initialize","body":{"methods":["account/read","account/rateLimits/read","account/usage/read","account/chatgptAuthTokens/refresh"]}}
+{"kind":"account","method":"account/read","body":{"account":{"planType":"team","type":"chatgpt"},"requiresOpenaiAuth":false}}
+{"kind":"usage","method":"account/usage/read","body":{"dailyUsageBuckets":[],"summary":{"currentStreakDays":1,"lifetimeTokens":0,"longestRunningTurnSec":0,"longestStreakDays":1,"peakDailyTokens":0}}}
+{"kind":"approval","method":"item/commandExecution/requestApproval","body":{"approvalId":"approval-fixture","command":null,"commandActions":null,"cwd":null,"environmentId":null,"itemId":"item-fixture","networkApprovalContext":null,"proposedExecpolicyAmendment":null,"proposedNetworkPolicyAmendments":null,"reason":null,"startedAtMs":1,"threadId":"thread-fixture","turnId":"turn-fixture"}}

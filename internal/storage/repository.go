@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
@@ -269,6 +270,100 @@ func (s *Store) Workspace(ctx context.Context, id domain.ID) (domain.Workspace, 
 	return workspace, nil
 }
 
+func (s *Store) CreateAccount(ctx context.Context, account domain.Account) error {
+	if !account.Enabled {
+		// A newly created Account is enabled by default; disabling is an
+		// explicit subsequent operation through SetAccountEnabled.
+		account.Enabled = true
+	}
+	if err := domain.ValidateAccount(account); err != nil {
+		return err
+	}
+	return s.withTx(ctx, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, `
+			INSERT INTO accounts(id, provider, display_name, provider_subject_digest, enabled, created_at, updated_at)
+			VALUES(?, ?, ?, NULLIF(?, ''), ?, ?, ?)`,
+			account.ID, account.Provider, account.DisplayName, account.ProviderSubjectDigest, boolInt(account.Enabled),
+			formatTime(account.CreatedAt), formatTime(account.UpdatedAt))
+		return writeError("account could not be created", err)
+	})
+}
+
+func (s *Store) Account(ctx context.Context, id domain.ID) (domain.Account, error) {
+	var account domain.Account
+	var digest sql.NullString
+	var enabled int
+	var createdAt, updatedAt string
+	err := s.db.QueryRowContext(ctx, `
+		SELECT id, provider, display_name, provider_subject_digest, enabled, created_at, updated_at
+		FROM accounts WHERE id = ?`, id).Scan(&account.ID, &account.Provider, &account.DisplayName, &digest, &enabled, &createdAt, &updatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.Account{}, domain.NewError(domain.CodeNotFound, "account not found")
+	}
+	if err != nil {
+		return domain.Account{}, domain.WrapError(domain.CodeConflict, "account could not be read", err)
+	}
+	if digest.Valid {
+		account.ProviderSubjectDigest = digest.String
+	}
+	account.Enabled = enabled == 1
+	account.CreatedAt, err = parseTime(createdAt)
+	if err != nil {
+		return domain.Account{}, err
+	}
+	account.UpdatedAt, err = parseTime(updatedAt)
+	if err != nil {
+		return domain.Account{}, err
+	}
+	return account, nil
+}
+
+func (s *Store) ListAccounts(ctx context.Context) ([]domain.Account, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT id FROM accounts ORDER BY display_name, id`)
+	if err != nil {
+		return nil, domain.WrapError(domain.CodeConflict, "accounts could not be listed", err)
+	}
+	defer rows.Close()
+	var ids []domain.ID
+	for rows.Next() {
+		var id domain.ID
+		if err := rows.Scan(&id); err != nil {
+			return nil, domain.WrapError(domain.CodeConflict, "account list could not be read", err)
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, domain.WrapError(domain.CodeConflict, "accounts could not be listed", err)
+	}
+	result := make([]domain.Account, 0, len(ids))
+	for _, id := range ids {
+		account, err := s.Account(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, account)
+	}
+	return result, nil
+}
+
+func (s *Store) SetAccountEnabled(ctx context.Context, id domain.ID, enabled bool, at time.Time) (domain.Account, error) {
+	if err := domain.ValidateID(id); err != nil {
+		return domain.Account{}, err
+	}
+	if at.IsZero() {
+		return domain.Account{}, domain.NewError(domain.CodeInvalidArgument, "account update requires a timestamp")
+	}
+	result, err := s.db.ExecContext(ctx, `UPDATE accounts SET enabled = ?, updated_at = ? WHERE id = ?`, boolInt(enabled), formatTime(at), id)
+	if err != nil {
+		return domain.Account{}, writeError("account status could not be updated", err)
+	}
+	changed, err := result.RowsAffected()
+	if err != nil || changed != 1 {
+		return domain.Account{}, domain.NewError(domain.CodeNotFound, "account not found")
+	}
+	return s.Account(ctx, id)
+}
+
 func (s *Store) CreateRuntimeProfile(ctx context.Context, profile domain.RuntimeProfile) error {
 	if err := domain.ValidateID(profile.ID); err != nil {
 		return err
@@ -276,15 +371,24 @@ func (s *Store) CreateRuntimeProfile(ctx context.Context, profile domain.Runtime
 	if err := domain.ValidateID(profile.DeviceID); err != nil {
 		return err
 	}
-	if profile.Name == "" || profile.Provider != "fake" || !json.Valid(profile.Settings) ||
+	if profile.AccountID != "" {
+		if err := domain.ValidateID(profile.AccountID); err != nil {
+			return err
+		}
+	}
+	if profile.Name == "" || !domain.ProviderKnown(profile.Provider) ||
+		(profile.Provider == domain.ProviderCodex && profile.AccountID == "") || !json.Valid(profile.Settings) ||
 		!validCreatedUpdated(profile.CreatedAt, profile.UpdatedAt) {
 		return domain.NewError(domain.CodeInvalidArgument, "invalid runtime profile")
 	}
 	return s.withTx(ctx, func(tx *sql.Tx) error {
+		if err := validateAccountForProvider(ctx, tx, profile.Provider, profile.AccountID); err != nil {
+			return err
+		}
 		_, err := tx.ExecContext(ctx, `
-			INSERT INTO runtime_profiles(id, device_id, name, provider, settings_json, created_at, updated_at)
-			VALUES(?, ?, ?, ?, ?, ?, ?)`,
-			profile.ID, profile.DeviceID, profile.Name, profile.Provider, profile.Settings,
+			INSERT INTO runtime_profiles(id, device_id, account_id, name, provider, settings_json, created_at, updated_at)
+			VALUES(?, ?, NULLIF(?, ''), ?, ?, ?, ?, ?)`,
+			profile.ID, profile.DeviceID, profile.AccountID, profile.Name, profile.Provider, profile.Settings,
 			formatTime(profile.CreatedAt), formatTime(profile.UpdatedAt),
 		)
 		return writeError("runtime profile could not be created", err)
@@ -294,17 +398,21 @@ func (s *Store) CreateRuntimeProfile(ctx context.Context, profile domain.Runtime
 func (s *Store) RuntimeProfile(ctx context.Context, id domain.ID) (domain.RuntimeProfile, error) {
 	var profile domain.RuntimeProfile
 	var settings []byte
+	var accountID sql.NullString
 	var createdAt, updatedAt string
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, device_id, name, provider, settings_json, created_at, updated_at
+		SELECT id, device_id, account_id, name, provider, settings_json, created_at, updated_at
 		FROM runtime_profiles WHERE id = ?`, id).Scan(
-		&profile.ID, &profile.DeviceID, &profile.Name, &profile.Provider, &settings, &createdAt, &updatedAt,
+		&profile.ID, &profile.DeviceID, &accountID, &profile.Name, &profile.Provider, &settings, &createdAt, &updatedAt,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return domain.RuntimeProfile{}, domain.NewError(domain.CodeNotFound, "runtime profile not found")
 	}
 	if err != nil {
 		return domain.RuntimeProfile{}, domain.WrapError(domain.CodeConflict, "runtime profile could not be read", err)
+	}
+	if accountID.Valid {
+		profile.AccountID = domain.ID(accountID.String)
 	}
 	if !json.Valid(settings) {
 		return domain.RuntimeProfile{}, domain.NewError(domain.CodeSchemaIncompatible, "stored runtime profile settings are invalid")
@@ -321,6 +429,92 @@ func (s *Store) RuntimeProfile(ctx context.Context, id domain.ID) (domain.Runtim
 	return profile, nil
 }
 
+func (s *Store) ListRuntimeProfiles(ctx context.Context) ([]domain.RuntimeProfile, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT id FROM runtime_profiles ORDER BY name, id`)
+	if err != nil {
+		return nil, domain.WrapError(domain.CodeConflict, "runtime profiles could not be listed", err)
+	}
+	defer rows.Close()
+	var ids []domain.ID
+	for rows.Next() {
+		var id domain.ID
+		if err := rows.Scan(&id); err != nil {
+			return nil, domain.WrapError(domain.CodeConflict, "runtime profile list could not be read", err)
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, domain.WrapError(domain.CodeConflict, "runtime profiles could not be listed", err)
+	}
+	profiles := make([]domain.RuntimeProfile, 0, len(ids))
+	for _, id := range ids {
+		profile, err := s.RuntimeProfile(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		profiles = append(profiles, profile)
+	}
+	return profiles, nil
+}
+
+func (s *Store) UpdateRuntimeProfile(ctx context.Context, profile domain.RuntimeProfile) (domain.RuntimeProfile, error) {
+	if err := domain.ValidateID(profile.ID); err != nil {
+		return domain.RuntimeProfile{}, err
+	}
+	if err := domain.ValidateID(profile.DeviceID); err != nil {
+		return domain.RuntimeProfile{}, err
+	}
+	if profile.AccountID != "" {
+		if err := domain.ValidateID(profile.AccountID); err != nil {
+			return domain.RuntimeProfile{}, err
+		}
+	}
+	if profile.Name == "" || !domain.ProviderKnown(profile.Provider) ||
+		(profile.Provider == domain.ProviderCodex && profile.AccountID == "") || !json.Valid(profile.Settings) ||
+		!validCreatedUpdated(profile.CreatedAt, profile.UpdatedAt) {
+		return domain.RuntimeProfile{}, domain.NewError(domain.CodeInvalidArgument, "invalid runtime profile")
+	}
+	err := s.withTx(ctx, func(tx *sql.Tx) error {
+		if err := validateAccountForProvider(ctx, tx, profile.Provider, profile.AccountID); err != nil {
+			return err
+		}
+		result, err := tx.ExecContext(ctx, `
+			UPDATE runtime_profiles SET device_id = ?, account_id = NULLIF(?, ''), name = ?, provider = ?,
+				settings_json = ?, updated_at = ? WHERE id = ?`,
+			profile.DeviceID, profile.AccountID, profile.Name, profile.Provider, profile.Settings,
+			formatTime(profile.UpdatedAt), profile.ID)
+		if err != nil {
+			return writeError("runtime profile could not be updated", err)
+		}
+		changed, err := result.RowsAffected()
+		if err != nil || changed != 1 {
+			return domain.NewError(domain.CodeNotFound, "runtime profile not found")
+		}
+		return nil
+	})
+	if err != nil {
+		return domain.RuntimeProfile{}, err
+	}
+	return s.RuntimeProfile(ctx, profile.ID)
+}
+
+func (s *Store) DeleteRuntimeProfile(ctx context.Context, id domain.ID) error {
+	if err := domain.ValidateID(id); err != nil {
+		return err
+	}
+	return s.withTx(ctx, func(tx *sql.Tx) error {
+		result, err := tx.ExecContext(ctx, "DELETE FROM runtime_profiles WHERE id = ?", id)
+		if err != nil {
+			return writeError("runtime profile could not be deleted", err)
+		}
+		changed, err := result.RowsAffected()
+		if err != nil || changed != 1 {
+			return domain.NewError(domain.CodeNotFound, "runtime profile not found")
+		}
+		return nil
+	})
+}
+
 func (s *Store) CreateCredentialInstance(ctx context.Context, credential domain.CredentialInstance) error {
 	if err := domain.ValidateID(credential.ID); err != nil {
 		return err
@@ -329,18 +523,25 @@ func (s *Store) CreateCredentialInstance(ctx context.Context, credential domain.
 		return err
 	}
 	digest, digestErr := hex.DecodeString(credential.SecretDigest)
-	if credential.Provider != "fake" || credential.AuthMethod != "fake" || !strings.HasPrefix(credential.SecretRef, "fake:") ||
-		digestErr != nil || len(digest) != 32 || credential.CredentialRevision < 0 ||
+	validFake := credential.Provider == domain.ProviderFake && credential.AuthMethod == domain.AuthMethodFake &&
+		credential.AccountID == "" && strings.HasPrefix(credential.SecretRef, "fake:") && credential.CredentialRevision >= 0
+	validCodex := credential.Provider == domain.ProviderCodex &&
+		(credential.AuthMethod == domain.AuthMethodInteractive || credential.AuthMethod == domain.AuthMethodDeviceCode) &&
+		credential.AccountID != "" && strings.HasPrefix(credential.SecretRef, "vault:") && credential.CredentialRevision >= 1
+	if (!validFake && !validCodex) || digestErr != nil || len(digest) != 32 ||
 		!validCredentialStatus(credential.Status) || !validCreatedUpdated(credential.CreatedAt, credential.UpdatedAt) {
-		return domain.NewError(domain.CodeInvalidArgument, "invalid fake credential instance")
+		return domain.NewError(domain.CodeInvalidArgument, "invalid credential instance")
 	}
 	return s.withTx(ctx, func(tx *sql.Tx) error {
+		if err := validateAccountForProvider(ctx, tx, credential.Provider, credential.AccountID); err != nil {
+			return err
+		}
 		_, err := tx.ExecContext(ctx, `
 			INSERT INTO credential_instances(
-				id, device_id, provider, auth_method, secret_ref, status,
+				id, device_id, account_id, provider, auth_method, secret_ref, status,
 				credential_revision, secret_digest, created_at, updated_at
-			) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			credential.ID, credential.DeviceID, credential.Provider, credential.AuthMethod,
+			) VALUES(?, ?, NULLIF(?, ''), ?, ?, ?, ?, ?, ?, ?, ?)`,
+			credential.ID, credential.DeviceID, credential.AccountID, credential.Provider, credential.AuthMethod,
 			credential.SecretRef, credential.Status, credential.CredentialRevision,
 			credential.SecretDigest, formatTime(credential.CreatedAt), formatTime(credential.UpdatedAt),
 		)
@@ -350,12 +551,13 @@ func (s *Store) CreateCredentialInstance(ctx context.Context, credential domain.
 
 func (s *Store) CredentialInstance(ctx context.Context, id domain.ID) (domain.CredentialInstance, error) {
 	var credential domain.CredentialInstance
+	var accountID sql.NullString
 	var createdAt, updatedAt string
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, device_id, provider, auth_method, secret_ref, status,
+		SELECT id, device_id, account_id, provider, auth_method, secret_ref, status,
 			credential_revision, secret_digest, created_at, updated_at
 		FROM credential_instances WHERE id = ?`, id).Scan(
-		&credential.ID, &credential.DeviceID, &credential.Provider, &credential.AuthMethod,
+		&credential.ID, &credential.DeviceID, &accountID, &credential.Provider, &credential.AuthMethod,
 		&credential.SecretRef, &credential.Status, &credential.CredentialRevision,
 		&credential.SecretDigest, &createdAt, &updatedAt,
 	)
@@ -364,6 +566,9 @@ func (s *Store) CredentialInstance(ctx context.Context, id domain.ID) (domain.Cr
 	}
 	if err != nil {
 		return domain.CredentialInstance{}, domain.WrapError(domain.CodeConflict, "credential instance could not be read", err)
+	}
+	if accountID.Valid {
+		credential.AccountID = domain.ID(accountID.String)
 	}
 	credential.CreatedAt, err = parseTime(createdAt)
 	if err != nil {
@@ -376,6 +581,79 @@ func (s *Store) CredentialInstance(ctx context.Context, id domain.ID) (domain.Cr
 	return credential, nil
 }
 
+func (s *Store) ListCredentialInstances(ctx context.Context) ([]domain.CredentialInstance, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT id FROM credential_instances ORDER BY id`)
+	if err != nil {
+		return nil, domain.WrapError(domain.CodeConflict, "credential instances could not be listed", err)
+	}
+	defer rows.Close()
+	var ids []domain.ID
+	for rows.Next() {
+		var id domain.ID
+		if err := rows.Scan(&id); err != nil {
+			return nil, domain.WrapError(domain.CodeConflict, "credential instance list could not be read", err)
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, domain.WrapError(domain.CodeConflict, "credential instances could not be listed", err)
+	}
+	result := make([]domain.CredentialInstance, 0, len(ids))
+	for _, id := range ids {
+		credential, err := s.CredentialInstance(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, credential)
+	}
+	return result, nil
+}
+
+func (s *Store) UpdateCredentialStatus(ctx context.Context, id domain.ID, status domain.CredentialStatus, at time.Time) (domain.CredentialInstance, error) {
+	if err := domain.ValidateID(id); err != nil {
+		return domain.CredentialInstance{}, err
+	}
+	if !validCredentialStatus(status) || at.IsZero() {
+		return domain.CredentialInstance{}, domain.NewError(domain.CodeInvalidArgument, "invalid credential status")
+	}
+	result, err := s.db.ExecContext(ctx, `UPDATE credential_instances SET status = ?, updated_at = ? WHERE id = ?`, status, formatTime(at), id)
+	if err != nil {
+		return domain.CredentialInstance{}, writeError("credential status could not be updated", err)
+	}
+	changed, err := result.RowsAffected()
+	if err != nil || changed != 1 {
+		return domain.CredentialInstance{}, domain.NewError(domain.CodeNotFound, "credential instance not found")
+	}
+	return s.CredentialInstance(ctx, id)
+}
+
+// UpdateCredentialRevisionCAS commits a provider-auth digest only when the
+// caller still owns the expected credential revision. Raw credential bytes
+// never enter the Store; only the bounded integrity digest is persisted.
+func (s *Store) UpdateCredentialRevisionCAS(ctx context.Context, id domain.ID, expectedRevision int64, secretDigest string, at time.Time) (domain.CredentialInstance, error) {
+	if err := domain.ValidateID(id); err != nil {
+		return domain.CredentialInstance{}, err
+	}
+	if expectedRevision < 1 || len(secretDigest) != 64 || at.IsZero() {
+		return domain.CredentialInstance{}, domain.NewError(domain.CodeInvalidArgument, "invalid credential revision update")
+	}
+	if _, err := hex.DecodeString(secretDigest); err != nil {
+		return domain.CredentialInstance{}, domain.NewError(domain.CodeInvalidArgument, "credential digest is invalid")
+	}
+	result, err := s.db.ExecContext(ctx, `UPDATE credential_instances SET credential_revision = ?, secret_digest = ?, updated_at = ? WHERE id = ? AND credential_revision = ? AND status = ?`, expectedRevision+1, secretDigest, formatTime(at), id, expectedRevision, domain.CredentialHealthy)
+	if err != nil {
+		return domain.CredentialInstance{}, writeError("credential revision could not be committed", err)
+	}
+	changed, err := result.RowsAffected()
+	if err != nil {
+		return domain.CredentialInstance{}, writeError("credential revision result could not be read", err)
+	}
+	if changed != 1 {
+		return domain.CredentialInstance{}, domain.NewError(domain.CodeCredentialRevisionConflict, "credential revision is stale or unavailable")
+	}
+	return s.CredentialInstance(ctx, id)
+}
+
 func (s *Store) CreateSession(ctx context.Context, session domain.Session) error {
 	validated, err := domain.NewSession(session)
 	if err != nil {
@@ -386,6 +664,9 @@ func (s *Store) CreateSession(ctx context.Context, session domain.Session) error
 		return err
 	}
 	return s.withTx(ctx, func(tx *sql.Tx) error {
+		if err := validateSessionLinks(ctx, tx, validated); err != nil {
+			return err
+		}
 		if validated.ResumedFromSessionID != "" {
 			if err := validateResumeSource(ctx, tx, validated); err != nil {
 				return err
@@ -393,11 +674,11 @@ func (s *Store) CreateSession(ctx context.Context, session domain.Session) error
 		}
 		_, err := tx.ExecContext(ctx, `
 			INSERT INTO sessions(
-				id, device_id, provider, credential_instance_id, runtime_profile_id,
+				id, device_id, account_id, provider, credential_instance_id, runtime_profile_id,
 				workspace_id, provider_session_id, resumed_from_session_id, status,
 				started_at, ended_at, exit_code, capability_snapshot_json, failure_code
-			) VALUES(?, ?, ?, ?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?, ?, NULL, NULL, ?, '')`,
-			validated.ID, validated.DeviceID, validated.Provider, validated.CredentialInstanceID,
+			) VALUES(?, ?, NULLIF(?, ''), ?, ?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?, ?, NULL, NULL, ?, '')`,
+			validated.ID, validated.DeviceID, validated.AccountID, validated.Provider, validated.CredentialInstanceID,
 			validated.RuntimeProfileID, validated.WorkspaceID, validated.ProviderSessionID,
 			validated.ResumedFromSessionID, validated.Status, formatTime(validated.StartedAt), capabilities,
 		)
@@ -407,16 +688,17 @@ func (s *Store) CreateSession(ctx context.Context, session domain.Session) error
 
 func (s *Store) Session(ctx context.Context, id domain.ID) (domain.Session, error) {
 	var session domain.Session
+	var accountID sql.NullString
 	var startedAt string
 	var endedAt sql.NullString
 	var exitCode sql.NullInt64
 	var capabilities []byte
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, device_id, provider, credential_instance_id, runtime_profile_id,
+		SELECT id, device_id, account_id, provider, credential_instance_id, runtime_profile_id,
 			workspace_id, coalesce(provider_session_id, ''), coalesce(resumed_from_session_id, ''),
 			status, started_at, ended_at, exit_code, capability_snapshot_json, failure_code
 		FROM sessions WHERE id = ?`, id).Scan(
-		&session.ID, &session.DeviceID, &session.Provider, &session.CredentialInstanceID,
+		&session.ID, &session.DeviceID, &accountID, &session.Provider, &session.CredentialInstanceID,
 		&session.RuntimeProfileID, &session.WorkspaceID, &session.ProviderSessionID,
 		&session.ResumedFromSessionID, &session.Status, &startedAt, &endedAt, &exitCode,
 		&capabilities, &session.FailureCode,
@@ -426,6 +708,9 @@ func (s *Store) Session(ctx context.Context, id domain.ID) (domain.Session, erro
 	}
 	if err != nil {
 		return domain.Session{}, domain.WrapError(domain.CodeConflict, "session could not be read", err)
+	}
+	if accountID.Valid {
+		session.AccountID = domain.ID(accountID.String)
 	}
 	session.StartedAt, err = parseTime(startedAt)
 	if err != nil {
@@ -730,6 +1015,395 @@ func (s *Store) ListSessions(ctx context.Context) ([]domain.Session, error) {
 	return sessions, nil
 }
 
+func (s *Store) CreateApproval(ctx context.Context, approval domain.Approval) error {
+	if approval.ResponseState == "" {
+		approval.ResponseState = domain.ApprovalResponseIdle
+	}
+	if err := domain.ValidateApproval(approval); err != nil {
+		return err
+	}
+	return s.withTx(ctx, func(tx *sql.Tx) error {
+		var sessionProvider string
+		if err := tx.QueryRowContext(ctx, "SELECT provider FROM sessions WHERE id = ?", approval.SessionID).Scan(&sessionProvider); errors.Is(err, sql.ErrNoRows) {
+			return domain.NewError(domain.CodeNotFound, "session not found")
+		} else if err != nil {
+			return domain.WrapError(domain.CodeConflict, "approval session could not be read", err)
+		} else if sessionProvider != domain.ProviderCodex {
+			return domain.NewError(domain.CodeConflict, "approval session provider is unsupported")
+		}
+		_, err := tx.ExecContext(ctx, `
+			INSERT INTO approvals(
+				id, session_id, provider_approval_id, kind, payload_digest, summary, status, response_state,
+				requested_decision, responded_by_device_id, idempotency_key, dispatch_digest,
+				requested_at, dispatch_started_at, responded_at, dispatch_error_code
+			) VALUES(?, ?, ?, ?, ?, ?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?, NULLIF(?, ''), ?, ?, ?, ?)`,
+			approval.ID, approval.SessionID, approval.ProviderApprovalID, approval.Kind, approval.PayloadDigest,
+			approval.Summary, approval.Status, approval.ResponseState, approval.RequestedDecision,
+			approval.RespondedByDeviceID, approval.IdempotencyKey, approval.DispatchDigest,
+			formatTime(approval.RequestedAt), optionalTimeValue(approval.DispatchStartedAt),
+			optionalTimeValue(approval.RespondedAt), approval.DispatchErrorCode)
+		return writeError("approval could not be created", err)
+	})
+}
+
+func (s *Store) Approval(ctx context.Context, id domain.ID) (domain.Approval, error) {
+	var approval domain.Approval
+	var respondedBy sql.NullString
+	var requestedAt string
+	var dispatchStartedAt, respondedAt sql.NullString
+	err := s.db.QueryRowContext(ctx, `
+		SELECT id, session_id, provider_approval_id, kind, payload_digest, summary, status,
+			response_state, coalesce(requested_decision, ''), coalesce(responded_by_device_id, ''),
+			idempotency_key, coalesce(dispatch_digest, ''), requested_at, dispatch_started_at,
+			responded_at, dispatch_error_code
+		FROM approvals WHERE id = ?`, id).Scan(
+		&approval.ID, &approval.SessionID, &approval.ProviderApprovalID, &approval.Kind, &approval.PayloadDigest,
+		&approval.Summary, &approval.Status, &approval.ResponseState, &approval.RequestedDecision,
+		&respondedBy, &approval.IdempotencyKey, &approval.DispatchDigest, &requestedAt,
+		&dispatchStartedAt, &respondedAt, &approval.DispatchErrorCode)
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.Approval{}, domain.NewError(domain.CodeNotFound, "approval not found")
+	}
+	if err != nil {
+		return domain.Approval{}, domain.WrapError(domain.CodeConflict, "approval could not be read", err)
+	}
+	if respondedBy.Valid {
+		approval.RespondedByDeviceID = domain.ID(respondedBy.String)
+	}
+	approval.RequestedAt, err = parseTime(requestedAt)
+	if err != nil {
+		return domain.Approval{}, err
+	}
+	approval.RespondedAt, err = parseOptionalTime(respondedAt)
+	if err != nil {
+		return domain.Approval{}, err
+	}
+	approval.DispatchStartedAt, err = parseOptionalTime(dispatchStartedAt)
+	if err != nil {
+		return domain.Approval{}, err
+	}
+	return approval, nil
+}
+
+func (s *Store) ListApprovals(ctx context.Context, sessionID domain.ID) ([]domain.Approval, error) {
+	if err := domain.ValidateID(sessionID); err != nil {
+		return nil, err
+	}
+	rows, err := s.db.QueryContext(ctx, `SELECT id FROM approvals WHERE session_id = ? ORDER BY requested_at, id`, sessionID)
+	if err != nil {
+		return nil, domain.WrapError(domain.CodeConflict, "approvals could not be listed", err)
+	}
+	defer rows.Close()
+	var ids []domain.ID
+	for rows.Next() {
+		var id domain.ID
+		if err := rows.Scan(&id); err != nil {
+			return nil, domain.WrapError(domain.CodeConflict, "approval list could not be read", err)
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, domain.WrapError(domain.CodeConflict, "approvals could not be listed", err)
+	}
+	result := make([]domain.Approval, 0, len(ids))
+	for _, id := range ids {
+		approval, err := s.Approval(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, approval)
+	}
+	return result, nil
+}
+
+func approvalDecision(status domain.ApprovalStatus) domain.ApprovalDecision {
+	switch status {
+	case domain.ApprovalApproved:
+		return domain.ApprovalDecisionApprove
+	case domain.ApprovalDenied:
+		return domain.ApprovalDecisionDeny
+	case domain.ApprovalCancelled:
+		return domain.ApprovalDecisionCancel
+	default:
+		return ""
+	}
+}
+
+func approvalStatusForDecision(decision domain.ApprovalDecision) domain.ApprovalStatus {
+	switch decision {
+	case domain.ApprovalDecisionApprove:
+		return domain.ApprovalApproved
+	case domain.ApprovalDecisionDeny:
+		return domain.ApprovalDenied
+	case domain.ApprovalDecisionCancel:
+		return domain.ApprovalCancelled
+	default:
+		return ""
+	}
+}
+
+// ClaimApprovalDispatch durably records the exact decision and dispatch digest
+// before the caller writes to the Provider transport. Replays with the same
+// digest return the stored state; another decision or key conflicts.
+func (s *Store) ClaimApprovalDispatch(ctx context.Context, approvalID domain.ID, providerApprovalID string, responderID domain.ID, responseKey string, decision domain.ApprovalDecision, dispatchDigest string, at time.Time) (domain.Approval, error) {
+	for _, id := range []domain.ID{approvalID, responderID} {
+		if err := domain.ValidateID(id); err != nil {
+			return domain.Approval{}, err
+		}
+	}
+	if providerApprovalID == "" || responseKey == "" || len(responseKey) > 128 ||
+		approvalStatusForDecision(decision) == "" || len(dispatchDigest) != 64 || at.IsZero() {
+		return domain.Approval{}, domain.NewError(domain.CodeInvalidArgument, "invalid approval dispatch claim")
+	}
+	if _, err := hex.DecodeString(dispatchDigest); err != nil {
+		return domain.Approval{}, domain.NewError(domain.CodeInvalidArgument, "approval dispatch digest is invalid")
+	}
+	err := s.withTx(ctx, func(tx *sql.Tx) error {
+		var storedProviderID, storedKey, storedDigest string
+		var status domain.ApprovalStatus
+		var responseState domain.ApprovalResponseState
+		var storedDecision domain.ApprovalDecision
+		var storedResponder domain.ID
+		err := tx.QueryRowContext(ctx, `SELECT provider_approval_id, status, response_state, coalesce(requested_decision,''), coalesce(responded_by_device_id,''), idempotency_key, coalesce(dispatch_digest,'') FROM approvals WHERE id=?`, approvalID).
+			Scan(&storedProviderID, &status, &responseState, &storedDecision, &storedResponder, &storedKey, &storedDigest)
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.NewError(domain.CodeApprovalUnknown, "approval request is unknown")
+		}
+		if err != nil {
+			return domain.WrapError(domain.CodeConflict, "approval could not be checked", err)
+		}
+		if storedProviderID != providerApprovalID {
+			return domain.NewError(domain.CodeApprovalUnknown, "approval provider request is unknown")
+		}
+		if responseState != domain.ApprovalResponseIdle {
+			if storedDecision == decision && storedResponder == responderID && storedKey == responseKey && storedDigest == dispatchDigest {
+				return nil
+			}
+			return domain.NewError(domain.CodeConflict, "approval dispatch already has another decision")
+		}
+		if status != domain.ApprovalPending {
+			return domain.NewError(domain.CodeConflict, "approval is already terminal")
+		}
+		result, err := tx.ExecContext(ctx, `UPDATE approvals SET response_state='dispatching', requested_decision=?, responded_by_device_id=?, idempotency_key=?, dispatch_digest=?, dispatch_started_at=? WHERE id=? AND status='pending' AND response_state='idle'`, decision, responderID, responseKey, dispatchDigest, formatTime(at), approvalID)
+		if err != nil {
+			return writeError("approval dispatch could not be claimed", err)
+		}
+		changed, _ := result.RowsAffected()
+		if changed != 1 {
+			return domain.NewError(domain.CodeConflict, "approval changed before dispatch")
+		}
+		return nil
+	})
+	if err != nil {
+		return domain.Approval{}, err
+	}
+	return s.Approval(ctx, approvalID)
+}
+
+// CompleteApprovalDispatch records a Provider write only after the caller has
+// received success for the previously claimed digest.
+func (s *Store) CompleteApprovalDispatch(ctx context.Context, approvalID domain.ID, dispatchDigest string, at time.Time) (domain.Approval, error) {
+	if err := domain.ValidateID(approvalID); err != nil {
+		return domain.Approval{}, err
+	}
+	if len(dispatchDigest) != 64 || at.IsZero() {
+		return domain.Approval{}, domain.NewError(domain.CodeInvalidArgument, "invalid approval dispatch completion")
+	}
+	approval, err := s.Approval(ctx, approvalID)
+	if err != nil {
+		return domain.Approval{}, err
+	}
+	if approval.DispatchDigest != dispatchDigest {
+		return domain.Approval{}, domain.NewError(domain.CodeConflict, "approval dispatch digest changed")
+	}
+	if approval.ResponseState == domain.ApprovalResponseWritten {
+		return approval, nil
+	}
+	if approval.ResponseState != domain.ApprovalResponseDispatching {
+		return domain.Approval{}, domain.NewError(domain.CodeConflict, "approval dispatch is not in flight")
+	}
+	status := approvalStatusForDecision(approval.RequestedDecision)
+	result, err := s.db.ExecContext(ctx, `UPDATE approvals SET status=?, response_state='written', responded_at=?, dispatch_error_code='' WHERE id=? AND status='pending' AND response_state='dispatching' AND dispatch_digest=?`, status, formatTime(at), approvalID, dispatchDigest)
+	if err != nil {
+		return domain.Approval{}, writeError("approval dispatch could not be completed", err)
+	}
+	changed, _ := result.RowsAffected()
+	if changed != 1 {
+		return domain.Approval{}, domain.NewError(domain.CodeConflict, "approval changed before dispatch completion")
+	}
+	return s.Approval(ctx, approvalID)
+}
+
+// FailApprovalDispatch makes an in-flight Provider write durably ambiguous;
+// it is never retried automatically because the Provider may have applied it.
+func (s *Store) FailApprovalDispatch(ctx context.Context, approvalID domain.ID, dispatchDigest, errorCode string, at time.Time) (domain.Approval, error) {
+	if err := domain.ValidateID(approvalID); err != nil {
+		return domain.Approval{}, err
+	}
+	if len(dispatchDigest) != 64 || errorCode == "" || len(errorCode) > 64 || at.IsZero() {
+		return domain.Approval{}, domain.NewError(domain.CodeInvalidArgument, "invalid approval dispatch failure")
+	}
+	approval, err := s.Approval(ctx, approvalID)
+	if err != nil {
+		return domain.Approval{}, err
+	}
+	if approval.DispatchDigest != dispatchDigest {
+		return domain.Approval{}, domain.NewError(domain.CodeConflict, "approval dispatch digest changed")
+	}
+	if approval.ResponseState == domain.ApprovalResponseAmbiguous && approval.DispatchErrorCode == errorCode {
+		return approval, nil
+	}
+	if approval.ResponseState != domain.ApprovalResponseDispatching {
+		return domain.Approval{}, domain.NewError(domain.CodeConflict, "approval dispatch is not in flight")
+	}
+	result, err := s.db.ExecContext(ctx, `UPDATE approvals SET status='expired', response_state='ambiguous', responded_at=?, dispatch_error_code=? WHERE id=? AND status='pending' AND response_state='dispatching' AND dispatch_digest=?`, formatTime(at), errorCode, approvalID, dispatchDigest)
+	if err != nil {
+		return domain.Approval{}, writeError("approval dispatch failure could not be saved", err)
+	}
+	changed, _ := result.RowsAffected()
+	if changed != 1 {
+		return domain.Approval{}, domain.NewError(domain.CodeConflict, "approval changed before dispatch failure")
+	}
+	return s.Approval(ctx, approvalID)
+}
+
+// RespondApproval records a response only after its caller has successfully
+// written the exact Provider result. P3A owns that runtime write.
+func (s *Store) RespondApproval(ctx context.Context, approvalID domain.ID, providerApprovalID string, responderID domain.ID, responseKey string, decision domain.ApprovalStatus, at time.Time) (domain.Approval, error) {
+	requestedDecision := approvalDecision(decision)
+	if requestedDecision == "" {
+		return domain.Approval{}, domain.NewError(domain.CodeInvalidArgument, "invalid approval response")
+	}
+	digestBytes := sha256.Sum256([]byte(string(approvalID) + "\x00" + providerApprovalID + "\x00" + string(responderID) + "\x00" + responseKey + "\x00" + string(requestedDecision)))
+	dispatchDigest := hex.EncodeToString(digestBytes[:])
+	if _, err := s.ClaimApprovalDispatch(ctx, approvalID, providerApprovalID, responderID, responseKey, requestedDecision, dispatchDigest, at); err != nil {
+		return domain.Approval{}, err
+	}
+	return s.CompleteApprovalDispatch(ctx, approvalID, dispatchDigest, at)
+}
+
+// ExpirePendingApprovals is called during daemon recovery. It never writes a
+// Provider mutation; the local state only records that a pending request can
+// no longer safely be replayed after restart.
+func (s *Store) ExpirePendingApprovals(ctx context.Context, at time.Time) error {
+	if at.IsZero() {
+		return domain.NewError(domain.CodeInvalidArgument, "approval recovery requires a timestamp")
+	}
+	_, err := s.db.ExecContext(ctx, `
+		UPDATE approvals SET status='expired', response_state='ambiguous',
+			requested_decision=coalesce(requested_decision, 'cancel'),
+			responded_by_device_id=coalesce(responded_by_device_id, (SELECT id FROM client_identities ORDER BY id LIMIT 1)),
+			dispatch_digest=coalesce(dispatch_digest, lower(hex(randomblob(32)))),
+			dispatch_started_at=coalesce(dispatch_started_at, requested_at), responded_at=?,
+			dispatch_error_code=CASE WHEN response_state='idle' THEN 'daemon_restart_before_dispatch' ELSE 'daemon_restart' END
+		WHERE status='pending' AND response_state IN ('idle','dispatching')`, formatTime(at))
+	if err != nil {
+		return writeError("pending approvals could not be expired", err)
+	}
+	return nil
+}
+
+func (s *Store) CreateUsageSnapshot(ctx context.Context, snapshot domain.UsageSnapshot) error {
+	if err := domain.ValidateUsageSnapshot(snapshot); err != nil {
+		return err
+	}
+	return s.withTx(ctx, func(tx *sql.Tx) error {
+		if err := validateAccountForProvider(ctx, tx, snapshot.Provider, snapshot.AccountID); err != nil {
+			return err
+		}
+		var deviceExists int
+		if err := tx.QueryRowContext(ctx, "SELECT count(*) FROM device_identity WHERE id = ?", snapshot.DeviceID).Scan(&deviceExists); err != nil {
+			return writeError("usage device could not be checked", err)
+		}
+		if deviceExists != 1 {
+			return domain.NewError(domain.CodeNotFound, "device not found")
+		}
+		_, err := tx.ExecContext(ctx, `
+			INSERT INTO usage_snapshots(
+				id, provider, account_id, device_id, source, confidence, window_kind,
+				used_value, limit_value, used_percent, resets_at, observed_at,
+				raw_reference_hash, source_version, capability_status, error_code
+			) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULLIF(?, ''), ?, ?, ?)`,
+			snapshot.ID, snapshot.Provider, snapshot.AccountID, snapshot.DeviceID, snapshot.Source, snapshot.Confidence,
+			snapshot.WindowKind, optionalFloat(snapshot.UsedValue), optionalFloat(snapshot.LimitValue), optionalFloat(snapshot.UsedPercent),
+			optionalTimeValue(snapshot.ResetsAt), formatTime(snapshot.ObservedAt), snapshot.RawReferenceHash, snapshot.SourceVersion,
+			snapshot.CapabilityStatus, snapshot.ErrorCode)
+		return writeError("usage snapshot could not be created", err)
+	})
+}
+
+func (s *Store) UsageSnapshot(ctx context.Context, id domain.ID) (domain.UsageSnapshot, error) {
+	var snapshot domain.UsageSnapshot
+	var used, limit, percent sql.NullFloat64
+	var resetsAt sql.NullString
+	var rawHash sql.NullString
+	var observedAt string
+	err := s.db.QueryRowContext(ctx, `
+		SELECT id, provider, account_id, device_id, source, confidence, window_kind,
+			used_value, limit_value, used_percent, resets_at, observed_at,
+			coalesce(raw_reference_hash, ''), source_version, capability_status, error_code
+		FROM usage_snapshots WHERE id = ?`, id).Scan(
+		&snapshot.ID, &snapshot.Provider, &snapshot.AccountID, &snapshot.DeviceID, &snapshot.Source, &snapshot.Confidence,
+		&snapshot.WindowKind, &used, &limit, &percent, &resetsAt, &observedAt, &rawHash, &snapshot.SourceVersion,
+		&snapshot.CapabilityStatus, &snapshot.ErrorCode)
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.UsageSnapshot{}, domain.NewError(domain.CodeNotFound, "usage snapshot not found")
+	}
+	if err != nil {
+		return domain.UsageSnapshot{}, domain.WrapError(domain.CodeConflict, "usage snapshot could not be read", err)
+	}
+	if used.Valid {
+		snapshot.UsedValue = &used.Float64
+	}
+	if limit.Valid {
+		snapshot.LimitValue = &limit.Float64
+	}
+	if percent.Valid {
+		snapshot.UsedPercent = &percent.Float64
+	}
+	snapshot.ResetsAt, err = parseOptionalTime(resetsAt)
+	if err != nil {
+		return domain.UsageSnapshot{}, err
+	}
+	snapshot.ObservedAt, err = parseTime(observedAt)
+	if err != nil {
+		return domain.UsageSnapshot{}, err
+	}
+	snapshot.RawReferenceHash = rawHash.String
+	return snapshot, nil
+}
+
+func (s *Store) ListUsageSnapshots(ctx context.Context, accountID domain.ID) ([]domain.UsageSnapshot, error) {
+	if err := domain.ValidateID(accountID); err != nil {
+		return nil, err
+	}
+	rows, err := s.db.QueryContext(ctx, `SELECT id FROM usage_snapshots WHERE account_id = ? ORDER BY observed_at DESC, id`, accountID)
+	if err != nil {
+		return nil, domain.WrapError(domain.CodeConflict, "usage snapshots could not be listed", err)
+	}
+	defer rows.Close()
+	var ids []domain.ID
+	for rows.Next() {
+		var id domain.ID
+		if err := rows.Scan(&id); err != nil {
+			return nil, domain.WrapError(domain.CodeConflict, "usage snapshot list could not be read", err)
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, domain.WrapError(domain.CodeConflict, "usage snapshots could not be listed", err)
+	}
+	result := make([]domain.UsageSnapshot, 0, len(ids))
+	for _, id := range ids {
+		snapshot, err := s.UsageSnapshot(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, snapshot)
+	}
+	return result, nil
+}
+
 func (s *Store) CreateCredentialMaterialization(ctx context.Context, materialization domain.CredentialMaterialization) error {
 	if err := domain.ValidateID(materialization.LeaseID); err != nil {
 		return err
@@ -828,8 +1502,123 @@ func (s *Store) TransitionCredentialMaterialization(ctx context.Context, leaseID
 	return s.CredentialMaterialization(ctx, leaseID)
 }
 
+func boolInt(value bool) int {
+	if value {
+		return 1
+	}
+	return 0
+}
+
+func validateAccountForProvider(ctx context.Context, tx *sql.Tx, provider string, accountID domain.ID) error {
+	if provider == domain.ProviderCodex && accountID == "" {
+		return domain.NewError(domain.CodeInvalidArgument, "codex records require an account")
+	}
+	if accountID == "" {
+		return nil
+	}
+	if err := domain.ValidateID(accountID); err != nil {
+		return err
+	}
+	var accountProvider string
+	var enabled int
+	err := tx.QueryRowContext(ctx, "SELECT provider, enabled FROM accounts WHERE id = ?", accountID).Scan(&accountProvider, &enabled)
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.NewError(domain.CodeNotFound, "account not found")
+	}
+	if err != nil {
+		return domain.WrapError(domain.CodeConflict, "account linkage could not be checked", err)
+	}
+	if accountProvider != provider {
+		return domain.NewError(domain.CodeConflict, "account provider does not match record")
+	}
+	if enabled != 1 {
+		return domain.NewError(domain.CodePermissionDenied, "account is disabled")
+	}
+	return nil
+}
+
+func validateSessionLinks(ctx context.Context, tx *sql.Tx, session domain.Session) error {
+	if err := validateAccountForProvider(ctx, tx, session.Provider, session.AccountID); err != nil {
+		return err
+	}
+	var profileDevice, profileProvider string
+	var profileAccount sql.NullString
+	err := tx.QueryRowContext(ctx, `SELECT device_id, provider, account_id FROM runtime_profiles WHERE id = ?`, session.RuntimeProfileID).
+		Scan(&profileDevice, &profileProvider, &profileAccount)
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.NewError(domain.CodeNotFound, "runtime profile not found")
+	}
+	if err != nil {
+		return domain.WrapError(domain.CodeConflict, "runtime profile linkage could not be checked", err)
+	}
+	if profileDevice != string(session.DeviceID) || profileProvider != session.Provider {
+		return domain.NewError(domain.CodeConflict, "session profile does not match device or provider")
+	}
+	if (profileAccount.Valid && domain.ID(profileAccount.String) != session.AccountID) || (!profileAccount.Valid && session.Provider == domain.ProviderCodex) {
+		return domain.NewError(domain.CodeConflict, "session profile account does not match")
+	}
+
+	var credentialDevice, credentialProvider string
+	var credentialAccount sql.NullString
+	var credentialStatus domain.CredentialStatus
+	var credentialRevision int64
+	err = tx.QueryRowContext(ctx, `SELECT device_id, provider, account_id, status, credential_revision FROM credential_instances WHERE id = ?`, session.CredentialInstanceID).
+		Scan(&credentialDevice, &credentialProvider, &credentialAccount, &credentialStatus, &credentialRevision)
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.NewError(domain.CodeNotFound, "credential instance not found")
+	}
+	if err != nil {
+		return domain.WrapError(domain.CodeConflict, "credential linkage could not be checked", err)
+	}
+	if credentialDevice != string(session.DeviceID) || credentialProvider != session.Provider {
+		return domain.NewError(domain.CodeConflict, "session credential does not match device or provider")
+	}
+	if credentialStatus == domain.CredentialRevoked || credentialStatus == domain.CredentialExpired {
+		return domain.NewError(domain.CodePermissionDenied, "credential instance is not usable")
+	}
+	if session.Provider == domain.ProviderCodex && (credentialRevision < 1 || !credentialAccount.Valid || domain.ID(credentialAccount.String) != session.AccountID) {
+		return domain.NewError(domain.CodeConflict, "session credential account or revision does not match")
+	}
+	if session.Provider == domain.ProviderFake && credentialAccount.Valid {
+		return domain.NewError(domain.CodeConflict, "legacy fake credential cannot link an account")
+	}
+	var revocationReserved int
+	if err := tx.QueryRowContext(ctx, `SELECT count(*) FROM credential_revocations WHERE credential_instance_id = ?`, session.CredentialInstanceID).Scan(&revocationReserved); err != nil {
+		return domain.WrapError(domain.CodeConflict, "credential revocation state could not be checked", err)
+	}
+	if revocationReserved != 0 {
+		return domain.NewError(domain.CodePermissionDenied, "credential revocation is in progress")
+	}
+	var workspaceDevice string
+	err = tx.QueryRowContext(ctx, "SELECT device_id FROM workspaces WHERE id = ?", session.WorkspaceID).Scan(&workspaceDevice)
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.NewError(domain.CodeNotFound, "workspace not found")
+	}
+	if err != nil {
+		return domain.WrapError(domain.CodeConflict, "workspace linkage could not be checked", err)
+	}
+	if workspaceDevice != string(session.DeviceID) {
+		return domain.NewError(domain.CodeConflict, "session workspace does not match device")
+	}
+	return nil
+}
+
 func validCreatedUpdated(createdAt, updatedAt time.Time) bool {
 	return !createdAt.IsZero() && !updatedAt.IsZero() && !updatedAt.Before(createdAt)
+}
+
+func optionalTimeValue(value *time.Time) any {
+	if value == nil {
+		return nil
+	}
+	return formatTime(*value)
+}
+
+func optionalFloat(value *float64) any {
+	if value == nil {
+		return nil
+	}
+	return *value
 }
 
 func validCredentialStatus(status domain.CredentialStatus) bool {
@@ -843,14 +1632,15 @@ func validCredentialStatus(status domain.CredentialStatus) bool {
 
 func validateResumeSource(ctx context.Context, tx *sql.Tx, resumed domain.Session) error {
 	var source domain.Session
+	var sourceAccountID sql.NullString
 	var endedAt sql.NullString
 	var sourceCapabilitiesJSON []byte
 	err := tx.QueryRowContext(ctx, `
-		SELECT device_id, provider, credential_instance_id, runtime_profile_id,
+		SELECT device_id, account_id, provider, credential_instance_id, runtime_profile_id,
 			workspace_id, coalesce(provider_session_id, ''), status, ended_at,
 			capability_snapshot_json
 		FROM sessions WHERE id = ?`, resumed.ResumedFromSessionID).Scan(
-		&source.DeviceID, &source.Provider, &source.CredentialInstanceID,
+		&source.DeviceID, &sourceAccountID, &source.Provider, &source.CredentialInstanceID,
 		&source.RuntimeProfileID, &source.WorkspaceID, &source.ProviderSessionID,
 		&source.Status, &endedAt, &sourceCapabilitiesJSON,
 	)
@@ -859,6 +1649,9 @@ func validateResumeSource(ctx context.Context, tx *sql.Tx, resumed domain.Sessio
 	}
 	if err != nil {
 		return domain.WrapError(domain.CodeConflict, "resume source could not be read", err)
+	}
+	if sourceAccountID.Valid {
+		source.AccountID = domain.ID(sourceAccountID.String)
 	}
 	if !source.Status.Terminal() || !endedAt.Valid {
 		return domain.NewError(domain.CodeInvalidTransition, "resume source session is not terminal")
@@ -886,7 +1679,7 @@ func validateResumeSource(ctx context.Context, tx *sql.Tx, resumed domain.Sessio
 	if !slices.Equal(canonicalSource, resumed.CapabilitySnapshot) {
 		return domain.NewError(domain.CodeConflict, "resumed session changed capability snapshot")
 	}
-	if source.DeviceID != resumed.DeviceID || source.Provider != resumed.Provider ||
+	if source.DeviceID != resumed.DeviceID || source.AccountID != resumed.AccountID || source.Provider != resumed.Provider ||
 		source.CredentialInstanceID != resumed.CredentialInstanceID || source.RuntimeProfileID != resumed.RuntimeProfileID ||
 		source.WorkspaceID != resumed.WorkspaceID || source.ProviderSessionID != resumed.ProviderSessionID {
 		return domain.NewError(domain.CodeConflict, "resumed session changed frozen source fields")

@@ -12,11 +12,26 @@ import (
 
 type StartRequest struct {
 	DeviceID             domain.ID
+	Provider             string
+	AccountID            domain.ID
 	CredentialInstanceID domain.ID
 	RuntimeProfileID     domain.ID
 	WorkspaceID          domain.ID
 	Capabilities         []domain.Capability
 	ResumedFromSessionID domain.ID
+}
+
+// Start is the P0 provider gate. Fake remains fully runnable; Codex records
+// are representable in the Device store but cannot start until the versioned
+// app-server adapter lands in a later approved phase.
+func (m *Manager) Start(ctx context.Context, request StartRequest) (domain.Session, error) {
+	if request.Provider == "" || request.Provider == domain.ProviderFake {
+		return m.StartFake(ctx, request)
+	}
+	if request.Provider == domain.ProviderCodex {
+		return domain.Session{}, domain.NewError(domain.CodeProviderUnsupported, "codex adapter is not implemented in P0")
+	}
+	return domain.Session{}, domain.NewError(domain.CodeInvalidArgument, "provider is unsupported")
 }
 
 type InputRequest struct {
@@ -95,6 +110,7 @@ func (m *Manager) StartFake(ctx context.Context, request StartRequest) (domain.S
 		return domain.Session{}, err
 	}
 	session := domain.Session{ID: sessionID, DeviceID: request.DeviceID, Provider: "fake",
+		AccountID:            request.AccountID,
 		CredentialInstanceID: request.CredentialInstanceID, RuntimeProfileID: request.RuntimeProfileID,
 		WorkspaceID: request.WorkspaceID, ResumedFromSessionID: request.ResumedFromSessionID,
 		Status: domain.SessionStarting, StartedAt: m.now(), CapabilitySnapshot: caps}
@@ -424,6 +440,9 @@ func (m *Manager) Resume(ctx context.Context, sourceID domain.ID) (domain.Sessio
 	source, err := m.Store.Session(ctx, sourceID)
 	if err != nil {
 		return domain.Session{}, err
+	}
+	if source.Provider != domain.ProviderFake {
+		return domain.Session{}, domain.NewError(domain.CodeProviderResumeUnsupported, "provider continuation is not verified")
 	}
 	id, err := domain.NewID("session")
 	if err != nil {

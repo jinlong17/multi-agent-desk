@@ -13,5 +13,12 @@ Phase 1 starts with:
    runtime events.
 3. `0003_operations.sql` — bounded audit/idempotency metadata and the pending
    fake materialization journal used by later approved Phase 1 phases.
+4. `0004_codex_foundation.sql` — transactional Provider allowlist expansion,
+   local Codex Account/Approval/Usage metadata, and the legacy-compatible
+   Device table rebuilds required by Phase 2 P0.
+5. `0005_codex_vault_and_approval_dispatch.sql` — schema-only portable Vault
+   v1 envelopes, fail-closed credential-revocation reservations, owner-bound
+   Codex enrollment state, and durable two-stage Approval dispatch metadata for
+   Phase 2 P2B.
 
 No migration stores real Provider credentials or terminal payloads.

@@ -5,8 +5,13 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/jinlong17/multi-agent-desk/internal/device"
+	"github.com/jinlong17/multi-agent-desk/internal/domain"
 )
 
 func captureCLI(t *testing.T, args ...string) (string, error) {
@@ -94,6 +99,59 @@ func TestVaultUnlockRejectsPositionalSecret(t *testing.T) {
 	_, err := captureCLI(t, "vault", "unlock", "--root", filepath.Join(t.TempDir(), "device"), "--secret-stdin", "argv-secret")
 	if err == nil || !strings.Contains(err.Error(), "accepts no positional arguments") {
 		t.Fatalf("positional Vault secret was not rejected at parse boundary: %v", err)
+	}
+}
+
+func TestVaultInitializationRequiresTwoExactLines(t *testing.T) {
+	secret, err := readVaultInitialization(strings.NewReader("match\nmatch\n"))
+	if err != nil || secret != "match" {
+		t.Fatalf("secret=%q err=%v", secret, err)
+	}
+	secret, err = readVaultInitialization(strings.NewReader("match\r\nmatch\r\n"))
+	if err != nil || secret != "match" {
+		t.Fatalf("CRLF secret=%q err=%v", secret, err)
+	}
+	for _, input := range []string{"one\ntwo\n", "one\none\nextra\n", "one\none", "\n\n", "one\r\none\n", "one\rone\r"} {
+		if _, err := readVaultInitialization(strings.NewReader(input)); err == nil {
+			t.Fatalf("accepted invalid initialization input %q", input)
+		}
+	}
+}
+
+func TestVaultInitializationRetriesOneLostResponse(t *testing.T) {
+	attempts := 0
+	want := device.Response{ProtocolMajor: device.ProtocolMajor, RequestID: "vault-init", OK: true}
+	got, err := callWithLostResponseRetry(true, func() (device.Response, error) {
+		attempts++
+		if attempts == 1 {
+			return device.Response{}, domain.NewError(domain.CodeDaemonUnavailable, "lost response")
+		}
+		return want, nil
+	})
+	if err != nil || attempts != 2 || got.RequestID != want.RequestID {
+		t.Fatalf("lost-response retry attempts=%d response=%+v err=%v", attempts, got, err)
+	}
+	attempts = 0
+	_, err = callWithLostResponseRetry(true, func() (device.Response, error) {
+		attempts++
+		return device.Response{}, domain.NewError(domain.CodeVaultAlreadyInitialized, "different request won")
+	})
+	if domain.CodeOf(err) != domain.CodeVaultAlreadyInitialized || attempts != 1 {
+		t.Fatalf("semantic error was retried: attempts=%d err=%v", attempts, err)
+	}
+}
+
+func TestOfficialCodexLoginHonorsEnrollmentDeadline(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("shell fixture is Unix-only")
+	}
+	binary := filepath.Join(t.TempDir(), "codex")
+	if err := os.WriteFile(binary, []byte("#!/bin/sh\nsleep 5\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	err := runOfficialCodexLogin(cliAuthEnrollment{EnrollmentID: "enrollment_test", BinaryPath: binary, Argv: []string{"login"}, StagingPath: t.TempDir(), ExpiresAt: time.Now().Add(50 * time.Millisecond)}, strings.NewReader(""), io.Discard, io.Discard)
+	if domain.CodeOf(err) != domain.CodeDeadlineExceeded {
+		t.Fatalf("login deadline code=%v err=%v", domain.CodeOf(err), err)
 	}
 }
 

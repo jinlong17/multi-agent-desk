@@ -39,6 +39,9 @@ The Codex adapter must:
 - generate or load the schema for the exact CLI version and enable only methods
   whose schema and fixture replay pass; an unknown version is probed or
   downgraded, never assumed compatible;
+- identify generated schema through canonical JSON hashing (sorted relative
+  paths plus canonical parsed content), because raw aggregate-schema object
+  ordering is not deterministic; reject duplicate/invalid JSON and symlinks;
 - report successful `account/rateLimits/read` and `account/usage/read` values as
   `official/high` with source version and freshness, without using them to
   rotate or silently switch accounts;
@@ -58,6 +61,9 @@ The Codex adapter must:
 - support official interactive login as the stable path. Device-auth initiation
   may be exposed as experimental, but completed headless login is not a
   compatibility claim until separately evidenced.
+- treat Provider-initiated Approval as a JSON-RPC server request whose request
+  ID is preserved through local ControllerLease and idempotency authorization;
+  never invent a client Approval method alias from a notification fixture.
 
 The Control Plane never becomes a credential writer and never receives
 Provider plaintext. Credential grants remain target-bound E2EE operations to

@@ -67,6 +67,8 @@ jobs:
         with:
           go-version-file: .go-version
           cache: true
+      - name: Run Go test suite
+        run: go test -count=1 ./...
       - name: Cache Cargo
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
@@ -100,4 +102,3 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Verify empty scaffold
         run: npm run scaffold:verify
-

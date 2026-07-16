@@ -2,28 +2,28 @@
   "schema_version": 1,
   "state_owner": "project-system",
   "plan_version": "v0.2",
-  "current_phase": "1",
-  "current_status": "Phase 1 Device Kernel 已合并到 main",
-  "current_owner": "core",
-  "next_action": "feature-plan Phase 2 Codex Vertical Slice",
+  "current_phase": "2",
+  "current_status": "Phase 2 Codex Vertical Slice P2B BLOCKED on Linux/Windows native test evidence",
+  "current_owner": "provider",
+  "next_action": "obtain native Linux/Windows P2B CI test receipts, then rerun independent feature-verify P2B",
   "manual_updated_at": "2026-07-15",
-  "manual_updated_by": "operator-directed core writer (refresh recorded in phase1-device-kernel Work Log)",
+  "manual_updated_by": "operator-directed post-verification BLOCKED sync (recorded in phase2-codex-vertical-slice Work Log)",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Phase 1 Device Kernel 已合并到 main"
+      "value": "Phase 2 P2B 实现检查通过，补齐 Linux/Windows 原生测试回执"
     },
     {
       "label": "在哪条线",
-      "value": "codex/core/phase1-device-kernel"
+      "value": "codex/provider/phase2-codex-vertical-slice"
     },
     {
       "label": "用哪个入口",
-      "value": "feature-plan Phase 2 Codex Vertical Slice"
+      "value": "原 writer 获取 Linux/Windows CI 回执后重跑 feature-verify P2B"
     },
     {
       "label": "做到什么状态",
-      "value": "Phase 1 SHIPPED；main 36efca8；无 release/deploy"
+      "value": "P0/P1/P2A verified；P2B BLOCKED（仅跨平台测试证据）；无 Ship/release/deploy"
     }
   ],
   "phases": [
@@ -51,9 +51,9 @@
     {
       "id": "2",
       "title": "Codex Vertical Slice",
-      "state": "gated",
+      "state": "active",
       "depends": "Phase 1 + Codex spikes",
-      "gate": "真实 Codex attach/approval/resume"
+      "gate": "P2B production Vault source + P3A daemon runtime + P3B Linux exit"
     },
     {
       "id": "3",
@@ -103,8 +103,8 @@
   ],
   "focus": [
     {
-      "slug": "phase1-device-kernel",
-      "expected_status": "SHIPPED"
+      "slug": "phase2-codex-vertical-slice",
+      "expected_status": "BLOCKED"
     }
   ]
 }

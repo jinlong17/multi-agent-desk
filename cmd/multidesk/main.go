@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -53,8 +54,20 @@ func run(args []string, stdout, stderr *os.File) error {
 		}
 	case "vault":
 		return runVault(args[1:], stdout, stderr)
+	case "auth":
+		return runAuth(args[1:], stdout, stderr)
 	case "run":
 		return runSessionStart(args[1:], stdout, stderr)
+	case "accounts":
+		return runAccounts(args[1:], stdout, stderr)
+	case "profiles":
+		return runProfiles(args[1:], stdout, stderr)
+	case "usage":
+		return runUsage(args[1:], stdout, stderr)
+	case "provider":
+		return runProvider(args[1:], stdout, stderr)
+	case "approvals":
+		return runApprovals(args[1:], stdout, stderr)
 	case "sessions":
 		return runSessions(args[1:], stdout, stderr)
 	case "control":
@@ -131,11 +144,18 @@ func runServe(args []string, stderr *os.File) error {
 	}
 	authorizer := app.Authorizer{Clients: store}
 	manager := runtimepkg.NewManager(store, os.Args[0])
-	vaultManager := vault.NewManager()
+	vaultManager, err := vault.NewPersistentManager(ctx, store)
+	if err != nil {
+		return err
+	}
 	manager.Vault = vaultManager
 	defer manager.Close()
 	service := app.NewSessionService(store, manager)
 	service.Vault = vaultManager
+	service.CredentialHomeRoot = filepath.Join(*root, "codex-home")
+	if err := service.RecoverPendingApprovals(ctx); err != nil {
+		return err
+	}
 	server := &device.Server{Listener: listener, Authenticator: authenticator, Authorizer: authorizer.Authorize, Handler: service}
 	return server.Serve(ctx)
 }

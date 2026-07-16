@@ -60,6 +60,11 @@ type Capability string
 
 const (
 	CapabilityMetadataRead          Capability = "metadata.read"
+	CapabilityProviderMetadataRead  Capability = "provider.metadata.read"
+	CapabilityProviderAuth          Capability = "provider.auth"
+	CapabilityProviderUsageRead     Capability = "provider.usage.read"
+	CapabilityApprovalRead          Capability = "approval.read"
+	CapabilityApprovalRespond       Capability = "approval.respond"
 	CapabilitySessionObserve        Capability = "session.observe"
 	CapabilityVaultControl          Capability = "vault.control"
 	CapabilitySessionStart          Capability = "session.start"
@@ -72,6 +77,11 @@ const (
 
 var validCapabilities = map[Capability]struct{}{
 	CapabilityMetadataRead:          {},
+	CapabilityProviderMetadataRead:  {},
+	CapabilityProviderAuth:          {},
+	CapabilityProviderUsageRead:     {},
+	CapabilityApprovalRead:          {},
+	CapabilityApprovalRespond:       {},
 	CapabilitySessionObserve:        {},
 	CapabilityVaultControl:          {},
 	CapabilitySessionStart:          {},
@@ -162,6 +172,7 @@ type Workspace struct {
 type RuntimeProfile struct {
 	ID        ID
 	DeviceID  ID
+	AccountID ID
 	Name      string
 	Provider  string
 	Settings  json.RawMessage
@@ -181,6 +192,7 @@ const (
 type CredentialInstance struct {
 	ID                 ID
 	DeviceID           ID
+	AccountID          ID
 	Provider           string
 	AuthMethod         string
 	SecretRef          string
@@ -189,6 +201,110 @@ type CredentialInstance struct {
 	SecretDigest       string
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
+}
+
+// Account is a local, secret-free logical Provider identity. The Device
+// database is already device-scoped, so Account intentionally has no second
+// device foreign key.
+type Account struct {
+	ID                    ID
+	Provider              string
+	DisplayName           string
+	ProviderSubjectDigest string
+	Enabled               bool
+	CreatedAt             time.Time
+	UpdatedAt             time.Time
+}
+
+type ApprovalStatus string
+
+const (
+	ApprovalPending   ApprovalStatus = "pending"
+	ApprovalApproved  ApprovalStatus = "approved"
+	ApprovalDenied    ApprovalStatus = "denied"
+	ApprovalExpired   ApprovalStatus = "expired"
+	ApprovalCancelled ApprovalStatus = "cancelled"
+)
+
+type ApprovalResponseState string
+type ApprovalDecision string
+
+const (
+	ApprovalResponseIdle        ApprovalResponseState = "idle"
+	ApprovalResponseDispatching ApprovalResponseState = "dispatching"
+	ApprovalResponseWritten     ApprovalResponseState = "written"
+	ApprovalResponseAmbiguous   ApprovalResponseState = "ambiguous"
+	ApprovalDecisionApprove     ApprovalDecision      = "approve"
+	ApprovalDecisionDeny        ApprovalDecision      = "deny"
+	ApprovalDecisionCancel      ApprovalDecision      = "cancel"
+)
+
+// Approval contains only bounded, redacted metadata. Provider request bodies
+// and terminal text never enter this record.
+type Approval struct {
+	ID                  ID
+	SessionID           ID
+	ProviderApprovalID  string
+	Kind                string
+	PayloadDigest       string
+	Summary             string
+	Status              ApprovalStatus
+	ResponseState       ApprovalResponseState
+	RequestedDecision   ApprovalDecision
+	RespondedByDeviceID ID
+	IdempotencyKey      string
+	DispatchDigest      string
+	RequestedAt         time.Time
+	DispatchStartedAt   *time.Time
+	RespondedAt         *time.Time
+	DispatchErrorCode   string
+}
+
+type UsageSource string
+
+const (
+	UsageSourceOfficial      UsageSource = "official"
+	UsageSourceCLIDerived    UsageSource = "cli_derived"
+	UsageSourceLocalEstimate UsageSource = "local_estimate"
+	UsageSourceUnofficial    UsageSource = "unofficial"
+)
+
+type UsageConfidence string
+
+const (
+	UsageConfidenceHigh   UsageConfidence = "high"
+	UsageConfidenceMedium UsageConfidence = "medium"
+	UsageConfidenceLow    UsageConfidence = "low"
+)
+
+type UsageCapabilityStatus string
+
+const (
+	UsageSupported     UsageCapabilityStatus = "supported"
+	UsageUnavailable   UsageCapabilityStatus = "unavailable"
+	UsageSchemaChanged UsageCapabilityStatus = "schema_changed"
+	UsageError         UsageCapabilityStatus = "error"
+)
+
+// UsageSnapshot is an evidence-bearing, secret-free projection. Numeric
+// values remain optional because an unavailable Provider method is not zero.
+type UsageSnapshot struct {
+	ID               ID
+	Provider         string
+	AccountID        ID
+	DeviceID         ID
+	Source           UsageSource
+	Confidence       UsageConfidence
+	WindowKind       string
+	UsedValue        *float64
+	LimitValue       *float64
+	UsedPercent      *float64
+	ResetsAt         *time.Time
+	ObservedAt       time.Time
+	RawReferenceHash string
+	SourceVersion    string
+	CapabilityStatus UsageCapabilityStatus
+	ErrorCode        ErrorCode
 }
 
 type AttachmentMode string
