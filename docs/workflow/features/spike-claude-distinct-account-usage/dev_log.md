@@ -11,12 +11,12 @@
 | Impacted Modules | `core, desktop, web, security` |
 | Hypothesis | `Two different operator-owned Claude.ai accounts can remain simultaneously authenticated under separate CLAUDE_CONFIG_DIR profiles with scoped logout and real-request identity isolation, while official status-line events yield account-bound 5-hour/7-day usage windows without hidden quota-consuming probes and the stable product policy boundary can be documented` |
 | Time-box | `8 hands-on hours plus Provider policy review; requires two accounts and one Linux target` |
-| Current Phase | `PROVIDER SPIKE` |
-| Status | `EVIDENCE_READY` |
-| Executor | `Codex (GPT-5) as provider-spike` |
-| Updated | `2026-07-16 16:43 PDT` |
-| Suggested Next | `security-review` |
-| Security Gate | `open — distinct OAuth identities, macOS Keychain slots, auth/usage PII, PTY/status-line events, policy and logout are in scope` |
+| Current Phase | `SECURITY REVIEW` |
+| Status | `ACCEPTED` |
+| Executor | `Codex (GPT-5) as security-review` |
+| Updated | `2026-07-16 16:49 PDT` |
+| Suggested Next | `feature-plan decision` |
+| Security Gate | `resolved — negative policy decision accepted; stable managed subscription login/Usage remains disabled; ADR 0016 must be narrowed and API-key/cloud authentication requires a separate credential/billing lifecycle` |
 | Evidence Path | `docs/spikes/claude-distinct-accounts/2026-07-16-policy-and-isolation-spike.md`; sanitized JSON sibling |
 | Decision Record | `pending — ADR 0016 addendum or replacement plus PROVIDER_COMPATIBILITY.md` |
 
@@ -88,3 +88,4 @@ stable product absent explicit Anthropic approval.
 | 2026-07-15 01:31 PDT | Codex (GPT-5) as feature-plan spike intake | Reopened the prior one-account Claude boundary for the operator's new multi-account priority, added the newly documented status-line usage contract and Provider policy gate, and froze two-platform/no-hidden-probe acceptance | this log; parent Feature Brief/design/test | `SPIKE_READY` | `provider-spike` after operator supplies/selects two test accounts and Linux target; policy evidence gathered in parallel |
 | 2026-07-16 16:43 PDT | Codex (GPT-5) as provider-spike | Revalidated official policy and technical contracts, pinned current macOS/Linux CLI versions and hashes, confirmed sanitized seven-key auth status, empty-root isolation and absent credential-provider overrides, then stopped before second-account login or any quota-only request because the stable-product policy failure was decisive | spike report; sanitized JSON; `docs/PROVIDER_COMPATIBILITY.md` | `EVIDENCE_READY`; stable managed subscription login/Usage surface falsified; technical distinct-account support remains unclaimed; API-key/cloud-provider or direct official CLI fallback is deterministic | `security-review` |
 | 2026-07-16 16:47 PDT | Codex root as operator-directed provider-spike writer via `mad-dashboard-sync` | Bound manual dashboard focus to the Claude Spike's exact `EVIDENCE_READY` policy verdict, preserved Codex `GATE_RESOLVED` and parent P1 `VERIFIED`, regenerated machine facts, and verified workflow/dashboard/link/diff integrity | `docs/workflow/project/dashboard-state.json`; generated dashboard unchanged | all checks PASS; the dashboard names Security Review and the API-key/cloud fallback instead of requesting a needless second subscription login | `security-review` |
+| 2026-07-16 16:49 PDT | Codex (GPT-5) as security-review | Independently reviewed current Anthropic third-party/subscription/API-key guidance, earlier config/Keychain evidence, status-line data exposure, credential/billing boundaries, redaction, fallback scope, and residual risk; verified that the result fails closed without technical or product overclaim | `docs/reviews/spike-claude-distinct-account-usage/2026-07-16-security-review.md`; this log | `ACCEPTED`; P0/P1 none for the negative decision; stable subscription management remains disabled and API-key/cloud requires a separate lifecycle | `feature-plan decision` |
