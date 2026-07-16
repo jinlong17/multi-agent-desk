@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "tested_at": "2026-07-16T16:31:00-07:00",
+  "scope": "codex_distinct_account_managed_homes",
+  "environment": {
+    "os": "Linux 5.4.0-148-generic x86_64",
+    "codex_cli": "0.144.2",
+    "codex_binary_sha256": "8b5b8bf86fb661c10787b5a5c70d7ba2cf3e61f3c902877509174b45d13fa6aa",
+    "multidesk_binary_sha256": "f619d6881203c5c99461ffa0839c0b6acd5549951efa65fbb20f842a256bc160",
+    "device_schema_version": 5,
+    "device_root_mode": "0700"
+  },
+  "results": {
+    "distinct_operator_owned_identities": true,
+    "raw_identity_persisted": false,
+    "secret_or_oauth_material_persisted": false,
+    "isolated_managed_homes": 2,
+    "both_auth_files_mode_0600": true,
+    "concurrent_sessions_running": true,
+    "provider_session_ids_distinct": true,
+    "concurrent_usage_supported_and_account_bound": true,
+    "logout_while_target_session_active_blocked": true,
+    "scoped_logout_target_b_succeeded": true,
+    "non_target_auth_unchanged_after_logout": true,
+    "non_target_session_running_after_logout": true,
+    "non_target_usage_supported_after_logout": true,
+    "scoped_relogin_reused_credential_instance": true,
+    "target_credential_revision_before_relogin": 2,
+    "target_credential_revision_after_relogin": 3,
+    "vault_item_count_before_logout": 2,
+    "vault_item_count_after_logout": 1,
+    "vault_item_count_after_relogin": 2,
+    "final_running_session_count": 0,
+    "final_healthy_credential_count": 2,
+    "final_materialized_auth_file_count": 0,
+    "daemon_log_bytes": 0
+  },
+  "coverage": {
+    "exact_linux_version": "supported_with_security_review",
+    "macos_distinct_identity_run": "not_run",
+    "windows_distinct_identity_run": "not_run",
+    "passive_soak": "not_run"
+  },
+  "fallback": "Use one explicitly selected, target-local officially authenticated managed Home; never auto-rotate accounts and fail closed on unknown version or ambiguous identity."
+}
