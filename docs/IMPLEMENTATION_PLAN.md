@@ -632,9 +632,11 @@ Claude Profile 隔离采用 ADR 0016 的确定性边界：
 
 Claude 相关官方资料：
 
-- 配置隔离：https://code.claude.com/docs/en/env-vars
-- CLI 与 `setup-token`：https://code.claude.com/docs/en/cli-reference
-- Hooks：https://code.claude.com/docs/en/hooks
+- 官方源码与发行入口：https://github.com/anthropics/claude-code
+- 配置隔离、CLI/`setup-token` 与 Hooks 的精确合同由 ADR 0016 和
+  `docs/spikes/claude/2026-07-14-config-keychain-spike.md` 的版本化实测证据冻结；
+  Phase 3 开始前必须针对当时的官方 CLI/文档重新验证，不能把失效的文档 URL
+  当成持续兼容证明。
 
 ## 10. 账号推荐规则
 
@@ -1190,11 +1192,12 @@ multi-agent-desk/
 
 阻塞依赖：Phase 0.5 的 Codex auth、刷新和 app-server schema 结论。
 
-当前状态：`SHIPPED locally`（2026-07-16，Plan v0.7；远端受保护分支集成
-进行中）。P0、P1、P2A、P2B、P3A、P3B、P4 和安全修复 P4S 均已独立验证；
-最终 Security Review 为 `ACCEPTED`。本地产品提交为 `9f82fb6`，本地 Ship
-receipt 提交为 `5407842`。这表示 Phase 2 的开发出口已完成，不表示已经进入
-远端 `main`、生成安装包、发布版本或完成部署。
+当前状态：`SHIPPED` 并已进入远端 `main`（2026-07-16，Plan v0.7）。P0、P1、
+P2A、P2B、P3A、P3B、P4 和安全修复 P4S 均已独立验证；最终 Security Review
+为 `ACCEPTED`。本地产品提交为 `9f82fb6`，本地 Ship receipt 提交为 `5407842`；
+受保护 PR #19 的七项必需检查全部通过，并以 `250bf57` 合并到 `main`。这表示
+Phase 2 的开发与远端集成出口已完成，不表示已经生成安装包、发布版本或完成
+部署。
 
 支持声明保持窄化：真实 Credential/Vault/Session/第二 CLI/Usage/标准
 Approval/stop/kill 闭环仅对 Linux x86_64 Codex CLI `0.144.2` 成立；macOS

@@ -5,11 +5,11 @@ coding-agent profiles, sessions, usage, devices, and explicitly authorized
 credential grants across local machines and remote servers.
 
 The product is pre-release and is not yet a supported end-user application.
-Phase 0, the Phase 0.5 decision gates, and the Phase 1 Device Kernel are
-complete on remote `main`. The Phase 2 Codex vertical slice is locally
-`SHIPPED`: its credentialed Linux exit, platform matrix, final verification,
-and Security Review are complete. Remote protected-branch integration remains
-in progress; packaging and deployment are still gated. The reviewed
+Phase 0, the Phase 0.5 decision gates, the Phase 1 Device Kernel, and the
+locally `SHIPPED` Phase 2 Codex vertical slice are integrated on remote
+`main`. Phase 2's credentialed Linux exit, platform matrix, final verification,
+Security Review, and seven-check protected PR are complete. Packaging, release,
+and deployment are still gated. The reviewed
 architecture baseline is [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md),
 and the resumable current state is recorded in the feature `dev_log.md` files.
 

@@ -11,10 +11,10 @@
 | Impacted Modules | `core`, `security`, `project-system` |
 | Current Phase | `SHIP` |
 | Status | `SHIPPED` |
-| Executor | `Codex (GPT-5) as ship` |
-| Updated | `2026-07-16 11:06 PDT` |
-| Suggested Next | `authorized remote integration: verify reconciliation, push branch, open protected PR` |
-| Branch / Worktree | `codex/provider/phase2-codex-vertical-slice @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/phase2-codex-vertical-slice` |
+| Executor | `Codex (GPT-5) as operator-directed project-system integration writer` |
+| Updated | `2026-07-16 12:11 PDT` |
+| Suggested Next | `preserve and reconcile the separately verified multi-account P1 branch onto final main before any later Provider phase` |
+| Branch / Worktree | `origin/main @ 250bf57; receipt worktree codex/project-system/phase2-remote-receipt` |
 | Plan Version | `v0.7` |
 | Provider Gate | `exact Linux 0.144.2 live exit, exact macOS 0.144.2 schema/handshake smoke, Windows build/protocol baseline, and compatibility reconciliation are complete; real Windows Codex remains unsupported` |
 | Security Gate | `resolved — 2026-07-16 P4S re-review ACCEPTED; exact NO_PROXY grammar and identifier-safe evidence close both prior P1 findings; residual risks remain explicit` |
@@ -105,6 +105,9 @@
 | 2026-07-16 03:18 PDT | BUILD | implemented exact all-or-nothing `NO_PROXY` parsing for total/count/entry/DNS-label/port bounds; IP/CIDR/DNS/suffix/IPv6-port positives; URL/userinfo/key-value/path/Unicode/control/bounds/port negatives; changed the adversarial credentialed-proxy value to the named synthetic fixture | focused 20-round tests and 5-round race tests pass; login, validation, and runtime continue to share `NetworkEnvironment` | `internal/providers/codex/{environment.go,environment_test.go}` |
 | 2026-07-16 03:18 PDT | BUILD | security-redacted the two historical Evidence Ledger rows; scanned every modified/untracked artifact by file/class; rebuilt three platforms; ran full Go/vet/race/diff matrix; deployed the Linux build to the disposable P3B environment and reran exact `0.144.2` Provider health | artifact scan clean except the exact classified synthetic fixture; all local checks pass; exact remote Provider health remains supported; final daemon log is zero bytes | this file; local/remote command output |
 | 2026-07-16 11:51 PDT | REMOTE PREP | full Go/vet/race; macOS/Linux/Windows builds; workflow/dashboard generation and verification; Actions/CODEOWNERS/fixture/link/license checks; `git diff --check` after user-guide and status reconciliation | all pass; dashboard binds Phase 2 `SHIPPED`, links=`238`, licenses=`5` pnpm groups/`418` Cargo packages | remote-integration readiness record; command output |
+| 2026-07-16 12:11 PDT | REMOTE INTEGRATION | protected PR #19 at head `29837de`; CI run `29526495324`; Governance run `29526495234`; required `project-verify`, Ubuntu, macOS, Windows, license, DCO, and link checks | all seven required checks passed after the Windows environment-key portability assertion was corrected; squash merge completed at remote-main commit `250bf57` | `docs/reviews/phase2-codex-vertical-slice/2026-07-16-remote-ship-receipt.md`; GitHub PR #19 |
+| 2026-07-16 12:14 PDT | FINAL MAIN AUDIT | post-merge Governance push run `29526956439` at `main@250bf57` | `link-check` failed because six historical `code.claude.com` document links began redirecting outside the documentation site and returned 404; all other Governance jobs passed and final-main CI continued independently | failed Governance run; exact link-check log; receipt branch correction |
+| 2026-07-16 12:18 PDT | RECEIPT VERIFY | final-main CI push run `29526955379`; fresh local full Go/vet/race; macOS/Linux/Windows command builds; workflow/dashboard/Actions/CODEOWNERS/fixtures/local links/licenses; stable upstream HTTP probe; diff integrity | final-main CI and every local check passed; only the retained final-main external-link failure awaits closure through this protected receipt PR | remote integration receipt; command output; CI/Governance run receipts |
 
 ## Risks and Blockers
 
@@ -236,17 +239,20 @@
 | 2026-07-16 11:43 PDT | Codex (GPT-5) as operator-directed project-system integration writer | Audited every worktree and remote ref, preserved three dirty worktrees without absorbing their files, reused the signed user-guide commits, reconciled README/implementation-plan/manual claims with Phase 2 truth, and recorded the migration-number collision that must be resolved only after Phase 2 reaches main | `1d71dba`; `78fe5de`; README; `docs/{IMPLEMENTATION_PLAN,USER_GUIDE}.md`; `docs/reviews/phase2-codex-vertical-slice/2026-07-16-remote-integration-readiness.md`; user-guide log; this file | Phase 2 remains locally `SHIPPED`; remote PR integration is explicitly authorized and ready for fresh verification | run workflow/dashboard/docs/full regression checks, commit reconciliation, push and open PR |
 | 2026-07-16 11:51 PDT | Codex (GPT-5) as operator-directed project-system integration writer | Completed fresh pre-PR verification across full Go/vet/race, all three command builds, workflow/dashboard, governance contracts, links, exact licenses, and diff integrity after the documentation reconciliation | remote-integration readiness record; command output; this file | `READY_FOR_REMOTE_PR`; no product/security verdict changed and all preserved dirty worktrees remain untouched | create signed reconciliation commit, push branch, open protected PR |
 | 2026-07-16 12:01 PDT | Codex (GPT-5) as operator-directed project-system integration writer | Diagnosed protected PR #19's Windows-only test failure as an environment-variable key-casing assumption: Windows environment lookup is case-insensitive, so the safe `NO_PROXY` value was present under the lowercase key selected by the allowlist | `cmd/multidesk/main_test.go`; GitHub Actions CI run `29526029227`, Windows job `87714563711`; this file | adjusted the assertion to compare allowlisted proxy names case-insensitively while retaining exact values and the secret non-inheritance check; focused local suites pass | run the complete local matrix, commit and push the portability fix, then require a fresh seven-check protected-PR pass |
+| 2026-07-16 12:11 PDT | Codex (GPT-5) as operator-directed project-system integration writer | Pushed the portability correction, required a fresh protected run, confirmed all seven exact required checks at head `29837de`, and squash-merged PR #19 to remote `main` as `250bf57` | PR #19; CI `29526495324`; Governance `29526495234`; remote integration receipt; this file | Phase 2 remains `SHIPPED` and is now integrated on remote `main`; no tag, package, release, publication, or deployment occurred | persist this receipt/dashboard reconciliation through its own protected PR, audit final main, then reconcile multi-account P1 |
+| 2026-07-16 12:14 PDT | Codex (GPT-5) as operator-directed project-system integration writer | Audited the automatic push runs at the exact squash commit and refused to treat PR green as final-main green; traced the Governance failure to six retired Claude documentation URLs, then replaced live-link dependence with the stable official upstream entry plus dated Spike evidence and an explicit Phase 3 revalidation requirement | main Governance `29526956439`; `docs/IMPLEMENTATION_PLAN.md`; Claude config/keychain Spike; remote receipt; this file | local full Go/vet/race, three builds, workflow/dashboard/static governance remain green; a protected receipt PR and fresh final-main runs are required to close the remote audit | verify, commit, push and merge the receipt/link correction through protection, then re-audit final main |
+| 2026-07-16 12:18 PDT | Codex (GPT-5) as operator-directed project-system integration writer | Re-ran the complete local regression/platform/governance matrix after the receipt and link correction, confirmed the exact final-main CI push run is fully green, and preserved the one failed final-main Governance run as an open receipt condition | local command output; CI `29526955379`; Governance `29526956439`; remote receipt; this file | receipt branch is ready for signed commit and protected PR; no release/deploy authority used | commit, push, open protected receipt PR, require seven checks, merge, and re-audit final main |
 
 ## Handoff
 
 **Target**: `phase2-codex-vertical-slice`
 **Completed**: `ship`
 **Status**: `SHIPPED`
-**Summary**: `Phase 2 was shipped locally as signed-off product and governance commits after final verification and Security acceptance; no remote or release action was performed.`
-**Commit/Release**: `local product 9f82fb6; receipt commit contains this file; no push/PR/merge/tag/release/deployment`
-**Tests**: `full Go/vet/race; focused P4S race; macOS/Linux/Windows builds; exact Linux and macOS live evidence; license/workflow/dashboard/CI/link/diff/sensitive checks — pass.`
-**Blockers**: `none for local Ship; any push, PR, merge, tag, release, or deployment requires separate explicit authorization.`
+**Summary**: `Phase 2 was shipped locally after final verification and Security acceptance, then integrated through protected PR #19 with all seven required checks green.`
+**Commit/Release**: `local product 9f82fb6; local receipt 5407842; PR head 29837de; remote main 250bf57; no tag/release/package/deployment`
+**Tests**: `full Go/vet/race; macOS/Linux/Windows builds; exact Linux/macOS evidence; protected CI 29526495324 and Governance 29526495234; all seven required checks pass.`
+**Blockers**: `none for Phase 2 source integration; packaging, release, and deployment remain separately gated.`
 
 ### Next Step
 
-`None for local Ship; optional remote integration requires separate explicit authorization.`
+`Reconcile the separately verified multi-account P1 branch onto final main before starting a later Provider phase.`
