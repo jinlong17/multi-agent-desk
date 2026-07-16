@@ -15,6 +15,7 @@ const (
 
 type Session struct {
 	ID                   ID
+	AccountID            ID
 	DeviceID             ID
 	AccountID            ID
 	Provider             string
@@ -154,6 +155,7 @@ func (s Session) Resume(newID ID, at time.Time) (Session, error) {
 	}
 	resumed := Session{
 		ID:                   newID,
+		AccountID:            s.AccountID,
 		DeviceID:             s.DeviceID,
 		AccountID:            s.AccountID,
 		Provider:             s.Provider,

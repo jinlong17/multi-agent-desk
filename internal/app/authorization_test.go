@@ -38,3 +38,18 @@ func TestAuthorizerDeniesUnknownAndRevokedCapabilities(t *testing.T) {
 		t.Fatalf("revoked code = %v", code)
 	}
 }
+
+func TestP1AccountCapabilitiesReuseShippedIdentityContract(t *testing.T) {
+	for _, method := range []string{"accounts.list", "accounts.show", "profiles.list", "profiles.show", "profiles.resolveAlias", "usage.list"} {
+		capability, err := RequiredCapability(method)
+		if err != nil || capability != domain.CapabilityMetadataRead {
+			t.Fatalf("%s capability=%s err=%v", method, capability, err)
+		}
+	}
+	for _, method := range []string{"accounts.create", "accounts.update", "accounts.delete", "profiles.create", "profiles.update", "usage.refresh"} {
+		capability, err := RequiredCapability(method)
+		if err != nil || capability != domain.CapabilityClientAdmin {
+			t.Fatalf("%s capability=%s err=%v", method, capability, err)
+		}
+	}
+}

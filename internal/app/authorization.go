@@ -19,7 +19,9 @@ type Authorizer struct {
 
 func RequiredCapability(method string) (domain.Capability, error) {
 	switch method {
-	case "daemon.status", "vault.status", "sessions.list", "sessions.show", "sessions.observe":
+	case "daemon.status", "vault.status", "sessions.list", "sessions.show", "sessions.observe",
+		"accounts.list", "accounts.show", "profiles.list", "profiles.show",
+		"profiles.resolveAlias", "usage.list":
 		return domain.CapabilityMetadataRead, nil
 	case "accounts.list", "accounts.show", "accounts.create", "accounts.disable", "profiles.list", "profiles.create", "profiles.edit", "profiles.delete", "credentials.status":
 		return domain.CapabilityMetadataRead, nil
@@ -47,7 +49,11 @@ func RequiredCapability(method string) (domain.Capability, error) {
 		return domain.CapabilityTerminalControl, nil
 	case "sessions.resume", "session.resume":
 		return domain.CapabilitySessionResume, nil
-	case "client.create", "client.list", "client.rotate", "client.revoke":
+	case "client.create", "client.list", "client.rotate", "client.revoke",
+		"accounts.create", "accounts.update", "accounts.disable", "accounts.enable", "accounts.delete",
+		"profiles.create", "profiles.update", "profiles.disable", "profiles.enable", "profiles.delete",
+		"profiles.validate", "provider.login.begin", "provider.login.status", "provider.login.cancel",
+		"provider.logout", "provider.shell", "usage.refresh":
 		return domain.CapabilityClientAdmin, nil
 	default:
 		return "", domain.NewError(domain.CodeMethodNotFound, "method is not available")
