@@ -44,6 +44,16 @@ func TestNativeTwoClientFakeSessionControl(t *testing.T) {
 	if err := store.CreateCredentialInstance(ctx, domain.CredentialInstance{ID: credentialID, DeviceID: bootstrap.DeviceID, Provider: "fake", AuthMethod: "fake", SecretRef: "fake:native", Status: domain.CredentialHealthy, CredentialRevision: 1, SecretDigest: "0123456789012345678901234567890123456789012345678901234567890123", CreatedAt: now, UpdatedAt: now}); err != nil {
 		t.Fatal(err)
 	}
+	publicAccountID, publicProfileID := nativeTestID(t, "account"), nativeTestID(t, "profile")
+	publicAccount := domain.Account{ID: publicAccountID, Provider: domain.ProviderCodex,
+		DisplayName: "Public Codex", Enabled: true, Revision: 1, CreatedAt: now, UpdatedAt: now}
+	publicProfile := domain.RuntimeProfile{ID: publicProfileID, AccountID: publicAccountID,
+		DeviceID: bootstrap.DeviceID, Name: "Public Codex", Provider: domain.ProviderCodex,
+		SelectorAlias: "PublicA", Settings: []byte(`{}`), Enabled: true, Revision: 1,
+		CreatedAt: now, UpdatedAt: now}
+	if _, _, err := store.CreateAccountWithDefaultProfile(ctx, publicAccount, publicProfile); err != nil {
+		t.Fatal(err)
+	}
 
 	executable := filepath.Join(t.TempDir(), "multidesk")
 	if runtime.GOOS == "windows" {
@@ -94,6 +104,18 @@ func TestNativeTwoClientFakeSessionControl(t *testing.T) {
 		t.Fatal(err)
 	}
 	observerClient := &device.Client{Connection: observerConnection, Auth: observerAuth}
+	badStartBody, _ := device.JSONBody(map[string]any{"device_id": bootstrap.DeviceID,
+		"credential_instance_id": credentialID, "runtime_profile_id": publicProfileID,
+		"workspace_id": workspaceID, "capabilities": []domain.Capability{domain.CapabilitySessionResume}})
+	badResponse, badErr := ownerClient.Call(ctx, device.Request{ProtocolMajor: device.ProtocolMajor,
+		RequestID: "native-cross-provider-start", Method: "sessions.start",
+		IdempotencyKey: "native-cross-provider-start-key", Body: badStartBody})
+	if badErr == nil || badResponse.OK || domain.CodeOf(badErr) != domain.CodeConflict {
+		t.Fatalf("cross-provider Fake start did not fail closed: response=%+v err=%v", badResponse, badErr)
+	}
+	if sessions, err := store.ListSessions(ctx); err != nil || len(sessions) != 0 {
+		t.Fatalf("cross-provider Fake start created a session: sessions=%+v err=%v", sessions, err)
+	}
 
 	startBody, _ := device.JSONBody(map[string]any{"device_id": bootstrap.DeviceID, "credential_instance_id": credentialID, "runtime_profile_id": profileID, "workspace_id": workspaceID, "capabilities": []domain.Capability{domain.CapabilitySessionResume}})
 	start := mustCall(t, ownerClient, device.Request{ProtocolMajor: device.ProtocolMajor, RequestID: "native-start-1", Method: "sessions.start", IdempotencyKey: "native-start-key", Body: startBody})

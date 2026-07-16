@@ -191,6 +191,7 @@ const (
 
 type CredentialInstance struct {
 	ID                 ID
+	AccountID          ID
 	DeviceID           ID
 	AccountID          ID
 	Provider           string
@@ -199,6 +200,8 @@ type CredentialInstance struct {
 	Status             CredentialStatus
 	CredentialRevision int64
 	SecretDigest       string
+	Availability       Availability
+	LastValidatedAt    *time.Time
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
 }

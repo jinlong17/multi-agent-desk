@@ -23,6 +23,7 @@ const (
 	DefaultBusyTimeout = 5 * time.Second
 	databaseFileMode   = 0o600
 	databaseDirMode    = 0o700
+	accountMigration   = 4
 )
 
 type Pragmas struct {
@@ -235,6 +236,26 @@ func (s *Store) migrate(ctx context.Context) error {
 }
 
 func (s *Store) applyMigration(ctx context.Context, migration devicemigrations.Migration) error {
+	rebuild := migration.Version == accountMigration
+	foreignKeysDisabled := false
+	if rebuild {
+		if err := s.preflightAccountMigration(ctx); err != nil {
+			return err
+		}
+		if _, err := s.db.ExecContext(ctx, "PRAGMA foreign_keys=OFF"); err != nil {
+			return domain.WrapError(domain.CodeSchemaIncompatible, "migration foreign-key suspension failed", err)
+		}
+		foreignKeysDisabled = true
+		defer func() {
+			if foreignKeysDisabled {
+				_, _ = s.db.ExecContext(context.Background(), "PRAGMA foreign_keys=ON")
+			}
+		}()
+		var enabled int
+		if err := s.db.QueryRowContext(ctx, "PRAGMA foreign_keys").Scan(&enabled); err != nil || enabled != 0 {
+			return domain.NewError(domain.CodeSchemaIncompatible, "migration foreign-key suspension could not be verified")
+		}
+	}
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
 		return domain.WrapError(domain.CodeConflict, "migration transaction could not start", err)
@@ -254,8 +275,94 @@ func (s *Store) applyMigration(ctx context.Context, migration devicemigrations.M
 		_ = tx.Rollback()
 		return domain.WrapError(domain.CodeSchemaIncompatible, "schema version update failed", err)
 	}
+	if rebuild {
+		rows, err := tx.QueryContext(ctx, "PRAGMA foreign_key_check")
+		if err != nil {
+			_ = tx.Rollback()
+			return domain.WrapError(domain.CodeSchemaIncompatible, "migration foreign-key validation failed", err)
+		}
+		violated := rows.Next()
+		if closeErr := rows.Close(); closeErr != nil {
+			_ = tx.Rollback()
+			return domain.WrapError(domain.CodeSchemaIncompatible, "migration foreign-key validation could not close", closeErr)
+		}
+		if violated {
+			_ = tx.Rollback()
+			return domain.NewError(domain.CodeSchemaIncompatible, "migration produced invalid foreign keys")
+		}
+	}
 	if err := tx.Commit(); err != nil {
 		return domain.WrapError(domain.CodeSchemaIncompatible, "database migration commit failed", err)
+	}
+	if rebuild {
+		if _, err := s.db.ExecContext(ctx, "PRAGMA foreign_keys=ON"); err != nil {
+			return domain.WrapError(domain.CodeSchemaIncompatible, "migration foreign keys could not be restored", err)
+		}
+		foreignKeysDisabled = false
+		var enabled int
+		if err := s.db.QueryRowContext(ctx, "PRAGMA foreign_keys").Scan(&enabled); err != nil || enabled != 1 {
+			return domain.NewError(domain.CodeSchemaIncompatible, "migration foreign keys were not restored")
+		}
+	}
+	return nil
+}
+
+func (s *Store) preflightAccountMigration(ctx context.Context) error {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT id, provider FROM runtime_profiles
+		UNION ALL SELECT id, provider FROM credential_instances
+		UNION ALL SELECT id, provider FROM sessions`)
+	if err != nil {
+		return domain.WrapError(domain.CodeSchemaIncompatible, "account migration preflight could not read provider rows", err)
+	}
+	for rows.Next() {
+		var id domain.ID
+		var provider string
+		if err := rows.Scan(&id, &provider); err != nil || domain.ValidateID(id) != nil || provider != domain.ProviderFake {
+			_ = rows.Close()
+			return domain.NewError(domain.CodeSchemaIncompatible, "account migration preflight rejected provider rows")
+		}
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		return domain.WrapError(domain.CodeSchemaIncompatible, "account migration preflight could not scan provider rows", err)
+	}
+	if err := rows.Close(); err != nil {
+		return domain.WrapError(domain.CodeSchemaIncompatible, "account migration preflight could not close provider rows", err)
+	}
+	deviceRows, err := s.db.QueryContext(ctx, "SELECT id FROM device_identity")
+	if err != nil {
+		return domain.WrapError(domain.CodeSchemaIncompatible, "account migration preflight could not read devices", err)
+	}
+	for deviceRows.Next() {
+		var id domain.ID
+		if err := deviceRows.Scan(&id); err != nil || domain.ValidateID(id) != nil || !strings.HasPrefix(string(id), "device_") {
+			_ = deviceRows.Close()
+			return domain.NewError(domain.CodeSchemaIncompatible, "account migration preflight rejected device identity")
+		}
+		derived := domain.ID("account_" + strings.TrimPrefix(string(id), "device_"))
+		if domain.ValidateID(derived) != nil {
+			_ = deviceRows.Close()
+			return domain.NewError(domain.CodeSchemaIncompatible, "account migration could not derive internal account")
+		}
+	}
+	if err := deviceRows.Err(); err != nil {
+		_ = deviceRows.Close()
+		return domain.WrapError(domain.CodeSchemaIncompatible, "account migration preflight could not scan devices", err)
+	}
+	if err := deviceRows.Close(); err != nil {
+		return domain.WrapError(domain.CodeSchemaIncompatible, "account migration preflight could not close devices", err)
+	}
+	checkRows, err := s.db.QueryContext(ctx, "PRAGMA foreign_key_check")
+	if err != nil {
+		return domain.WrapError(domain.CodeSchemaIncompatible, "account migration preflight could not check foreign keys", err)
+	}
+	violated := checkRows.Next()
+	if closeErr := checkRows.Close(); closeErr != nil {
+		return domain.WrapError(domain.CodeSchemaIncompatible, "account migration preflight could not close", closeErr)
+	}
+	if violated {
+		return domain.NewError(domain.CodeSchemaIncompatible, "account migration preflight found invalid foreign keys")
 	}
 	return nil
 }

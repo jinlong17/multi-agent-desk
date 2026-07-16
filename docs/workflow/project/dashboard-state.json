@@ -30,7 +30,7 @@
     {
       "id": "0",
       "title": "仓库与治理基线",
-      "state": "completed",
+      "state": "in_progress",
       "depends": "Plan v0.2",
       "gate": "monorepo 空构建和治理检查通过"
     },
@@ -39,7 +39,7 @@
       "title": "Provider & Security Spikes",
       "state": "completed",
       "depends": "Phase 0",
-      "gate": "外部假设有可复现证据与 fallback"
+      "gate": "原七项决策已关闭；新增 Codex/Claude 不同真实账号隔离与 Claude Usage/Policy 证据待关闭"
     },
     {
       "id": "1",
@@ -60,7 +60,7 @@
       "title": "Claude Vertical Slice",
       "state": "gated",
       "depends": "Phase 1 + Claude spikes",
-      "gate": "真实 Claude PTY attach/control/reconnect"
+      "gate": "不同真实账号 CLAUDE_CONFIG_DIR 隔离、Usage/Policy、PTY attach/control/reconnect"
     },
     {
       "id": "4a",

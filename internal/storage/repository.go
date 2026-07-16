@@ -381,6 +381,18 @@ func (s *Store) CreateRuntimeProfile(ctx context.Context, profile domain.Runtime
 		!validCreatedUpdated(profile.CreatedAt, profile.UpdatedAt) {
 		return domain.NewError(domain.CodeInvalidArgument, "invalid runtime profile")
 	}
+	if profile.AccountID == "" {
+		profile.AccountID = fakeAccountID(profile.DeviceID)
+	}
+	if domain.ValidateID(profile.AccountID) != nil {
+		return domain.NewError(domain.CodeInvalidArgument, "invalid runtime profile account")
+	}
+	profile.CredentialInstanceID = ""
+	profile.SelectorAlias, profile.SelectorKey = "", ""
+	profile.Internal, profile.Enabled = true, true
+	if profile.Revision == 0 {
+		profile.Revision = 1
+	}
 	return s.withTx(ctx, func(tx *sql.Tx) error {
 		if err := validateAccountForProvider(ctx, tx, profile.Provider, profile.AccountID); err != nil {
 			return err
@@ -418,6 +430,15 @@ func (s *Store) RuntimeProfile(ctx context.Context, id domain.ID) (domain.Runtim
 		return domain.RuntimeProfile{}, domain.NewError(domain.CodeSchemaIncompatible, "stored runtime profile settings are invalid")
 	}
 	profile.Settings = append([]byte(nil), settings...)
+	if credentialID.Valid {
+		profile.CredentialInstanceID = domain.ID(credentialID.String)
+	}
+	if alias.Valid {
+		profile.SelectorAlias = alias.String
+	}
+	if aliasKey.Valid {
+		profile.SelectorKey = aliasKey.String
+	}
 	profile.CreatedAt, err = parseTime(createdAt)
 	if err != nil {
 		return domain.RuntimeProfile{}, err
@@ -532,6 +553,15 @@ func (s *Store) CreateCredentialInstance(ctx context.Context, credential domain.
 		!validCredentialStatus(credential.Status) || !validCreatedUpdated(credential.CreatedAt, credential.UpdatedAt) {
 		return domain.NewError(domain.CodeInvalidArgument, "invalid credential instance")
 	}
+	if credential.AccountID == "" {
+		credential.AccountID = fakeAccountID(credential.DeviceID)
+	}
+	if domain.ValidateID(credential.AccountID) != nil {
+		return domain.NewError(domain.CodeInvalidArgument, "invalid credential account")
+	}
+	if credential.Availability == "" {
+		credential.Availability = domain.AvailabilityUnknown
+	}
 	return s.withTx(ctx, func(tx *sql.Tx) error {
 		if err := validateAccountForProvider(ctx, tx, credential.Provider, credential.AccountID); err != nil {
 			return err
@@ -575,6 +605,10 @@ func (s *Store) CredentialInstance(ctx context.Context, id domain.ID) (domain.Cr
 		return domain.CredentialInstance{}, err
 	}
 	credential.UpdatedAt, err = parseTime(updatedAt)
+	if err != nil {
+		return domain.CredentialInstance{}, err
+	}
+	credential.LastValidatedAt, err = parseOptionalTime(validatedAt)
 	if err != nil {
 		return domain.CredentialInstance{}, err
 	}
@@ -1707,6 +1741,38 @@ func validateResumeSource(ctx context.Context, tx *sql.Tx, resumed domain.Sessio
 		source.CredentialInstanceID != resumed.CredentialInstanceID || source.RuntimeProfileID != resumed.RuntimeProfileID ||
 		source.WorkspaceID != resumed.WorkspaceID || source.ProviderSessionID != resumed.ProviderSessionID {
 		return domain.NewError(domain.CodeConflict, "resumed session changed frozen source fields")
+	}
+	return nil
+}
+
+func fakeAccountID(deviceID domain.ID) domain.ID {
+	value := string(deviceID)
+	if !strings.HasPrefix(value, "device_") {
+		return ""
+	}
+	return domain.ID("account_" + strings.TrimPrefix(value, "device_"))
+}
+
+func ensureFakeAccountTx(ctx context.Context, tx *sql.Tx, accountID, deviceID domain.ID, createdAt, updatedAt time.Time) error {
+	if accountID != fakeAccountID(deviceID) || domain.ValidateID(accountID) != nil {
+		return domain.NewError(domain.CodeInvalidArgument, "invalid internal fake account")
+	}
+	_, err := tx.ExecContext(ctx, `
+		INSERT OR IGNORE INTO accounts(
+			id, provider, display_name, provider_subject_digest, subscription_hint,
+			internal, enabled, revision, created_at, updated_at
+		) VALUES(?, 'fake', 'Legacy Fake', '', '', 1, 1, 1, ?, ?)`,
+		accountID, formatTime(createdAt), formatTime(updatedAt))
+	if err != nil {
+		return writeError("internal fake account could not be created", err)
+	}
+	var provider string
+	var internal bool
+	if err := tx.QueryRowContext(ctx, "SELECT provider, internal FROM accounts WHERE id = ?", accountID).Scan(&provider, &internal); err != nil {
+		return writeError("internal fake account could not be verified", err)
+	}
+	if provider != domain.ProviderFake || !internal {
+		return domain.NewError(domain.CodeSchemaIncompatible, "internal fake account conflicts with stored data")
 	}
 	return nil
 }
