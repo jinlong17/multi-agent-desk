@@ -47,15 +47,24 @@ check had passed minutes earlier, so the final-main run is retained as a real
 failure rather than overwritten by the pull-request result. The receipt branch
 removes the dead live-link dependency, points to the stable official Claude
 Code upstream entry, retains the exact claims as dated Spike evidence, and
-requires current CLI/documentation revalidation before Phase 3. A fresh
-protected receipt PR and final-main push audit must pass before this receipt is
-closed.
+requires current CLI/documentation revalidation before Phase 3.
 
 The companion final-main CI push run `29526955379` passed `project-verify` and
 the Ubuntu, macOS, and Windows builds. A fresh local receipt-branch audit also
 passed full Go tests, vet, full race tests, all three command builds,
 workflow/dashboard generation and verification, static governance, local links,
 licenses, the stable upstream HTTP probe, and diff integrity.
+
+Receipt PR [#20](https://github.com/jinlong17/multi-agent-desk/pull/20) then
+passed all seven required checks at head `48ae9fa` and squash-merged as
+`390f4c4387f20c1d4fb32c9c2b529b2c4f632223`. Its exact final-main push runs
+closed the audit:
+
+- CI `29527674752`: `project-verify`, Ubuntu, macOS, and Windows passed.
+- Governance `29527674854`: DCO, license, and external-link checks passed.
+
+The earlier failed Governance run remains in history as evidence; it is closed,
+not erased. Phase 2 remote source integration is complete.
 
 ## Preserved concurrent work
 
