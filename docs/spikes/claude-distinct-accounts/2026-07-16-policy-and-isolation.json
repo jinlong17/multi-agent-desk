@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-07-16T16:43:00-07:00",
+  "sanitized": true,
+  "secret_or_identity_values_recorded": false,
+  "environment": {
+    "macos": {
+      "os": "macOS 26.5.2 arm64",
+      "claude_code": "2.1.207",
+      "binary_sha256": "1397a062c6889675055e3314dd956376ac51262a7734ad9e819c26975d71547a",
+      "default_logged_in": true,
+      "empty_config_dir_inherited_login": false,
+      "auth_status_json_keys_verified": true
+    },
+    "linux": {
+      "os": "Linux 5.4.0-148-generic x86_64",
+      "claude_code": "2.1.132",
+      "binary_sha256": "623086f65cfd9c3aff0c8a5125087f8aea3100aa92bf3f0533b2bea5e5d69e8d",
+      "default_logged_in": true,
+      "empty_config_dir_inherited_login": false,
+      "auth_status_json_keys_verified": true
+    },
+    "credential_override_present": false
+  },
+  "official_contract": {
+    "config_dir_documented_for_side_by_side_accounts": true,
+    "status_line_five_hour_and_seven_day_fields_documented": true,
+    "status_line_rate_limits_optional_until_first_response": true,
+    "status_line_command_itself_consumes_tokens": false,
+    "third_party_product_recommended_auth": "api_key_or_supported_cloud_provider",
+    "subscription_access_for_third_party_tools_is_discretionary": true,
+    "paused_agent_sdk_monthly_credit_available": false
+  },
+  "experiment": {
+    "prior_same_account_slot_isolation_reused": true,
+    "two_distinct_identity_login_run": false,
+    "hidden_or_quota_only_request_run": false,
+    "reason_stopped": "provider_policy_gate_decisive",
+    "technical_distinct_account_support_claimed": false,
+    "stable_subscription_product_surface_supported": false
+  },
+  "fallback": "For a product or tool for others, use user-supplied API-key authentication through Claude Console or a supported cloud provider. Keep direct official Claude Code subscription use outside MultiAgentDesk's stable managed-account surface unless Anthropic explicitly approves that integration."
+}
