@@ -10,10 +10,10 @@
 | Owner Module | `provider` |
 | Impacted Modules | `core, security, desktop, project-system` |
 | Current Phase | `VERIFY P1` |
-| Status | `READY_FOR_VERIFY` |
-| Executor | `Codex (GPT-5) as feature-build P1 correction` |
-| Updated | `2026-07-16 17:41 PDT` |
-| Suggested Next | `independent feature-verify P1 correction` |
+| Status | `VERIFIED` |
+| Executor | `Codex (GPT-5) as independent feature-verify P1 correction` |
+| Updated | `2026-07-16 17:50 PDT` |
+| Suggested Next | `feature-plan / feature-review explicitly authorizes P2; the current approval was P1 only` |
 | Branch / Worktree | `codex/provider/codex-multi-account-selector @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/multi-account-usage-control` |
 | Plan Version | `v2` |
 | Provider Gate | `resolved for exact Linux Codex CLI 0.144.2; macOS distinct-identity and real Windows Codex remain open capability gates` |
@@ -37,6 +37,7 @@ Each build run completes one approved phase and stops at `READY_FOR_VERIFY`.
 | 2026-07-16 17:26 PDT | BUILD P1 | migration 7; revision-bound `awaiting_confirmation`; alias-aware auth; persistent random preview; atomic consume/Session insert/replay; raw-ID denial; CLI gates; synthetic migration/authority/race tests | full Go/vet/race, three-OS Go builds, Web/Desktop and governance checks pass; live P2 and platform/Security gates unchanged | `p1-as-built.md`; `docs/reviews/codex-multi-account-selector/2026-07-16-p1-build.md` |
 | 2026-07-16 17:26 PDT | VERIFY P1 | independently inspected `d087cb5..50794df`; reran full Go/vet/race, three-OS builds, migration/preview/auth tests, Web/Desktop and governance matrix; adversarially traced raw-ID routing, enrollment crash replay, logout/re-login, cleanup retention, and Workspace drift | `BLOCKED`; all commands pass but five approved fail-closed/recovery contracts remain incomplete | `docs/reviews/codex-multi-account-selector/2026-07-16-feature-verify.md` |
 | 2026-07-16 17:41 PDT | BUILD P1 CORRECTION | closed raw-ID omission routing, attestation crash/succeeded replay and cleanup, logout Profile unbinding/re-login, 24-hour preview retention, and Workspace revision-surrogate TOCTOU; full Go/vet/race and three-OS builds | `READY_FOR_VERIFY`; all five findings have direct regression evidence; an intermediate Fake-provider routing regression was found and fixed | `docs/reviews/codex-multi-account-selector/2026-07-16-p1-correction-build.md` |
+| 2026-07-16 17:50 PDT | VERIFY P1 CORRECTION | independently inspected committed correction `c062738`; reran direct regressions for all five findings, native Fake cross-provider behavior, migration, preview race x10, full Go/vet/race and three-OS builds | `VERIFIED`; no remaining P1 finding; live P2 was not run and the P1-only approval does not authorize it | `docs/reviews/codex-multi-account-selector/2026-07-16-feature-verify-v2.md` |
 
 ## Risks and Blockers
 
@@ -67,3 +68,4 @@ Each build run completes one approved phase and stops at `READY_FOR_VERIFY`.
 | 2026-07-16 17:26 PDT | Codex (GPT-5) as independent feature-verify P1 | Inspected the committed P1 diff and receipt, reran the full risk-proportionate matrix, and checked each approval condition without modifying plan or implementation files | `docs/reviews/codex-multi-account-selector/2026-07-16-feature-verify.md`; this log | `BLOCKED`; five ranked findings cover raw-ID routing, auth crash/replay cleanup, logout re-login, expired-preview retention, and Workspace drift | feature-build P1 correction |
 | 2026-07-16 17:41 PDT | Codex (GPT-5) as feature-build P1 correction | Closed all five verifier findings, added direct crash/replay/retention/drift/re-login negatives, found and corrected one explicit Fake-provider routing regression during the full matrix, and restored the last valid lifecycle state | application/storage/migration tests and contracts; `p1-as-built.md`; `docs/reviews/codex-multi-account-selector/2026-07-16-p1-correction-build.md`; this log | `READY_FOR_VERIFY`; targeted and full Go/vet/race plus three-OS builds pass; live P2 and platform/Security gates unchanged | independent `feature-verify` P1 correction |
 | 2026-07-16 17:45 PDT | Codex root as operator-directed feature-build writer via `mad-dashboard-sync` | Rebound manual focus to the corrected exact `READY_FOR_VERIFY` state, regenerated workflow/dashboard facts, and verified workflow, dashboard, layout, Go format, Actions, CODEOWNERS, fixtures and local links | `docs/workflow/project/dashboard-state.json`; generated dashboard unchanged; this log | all completed checks PASS; dashboard preserves P2 and platform/Security gates | finish licenses/diff checks, commit, then independent `feature-verify` |
+| 2026-07-16 17:50 PDT | Codex (GPT-5) as independent feature-verify P1 correction | Verified the committed correction against every prior finding and acceptance boundary; modified only this verdict log and the v2 verification report | `docs/reviews/codex-multi-account-selector/2026-07-16-feature-verify-v2.md`; this log | `VERIFIED`; no P1 finding remains; dashboard reconciliation is reserved for the next writer and P2 requires explicit phase authorization | original `feature-plan` / independent `feature-review` gate for P2 |
