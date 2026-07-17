@@ -397,6 +397,10 @@ func (s *Store) FinalizeVaultCredentialRevocation(ctx context.Context, credentia
 			return domain.NewError(domain.CodeConflict, "credential provider is unsupported")
 		}
 		if status == domain.CredentialRevoked {
+			if _, err := tx.ExecContext(ctx, `UPDATE runtime_profiles SET credential_instance_id=NULL,
+				revision=revision+1, updated_at=? WHERE credential_instance_id=? AND internal=0`, formatTime(at), credentialID); err != nil {
+				return writeError("revoked credential profile bindings could not be cleared", err)
+			}
 			if _, err := tx.ExecContext(ctx, `DELETE FROM credential_revocations WHERE credential_instance_id=?`, credentialID); err != nil {
 				return writeError("credential revocation replay could not be cleared", err)
 			}
@@ -418,6 +422,10 @@ func (s *Store) FinalizeVaultCredentialRevocation(ctx context.Context, credentia
 		}
 		if _, err := tx.ExecContext(ctx, `DELETE FROM vault_items WHERE credential_instance_id=?`, credentialID); err != nil {
 			return writeError("vault item could not be removed", err)
+		}
+		if _, err := tx.ExecContext(ctx, `UPDATE runtime_profiles SET credential_instance_id=NULL,
+				revision=revision+1, updated_at=? WHERE credential_instance_id=? AND internal=0`, formatTime(at), credentialID); err != nil {
+			return writeError("credential profile bindings could not be cleared", err)
 		}
 		result, err := tx.ExecContext(ctx, `UPDATE credential_instances SET status='revoked', secret_digest=?, updated_at=? WHERE id=?`, strings.Repeat("0", 64), formatTime(at), credentialID)
 		if err != nil {

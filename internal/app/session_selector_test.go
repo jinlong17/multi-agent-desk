@@ -114,7 +114,7 @@ func TestSelectorPreviewAndConfirmedReservationAreTheOnlyCodexStartPath(t *testi
 	if started.(map[string]any)["status"] != domain.SessionFailed {
 		t.Fatalf("P1 reservation receipt was not terminal: %+v", started)
 	}
-	rawBody, _ := device.JSONBody(map[string]any{"provider": "codex", "account_id": accountID, "device_id": deviceID,
+	rawBody, _ := device.JSONBody(map[string]any{"device_id": deviceID,
 		"credential_instance_id": credentialID, "runtime_profile_id": profileID, "workspace_id": workspaceID})
 	if _, err := service.Handle(ctx, auth, device.Request{ProtocolMajor: device.ProtocolMajor,
 		RequestID: "raw-start", Method: "session.start", IdempotencyKey: "raw-start-key", Body: rawBody}); domain.CodeOf(err) != domain.CodeIdentityConfirmationRequired {

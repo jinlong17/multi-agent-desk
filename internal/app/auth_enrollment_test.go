@@ -192,6 +192,15 @@ func TestAuthBeginCancelUsesPrivateOwnerBoundEnrollment(t *testing.T) {
 	if _, err := service.Handle(ctx, otherAuth, device.Request{ProtocolMajor: device.ProtocolMajor, RequestID: "auth-confirm-other", Method: "auth.confirm", IdempotencyKey: "auth-confirm-other-key", Body: confirmBody}); domain.CodeOf(err) != domain.CodePermissionDenied {
 		t.Fatalf("non-owner confirmation code=%v err=%v", domain.CodeOf(err), err)
 	}
+	aliasDigest, err := enrollmentAliasDigest(thirdEnrollmentID, "@A")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.ConfirmAuthEnrollmentAttestation(ctx, thirdEnrollmentID, clientID, aliasDigest, now); err != nil {
+		t.Fatal(err)
+	}
+	// Model a crash after durable attestation but before Vault seal/RPC caching.
+	// The exact application retry must continue rather than conflict.
 	confirmedResult, err := service.Handle(ctx, auth, device.Request{ProtocolMajor: device.ProtocolMajor, RequestID: "auth-confirm-3", Method: "auth.confirm", IdempotencyKey: "auth-confirm-key-3", Body: confirmBody})
 	if err != nil {
 		t.Fatal(err)
@@ -208,6 +217,22 @@ func TestAuthBeginCancelUsesPrivateOwnerBoundEnrollment(t *testing.T) {
 	}
 	if _, err := os.Stat(thirdStaging); !os.IsNotExist(err) {
 		t.Fatalf("successful staging survived completion: %v", err)
+	}
+	wrongReplayBody, _ := device.JSONBody(map[string]any{"enrollment_id": thirdEnrollmentID, "profile_selector": "@B", "confirmed": true})
+	if _, err := service.Handle(ctx, auth, device.Request{ProtocolMajor: device.ProtocolMajor, RequestID: "auth-confirm-wrong-replay", Method: "auth.confirm", IdempotencyKey: "auth-confirm-wrong-replay-key", Body: wrongReplayBody}); domain.CodeOf(err) != domain.CodeIdentityConfirmationMismatch {
+		t.Fatalf("wrong-selector succeeded replay code=%v err=%v", domain.CodeOf(err), err)
+	}
+	if err := os.MkdirAll(thirdStaging, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(thirdStaging, "auth.json"), finalCredential, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.Handle(ctx, auth, device.Request{ProtocolMajor: device.ProtocolMajor, RequestID: "auth-confirm-cleanup-replay", Method: "auth.confirm", IdempotencyKey: "auth-confirm-cleanup-replay-key", Body: confirmBody}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(thirdStaging); !os.IsNotExist(err) {
+		t.Fatalf("successful replay left staging residue: %v", err)
 	}
 	credentialHome := filepath.Join(service.CredentialHomeRoot, string(credentialID))
 	if err := os.MkdirAll(credentialHome, 0o700); err != nil {
@@ -265,6 +290,41 @@ func TestAuthBeginCancelUsesPrivateOwnerBoundEnrollment(t *testing.T) {
 	}
 	if _, err := os.Stat(lockPath); !os.IsNotExist(err) {
 		t.Fatalf("credential writer lock survived logout: %v", err)
+	}
+	loggedOutProfile, err := store.RuntimeProfile(ctx, profileID)
+	if err != nil || loggedOutProfile.CredentialInstanceID != "" || loggedOutProfile.Revision < 3 {
+		t.Fatalf("logout profile binding=%+v err=%v", loggedOutProfile, err)
+	}
+	// A fresh enrollment after logout must be able to seal and bind a new
+	// Credential to the same public Profile, not merely reach auth.begin.
+	service.Now = func() time.Time { return now }
+	reloginResult, err := service.Handle(ctx, auth, device.Request{ProtocolMajor: device.ProtocolMajor, RequestID: "auth-begin-relogin", Method: "auth.begin", IdempotencyKey: "auth-begin-relogin-key", Body: body})
+	if err != nil {
+		t.Fatal(err)
+	}
+	reloginView := reloginResult.(map[string]any)
+	reloginEnrollmentID := reloginView["enrollment_id"].(domain.ID)
+	reloginStaging := reloginView["staging_path"].(string)
+	if err := os.WriteFile(filepath.Join(reloginStaging, "auth.json"), finalCredential, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	reloginCompleteBody, _ := device.JSONBody(map[string]any{"enrollment_id": reloginEnrollmentID})
+	reloginComplete, err := service.Handle(ctx, auth, device.Request{ProtocolMajor: device.ProtocolMajor, RequestID: "auth-complete-relogin", Method: "auth.complete", IdempotencyKey: "auth-complete-relogin-key", Body: reloginCompleteBody})
+	if err != nil {
+		t.Fatal(err)
+	}
+	reloginCredentialID := reloginComplete.(map[string]any)["credential_id"].(domain.ID)
+	reloginConfirmBody, _ := device.JSONBody(map[string]any{"enrollment_id": reloginEnrollmentID, "profile_selector": "@A", "confirmed": true})
+	if _, err := service.Handle(ctx, auth, device.Request{ProtocolMajor: device.ProtocolMajor, RequestID: "auth-confirm-relogin", Method: "auth.confirm", IdempotencyKey: "auth-confirm-relogin-key", Body: reloginConfirmBody}); err != nil {
+		t.Fatal(err)
+	}
+	reboundProfile, err := store.RuntimeProfile(ctx, profileID)
+	if err != nil || reboundProfile.CredentialInstanceID != reloginCredentialID || reboundProfile.Revision <= loggedOutProfile.Revision {
+		t.Fatalf("re-login profile binding=%+v credential=%s err=%v", reboundProfile, reloginCredentialID, err)
+	}
+	reloginLogoutBody, _ := device.JSONBody(map[string]any{"credential_id": reloginCredentialID})
+	if _, err := service.Handle(ctx, auth, device.Request{ProtocolMajor: device.ProtocolMajor, RequestID: "auth-logout-relogin", Method: "auth.logout", IdempotencyKey: "auth-logout-relogin-key", Body: reloginLogoutBody}); err != nil {
+		t.Fatal(err)
 	}
 
 	service.Now = func() time.Time { return now }

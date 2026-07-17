@@ -74,6 +74,7 @@ CREATE TABLE session_start_previews (
     credential_revision INTEGER NOT NULL CHECK (credential_revision >= 1),
     device_id TEXT NOT NULL REFERENCES device_identity(id) ON DELETE RESTRICT,
     workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE RESTRICT,
+    workspace_updated_at TEXT NOT NULL,
     usage_snapshot_id TEXT REFERENCES usage_snapshots(id) ON DELETE RESTRICT,
     provider_version TEXT NOT NULL CHECK (length(provider_version) BETWEEN 1 AND 128),
     binary_fingerprint TEXT NOT NULL CHECK (length(binary_fingerprint) = 64),
