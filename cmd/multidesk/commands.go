@@ -316,6 +316,7 @@ func runAuth(args []string, stdout, stderr *os.File) error {
 	flags.SetOutput(stderr)
 	root := flags.String("root", "", "private Device root")
 	profileID := flags.String("profile-id", "", "RuntimeProfile ID")
+	profileSelector := flags.String("profile", "", "public profile selector such as @A")
 	credentialID := flags.String("credential-id", "", "CredentialInstance ID")
 	enrollmentID := flags.String("enrollment-id", "", "Auth enrollment ID")
 	jsonOutput := flags.Bool("json", false, "JSON output")
@@ -324,10 +325,16 @@ func runAuth(args []string, stdout, stderr *os.File) error {
 	}
 	switch action {
 	case "begin":
-		if *profileID == "" {
-			return domain.NewError(domain.CodeInvalidArgument, "auth begin requires --profile-id")
+		if (*profileID == "") == (*profileSelector == "") {
+			return domain.NewError(domain.CodeInvalidArgument, "auth begin requires exactly one --profile or --profile-id")
 		}
-		body := map[string]string{"profile_id": *profileID}
+		body := map[string]string{}
+		if *profileID != "" {
+			body["profile_id"] = *profileID
+		}
+		if *profileSelector != "" {
+			body["profile_selector"] = *profileSelector
+		}
 		if *credentialID != "" {
 			body["credential_id"] = *credentialID
 		}
@@ -351,15 +358,46 @@ func runAuth(args []string, stdout, stderr *os.File) error {
 		if completeID == "" {
 			completeID = requestID
 		}
-		return writeCLI(stdout, *jsonOutput, completeID, completed, nil)
+		if *jsonOutput {
+			return writeCLI(stdout, true, completeID, completed, nil)
+		}
+		encoded, _ := json.Marshal(completed)
+		var pending struct {
+			ProfileSelector string `json:"profile_selector"`
+			State           string `json:"state"`
+		}
+		if json.Unmarshal(encoded, &pending) != nil || pending.ProfileSelector == "" || pending.State != "awaiting_confirmation" {
+			return domain.NewError(domain.CodeConflict, "auth confirmation response is invalid")
+		}
+		if _, err := fmt.Fprintf(stderr, "Type %s to confirm this internal account: ", pending.ProfileSelector); err != nil {
+			return err
+		}
+		var typed string
+		if _, err := fmt.Fscanln(os.Stdin, &typed); err != nil || typed != pending.ProfileSelector {
+			return domain.NewError(domain.CodeIdentityConfirmationMismatch, "typed profile selector did not match")
+		}
+		_, confirmed, err := callRPC(*root, "auth.confirm", domain.CapabilityProviderAuth,
+			map[string]any{"enrollment_id": enrollment.EnrollmentID, "profile_selector": typed, "confirmed": true}, nil, true)
+		if err != nil {
+			return err
+		}
+		return writeCLI(stdout, false, completeID, confirmed, nil)
+	case "confirm":
+		if *enrollmentID == "" || *profileSelector == "" {
+			return domain.NewError(domain.CodeInvalidArgument, "auth confirm requires --enrollment-id and --profile")
+		}
+		return runRPCCommand(*root, "auth.confirm", domain.CapabilityProviderAuth,
+			map[string]any{"enrollment_id": *enrollmentID, "profile_selector": *profileSelector, "confirmed": true}, nil, true, *jsonOutput, stdout)
 	case "status":
 		body := map[string]string{}
 		if *enrollmentID != "" {
 			body["enrollment_id"] = *enrollmentID
+		} else if *profileSelector != "" {
+			body["profile_selector"] = *profileSelector
 		} else if *credentialID != "" {
 			body["credential_id"] = *credentialID
 		} else {
-			return domain.NewError(domain.CodeInvalidArgument, "auth status requires --enrollment-id or --credential-id")
+			return domain.NewError(domain.CodeInvalidArgument, "auth status requires --enrollment-id, --profile, or --credential-id")
 		}
 		return runRPCCommand(*root, "auth.status", domain.CapabilityProviderAuth, body, nil, false, *jsonOutput, stdout)
 	case "cancel":
@@ -368,10 +406,16 @@ func runAuth(args []string, stdout, stderr *os.File) error {
 		}
 		return runRPCCommand(*root, "auth.cancel", domain.CapabilityProviderAuth, map[string]string{"enrollment_id": *enrollmentID}, nil, true, *jsonOutput, stdout)
 	case "logout":
-		if *credentialID == "" {
-			return domain.NewError(domain.CodeInvalidArgument, "auth logout requires --credential-id")
+		if (*credentialID == "") == (*profileSelector == "") {
+			return domain.NewError(domain.CodeInvalidArgument, "auth logout requires exactly one --profile or --credential-id")
 		}
-		return runRPCCommand(*root, "auth.logout", domain.CapabilityProviderAuth, map[string]string{"credential_id": *credentialID}, nil, true, *jsonOutput, stdout)
+		body := map[string]string{}
+		if *profileSelector != "" {
+			body["profile_selector"] = *profileSelector
+		} else {
+			body["credential_id"] = *credentialID
+		}
+		return runRPCCommand(*root, "auth.logout", domain.CapabilityProviderAuth, body, nil, true, *jsonOutput, stdout)
 	default:
 		return domain.NewError(domain.CodeMethodNotFound, "auth command is not available")
 	}
@@ -427,13 +471,69 @@ func runSessionStart(args []string, stdout, stderr *os.File) error {
 	credentialID := flags.String("credential-id", "", "credential instance ID")
 	profileID := flags.String("profile-id", "", "runtime profile ID")
 	accountID := flags.String("account-id", "", "Account ID")
+	profileSelector := flags.String("profile", "", "public profile selector such as @A")
 	jsonOutput := flags.Bool("json", false, "JSON output")
-	if err := flags.Parse(args[1:]); err != nil || *root == "" || *workspace == "" || *deviceID == "" || *credentialID == "" || *profileID == "" {
-		return domain.NewError(domain.CodeInvalidArgument, "run requires --root, --workspace, --device-id, --credential-id, and --profile-id")
+	if err := flags.Parse(args[1:]); err != nil || *root == "" || *workspace == "" {
+		return domain.NewError(domain.CodeInvalidArgument, "run requires --root and --workspace")
+	}
+	if provider == domain.ProviderCodex {
+		if *profileSelector == "" || *deviceID != "" || *credentialID != "" || *profileID != "" || *accountID != "" {
+			return domain.NewError(domain.CodeIdentityConfirmationRequired, "run codex requires --profile and rejects raw identity flags")
+		}
+		if *jsonOutput {
+			return domain.NewError(domain.CodeIdentityConfirmationRequired, "JSON callers must use sessions preview and the confirmed session.start RPC")
+		}
+		_, rawPreview, err := callRPC(*root, "sessions.preview", domain.CapabilityMetadataRead,
+			map[string]any{"provider": domain.ProviderCodex, "profile_selector": *profileSelector, "workspace_id": *workspace}, nil, false)
+		if err != nil {
+			return err
+		}
+		encoded, _ := json.Marshal(rawPreview)
+		var preview cliSessionPreview
+		if json.Unmarshal(encoded, &preview) != nil || preview.PreviewID == "" || preview.ProfileAlias == "" {
+			return domain.NewError(domain.CodeConflict, "session preview response is invalid")
+		}
+		canonical := "@" + preview.ProfileAlias
+		if _, err := fmt.Fprintf(stderr, "Start %s (%s) with credential revision %d? Type %s: ",
+			canonical, preview.AccountLabel, preview.CredentialRevision, canonical); err != nil {
+			return err
+		}
+		var typed string
+		if _, err := fmt.Fscanln(os.Stdin, &typed); err != nil || typed != canonical {
+			return domain.NewError(domain.CodeIdentityConfirmationMismatch, "typed profile selector did not match")
+		}
+		confirmation := map[string]any{"confirmed": true, "account_id": preview.AccountID,
+			"account_revision": preview.AccountRevision, "runtime_profile_id": preview.RuntimeProfileID,
+			"profile_revision": preview.ProfileRevision, "credential_instance_id": preview.CredentialInstanceID,
+			"credential_revision": preview.CredentialRevision, "device_id": preview.DeviceID,
+			"workspace_id": preview.WorkspaceID, "usage_snapshot_id": preview.UsageSnapshotID,
+			"provider_version": preview.ProviderVersion}
+		return runRPCCommand(*root, "session.start", domain.CapabilitySessionStart,
+			map[string]any{"provider": domain.ProviderCodex, "profile_selector": *profileSelector,
+				"workspace_id": *workspace, "preview_id": preview.PreviewID, "confirmation": confirmation}, nil, true, false, stdout)
+	}
+	if *deviceID == "" || *credentialID == "" || *profileID == "" {
+		return domain.NewError(domain.CodeInvalidArgument, "run fake requires --device-id, --credential-id, and --profile-id")
 	}
 	body := map[string]string{"provider": provider, "workspace_id": *workspace, "device_id": *deviceID,
 		"credential_instance_id": *credentialID, "runtime_profile_id": *profileID, "account_id": *accountID}
 	return runRPCCommand(*root, "session.start", domain.CapabilitySessionStart, body, nil, true, *jsonOutput, stdout)
+}
+
+type cliSessionPreview struct {
+	PreviewID            domain.ID `json:"preview_id"`
+	AccountID            domain.ID `json:"account_id"`
+	AccountRevision      int64     `json:"account_revision"`
+	AccountLabel         string    `json:"account_label"`
+	RuntimeProfileID     domain.ID `json:"runtime_profile_id"`
+	ProfileRevision      int64     `json:"profile_revision"`
+	ProfileAlias         string    `json:"profile_alias"`
+	CredentialInstanceID domain.ID `json:"credential_instance_id"`
+	CredentialRevision   int64     `json:"credential_revision"`
+	DeviceID             domain.ID `json:"device_id"`
+	WorkspaceID          domain.ID `json:"workspace_id"`
+	UsageSnapshotID      domain.ID `json:"usage_snapshot_id"`
+	ProviderVersion      string    `json:"provider_version"`
 }
 
 func runSessions(args []string, stdout, stderr *os.File) error {
@@ -448,6 +548,8 @@ func runSessions(args []string, stdout, stderr *os.File) error {
 	from := flags.Int64("from-sequence", 0, "replay start sequence")
 	revision := flags.Int64("revision", 0, "controller lease revision")
 	jsonOutput := flags.Bool("json", false, "JSON output")
+	profileSelector := flags.String("profile", "", "public profile selector such as @A")
+	workspaceID := flags.String("workspace", "", "workspace ID")
 	if err := flags.Parse(args[1:]); err != nil || *root == "" {
 		return domain.NewError(domain.CodeInvalidArgument, "sessions command requires --root")
 	}
@@ -458,6 +560,11 @@ func runSessions(args []string, stdout, stderr *os.File) error {
 	idempotent := false
 	switch action {
 	case "list":
+	case "preview":
+		if len(positionals) != 0 || *profileSelector == "" || *workspaceID == "" {
+			return domain.NewError(domain.CodeInvalidArgument, "sessions preview requires --profile and --workspace")
+		}
+		body = map[string]any{"provider": domain.ProviderCodex, "profile_selector": *profileSelector, "workspace_id": *workspaceID}
 	case "show", "detach", "stop", "kill", "resume":
 		if len(positionals) != 1 {
 			return domain.NewError(domain.CodeInvalidArgument, "session ID is required")

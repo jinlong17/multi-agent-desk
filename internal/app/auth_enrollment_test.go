@@ -42,10 +42,10 @@ func TestAuthBeginCancelUsesPrivateOwnerBoundEnrollment(t *testing.T) {
 	if err := store.CreateClientIdentity(ctx, domain.ClientIdentity{ID: otherClientID, Name: "other-owner", PublicKey: otherPublicKey, Revision: 1, Status: domain.ClientIdentityActive, Caps: []domain.Capability{domain.CapabilityProviderAuth}, CreatedAt: now, UpdatedAt: now}); err != nil {
 		t.Fatal(err)
 	}
-	if err := store.CreateAccount(ctx, domain.Account{ID: accountID, Provider: domain.ProviderCodex, DisplayName: "auth", CreatedAt: now, UpdatedAt: now}); err != nil {
-		t.Fatal(err)
-	}
-	if err := store.CreateRuntimeProfile(ctx, domain.RuntimeProfile{ID: profileID, DeviceID: deviceID, AccountID: accountID, Name: "auth", Provider: domain.ProviderCodex, Settings: []byte(`{}`), CreatedAt: now, UpdatedAt: now}); err != nil {
+	if _, _, err := store.CreateAccountWithDefaultProfile(ctx,
+		domain.Account{ID: accountID, Provider: domain.ProviderCodex, DisplayName: "auth", Enabled: true, Revision: 1, CreatedAt: now, UpdatedAt: now},
+		domain.RuntimeProfile{ID: profileID, DeviceID: deviceID, AccountID: accountID, Name: "auth", Provider: domain.ProviderCodex,
+			SelectorAlias: "A", SelectorKey: "a", Settings: []byte(`{}`), Enabled: true, Revision: 1, CreatedAt: now, UpdatedAt: now}); err != nil {
 		t.Fatal(err)
 	}
 	vaultManager, err := vault.NewPersistentManager(ctx, store)
@@ -177,7 +177,28 @@ func TestAuthBeginCancelUsesPrivateOwnerBoundEnrollment(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	credentialID := completeResult.(map[string]any)["credential_id"].(domain.ID)
+	completeView := completeResult.(map[string]any)
+	credentialID := completeView["credential_id"].(domain.ID)
+	if completeView["state"] != storage.EnrollmentAwaitingConfirmation {
+		t.Fatalf("auth complete bypassed confirmation: %+v", completeView)
+	}
+	if _, err := store.VaultItem(ctx, credentialID); domain.CodeOf(err) != domain.CodeNotFound {
+		t.Fatalf("unconfirmed enrollment sealed a Vault item: %v", err)
+	}
+	if _, err := os.Stat(thirdStaging); err != nil {
+		t.Fatalf("unconfirmed staging was removed: %v", err)
+	}
+	confirmBody, _ := device.JSONBody(map[string]any{"enrollment_id": thirdEnrollmentID, "profile_selector": "@A", "confirmed": true})
+	if _, err := service.Handle(ctx, otherAuth, device.Request{ProtocolMajor: device.ProtocolMajor, RequestID: "auth-confirm-other", Method: "auth.confirm", IdempotencyKey: "auth-confirm-other-key", Body: confirmBody}); domain.CodeOf(err) != domain.CodePermissionDenied {
+		t.Fatalf("non-owner confirmation code=%v err=%v", domain.CodeOf(err), err)
+	}
+	confirmedResult, err := service.Handle(ctx, auth, device.Request{ProtocolMajor: device.ProtocolMajor, RequestID: "auth-confirm-3", Method: "auth.confirm", IdempotencyKey: "auth-confirm-key-3", Body: confirmBody})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if confirmedResult.(map[string]any)["state"] != storage.EnrollmentSucceeded {
+		t.Fatalf("confirmation did not seal enrollment: %+v", confirmedResult)
+	}
 	storedCredential, revision, err := vaultManager.ReadCredential(ctx, credentialID)
 	if err != nil || revision != 2 || string(storedCredential) != string(finalCredential) {
 		t.Fatalf("post-validation credential revision=%d payload=%q err=%v", revision, storedCredential, err)

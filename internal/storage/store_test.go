@@ -105,15 +105,15 @@ func TestOpenConfiguresAndRestartsDeviceDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if version != 6 {
-		t.Fatalf("got schema version %d, want 6", version)
+	if version != 7 {
+		t.Fatalf("got schema version %d, want 7", version)
 	}
 	var migrationCount int
 	if err := store.db.QueryRowContext(ctx, "SELECT count(*) FROM schema_migrations").Scan(&migrationCount); err != nil {
 		t.Fatal(err)
 	}
-	if migrationCount != 6 {
-		t.Fatalf("got %d applied migrations, want 6", migrationCount)
+	if migrationCount != 7 {
+		t.Fatalf("got %d applied migrations, want 7", migrationCount)
 	}
 	if runtime.GOOS != "windows" {
 		info, err := os.Stat(path)
@@ -135,7 +135,7 @@ func TestOpenConfiguresAndRestartsDeviceDatabase(t *testing.T) {
 	if err := reopened.db.QueryRowContext(ctx, "SELECT count(*) FROM schema_migrations").Scan(&migrationCount); err != nil {
 		t.Fatal(err)
 	}
-	if migrationCount != 6 {
+	if migrationCount != 7 {
 		t.Fatalf("restart reapplied migrations: count=%d", migrationCount)
 	}
 }
@@ -217,7 +217,7 @@ func TestCodexMigrationPreservesLegacyFakeRows(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(migrations) != 6 {
+	if len(migrations) != 7 {
 		t.Fatalf("migration count=%d", len(migrations))
 	}
 	if _, err := raw.ExecContext(ctx, "PRAGMA foreign_keys=ON"); err != nil {
@@ -273,7 +273,7 @@ func TestCodexMigrationPreservesLegacyFakeRows(t *testing.T) {
 		t.Fatalf("open upgraded store: %v (cause: %v)", err, errors.Unwrap(err))
 	}
 	defer store.Close()
-	if version, err := store.SchemaVersion(ctx); err != nil || version != 6 {
+	if version, err := store.SchemaVersion(ctx); err != nil || version != 7 {
 		t.Fatalf("upgraded schema=%d err=%v", version, err)
 	}
 	profile, err := store.RuntimeProfile(ctx, profileID)
@@ -411,8 +411,8 @@ func TestMigrationFailureRollsBackDDLAndLedger(t *testing.T) {
 	ctx := context.Background()
 	contents := []byte("CREATE TABLE should_rollback(id INTEGER); THIS IS NOT SQL;")
 	migration := devicemigrations.Migration{
-		Version:  7,
-		Name:     "0007_invalid.sql",
+		Version:  8,
+		Name:     "0008_invalid.sql",
 		SQL:      string(contents),
 		Checksum: sha256.Sum256(contents),
 	}
@@ -427,7 +427,7 @@ func TestMigrationFailureRollsBackDDLAndLedger(t *testing.T) {
 		t.Fatal("failed migration left partial DDL")
 	}
 	var ledgerCount int
-	if err := store.db.QueryRowContext(ctx, "SELECT count(*) FROM schema_migrations WHERE version=7").Scan(&ledgerCount); err != nil {
+	if err := store.db.QueryRowContext(ctx, "SELECT count(*) FROM schema_migrations WHERE version=8").Scan(&ledgerCount); err != nil {
 		t.Fatal(err)
 	}
 	if ledgerCount != 0 {
@@ -437,8 +437,98 @@ func TestMigrationFailureRollsBackDDLAndLedger(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if version != 6 {
+	if version != 7 {
 		t.Fatalf("failed migration changed user_version to %d", version)
+	}
+}
+
+func TestSelectorMigrationPreservesVersionSixEnrollment(t *testing.T) {
+	ctx := context.Background()
+	root := filepath.Join(t.TempDir(), "device")
+	if err := os.Mkdir(root, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(root, "device.db")
+	raw, err := sql.Open("sqlite", "file:"+path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	migrations, err := devicemigrations.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := raw.ExecContext(ctx, "PRAGMA foreign_keys=OFF"); err != nil {
+		t.Fatal(err)
+	}
+	for index, migration := range migrations[:6] {
+		if index == 3 {
+			if _, err := raw.ExecContext(ctx, `CREATE TABLE schema_migrations(
+				version INTEGER PRIMARY KEY CHECK (version >= 1), name TEXT NOT NULL UNIQUE,
+				checksum TEXT NOT NULL CHECK (length(checksum) = 64), applied_at TEXT NOT NULL)`); err != nil {
+				t.Fatal(err)
+			}
+			for _, prior := range migrations[:3] {
+				if _, err := raw.ExecContext(ctx, `INSERT INTO schema_migrations VALUES(?, ?, ?, 'legacy')`,
+					prior.Version, prior.Name, hex.EncodeToString(prior.Checksum[:])); err != nil {
+					t.Fatal(err)
+				}
+			}
+		}
+		if _, err := raw.ExecContext(ctx, migration.SQL); err != nil {
+			t.Fatalf("migration %d: %v", migration.Version, err)
+		}
+		if index >= 3 {
+			if _, err := raw.ExecContext(ctx, `INSERT INTO schema_migrations VALUES(?, ?, ?, 'legacy')`,
+				migration.Version, migration.Name, hex.EncodeToString(migration.Checksum[:])); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	if _, err := raw.ExecContext(ctx, "PRAGMA user_version=6"); err != nil {
+		t.Fatal(err)
+	}
+	now := "1970-01-01T00:00:00Z"
+	deviceID, clientID := storageID("device", storageHexA), storageID("client", storageHexA)
+	accountID, profileID := storageID("account", storageHexA), storageID("profile", storageHexA)
+	credentialID, enrollmentID := storageID("credential", storageHexA), storageID("enrollment", storageHexA)
+	if _, err := raw.ExecContext(ctx, `INSERT INTO device_identity VALUES(?, 'daemon', 'migration', ?, ?, ?)`, deviceID, make([]byte, 32), now, now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := raw.ExecContext(ctx, `INSERT INTO client_identities VALUES(?, 'owner', ?, 1, 'active', '[]', ?, ?)`, clientID, bytesOf(7, 32), now, now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := raw.ExecContext(ctx, `INSERT INTO accounts(id, provider, display_name, provider_subject_digest, subscription_hint, internal, enabled, revision, created_at, updated_at)
+		VALUES(?, 'codex', 'migration', '', '', 0, 1, 1, ?, ?)`, accountID, now, now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := raw.ExecContext(ctx, `INSERT INTO runtime_profiles(id, device_id, account_id, credential_instance_id, name, provider, selector_alias, selector_key, settings_json, internal, enabled, revision, created_at, updated_at)
+		VALUES(?, ?, ?, NULL, 'migration', 'codex', 'A', 'a', '{}', 0, 1, 1, ?, ?)`, profileID, deviceID, accountID, now, now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := raw.ExecContext(ctx, `INSERT INTO credential_instances(id, device_id, account_id, provider, auth_method, secret_ref, status, credential_revision, secret_digest, created_at, updated_at)
+		VALUES(?, ?, ?, 'codex', 'interactive', ?, 'unknown', 1, ?, ?, ?)`, credentialID, deviceID, accountID,
+		"vault:"+string(credentialID), strings.Repeat("0", 64), now, now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := raw.ExecContext(ctx, `INSERT INTO auth_enrollments VALUES(?, ?, ?, ?, ?, '/tmp/staging', 'begun', ?, NULL, '2099-01-01T00:00:00Z', ?, ?)`,
+		enrollmentID, clientID, profileID, credentialID, strings.Repeat("a", 64), strings.Repeat("b", 64), now, now); err != nil {
+		t.Fatal(err)
+	}
+	if err := raw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	store, err := Open(ctx, path)
+	if err != nil {
+		t.Fatalf("upgrade v6 to v7: %v", err)
+	}
+	defer store.Close()
+	if version, err := store.SchemaVersion(ctx); err != nil || version != 7 {
+		t.Fatalf("version=%d err=%v", version, err)
+	}
+	enrollment, err := store.AuthEnrollment(ctx, enrollmentID)
+	if err != nil || enrollment.State != EnrollmentBegun || enrollment.CredentialInstanceID != credentialID ||
+		enrollment.ConfirmationAliasDigest != "" || enrollment.ConfirmedAt != nil {
+		t.Fatalf("preserved enrollment=%+v err=%v", enrollment, err)
 	}
 }
 

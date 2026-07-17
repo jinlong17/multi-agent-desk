@@ -131,7 +131,7 @@ func (s *Store) InitializeVault(ctx context.Context, config VaultConfig) (bool, 
 	if err := conn.QueryRowContext(ctx, `
 			SELECT
 			  (SELECT count(*) FROM credential_instances WHERE provider = 'codex' AND (secret_ref <> '' OR credential_revision > 0)) +
-			  (SELECT count(*) FROM auth_enrollments WHERE state IN ('begun','validating')) +
+			  (SELECT count(*) FROM auth_enrollments WHERE state IN ('begun','validating','awaiting_confirmation')) +
 			  (SELECT count(*) FROM sessions WHERE provider = 'codex' AND status IN ('starting','running','stopping'))`).Scan(&dependencies); err != nil {
 		return false, domain.WrapError(domain.CodeConflict, "vault dependencies could not be checked", err)
 	}
@@ -237,12 +237,23 @@ func (s *Store) replaceVaultItemCAS(ctx context.Context, expectedRevision int64,
 	return s.withTx(ctx, func(tx *sql.Tx) error {
 		var accountID, deviceID domain.ID
 		var provider string
+		var currentStatus domain.CredentialStatus
 		var revision int64
-		if err := tx.QueryRowContext(ctx, `SELECT account_id, device_id, provider, credential_revision FROM credential_instances WHERE id = ?`, item.CredentialInstanceID).Scan(&accountID, &deviceID, &provider, &revision); err != nil {
+		if err := tx.QueryRowContext(ctx, `SELECT account_id, device_id, provider, status, credential_revision FROM credential_instances WHERE id = ?`, item.CredentialInstanceID).Scan(&accountID, &deviceID, &provider, &currentStatus, &revision); err != nil {
 			return domain.WrapError(domain.CodeNotFound, "credential instance was not found", err)
 		}
 		if revision != expectedRevision || accountID != item.AccountID || deviceID != item.DeviceID || provider != domain.ProviderCodex || item.CredentialRevision != expectedRevision+1 {
 			return domain.NewError(domain.CodeCredentialRevisionConflict, "credential revision changed")
+		}
+		if currentStatus == domain.CredentialRevoked || currentStatus == domain.CredentialExpired {
+			return domain.NewError(domain.CodeCredentialRevisionConflict, "credential is not sealable")
+		}
+		var revoking int
+		if err := tx.QueryRowContext(ctx, `SELECT count(*) FROM credential_revocations WHERE credential_instance_id=?`, item.CredentialInstanceID).Scan(&revoking); err != nil {
+			return domain.WrapError(domain.CodeConflict, "credential revocation state could not be checked", err)
+		}
+		if revoking != 0 {
+			return domain.NewError(domain.CodeCredentialRevisionConflict, "credential revocation is in progress")
 		}
 		_, err := tx.ExecContext(ctx, `
 			INSERT INTO vault_items(credential_instance_id, account_id, device_id, provider,
@@ -270,7 +281,27 @@ func (s *Store) replaceVaultItemCAS(ctx context.Context, expectedRevision int64,
 			return domain.NewError(domain.CodeCredentialRevisionConflict, "credential revision changed")
 		}
 		if enrollmentID != "" {
-			result, err := tx.ExecContext(ctx, `UPDATE auth_enrollments SET state='succeeded', updated_at=? WHERE id=? AND client_device_id=? AND credential_instance_id=? AND state='validating' AND completion_idempotency_digest=?`, formatTime(item.UpdatedAt), enrollmentID, clientID, item.CredentialInstanceID, completionDigest)
+			var profileID domain.ID
+			if err := tx.QueryRowContext(ctx, `SELECT runtime_profile_id FROM auth_enrollments
+					WHERE id=? AND client_device_id=? AND credential_instance_id=?
+						AND state='awaiting_confirmation' AND confirmed_by_client_id=?
+						AND completion_idempotency_digest=?`, enrollmentID, clientID,
+				item.CredentialInstanceID, clientID, completionDigest).Scan(&profileID); err != nil {
+				return domain.NewError(domain.CodeIdentityConfirmationRequired, "auth confirmation is required before credential seal")
+			}
+			profileResult, err := tx.ExecContext(ctx, `UPDATE runtime_profiles SET
+					credential_instance_id=?, revision=CASE WHEN credential_instance_id IS NULL THEN revision+1 ELSE revision END,
+					updated_at=? WHERE id=? AND account_id=? AND device_id=? AND provider='codex'
+						AND (credential_instance_id IS NULL OR credential_instance_id=?)`, item.CredentialInstanceID,
+				formatTime(item.UpdatedAt), profileID, item.AccountID, item.DeviceID, item.CredentialInstanceID)
+			if err != nil {
+				return writeError("auth profile binding could not be committed", err)
+			}
+			profileChanged, _ := profileResult.RowsAffected()
+			if profileChanged != 1 {
+				return domain.NewError(domain.CodeProfileBindingChanged, "auth profile binding changed before commit")
+			}
+			result, err := tx.ExecContext(ctx, `UPDATE auth_enrollments SET state='succeeded', updated_at=? WHERE id=? AND client_device_id=? AND credential_instance_id=? AND state='awaiting_confirmation' AND confirmed_by_client_id=? AND completion_idempotency_digest=?`, formatTime(item.UpdatedAt), enrollmentID, clientID, item.CredentialInstanceID, clientID, completionDigest)
 			if err != nil {
 				return writeError("auth enrollment could not be committed", err)
 			}
