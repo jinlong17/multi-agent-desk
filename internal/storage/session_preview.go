@@ -25,6 +25,7 @@ type SessionStartPreview struct {
 	CredentialRevision    int64
 	DeviceID              domain.ID
 	WorkspaceID           domain.ID
+	WorkspaceUpdatedAt    time.Time
 	UsageSnapshotID       domain.ID
 	ProviderVersion       string
 	BinaryFingerprint     string
@@ -84,7 +85,8 @@ func validSessionStartPreview(value SessionStartPreview) bool {
 	return value.Provider == domain.ProviderCodex && value.AccountRevision >= 1 && value.ProfileRevision >= 1 &&
 		value.CredentialRevision >= 1 && len(value.ProviderVersion) >= 1 && len(value.ProviderVersion) <= 128 &&
 		validFingerprint(value.BinaryFingerprint) && validFingerprint(value.SchemaFingerprint) &&
-		validFingerprint(value.CapabilityDigest) && !value.CreatedAt.IsZero() && value.ExpiresAt.After(value.CreatedAt)
+		validFingerprint(value.CapabilityDigest) && !value.WorkspaceUpdatedAt.IsZero() &&
+		!value.CreatedAt.IsZero() && value.ExpiresAt.After(value.CreatedAt)
 }
 
 // CreateSessionStartPreview persists an owner-bound preview only while the
@@ -126,7 +128,8 @@ func (s *Store) CreateSessionStartPreview(ctx context.Context, value SessionStar
 			return domain.NewError(domain.CodeProfileBindingChanged, "profile binding changed before preview")
 		}
 		var workspaceDevice domain.ID
-		if err := tx.QueryRowContext(ctx, `SELECT device_id FROM workspaces WHERE id=?`, value.WorkspaceID).Scan(&workspaceDevice); err != nil || workspaceDevice != value.DeviceID {
+		var workspaceUpdatedAt string
+		if err := tx.QueryRowContext(ctx, `SELECT device_id, updated_at FROM workspaces WHERE id=?`, value.WorkspaceID).Scan(&workspaceDevice, &workspaceUpdatedAt); err != nil || workspaceDevice != value.DeviceID || workspaceUpdatedAt != formatTime(value.WorkspaceUpdatedAt) {
 			return domain.NewError(domain.CodeProfileBindingChanged, "preview workspace is unavailable")
 		}
 		var sealed, revoking int
@@ -152,12 +155,12 @@ func (s *Store) CreateSessionStartPreview(ctx context.Context, value SessionStar
 		_, err := tx.ExecContext(ctx, `INSERT INTO session_start_previews(
 			id, client_id, provider, account_id, account_revision, runtime_profile_id,
 			profile_revision, credential_instance_id, credential_revision, device_id,
-			workspace_id, usage_snapshot_id, provider_version, binary_fingerprint,
+			workspace_id, workspace_updated_at, usage_snapshot_id, provider_version, binary_fingerprint,
 			schema_fingerprint, capability_digest, created_at, expires_at
-		) VALUES(?, ?, 'codex', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		) VALUES(?, ?, 'codex', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			value.ID, value.ClientID, value.AccountID, value.AccountRevision, value.RuntimeProfileID,
 			value.ProfileRevision, value.CredentialInstanceID, value.CredentialRevision, value.DeviceID,
-			value.WorkspaceID, usage, value.ProviderVersion, value.BinaryFingerprint,
+			value.WorkspaceID, formatTime(value.WorkspaceUpdatedAt), usage, value.ProviderVersion, value.BinaryFingerprint,
 			value.SchemaFingerprint, value.CapabilityDigest, formatTime(value.CreatedAt), formatTime(value.ExpiresAt))
 		return writeError("session preview could not be created", err)
 	})
@@ -166,15 +169,15 @@ func (s *Store) CreateSessionStartPreview(ctx context.Context, value SessionStar
 func (s *Store) SessionStartPreview(ctx context.Context, id domain.ID) (SessionStartPreview, error) {
 	var value SessionStartPreview
 	var usage, consumedAt, consumedDigest, sessionID sql.NullString
-	var createdAt, expiresAt string
+	var workspaceUpdatedAt, createdAt, expiresAt string
 	err := s.db.QueryRowContext(ctx, `SELECT id, client_id, provider, account_id, account_revision,
 		runtime_profile_id, profile_revision, credential_instance_id, credential_revision,
-		device_id, workspace_id, usage_snapshot_id, provider_version, binary_fingerprint,
+		device_id, workspace_id, workspace_updated_at, usage_snapshot_id, provider_version, binary_fingerprint,
 		schema_fingerprint, capability_digest, created_at, expires_at, consumed_at,
 		consumed_request_digest, session_id FROM session_start_previews WHERE id=?`, id).Scan(
 		&value.ID, &value.ClientID, &value.Provider, &value.AccountID, &value.AccountRevision,
 		&value.RuntimeProfileID, &value.ProfileRevision, &value.CredentialInstanceID, &value.CredentialRevision,
-		&value.DeviceID, &value.WorkspaceID, &usage, &value.ProviderVersion, &value.BinaryFingerprint,
+		&value.DeviceID, &value.WorkspaceID, &workspaceUpdatedAt, &usage, &value.ProviderVersion, &value.BinaryFingerprint,
 		&value.SchemaFingerprint, &value.CapabilityDigest, &createdAt, &expiresAt, &consumedAt, &consumedDigest, &sessionID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return SessionStartPreview{}, domain.NewError(domain.CodeNotFound, "session preview not found")
@@ -190,6 +193,10 @@ func (s *Store) SessionStartPreview(ctx context.Context, id domain.ID) (SessionS
 	}
 	if sessionID.Valid {
 		value.SessionID = domain.ID(sessionID.String)
+	}
+	value.WorkspaceUpdatedAt, err = parseTime(workspaceUpdatedAt)
+	if err != nil {
+		return SessionStartPreview{}, err
 	}
 	value.CreatedAt, err = parseTime(createdAt)
 	if err != nil {
@@ -226,15 +233,15 @@ func (s *Store) ConsumeSessionStartPreview(ctx context.Context, request ConsumeS
 	err = s.withTx(ctx, func(tx *sql.Tx) error {
 		var preview SessionStartPreview
 		var usage, consumedAt, consumedDigest, sessionID sql.NullString
-		var expiresAt string
+		var workspaceUpdatedAt, expiresAt string
 		if err := tx.QueryRowContext(ctx, `SELECT client_id, provider, account_id, account_revision,
 			runtime_profile_id, profile_revision, credential_instance_id, credential_revision,
-			device_id, workspace_id, usage_snapshot_id, provider_version, binary_fingerprint,
+			device_id, workspace_id, workspace_updated_at, usage_snapshot_id, provider_version, binary_fingerprint,
 			schema_fingerprint, capability_digest, expires_at, consumed_at,
 			consumed_request_digest, session_id FROM session_start_previews WHERE id=?`, request.PreviewID).Scan(
 			&preview.ClientID, &preview.Provider, &preview.AccountID, &preview.AccountRevision,
 			&preview.RuntimeProfileID, &preview.ProfileRevision, &preview.CredentialInstanceID, &preview.CredentialRevision,
-			&preview.DeviceID, &preview.WorkspaceID, &usage, &preview.ProviderVersion, &preview.BinaryFingerprint,
+			&preview.DeviceID, &preview.WorkspaceID, &workspaceUpdatedAt, &usage, &preview.ProviderVersion, &preview.BinaryFingerprint,
 			&preview.SchemaFingerprint, &preview.CapabilityDigest, &expiresAt, &consumedAt, &consumedDigest, &sessionID); errors.Is(err, sql.ErrNoRows) {
 			return domain.NewError(domain.CodeIdentityConfirmationRequired, "daemon-issued session preview is required")
 		} else if err != nil {
@@ -242,6 +249,10 @@ func (s *Store) ConsumeSessionStartPreview(ctx context.Context, request ConsumeS
 		}
 		if usage.Valid {
 			preview.UsageSnapshotID = domain.ID(usage.String)
+		}
+		preview.WorkspaceUpdatedAt, err = parseTime(workspaceUpdatedAt)
+		if err != nil {
+			return err
 		}
 		if preview.ClientID != request.ClientID {
 			return domain.NewError(domain.CodePermissionDenied, "session preview owner is required")
@@ -298,6 +309,10 @@ func (s *Store) ConsumeSessionStartPreview(ctx context.Context, request ConsumeS
 		if err := validateSessionLinks(ctx, tx, validated); err != nil {
 			return err
 		}
+		var currentWorkspaceUpdatedAt string
+		if err := tx.QueryRowContext(ctx, `SELECT updated_at FROM workspaces WHERE id=?`, preview.WorkspaceID).Scan(&currentWorkspaceUpdatedAt); err != nil || currentWorkspaceUpdatedAt != formatTime(preview.WorkspaceUpdatedAt) {
+			return domain.NewError(domain.CodeProfileBindingChanged, "workspace changed after preview")
+		}
 		_, err := tx.ExecContext(ctx, `INSERT INTO sessions(
 			id, device_id, account_id, provider, credential_instance_id, runtime_profile_id,
 			workspace_id, provider_session_id, resumed_from_session_id, status, started_at,
@@ -329,6 +344,9 @@ func (s *Store) DeleteExpiredSessionStartPreviews(ctx context.Context, before ti
 	if before.IsZero() {
 		return domain.NewError(domain.CodeInvalidArgument, "preview cleanup timestamp is required")
 	}
-	_, err := s.db.ExecContext(ctx, `DELETE FROM session_start_previews WHERE expires_at<? AND (consumed_at IS NULL OR consumed_at<?)`, formatTime(before), formatTime(before.Add(-24*time.Hour)))
+	cutoff := before.Add(-SessionStartPreviewRetention)
+	_, err := s.db.ExecContext(ctx, `DELETE FROM session_start_previews WHERE expires_at<? AND (consumed_at IS NULL OR consumed_at<?)`, formatTime(cutoff), formatTime(cutoff))
 	return writeError("expired session previews could not be deleted", err)
 }
+
+const SessionStartPreviewRetention = 24 * time.Hour

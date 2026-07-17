@@ -67,7 +67,7 @@ func TestSessionStartPreviewIsOwnerBoundSingleUseAndReplaySafe(t *testing.T) {
 	previewID := storageID("preview", storageHexA)
 	preview := SessionStartPreview{ID: previewID, ClientID: clientA.ID, Provider: domain.ProviderCodex,
 		AccountID: account.ID, AccountRevision: 1, RuntimeProfileID: profile.ID, ProfileRevision: 1,
-		CredentialInstanceID: credential.ID, CredentialRevision: 2, DeviceID: device.ID, WorkspaceID: workspace.ID,
+		CredentialInstanceID: credential.ID, CredentialRevision: 2, DeviceID: device.ID, WorkspaceID: workspace.ID, WorkspaceUpdatedAt: workspace.UpdatedAt,
 		ProviderVersion: "0.144.2", BinaryFingerprint: fingerprint, SchemaFingerprint: strings.Repeat("d", 64),
 		CapabilityDigest: strings.Repeat("e", 64), CreatedAt: now, ExpiresAt: now.Add(10 * time.Minute)}
 	if err := store.CreateSessionStartPreview(ctx, preview); err != nil {
@@ -115,7 +115,7 @@ func TestSessionStartPreviewExpiryAndRevisionDriftCreateNoSession(t *testing.T) 
 	makePreview := func(id domain.ID) SessionStartPreview {
 		return SessionStartPreview{ID: id, ClientID: clientA.ID, Provider: domain.ProviderCodex,
 			AccountID: account.ID, AccountRevision: 1, RuntimeProfileID: profile.ID, ProfileRevision: 1,
-			CredentialInstanceID: credential.ID, CredentialRevision: 2, DeviceID: device.ID, WorkspaceID: workspace.ID,
+			CredentialInstanceID: credential.ID, CredentialRevision: 2, DeviceID: device.ID, WorkspaceID: workspace.ID, WorkspaceUpdatedAt: workspace.UpdatedAt,
 			ProviderVersion: "0.144.2", BinaryFingerprint: strings.Repeat("3", 64), SchemaFingerprint: strings.Repeat("4", 64),
 			CapabilityDigest: strings.Repeat("5", 64), CreatedAt: now, ExpiresAt: now.Add(time.Minute)}
 	}
@@ -137,6 +137,37 @@ func TestSessionStartPreviewExpiryAndRevisionDriftCreateNoSession(t *testing.T) 
 	}
 	if err := consume(expired, expired.ExpiresAt, storageID("session", storageHexA)); domain.CodeOf(err) != domain.CodeConfirmationExpired {
 		t.Fatalf("expired code=%v err=%v", domain.CodeOf(err), err)
+	}
+	if err := store.DeleteExpiredSessionStartPreviews(ctx, expired.ExpiresAt.Add(time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.SessionStartPreview(ctx, expired.ID); err != nil {
+		t.Fatalf("expired preview was not retained for audit: %v", err)
+	}
+	if err := store.DeleteExpiredSessionStartPreviews(ctx, expired.ExpiresAt.Add(SessionStartPreviewRetention+time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.SessionStartPreview(ctx, expired.ID); domain.CodeOf(err) != domain.CodeNotFound {
+		t.Fatalf("preview survived bounded retention: %v", err)
+	}
+	workspacePreviewID, err := domain.NewID("preview")
+	if err != nil {
+		t.Fatal(err)
+	}
+	workspaceDrifted := makePreview(workspacePreviewID)
+	if err := store.CreateSessionStartPreview(ctx, workspaceDrifted); err != nil {
+		t.Fatal(err)
+	}
+	workspace.UpdatedAt = now.Add(30 * time.Second)
+	if _, err := store.db.ExecContext(ctx, `UPDATE workspaces SET updated_at=? WHERE id=?`, formatTime(workspace.UpdatedAt), workspace.ID); err != nil {
+		t.Fatal(err)
+	}
+	workspaceSessionID, err := domain.NewID("session")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := consume(workspaceDrifted, now.Add(31*time.Second), workspaceSessionID); domain.CodeOf(err) != domain.CodeProfileBindingChanged {
+		t.Fatalf("workspace drift code=%v err=%v", domain.CodeOf(err), err)
 	}
 	drifted := makePreview(storageID("preview", storageHexB))
 	if err := store.CreateSessionStartPreview(ctx, drifted); err != nil {
@@ -161,7 +192,7 @@ func TestSessionStartPreviewConcurrentConsumersCreateOneSession(t *testing.T) {
 	now := time.Unix(4_100, 0).UTC()
 	preview := SessionStartPreview{ID: storageID("preview", storageHexA), ClientID: clientA.ID, Provider: domain.ProviderCodex,
 		AccountID: account.ID, AccountRevision: 1, RuntimeProfileID: profile.ID, ProfileRevision: 1,
-		CredentialInstanceID: credential.ID, CredentialRevision: 2, DeviceID: device.ID, WorkspaceID: workspace.ID,
+		CredentialInstanceID: credential.ID, CredentialRevision: 2, DeviceID: device.ID, WorkspaceID: workspace.ID, WorkspaceUpdatedAt: workspace.UpdatedAt,
 		ProviderVersion: "0.144.2", BinaryFingerprint: strings.Repeat("7", 64), SchemaFingerprint: strings.Repeat("8", 64),
 		CapabilityDigest: strings.Repeat("9", 64), CreatedAt: now, ExpiresAt: now.Add(time.Minute)}
 	if err := store.CreateSessionStartPreview(ctx, preview); err != nil {

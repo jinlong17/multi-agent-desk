@@ -760,8 +760,16 @@ func (s *SessionService) dispatch(ctx context.Context, auth device.AuthContext, 
 			return nil, domain.NewError(domain.CodePermissionDenied, "auth enrollment owner is required")
 		}
 		if enrollment.State == storage.EnrollmentSucceeded {
+			aliasDigest, digestErr := enrollmentAliasDigest(enrollment.ID, body.ProfileSelector)
+			if digestErr != nil || aliasDigest != enrollment.ConfirmationAliasDigest ||
+				enrollment.ConfirmedByClientID != auth.ClientID {
+				return nil, domain.NewError(domain.CodeIdentityConfirmationMismatch, "auth confirmation does not match enrollment")
+			}
 			credential, err := s.Store.CredentialInstance(ctx, enrollment.CredentialInstanceID)
 			if err != nil {
+				return nil, err
+			}
+			if err := s.removeEnrollmentStaging(enrollment.StagingPath); err != nil {
 				return nil, err
 			}
 			return map[string]any{"enrollment_id": enrollment.ID, "credential_id": credential.ID,
@@ -1081,7 +1089,7 @@ func (s *SessionService) dispatch(ctx context.Context, auth device.AuthContext, 
 			AccountID: binding.Account.ID, AccountRevision: binding.Account.Revision,
 			RuntimeProfileID: binding.Profile.ID, ProfileRevision: binding.Profile.Revision,
 			CredentialInstanceID: binding.Credential.ID, CredentialRevision: binding.Credential.CredentialRevision,
-			DeviceID: binding.Profile.DeviceID, WorkspaceID: workspace.ID, UsageSnapshotID: usageID,
+			DeviceID: binding.Profile.DeviceID, WorkspaceID: workspace.ID, WorkspaceUpdatedAt: workspace.UpdatedAt, UsageSnapshotID: usageID,
 			ProviderVersion: preflight.ProviderVersion, BinaryFingerprint: preflight.BinaryFingerprint,
 			SchemaFingerprint: preflight.SchemaFingerprint, CapabilityDigest: preflight.CapabilityDigest,
 			CreatedAt: s.now(), ExpiresAt: s.now().Add(10 * time.Minute)}
@@ -1103,7 +1111,15 @@ func (s *SessionService) dispatch(ctx context.Context, auth device.AuthContext, 
 		if err := decodeBody(request.Body, &body); err != nil {
 			return nil, err
 		}
-		if body.ProfileSelector != "" || body.Provider == domain.ProviderCodex || body.AccountID != "" {
+		codexRawIDs := body.Provider == domain.ProviderCodex || body.AccountID != ""
+		if body.ProfileSelector == "" && body.Provider == "" && body.RuntimeProfileID != "" {
+			profile, err := s.Store.RuntimeProfile(ctx, body.RuntimeProfileID)
+			if err != nil {
+				return nil, err
+			}
+			codexRawIDs = codexRawIDs || profile.Provider == domain.ProviderCodex
+		}
+		if body.ProfileSelector != "" || codexRawIDs {
 			if body.ProfileSelector == "" || body.PreviewID == "" || body.Confirmation == nil || !body.Confirmation.Confirmed {
 				return nil, domain.NewError(domain.CodeIdentityConfirmationRequired, "daemon-issued preview and explicit confirmation are required")
 			}

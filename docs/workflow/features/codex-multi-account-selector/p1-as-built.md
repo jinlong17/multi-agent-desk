@@ -65,6 +65,24 @@ was broadened.
   expiry, revision drift, exact replay, different replay, raw-ID rejection,
   and unconfirmed Vault negative tests: pass.
 
+## Verification correction closure
+
+The first independent P1 verification reported five recovery and TOCTOU gaps.
+The correction build now also guarantees:
+
+- stored Codex Profile IDs cannot bypass confirmation when Provider is omitted,
+  while explicit non-Codex cross-provider requests preserve their original
+  binding error;
+- confirmation survives a crash after durable attestation, exact succeeded
+  replay validates the selector/client again, and staging cleanup is retried;
+- logout clears matching public Profile bindings transactionally so a new
+  Credential can be enrolled and bound safely;
+- expired/consumed previews have a 24-hour bounded retention window; and
+- Workspace `updated_at` is pinned and transactionally rechecked at consume.
+
+The correction receipt is
+`docs/reviews/codex-multi-account-selector/2026-07-16-p1-correction-build.md`.
+
 ## Deferred to P2/P3
 
 - P2: `Runtime.StartReserved`, real A/B selector execution, official Usage,

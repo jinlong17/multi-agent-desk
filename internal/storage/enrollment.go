@@ -254,6 +254,10 @@ func (s *Store) ConfirmAuthEnrollmentAttestation(ctx context.Context, id, client
 	if existing.State == EnrollmentSucceeded && existing.ConfirmedByClientID == clientID && existing.ConfirmationAliasDigest == aliasDigest {
 		return existing, nil
 	}
+	if existing.State == EnrollmentAwaitingConfirmation && existing.ConfirmedByClientID == clientID &&
+		existing.ConfirmedAt != nil && existing.ConfirmationAliasDigest == aliasDigest {
+		return existing, nil
+	}
 	if existing.State != EnrollmentAwaitingConfirmation || existing.ConfirmationAliasDigest != aliasDigest {
 		return AuthEnrollment{}, domain.NewError(domain.CodeIdentityConfirmationMismatch, "auth confirmation does not match enrollment")
 	}
