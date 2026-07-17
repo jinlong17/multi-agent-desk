@@ -10,10 +10,10 @@
 | Owner Module | `provider` |
 | Impacted Modules | `core, security, desktop, project-system` |
 | Current Phase | `VERIFY P1` |
-| Status | `READY_FOR_VERIFY` |
-| Executor | `Codex (GPT-5) as feature-build P1` |
+| Status | `BLOCKED` |
+| Executor | `Codex (GPT-5) as independent feature-verify P1` |
 | Updated | `2026-07-16 17:26 PDT` |
-| Suggested Next | `independent feature-verify P1` |
+| Suggested Next | `feature-build P1 correction closes the five verification findings` |
 | Branch / Worktree | `codex/provider/codex-multi-account-selector @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/multi-account-usage-control` |
 | Plan Version | `v2` |
 | Provider Gate | `resolved for exact Linux Codex CLI 0.144.2; macOS distinct-identity and real Windows Codex remain open capability gates` |
@@ -35,6 +35,7 @@ Each build run completes one approved phase and stops at `READY_FOR_VERIFY`.
 |---|---|---|---|---|
 | 2026-07-16 17:04 PDT | BRIEF/PLAN | classified owner/impacts; read parent P1 contracts, shipped Phase 2 runtime, resolved distinct-account Spike, ADR 0014 addendum, compatibility matrix and Security Review | exact Linux scope frozen; operator confirmation selected because no accepted durable non-PII upstream identity key exists; no code/branch/build action | Feature Brief; `design.md`; `api.md`; `test.md` |
 | 2026-07-16 17:26 PDT | BUILD P1 | migration 7; revision-bound `awaiting_confirmation`; alias-aware auth; persistent random preview; atomic consume/Session insert/replay; raw-ID denial; CLI gates; synthetic migration/authority/race tests | full Go/vet/race, three-OS Go builds, Web/Desktop and governance checks pass; live P2 and platform/Security gates unchanged | `p1-as-built.md`; `docs/reviews/codex-multi-account-selector/2026-07-16-p1-build.md` |
+| 2026-07-16 17:26 PDT | VERIFY P1 | independently inspected `d087cb5..50794df`; reran full Go/vet/race, three-OS builds, migration/preview/auth tests, Web/Desktop and governance matrix; adversarially traced raw-ID routing, enrollment crash replay, logout/re-login, cleanup retention, and Workspace drift | `BLOCKED`; all commands pass but five approved fail-closed/recovery contracts remain incomplete | `docs/reviews/codex-multi-account-selector/2026-07-16-feature-verify.md` |
 
 ## Risks and Blockers
 
@@ -62,3 +63,4 @@ Each build run completes one approved phase and stops at `READY_FOR_VERIFY`.
 | 2026-07-16 17:25 PDT | Codex root as operator-directed feature-build writer via `mad-dashboard-sync` | Rebound dashboard branch/focus/manual state to exact `APPROVED` P1 build, regenerated machine facts, and verified workflow, dashboard, links, and diff integrity | `docs/workflow/project/dashboard-state.json`; generated dashboard unchanged | all checks PASS; later phases and Security Gate remain explicit | implement P1 |
 | 2026-07-16 17:26 PDT | Codex (GPT-5) as feature-build P1 | Implemented the approved synthetic contract slice: migration 7, revision-bound typed login confirmation, persistent owner-bound one-time Session previews, atomic preview consumption/Session insertion and replay, alias status/logout, public raw-ID denial, exact Linux preflight, CLI confirmation, and adversarial tests | product/storage/CLI/tests; `p1-as-built.md`; P1 build report | `READY_FOR_VERIFY`; full Go/vet/race, three-OS builds, Web/Desktop checks pass; no live Provider process, platform acceptance, Security closure, push, merge, or ship | independent `feature-verify` P1 |
 | 2026-07-16 17:26 PDT | Codex root as operator-directed feature-build writer via `mad-dashboard-sync` | Rebound dashboard manual focus to exact `READY_FOR_VERIFY`, regenerated workflow/dashboard facts, and verified workflow, dashboard, layout, Actions, CODEOWNERS, fixtures, links, licenses and diff integrity | `docs/workflow/project/dashboard-state.json`; `docs/prototypes/dev-dashboard/state.generated.js`; this log | all governance checks PASS; dashboard does not infer P2 authorization | independent `feature-verify` P1 |
+| 2026-07-16 17:26 PDT | Codex (GPT-5) as independent feature-verify P1 | Inspected the committed P1 diff and receipt, reran the full risk-proportionate matrix, and checked each approval condition without modifying plan or implementation files | `docs/reviews/codex-multi-account-selector/2026-07-16-feature-verify.md`; this log | `BLOCKED`; five ranked findings cover raw-ID routing, auth crash/replay cleanup, logout re-login, expired-preview retention, and Workspace drift | feature-build P1 correction |
