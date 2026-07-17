@@ -108,9 +108,9 @@ func TestPersistentVaultFirstUseRoundTripAndCAS(t *testing.T) {
 	}
 	zero(unchanged)
 
-	// Enrollment completion commits the encrypted bytes, credential revision,
-	// and durable succeeded marker in one transaction. The same completion
-	// digest can be replayed after a crash between that commit and RPC caching.
+	// Explicit enrollment confirmation precedes the transaction that commits
+	// encrypted bytes, credential revision, profile binding, and the durable
+	// succeeded marker. The same completion digest remains replay-safe.
 	enrollmentID, enrollmentCredentialID := vaultID(t, "enrollment"), vaultID(t, "credential")
 	enrollmentCredential := domain.CredentialInstance{ID: enrollmentCredentialID, DeviceID: deviceID, AccountID: accountID,
 		Provider: domain.ProviderCodex, AuthMethod: domain.AuthMethodInteractive, SecretRef: "vault:" + string(enrollmentCredentialID),
@@ -125,6 +125,14 @@ func TestPersistentVaultFirstUseRoundTripAndCAS(t *testing.T) {
 	if _, err := store.ClaimAuthEnrollment(ctx, enrollmentID, clientID, completionDigest, now.Add(2*time.Second)); err != nil {
 		t.Fatal(err)
 	}
+	aliasDigest := strings.Repeat("d", 64)
+	if _, err := store.AwaitAuthEnrollmentConfirmation(ctx, enrollmentID, clientID, accountID, profileID,
+		enrollmentCredentialID, 1, 1, 1, aliasDigest, now.Add(2*time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.ConfirmAuthEnrollmentAttestation(ctx, enrollmentID, clientID, aliasDigest, now.Add(2*time.Second)); err != nil {
+		t.Fatal(err)
+	}
 	enrollmentRevision, err := manager.SealEnrollmentCredential(ctx, enrollmentID, clientID, completionDigest, CredentialMetadata{
 		CredentialInstanceID: enrollmentCredentialID, AccountID: accountID, DeviceID: deviceID, Provider: domain.ProviderCodex,
 		ExpectedRevision: 1, CreatedAt: now, UpdatedAt: now.Add(3 * time.Second)}, payload)
@@ -134,6 +142,14 @@ func TestPersistentVaultFirstUseRoundTripAndCAS(t *testing.T) {
 	replayedEnrollment, err := store.ClaimAuthEnrollment(ctx, enrollmentID, clientID, completionDigest, now.Add(4*time.Second))
 	if err != nil || replayedEnrollment.State != storage.EnrollmentSucceeded || replayedEnrollment.CompletionIdempotencyDigest != completionDigest {
 		t.Fatalf("enrollment replay=%+v err=%v", replayedEnrollment, err)
+	}
+	if err := store.ReserveVaultCredentialRevocation(ctx, enrollmentCredentialID, now.Add(5*time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := manager.SealCredential(ctx, CredentialMetadata{CredentialInstanceID: enrollmentCredentialID,
+		AccountID: accountID, DeviceID: deviceID, Provider: domain.ProviderCodex, ExpectedRevision: 2,
+		CreatedAt: now, UpdatedAt: now.Add(6 * time.Second)}, payload); domain.CodeOf(err) != domain.CodeCredentialRevisionConflict {
+		t.Fatalf("seal during revocation code=%v err=%v", domain.CodeOf(err), err)
 	}
 	raw, err := sql.Open("sqlite", databasePath)
 	if err != nil {

@@ -103,15 +103,15 @@ func TestAuthenticatedAccountRegistryAndRealProviderFailClosed(t *testing.T) {
 			"credential_instance_id": "", "runtime_profile_id": domain.ID("profile_00000000000000000000000000000000"), "usage_snapshot_id": ""}})
 	changedResponse, changedErr := client.Call(ctx, device.Request{ProtocolMajor: device.ProtocolMajor,
 		RequestID: "changed-provider-start", Method: "sessions.start", IdempotencyKey: "changed-provider-start-key", Body: changedBody})
-	if changedErr == nil || changedResponse.OK || domain.CodeOf(changedErr) != domain.CodeProfileBindingChanged {
-		t.Fatalf("changed preview did not fail closed: response=%+v err=%v", changedResponse, changedErr)
+	if changedErr == nil || changedResponse.OK || domain.CodeOf(changedErr) != domain.CodeIdentityConfirmationRequired {
+		t.Fatalf("start without daemon preview did not fail closed: response=%+v err=%v", changedResponse, changedErr)
 	}
 
 	startBody, _ := device.JSONBody(map[string]any{"profile_selector": "@A", "workspace_path": "/tmp/project"})
 	response, callErr := client.Call(ctx, device.Request{ProtocolMajor: device.ProtocolMajor,
 		RequestID: "real-provider-start", Method: "sessions.start", IdempotencyKey: "real-provider-start-key", Body: startBody})
-	if callErr == nil || response.OK || domain.CodeOf(callErr) != domain.CodeProviderUnavailable {
-		t.Fatalf("real provider did not fail closed: response=%+v err=%v", response, callErr)
+	if callErr == nil || response.OK || domain.CodeOf(callErr) != domain.CodeIdentityConfirmationRequired {
+		t.Fatalf("raw selector start did not fail closed: response=%+v err=%v", response, callErr)
 	}
 	sessions, err := store.ListSessions(ctx)
 	if err != nil || len(sessions) != 0 {

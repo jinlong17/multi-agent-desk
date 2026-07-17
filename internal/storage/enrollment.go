@@ -13,27 +13,37 @@ import (
 type EnrollmentState string
 
 const (
-	EnrollmentBegun      EnrollmentState = "begun"
-	EnrollmentValidating EnrollmentState = "validating"
-	EnrollmentSucceeded  EnrollmentState = "succeeded"
-	EnrollmentCancelled  EnrollmentState = "cancelled"
-	EnrollmentExpired    EnrollmentState = "expired"
-	EnrollmentFailed     EnrollmentState = "failed"
+	EnrollmentBegun                EnrollmentState = "begun"
+	EnrollmentValidating           EnrollmentState = "validating"
+	EnrollmentAwaitingConfirmation EnrollmentState = "awaiting_confirmation"
+	EnrollmentSucceeded            EnrollmentState = "succeeded"
+	EnrollmentCancelled            EnrollmentState = "cancelled"
+	EnrollmentExpired              EnrollmentState = "expired"
+	EnrollmentFailed               EnrollmentState = "failed"
 )
 
 type AuthEnrollment struct {
-	ID                          domain.ID
-	ClientDeviceID              domain.ID
-	RuntimeProfileID            domain.ID
-	CredentialInstanceID        domain.ID
-	BinaryFingerprint           string
-	StagingPath                 string
-	State                       EnrollmentState
-	IdempotencyDigest           string
-	CompletionIdempotencyDigest string
-	ExpiresAt                   time.Time
-	CreatedAt                   time.Time
-	UpdatedAt                   time.Time
+	ID                             domain.ID
+	ClientDeviceID                 domain.ID
+	RuntimeProfileID               domain.ID
+	CredentialInstanceID           domain.ID
+	BinaryFingerprint              string
+	StagingPath                    string
+	State                          EnrollmentState
+	IdempotencyDigest              string
+	CompletionIdempotencyDigest    string
+	ConfirmationAccountID          domain.ID
+	ConfirmationAccountRevision    int64
+	ConfirmationProfileID          domain.ID
+	ConfirmationProfileRevision    int64
+	ConfirmationCredentialID       domain.ID
+	ConfirmationCredentialRevision int64
+	ConfirmationAliasDigest        string
+	ConfirmedByClientID            domain.ID
+	ConfirmedAt                    *time.Time
+	ExpiresAt                      time.Time
+	CreatedAt                      time.Time
+	UpdatedAt                      time.Time
 }
 
 func (s *Store) BeginAuthEnrollment(ctx context.Context, enrollment AuthEnrollment, credential *domain.CredentialInstance) error {
@@ -76,11 +86,15 @@ func (s *Store) BeginAuthEnrollment(ctx context.Context, enrollment AuthEnrollme
 
 func (s *Store) AuthEnrollment(ctx context.Context, id domain.ID) (AuthEnrollment, error) {
 	var value AuthEnrollment
-	var credentialID sql.NullString
+	var credentialID, confirmationAccountID, confirmationProfileID, confirmationCredentialID sql.NullString
+	var confirmationAccountRevision, confirmationProfileRevision, confirmationCredentialRevision sql.NullInt64
+	var confirmationAliasDigest, confirmedByClientID, confirmedAt sql.NullString
 	var expiresAt, createdAt, updatedAt string
-	err := s.db.QueryRowContext(ctx, `SELECT id, client_device_id, runtime_profile_id, credential_instance_id, binary_fingerprint, staging_path, state, idempotency_digest, coalesce(completion_idempotency_digest,''), expires_at, created_at, updated_at FROM auth_enrollments WHERE id=?`, id).Scan(
+	err := s.db.QueryRowContext(ctx, `SELECT id, client_device_id, runtime_profile_id, credential_instance_id, binary_fingerprint, staging_path, state, idempotency_digest, coalesce(completion_idempotency_digest,''), confirmation_account_id, confirmation_account_revision, confirmation_profile_id, confirmation_profile_revision, confirmation_credential_id, confirmation_credential_revision, confirmation_alias_digest, confirmed_by_client_id, confirmed_at, expires_at, created_at, updated_at FROM auth_enrollments WHERE id=?`, id).Scan(
 		&value.ID, &value.ClientDeviceID, &value.RuntimeProfileID, &credentialID,
 		&value.BinaryFingerprint, &value.StagingPath, &value.State, &value.IdempotencyDigest, &value.CompletionIdempotencyDigest,
+		&confirmationAccountID, &confirmationAccountRevision, &confirmationProfileID, &confirmationProfileRevision,
+		&confirmationCredentialID, &confirmationCredentialRevision, &confirmationAliasDigest, &confirmedByClientID, &confirmedAt,
 		&expiresAt, &createdAt, &updatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return AuthEnrollment{}, domain.NewError(domain.CodeNotFound, "auth enrollment not found")
@@ -90,6 +104,34 @@ func (s *Store) AuthEnrollment(ctx context.Context, id domain.ID) (AuthEnrollmen
 	}
 	if credentialID.Valid {
 		value.CredentialInstanceID = domain.ID(credentialID.String)
+	}
+	if confirmationAccountID.Valid {
+		value.ConfirmationAccountID = domain.ID(confirmationAccountID.String)
+	}
+	if confirmationAccountRevision.Valid {
+		value.ConfirmationAccountRevision = confirmationAccountRevision.Int64
+	}
+	if confirmationProfileID.Valid {
+		value.ConfirmationProfileID = domain.ID(confirmationProfileID.String)
+	}
+	if confirmationProfileRevision.Valid {
+		value.ConfirmationProfileRevision = confirmationProfileRevision.Int64
+	}
+	if confirmationCredentialID.Valid {
+		value.ConfirmationCredentialID = domain.ID(confirmationCredentialID.String)
+	}
+	if confirmationCredentialRevision.Valid {
+		value.ConfirmationCredentialRevision = confirmationCredentialRevision.Int64
+	}
+	if confirmationAliasDigest.Valid {
+		value.ConfirmationAliasDigest = confirmationAliasDigest.String
+	}
+	if confirmedByClientID.Valid {
+		value.ConfirmedByClientID = domain.ID(confirmedByClientID.String)
+	}
+	value.ConfirmedAt, err = parseOptionalTime(confirmedAt)
+	if err != nil {
+		return AuthEnrollment{}, err
 	}
 	value.ExpiresAt, err = parseTime(expiresAt)
 	if err != nil {
@@ -141,13 +183,13 @@ func (s *Store) ClaimAuthEnrollment(ctx context.Context, id, clientID domain.ID,
 	if existing.ClientDeviceID != clientID {
 		return AuthEnrollment{}, domain.NewError(domain.CodePermissionDenied, "auth enrollment owner is required")
 	}
-	if (existing.State == EnrollmentBegun || existing.State == EnrollmentValidating) && !at.Before(existing.ExpiresAt) {
+	if (existing.State == EnrollmentBegun || existing.State == EnrollmentValidating || existing.State == EnrollmentAwaitingConfirmation) && !at.Before(existing.ExpiresAt) {
 		if _, finishErr := s.FinishAuthEnrollment(ctx, id, clientID, EnrollmentExpired, at); finishErr != nil {
 			return AuthEnrollment{}, finishErr
 		}
 		return AuthEnrollment{}, domain.NewError(domain.CodeDeadlineExceeded, "auth enrollment expired")
 	}
-	if (existing.State == EnrollmentSucceeded || existing.State == EnrollmentValidating) && existing.CompletionIdempotencyDigest == completionDigest {
+	if (existing.State == EnrollmentSucceeded || existing.State == EnrollmentValidating || existing.State == EnrollmentAwaitingConfirmation) && existing.CompletionIdempotencyDigest == completionDigest {
 		return existing, nil
 	}
 	result, err := s.db.ExecContext(ctx, `UPDATE auth_enrollments SET state='validating', completion_idempotency_digest=?, updated_at=? WHERE id=? AND client_device_id=? AND state='begun' AND expires_at>?`, completionDigest, formatTime(at), id, clientID, formatTime(at))
@@ -157,6 +199,74 @@ func (s *Store) ClaimAuthEnrollment(ctx context.Context, id, clientID domain.ID,
 	changed, _ := result.RowsAffected()
 	if changed != 1 {
 		return AuthEnrollment{}, domain.NewError(domain.CodeConflict, "auth enrollment is not claimable")
+	}
+	return s.AuthEnrollment(ctx, id)
+}
+
+// AwaitAuthEnrollmentConfirmation records only the internal tuple and alias
+// digest after official login validation. Credential bytes remain in the
+// private staging Home until the owning client explicitly confirms.
+func (s *Store) AwaitAuthEnrollmentConfirmation(ctx context.Context, id, clientID, accountID, profileID, credentialID domain.ID,
+	accountRevision, profileRevision, credentialRevision int64, aliasDigest string, at time.Time) (AuthEnrollment, error) {
+	for _, value := range []domain.ID{id, clientID, accountID, profileID, credentialID} {
+		if domain.ValidateID(value) != nil {
+			return AuthEnrollment{}, domain.NewError(domain.CodeInvalidArgument, "auth confirmation tuple is invalid")
+		}
+	}
+	if accountRevision < 1 || profileRevision < 1 || credentialRevision < 1 || !validFingerprint(aliasDigest) || at.IsZero() {
+		return AuthEnrollment{}, domain.NewError(domain.CodeInvalidArgument, "auth confirmation digest is invalid")
+	}
+	result, err := s.db.ExecContext(ctx, `UPDATE auth_enrollments SET
+		state='awaiting_confirmation', confirmation_account_id=?, confirmation_account_revision=?,
+		confirmation_profile_id=?, confirmation_profile_revision=?, confirmation_credential_id=?,
+		confirmation_credential_revision=?, confirmation_alias_digest=?, updated_at=?
+		WHERE id=? AND client_device_id=? AND runtime_profile_id=? AND credential_instance_id=?
+			AND state='validating' AND expires_at>?`, accountID, accountRevision, profileID, profileRevision, credentialID, credentialRevision,
+		aliasDigest, formatTime(at), id, clientID, profileID, credentialID, formatTime(at))
+	if err != nil {
+		return AuthEnrollment{}, writeError("auth confirmation could not be prepared", err)
+	}
+	changed, _ := result.RowsAffected()
+	if changed != 1 {
+		return AuthEnrollment{}, domain.NewError(domain.CodeConflict, "auth enrollment changed before confirmation")
+	}
+	return s.AuthEnrollment(ctx, id)
+}
+
+// ConfirmAuthEnrollmentAttestation binds the explicit operator attestation to
+// the enrollment owner. Vault sealing is a later CAS in the same application
+// operation and requires this state.
+func (s *Store) ConfirmAuthEnrollmentAttestation(ctx context.Context, id, clientID domain.ID, aliasDigest string, at time.Time) (AuthEnrollment, error) {
+	if domain.ValidateID(id) != nil || domain.ValidateID(clientID) != nil || !validFingerprint(aliasDigest) || at.IsZero() {
+		return AuthEnrollment{}, domain.NewError(domain.CodeInvalidArgument, "auth confirmation is invalid")
+	}
+	existing, err := s.AuthEnrollment(ctx, id)
+	if err != nil {
+		return AuthEnrollment{}, err
+	}
+	if existing.ClientDeviceID != clientID {
+		return AuthEnrollment{}, domain.NewError(domain.CodePermissionDenied, "auth enrollment owner is required")
+	}
+	if !at.Before(existing.ExpiresAt) {
+		_, _ = s.FinishAuthEnrollment(ctx, id, clientID, EnrollmentExpired, at)
+		return AuthEnrollment{}, domain.NewError(domain.CodeConfirmationExpired, "auth confirmation expired")
+	}
+	if existing.State == EnrollmentSucceeded && existing.ConfirmedByClientID == clientID && existing.ConfirmationAliasDigest == aliasDigest {
+		return existing, nil
+	}
+	if existing.State != EnrollmentAwaitingConfirmation || existing.ConfirmationAliasDigest != aliasDigest {
+		return AuthEnrollment{}, domain.NewError(domain.CodeIdentityConfirmationMismatch, "auth confirmation does not match enrollment")
+	}
+	result, err := s.db.ExecContext(ctx, `UPDATE auth_enrollments SET confirmed_by_client_id=?, confirmed_at=?, updated_at=?
+		WHERE id=? AND client_device_id=? AND state='awaiting_confirmation' AND confirmation_alias_digest=?
+			AND confirmed_by_client_id IS NULL AND expires_at>?`, clientID, formatTime(at), formatTime(at),
+		id, clientID, aliasDigest, formatTime(at))
+	if err != nil {
+		return AuthEnrollment{}, writeError("auth confirmation could not be recorded", err)
+	}
+	changed, _ := result.RowsAffected()
+	if changed != 1 {
+		return AuthEnrollment{}, domain.NewError(domain.CodeConflict, "auth confirmation changed before commit")
 	}
 	return s.AuthEnrollment(ctx, id)
 }
@@ -175,7 +285,7 @@ func (s *Store) FinishAuthEnrollment(ctx context.Context, id, clientID domain.ID
 		if current == state {
 			return nil
 		}
-		if current != EnrollmentBegun && current != EnrollmentValidating {
+		if current != EnrollmentBegun && current != EnrollmentValidating && current != EnrollmentAwaitingConfirmation {
 			return domain.NewError(domain.CodeConflict, "auth enrollment is terminal")
 		}
 		if _, err := tx.ExecContext(ctx, `UPDATE auth_enrollments SET state=?, updated_at=? WHERE id=?`, state, formatTime(at), id); err != nil {
@@ -204,7 +314,7 @@ func (s *Store) ExpireAuthEnrollments(ctx context.Context, at time.Time) ([]stri
 	}
 	var paths []string
 	err := s.withTx(ctx, func(tx *sql.Tx) error {
-		rows, err := tx.QueryContext(ctx, `SELECT id, credential_instance_id, staging_path FROM auth_enrollments WHERE state IN ('begun','validating')`)
+		rows, err := tx.QueryContext(ctx, `SELECT id, credential_instance_id, staging_path FROM auth_enrollments WHERE state IN ('begun','validating','awaiting_confirmation')`)
 		if err != nil {
 			return domain.WrapError(domain.CodeConflict, "auth enrollments could not be read", err)
 		}
@@ -225,7 +335,7 @@ func (s *Store) ExpireAuthEnrollments(ctx context.Context, at time.Time) ([]stri
 		if err := rows.Close(); err != nil {
 			return err
 		}
-		if _, err := tx.ExecContext(ctx, `UPDATE auth_enrollments SET state='expired', updated_at=? WHERE state IN ('begun','validating')`, formatTime(at)); err != nil {
+		if _, err := tx.ExecContext(ctx, `UPDATE auth_enrollments SET state='expired', updated_at=? WHERE state IN ('begun','validating','awaiting_confirmation')`, formatTime(at)); err != nil {
 			return writeError("auth enrollments could not be expired", err)
 		}
 		for _, value := range values {
@@ -273,7 +383,7 @@ func (s *Store) ExpireDueAuthEnrollments(ctx context.Context, at time.Time) ([]s
 	if at.IsZero() {
 		return nil, domain.NewError(domain.CodeInvalidArgument, "auth enrollment expiry requires a timestamp")
 	}
-	rows, err := s.db.QueryContext(ctx, `SELECT id, client_device_id, staging_path FROM auth_enrollments WHERE state IN ('begun','validating') AND expires_at<=? ORDER BY id`, formatTime(at))
+	rows, err := s.db.QueryContext(ctx, `SELECT id, client_device_id, staging_path FROM auth_enrollments WHERE state IN ('begun','validating','awaiting_confirmation') AND expires_at<=? ORDER BY id`, formatTime(at))
 	if err != nil {
 		return nil, domain.WrapError(domain.CodeConflict, "due auth enrollments could not be read", err)
 	}

@@ -24,5 +24,8 @@ Phase 1 starts with:
    metadata, explicit profile aliases and revisions, generic Usage windows,
    deterministic internal Fake backfill, replay deduplication, and tombstones;
    it creates no real Provider credential or runtime home.
+7. `0007_codex_selector_confirmation.sql` — owner-bound explicit Codex login
+   attestation, revision-pinned confirmation metadata, and persistent random
+   single-use Session start previews with atomic Session reservation/replay.
 
 No migration stores real Provider credentials or terminal payloads.

@@ -21,13 +21,13 @@ func RequiredCapability(method string) (domain.Capability, error) {
 	switch method {
 	case "daemon.status", "vault.status", "sessions.list", "sessions.show", "sessions.observe",
 		"accounts.list", "accounts.show", "profiles.list", "profiles.show",
-		"profiles.resolveAlias", "usage.list":
+		"profiles.resolveAlias", "usage.list", "sessions.preview":
 		return domain.CapabilityMetadataRead, nil
 	case "credentials.status":
 		return domain.CapabilityMetadataRead, nil
 	case "provider.describe", "provider.health", "profile.validate":
 		return domain.CapabilityProviderMetadataRead, nil
-	case "auth.begin", "auth.complete", "auth.cancel", "auth.status", "auth.logout":
+	case "auth.begin", "auth.complete", "auth.confirm", "auth.cancel", "auth.status", "auth.logout":
 		return domain.CapabilityProviderAuth, nil
 	case "usage.read":
 		return domain.CapabilityProviderUsageRead, nil

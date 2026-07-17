@@ -29,7 +29,16 @@ type SessionService struct {
 	EnrollmentValidator func(context.Context, codex.BinaryDescriptor, string) error
 	CredentialHomeRoot  string
 	Now                 func() time.Time
+	SelectorPreflight   func(context.Context) (SelectorPreflight, error)
 	mu                  sync.Mutex
+}
+
+type SelectorPreflight struct {
+	ProviderVersion   string
+	BinaryFingerprint string
+	SchemaFingerprint string
+	CapabilityDigest  string
+	Capabilities      []domain.Capability
 }
 
 func NewSessionService(store *storage.Store, manager *runtime.Manager) *SessionService {
@@ -54,7 +63,39 @@ func (s *SessionService) RecoverPendingApprovals(ctx context.Context) error {
 			return err
 		}
 	}
+	if err := s.Store.DeleteExpiredSessionStartPreviews(ctx, s.now()); err != nil {
+		return err
+	}
 	return s.removeOrphanEnrollmentStaging()
+}
+
+func (s *SessionService) selectorPreflight(ctx context.Context) (SelectorPreflight, error) {
+	if s.SelectorPreflight != nil {
+		return s.SelectorPreflight(ctx)
+	}
+	descriptor, err := codex.Discover(ctx, codex.DiscoverOptions{})
+	if err != nil {
+		return SelectorPreflight{}, err
+	}
+	if descriptor.Platform != "linux" || descriptor.Architecture != "amd64" {
+		return SelectorPreflight{}, domain.NewError(domain.CodeProviderPlatformUnsupported, "Codex multi-account selector is supported only on the accepted Linux target")
+	}
+	capabilities, err := codex.Probe(ctx, descriptor, codex.ProbeOptions{})
+	if err != nil {
+		return SelectorPreflight{}, err
+	}
+	if descriptor.Version != "0.144.2" || capabilities.Status != codex.CapabilitySupported {
+		return SelectorPreflight{}, domain.NewError(domain.CodeProviderVersionUnsupported, "Codex selector compatibility is unsupported")
+	}
+	binaryFingerprint, err := codex.BinaryFingerprint(descriptor)
+	if err != nil {
+		return SelectorPreflight{}, err
+	}
+	encoded, _ := json.Marshal(capabilities.Methods)
+	digest := sha256.Sum256(encoded)
+	return SelectorPreflight{ProviderVersion: descriptor.Version, BinaryFingerprint: binaryFingerprint,
+		SchemaFingerprint: capabilities.SchemaFingerprint, CapabilityDigest: hex.EncodeToString(digest[:]),
+		Capabilities: []domain.Capability{domain.CapabilityProviderUsageRead, domain.CapabilitySessionControl}}, nil
 }
 
 func (s *SessionService) now() time.Time {
@@ -62,6 +103,51 @@ func (s *SessionService) now() time.Time {
 		return s.Now().UTC()
 	}
 	return time.Now().UTC()
+}
+
+func (s *SessionService) resolveCodexProfile(ctx context.Context, selector string, profileID domain.ID) (storage.ProfileBinding, error) {
+	if (selector == "") == (profileID == "") {
+		return storage.ProfileBinding{}, domain.NewError(domain.CodeInvalidArgument, "exactly one profile selector or profile ID is required")
+	}
+	if selector != "" {
+		binding, err := s.Store.ResolveProfile(ctx, selector)
+		if err != nil {
+			return storage.ProfileBinding{}, err
+		}
+		if binding.Profile.Provider != domain.ProviderCodex || binding.Account.Provider != domain.ProviderCodex {
+			return storage.ProfileBinding{}, domain.NewError(domain.CodeProfileBindingChanged, "profile is not a public Codex profile")
+		}
+		return binding, nil
+	}
+	profile, err := s.Store.RuntimeProfile(ctx, profileID)
+	if err != nil {
+		return storage.ProfileBinding{}, err
+	}
+	account, err := s.Store.Account(ctx, profile.AccountID)
+	if err != nil {
+		return storage.ProfileBinding{}, err
+	}
+	binding := storage.ProfileBinding{Account: account, Profile: profile}
+	if profile.CredentialInstanceID != "" {
+		credential, err := s.Store.CredentialInstance(ctx, profile.CredentialInstanceID)
+		if err != nil {
+			return storage.ProfileBinding{}, err
+		}
+		binding.Credential = &credential
+	}
+	if profile.Provider != domain.ProviderCodex || account.Provider != domain.ProviderCodex || profile.Internal || account.Internal {
+		return storage.ProfileBinding{}, domain.NewError(domain.CodeProfileBindingChanged, "profile is not a public Codex profile")
+	}
+	return binding, nil
+}
+
+func enrollmentAliasDigest(enrollmentID domain.ID, alias string) (string, error) {
+	key, err := domain.ParseProfileSelector(alias)
+	if err != nil {
+		return "", err
+	}
+	digest := sha256.Sum256([]byte("@" + key + "\x00" + string(enrollmentID)))
+	return hex.EncodeToString(digest[:]), nil
 }
 
 func (s *SessionService) removeEnrollmentStaging(path string) error {
@@ -206,7 +292,7 @@ func requiresIdempotency(method string) bool {
 	switch method {
 	case "sessions.start", "session.start", "sessions.attach", "sessions.detach", "control.acquire",
 		"terminal.input", "terminal.resize", "session.input", "session.resize", "sessions.stop", "session.stop", "sessions.kill",
-		"sessions.resume", "session.resume", "accounts.create", "accounts.disable", "profiles.create", "profiles.edit", "profiles.delete", "auth.begin", "auth.complete", "auth.cancel", "auth.logout",
+		"sessions.resume", "session.resume", "accounts.create", "accounts.disable", "profiles.create", "profiles.edit", "profiles.delete", "auth.begin", "auth.complete", "auth.confirm", "auth.cancel", "auth.logout",
 		"approval.respond":
 		return true
 	default:
@@ -487,10 +573,11 @@ func (s *SessionService) dispatch(ctx context.Context, auth device.AuthContext, 
 		if err := s.Vault.RequireUnlocked(); err != nil {
 			return nil, err
 		}
-		profile, err := s.Store.RuntimeProfile(ctx, body.ProfileID)
+		binding, err := s.resolveCodexProfile(ctx, body.ProfileSelector, body.ProfileID)
 		if err != nil {
 			return nil, err
 		}
+		profile := binding.Profile
 		if profile.Provider != domain.ProviderCodex || profile.AccountID == "" {
 			return nil, domain.NewError(domain.CodeConflict, "profile is not Codex-auth capable")
 		}
@@ -577,6 +664,16 @@ func (s *SessionService) dispatch(ctx context.Context, auth device.AuthContext, 
 			}
 			return map[string]any{"enrollment_id": enrollment.ID, "credential_id": credential.ID, "state": storage.EnrollmentSucceeded, "credential_revision": credential.CredentialRevision}, nil
 		}
+		if enrollment.State == storage.EnrollmentAwaitingConfirmation {
+			profile, err := s.Store.RuntimeProfile(ctx, enrollment.RuntimeProfileID)
+			if err != nil {
+				return nil, err
+			}
+			return map[string]any{"enrollment_id": enrollment.ID, "credential_id": enrollment.CredentialInstanceID,
+				"account_id": enrollment.ConfirmationAccountID, "runtime_profile_id": enrollment.ConfirmationProfileID,
+				"profile_selector": "@" + profile.SelectorAlias, "state": storage.EnrollmentAwaitingConfirmation,
+				"confirmation_expires_at": enrollment.ExpiresAt}, nil
+		}
 		fail := func(cause error) (any, error) {
 			_, _ = s.Store.FinishAuthEnrollment(ctx, enrollment.ID, auth.ClientID, storage.EnrollmentFailed, s.now())
 			_ = s.removeEnrollmentStaging(enrollment.StagingPath)
@@ -616,20 +713,138 @@ func (s *SessionService) dispatch(ctx context.Context, auth device.AuthContext, 
 				credentialBytes[index] = 0
 			}
 		}()
+		profile, err := s.Store.RuntimeProfile(ctx, enrollment.RuntimeProfileID)
+		if err != nil {
+			return fail(err)
+		}
+		if profile.SelectorAlias == "" || profile.Internal || !profile.Enabled {
+			return fail(domain.NewError(domain.CodeIdentityConfirmationRequired, "public profile alias is required for auth confirmation"))
+		}
 		credential, err := s.Store.CredentialInstance(ctx, enrollment.CredentialInstanceID)
 		if err != nil {
 			return fail(err)
 		}
-		revision, err := s.Vault.SealEnrollmentCredential(ctx, enrollment.ID, auth.ClientID, completionDigest, vault.CredentialMetadata{CredentialInstanceID: credential.ID,
-			AccountID: credential.AccountID, DeviceID: credential.DeviceID, Provider: credential.Provider, ExpectedRevision: credential.CredentialRevision,
-			CreatedAt: credential.CreatedAt, UpdatedAt: s.now()}, credentialBytes)
+		account, err := s.Store.Account(ctx, profile.AccountID)
 		if err != nil {
 			return fail(err)
+		}
+		if !account.Enabled || account.Internal || credential.AccountID != account.ID || credential.DeviceID != profile.DeviceID {
+			return fail(domain.NewError(domain.CodeProfileBindingChanged, "auth profile binding changed"))
+		}
+		aliasDigest, err := enrollmentAliasDigest(enrollment.ID, "@"+profile.SelectorAlias)
+		if err != nil {
+			return fail(err)
+		}
+		awaiting, err := s.Store.AwaitAuthEnrollmentConfirmation(ctx, enrollment.ID, auth.ClientID,
+			account.ID, profile.ID, credential.ID, account.Revision, profile.Revision,
+			credential.CredentialRevision, aliasDigest, s.now())
+		if err != nil {
+			return fail(err)
+		}
+		return map[string]any{"enrollment_id": awaiting.ID, "credential_id": credential.ID,
+			"account_id": account.ID, "runtime_profile_id": profile.ID, "profile_selector": "@" + profile.SelectorAlias,
+			"state": storage.EnrollmentAwaitingConfirmation, "confirmation_expires_at": awaiting.ExpiresAt}, nil
+	case "auth.confirm":
+		var body authConfirmBody
+		if err := decodeBody(request.Body, &body); err != nil {
+			return nil, err
+		}
+		if !body.Confirmed {
+			return nil, domain.NewError(domain.CodeIdentityConfirmationRequired, "explicit auth confirmation is required")
+		}
+		enrollment, err := s.Store.AuthEnrollment(ctx, body.EnrollmentID)
+		if err != nil {
+			return nil, err
+		}
+		if enrollment.ClientDeviceID != auth.ClientID {
+			return nil, domain.NewError(domain.CodePermissionDenied, "auth enrollment owner is required")
+		}
+		if enrollment.State == storage.EnrollmentSucceeded {
+			credential, err := s.Store.CredentialInstance(ctx, enrollment.CredentialInstanceID)
+			if err != nil {
+				return nil, err
+			}
+			return map[string]any{"enrollment_id": enrollment.ID, "credential_id": credential.ID,
+				"state": enrollment.State, "credential_revision": credential.CredentialRevision}, nil
+		}
+		binding, err := s.resolveCodexProfile(ctx, body.ProfileSelector, "")
+		if err != nil {
+			return nil, err
+		}
+		aliasDigest, err := enrollmentAliasDigest(enrollment.ID, body.ProfileSelector)
+		if err != nil {
+			return nil, err
+		}
+		if binding.Account.ID != enrollment.ConfirmationAccountID || binding.Profile.ID != enrollment.ConfirmationProfileID ||
+			enrollment.CredentialInstanceID != enrollment.ConfirmationCredentialID ||
+			binding.Account.Revision != enrollment.ConfirmationAccountRevision ||
+			binding.Profile.Revision != enrollment.ConfirmationProfileRevision ||
+			aliasDigest != enrollment.ConfirmationAliasDigest {
+			return nil, domain.NewError(domain.CodeIdentityConfirmationMismatch, "auth confirmation does not match enrollment")
+		}
+		credentialBeforeConfirm, err := s.Store.CredentialInstance(ctx, enrollment.CredentialInstanceID)
+		if err != nil || credentialBeforeConfirm.CredentialRevision != enrollment.ConfirmationCredentialRevision ||
+			credentialBeforeConfirm.AccountID != enrollment.ConfirmationAccountID ||
+			credentialBeforeConfirm.DeviceID != binding.Profile.DeviceID ||
+			credentialBeforeConfirm.Provider != domain.ProviderCodex ||
+			credentialBeforeConfirm.Status == domain.CredentialRevoked || credentialBeforeConfirm.Status == domain.CredentialExpired {
+			return nil, domain.NewError(domain.CodeProfileBindingChanged, "auth credential changed before confirmation")
+		}
+		stagingPath := enrollment.StagingPath
+		enrollment, err = s.Store.ConfirmAuthEnrollmentAttestation(ctx, enrollment.ID, auth.ClientID, aliasDigest, s.now())
+		if err != nil {
+			if domain.CodeOf(err) == domain.CodeConfirmationExpired {
+				_ = s.removeEnrollmentStaging(stagingPath)
+			}
+			return nil, err
+		}
+		failConfirm := func(cause error) (any, error) {
+			_, _ = s.Store.FinishAuthEnrollment(ctx, enrollment.ID, auth.ClientID, storage.EnrollmentFailed, s.now())
+			_ = s.removeEnrollmentStaging(enrollment.StagingPath)
+			return nil, cause
+		}
+		if s.Vault == nil {
+			return failConfirm(domain.NewError(domain.CodeVaultLocked, "vault is unavailable"))
+		}
+		if err := s.Vault.RequireUnlocked(); err != nil {
+			return failConfirm(err)
+		}
+		descriptor, err := codex.Discover(ctx, codex.DiscoverOptions{})
+		if err != nil {
+			return failConfirm(err)
+		}
+		fingerprint, err := codex.BinaryFingerprint(descriptor)
+		if err != nil || fingerprint != enrollment.BinaryFingerprint {
+			return failConfirm(domain.NewError(domain.CodeProviderVersionUnsupported, "enrollment binary changed before confirmation"))
+		}
+		validateEnrollment := codex.ValidateEnrollment
+		if s.EnrollmentValidator != nil {
+			validateEnrollment = s.EnrollmentValidator
+		}
+		if err := validateEnrollment(ctx, descriptor, enrollment.StagingPath); err != nil {
+			return failConfirm(err)
+		}
+		credentialBytes, err := codex.ReadEnrollmentAuth(enrollment.StagingPath)
+		if err != nil {
+			return failConfirm(err)
+		}
+		defer zeroSecretBytes(credentialBytes)
+		credential, err := s.Store.CredentialInstance(ctx, enrollment.CredentialInstanceID)
+		if err != nil {
+			return failConfirm(err)
+		}
+		revision, err := s.Vault.SealEnrollmentCredential(ctx, enrollment.ID, auth.ClientID,
+			enrollment.CompletionIdempotencyDigest, vault.CredentialMetadata{CredentialInstanceID: credential.ID,
+				AccountID: credential.AccountID, DeviceID: credential.DeviceID, Provider: credential.Provider,
+				ExpectedRevision: credential.CredentialRevision, CreatedAt: credential.CreatedAt, UpdatedAt: s.now()}, credentialBytes)
+		if err != nil {
+			return failConfirm(err)
 		}
 		if err := s.removeEnrollmentStaging(enrollment.StagingPath); err != nil {
 			return nil, err
 		}
-		return map[string]any{"enrollment_id": enrollment.ID, "credential_id": credential.ID, "state": storage.EnrollmentSucceeded, "credential_revision": revision}, nil
+		return map[string]any{"enrollment_id": enrollment.ID, "credential_id": credential.ID,
+			"state": storage.EnrollmentSucceeded, "credential_revision": revision}, nil
 	case "auth.cancel":
 		var body authEnrollmentBody
 		if err := decodeBody(request.Body, &body); err != nil {
@@ -656,6 +871,9 @@ func (s *SessionService) dispatch(ctx context.Context, auth device.AuthContext, 
 			return nil, err
 		}
 		if body.EnrollmentID != "" {
+			if body.CredentialID != "" || body.ProfileSelector != "" {
+				return nil, domain.NewError(domain.CodeInvalidArgument, "auth status accepts one target")
+			}
 			enrollment, err := s.Store.AuthEnrollment(ctx, body.EnrollmentID)
 			if err != nil {
 				return nil, err
@@ -665,7 +883,24 @@ func (s *SessionService) dispatch(ctx context.Context, auth device.AuthContext, 
 			}
 			return map[string]any{"enrollment_id": enrollment.ID, "credential_id": enrollment.CredentialInstanceID, "state": enrollment.State, "expires_at": enrollment.ExpiresAt}, nil
 		}
-		credential, err := s.Store.CredentialInstance(ctx, body.CredentialID)
+		credentialID := body.CredentialID
+		if body.ProfileSelector != "" {
+			if credentialID != "" {
+				return nil, domain.NewError(domain.CodeInvalidArgument, "auth status accepts one target")
+			}
+			binding, err := s.resolveCodexProfile(ctx, body.ProfileSelector, "")
+			if err != nil {
+				return nil, err
+			}
+			if binding.Credential == nil {
+				return nil, domain.NewError(domain.CodeIdentityConfirmationRequired, "profile login is not confirmed")
+			}
+			credentialID = binding.Credential.ID
+		}
+		if credentialID == "" {
+			return nil, domain.NewError(domain.CodeInvalidArgument, "auth status target is required")
+		}
+		credential, err := s.Store.CredentialInstance(ctx, credentialID)
 		if err != nil {
 			return nil, err
 		}
@@ -675,13 +910,30 @@ func (s *SessionService) dispatch(ctx context.Context, auth device.AuthContext, 
 		if err := decodeBody(request.Body, &body); err != nil {
 			return nil, err
 		}
-		if err := s.Store.ReserveVaultCredentialRevocation(ctx, body.CredentialID, s.now()); err != nil {
+		credentialID := body.CredentialID
+		if body.ProfileSelector != "" {
+			if credentialID != "" {
+				return nil, domain.NewError(domain.CodeInvalidArgument, "auth logout accepts one target")
+			}
+			binding, err := s.resolveCodexProfile(ctx, body.ProfileSelector, "")
+			if err != nil {
+				return nil, err
+			}
+			if binding.Credential == nil {
+				return nil, domain.NewError(domain.CodeIdentityConfirmationRequired, "profile login is not confirmed")
+			}
+			credentialID = binding.Credential.ID
+		}
+		if credentialID == "" {
+			return nil, domain.NewError(domain.CodeInvalidArgument, "auth logout target is required")
+		}
+		if err := s.Store.ReserveVaultCredentialRevocation(ctx, credentialID, s.now()); err != nil {
 			return nil, err
 		}
-		if err := s.removeCredentialHome(body.CredentialID); err != nil {
+		if err := s.removeCredentialHome(credentialID); err != nil {
 			return nil, err
 		}
-		credential, err := s.Store.FinalizeVaultCredentialRevocation(ctx, body.CredentialID, s.now())
+		credential, err := s.Store.FinalizeVaultCredentialRevocation(ctx, credentialID, s.now())
 		if err != nil {
 			return nil, err
 		}
@@ -772,12 +1024,93 @@ func (s *SessionService) dispatch(ctx context.Context, auth device.AuthContext, 
 			return nil, err
 		}
 		return sessionView(session), nil
+	case "sessions.preview":
+		var body previewBody
+		if err := decodeBody(request.Body, &body); err != nil {
+			return nil, err
+		}
+		if body.Provider != "" && body.Provider != domain.ProviderCodex {
+			return nil, domain.NewError(domain.CodeProfileBindingChanged, "selector preview is Codex-only")
+		}
+		if s.Vault == nil {
+			return nil, domain.NewError(domain.CodeVaultLocked, "vault is unavailable")
+		}
+		if err := s.Vault.RequireUnlocked(); err != nil {
+			return nil, err
+		}
+		preflight, err := s.selectorPreflight(ctx)
+		if err != nil {
+			return nil, err
+		}
+		binding, err := s.resolveCodexProfile(ctx, body.ProfileSelector, "")
+		if err != nil {
+			return nil, err
+		}
+		if !binding.Account.Enabled {
+			return nil, domain.NewError(domain.CodeAccountDisabled, "account is disabled")
+		}
+		if !binding.Profile.Enabled {
+			return nil, domain.NewError(domain.CodeProfileDisabled, "profile is disabled")
+		}
+		if binding.Credential == nil || binding.Credential.Status != domain.CredentialHealthy {
+			return nil, domain.NewError(domain.CodeIdentityConfirmationRequired, "confirmed profile login is required")
+		}
+		workspace, err := s.Store.Workspace(ctx, body.WorkspaceID)
+		if err != nil {
+			return nil, err
+		}
+		if workspace.DeviceID != binding.Profile.DeviceID {
+			return nil, domain.NewError(domain.CodeProfileBindingChanged, "workspace does not match profile device")
+		}
+		snapshots, err := s.Store.ListUsageSnapshotsWithWindows(ctx, binding.Account.ID)
+		if err != nil {
+			return nil, err
+		}
+		var usageID domain.ID
+		var usageObservedAt any
+		usageStale := true
+		if len(snapshots) != 0 {
+			usageID, usageObservedAt = snapshots[0].ID, snapshots[0].ObservedAt
+			usageStale = !s.now().Before(snapshots[0].StaleAt)
+		}
+		previewID, err := domain.NewID("preview")
+		if err != nil {
+			return nil, err
+		}
+		preview := storage.SessionStartPreview{ID: previewID, ClientID: auth.ClientID, Provider: domain.ProviderCodex,
+			AccountID: binding.Account.ID, AccountRevision: binding.Account.Revision,
+			RuntimeProfileID: binding.Profile.ID, ProfileRevision: binding.Profile.Revision,
+			CredentialInstanceID: binding.Credential.ID, CredentialRevision: binding.Credential.CredentialRevision,
+			DeviceID: binding.Profile.DeviceID, WorkspaceID: workspace.ID, UsageSnapshotID: usageID,
+			ProviderVersion: preflight.ProviderVersion, BinaryFingerprint: preflight.BinaryFingerprint,
+			SchemaFingerprint: preflight.SchemaFingerprint, CapabilityDigest: preflight.CapabilityDigest,
+			CreatedAt: s.now(), ExpiresAt: s.now().Add(10 * time.Minute)}
+		if err := s.Store.CreateSessionStartPreview(ctx, preview); err != nil {
+			return nil, err
+		}
+		return map[string]any{"schema_version": 1, "preview_id": preview.ID, "expires_at": preview.ExpiresAt,
+			"provider": domain.ProviderCodex, "account_id": binding.Account.ID, "account_revision": binding.Account.Revision,
+			"account_label": binding.Account.DisplayName, "runtime_profile_id": binding.Profile.ID,
+			"profile_revision": binding.Profile.Revision, "profile_alias": binding.Profile.SelectorAlias,
+			"profile_label": binding.Profile.Name, "credential_instance_id": binding.Credential.ID,
+			"credential_revision": binding.Credential.CredentialRevision, "auth_status": binding.Credential.Status,
+			"device_id": binding.Profile.DeviceID, "workspace_id": workspace.ID,
+			"provider_version": preflight.ProviderVersion, "compatibility_status": "supported",
+			"capability_snapshot": preflight.Capabilities, "usage_snapshot_id": usageID,
+			"usage_observed_at": usageObservedAt, "usage_stale": usageStale}, nil
 	case "sessions.start", "session.start":
 		var body startBody
 		if err := decodeBody(request.Body, &body); err != nil {
 			return nil, err
 		}
-		if body.ProfileSelector != "" {
+		if body.ProfileSelector != "" || body.Provider == domain.ProviderCodex || body.AccountID != "" {
+			if body.ProfileSelector == "" || body.PreviewID == "" || body.Confirmation == nil || !body.Confirmation.Confirmed {
+				return nil, domain.NewError(domain.CodeIdentityConfirmationRequired, "daemon-issued preview and explicit confirmation are required")
+			}
+			preflight, err := s.selectorPreflight(ctx)
+			if err != nil {
+				return nil, err
+			}
 			binding, err := s.Store.ResolveProfile(ctx, body.ProfileSelector)
 			if err != nil {
 				return nil, err
@@ -788,27 +1121,42 @@ func (s *SessionService) dispatch(ctx context.Context, auth device.AuthContext, 
 			if !binding.Profile.Enabled {
 				return nil, domain.NewError(domain.CodeProfileDisabled, "profile is disabled")
 			}
-			if body.Confirmation != nil {
-				var credentialID domain.ID
-				if binding.Credential != nil {
-					credentialID = binding.Credential.ID
-				}
-				if body.Confirmation.AccountID != binding.Account.ID ||
-					body.Confirmation.RuntimeProfileID != binding.Profile.ID ||
-					body.Confirmation.CredentialInstanceID != credentialID {
-					return nil, domain.NewError(domain.CodeProfileBindingChanged, "profile binding changed after preview")
-				}
-				if body.Confirmation.UsageSnapshotID != "" {
-					snapshots, err := s.Store.ListUsageSnapshotsWithWindows(ctx, binding.Account.ID)
-					if err != nil {
-						return nil, err
-					}
-					if len(snapshots) == 0 || snapshots[0].ID != body.Confirmation.UsageSnapshotID {
-						return nil, domain.NewError(domain.CodeProfileBindingChanged, "usage snapshot changed after preview")
-					}
+			if binding.Credential == nil {
+				return nil, domain.NewError(domain.CodeProfileBindingChanged, "profile credential changed after preview")
+			}
+			sessionID, err := domain.NewID("session")
+			if err != nil {
+				return nil, err
+			}
+			digest := sha256.Sum256(append([]byte(request.Method+"\x00"+request.IdempotencyKey+"\x00"), request.Body...))
+			session, err := s.Store.ConsumeSessionStartPreview(ctx, storage.ConsumeSessionStartPreviewRequest{
+				PreviewID: body.PreviewID, ClientID: auth.ClientID, RequestDigest: hex.EncodeToString(digest[:]), At: s.now(),
+				BinaryFingerprint: preflight.BinaryFingerprint, SchemaFingerprint: preflight.SchemaFingerprint,
+				CapabilityDigest: preflight.CapabilityDigest,
+				Confirmation: storage.SessionStartConfirmation{Confirmed: body.Confirmation.Confirmed,
+					AccountID: body.Confirmation.AccountID, AccountRevision: body.Confirmation.AccountRevision,
+					RuntimeProfileID: body.Confirmation.RuntimeProfileID, ProfileRevision: body.Confirmation.ProfileRevision,
+					CredentialInstanceID: body.Confirmation.CredentialInstanceID, CredentialRevision: body.Confirmation.CredentialRevision,
+					DeviceID: body.Confirmation.DeviceID, WorkspaceID: body.Confirmation.WorkspaceID,
+					UsageSnapshotID: body.Confirmation.UsageSnapshotID, ProviderVersion: body.Confirmation.ProviderVersion},
+				Session: domain.Session{ID: sessionID, DeviceID: binding.Profile.DeviceID, AccountID: binding.Account.ID,
+					Provider: domain.ProviderCodex, CredentialInstanceID: binding.Credential.ID,
+					RuntimeProfileID: binding.Profile.ID, WorkspaceID: body.WorkspaceID, Status: domain.SessionStarting,
+					StartedAt: s.now(), CapabilitySnapshot: preflight.Capabilities},
+			})
+			if err != nil {
+				return nil, err
+			}
+			// P1 proves the reservation boundary without launching a Provider process.
+			// P2 replaces this deterministic terminal receipt with StartReserved.
+			if session.Status == domain.SessionStarting {
+				session, err = s.Store.TransitionSession(ctx, session.ID, domain.SessionStarting, domain.SessionFailed,
+					s.now(), nil, string(domain.CodeProviderCapabilityUnavailable))
+				if err != nil {
+					return nil, err
 				}
 			}
-			return nil, domain.NewError(domain.CodeProviderUnavailable, "explicit multi-account provider launch remains gated after P1")
+			return sessionView(session), nil
 		}
 		session, err := s.Runtime.Start(ctx, runtime.StartRequest{Provider: body.Provider, AccountID: body.AccountID, DeviceID: body.DeviceID,
 			CredentialInstanceID: body.CredentialInstanceID, RuntimeProfileID: body.RuntimeProfileID,
@@ -999,19 +1347,27 @@ type profileEditBody struct {
 	Settings  json.RawMessage `json:"settings,omitempty"`
 }
 type credentialBody struct {
-	CredentialID domain.ID `json:"credential_id"`
+	CredentialID    domain.ID `json:"credential_id"`
+	ProfileSelector string    `json:"profile_selector,omitempty"`
 }
 type authBeginBody struct {
-	ProfileID    domain.ID `json:"profile_id"`
-	CredentialID domain.ID `json:"credential_id,omitempty"`
-	Mode         string    `json:"mode,omitempty"`
+	ProfileID       domain.ID `json:"profile_id,omitempty"`
+	ProfileSelector string    `json:"profile_selector,omitempty"`
+	CredentialID    domain.ID `json:"credential_id,omitempty"`
+	Mode            string    `json:"mode,omitempty"`
 }
 type authEnrollmentBody struct {
 	EnrollmentID domain.ID `json:"enrollment_id"`
 }
+type authConfirmBody struct {
+	EnrollmentID    domain.ID `json:"enrollment_id"`
+	ProfileSelector string    `json:"profile_selector"`
+	Confirmed       bool      `json:"confirmed"`
+}
 type authStatusBody struct {
-	EnrollmentID domain.ID `json:"enrollment_id,omitempty"`
-	CredentialID domain.ID `json:"credential_id,omitempty"`
+	EnrollmentID    domain.ID `json:"enrollment_id,omitempty"`
+	CredentialID    domain.ID `json:"credential_id,omitempty"`
+	ProfileSelector string    `json:"profile_selector,omitempty"`
 }
 type usageBody struct {
 	AccountID domain.ID `json:"account_id,omitempty"`
@@ -1033,6 +1389,11 @@ type attachBody struct {
 	SessionID domain.ID `json:"session_id"`
 	Mode      string    `json:"mode,omitempty"`
 }
+type previewBody struct {
+	Provider        string    `json:"provider,omitempty"`
+	ProfileSelector string    `json:"profile_selector"`
+	WorkspaceID     domain.ID `json:"workspace_id"`
+}
 type startBody struct {
 	DeviceID             domain.ID            `json:"device_id"`
 	Provider             string               `json:"provider,omitempty"`
@@ -1042,6 +1403,7 @@ type startBody struct {
 	WorkspaceID          domain.ID            `json:"workspace_id"`
 	Capabilities         []domain.Capability  `json:"capabilities"`
 	ProfileSelector      string               `json:"profile_selector,omitempty"`
+	PreviewID            domain.ID            `json:"preview_id,omitempty"`
 	WorkspacePath        string               `json:"workspace_path,omitempty"`
 	Confirmation         *profileConfirmation `json:"confirmation,omitempty"`
 	ProviderArgs         []string             `json:"provider_args,omitempty"`
@@ -1049,10 +1411,17 @@ type startBody struct {
 }
 
 type profileConfirmation struct {
+	Confirmed            bool      `json:"confirmed"`
 	AccountID            domain.ID `json:"account_id"`
+	AccountRevision      int64     `json:"account_revision"`
 	CredentialInstanceID domain.ID `json:"credential_instance_id"`
+	CredentialRevision   int64     `json:"credential_revision"`
 	RuntimeProfileID     domain.ID `json:"runtime_profile_id"`
+	ProfileRevision      int64     `json:"profile_revision"`
+	DeviceID             domain.ID `json:"device_id"`
+	WorkspaceID          domain.ID `json:"workspace_id"`
 	UsageSnapshotID      domain.ID `json:"usage_snapshot_id"`
+	ProviderVersion      string    `json:"provider_version"`
 }
 type inputBody struct {
 	SessionID domain.ID `json:"session_id"`
