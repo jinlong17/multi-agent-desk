@@ -2,16 +2,16 @@
   "schema_version": 1,
   "state_owner": "project-system",
   "plan_version": "v0.2",
-  "current_phase": "Codex multi-account selector locally shipped",
-  "current_status": "SHIPPED locally; no remote integration or release performed",
+  "current_phase": "Codex multi-account selector remote integration",
+  "current_status": "SHIPPED locally; remote integration authorized and preflight complete",
   "current_owner": "provider",
-  "next_action": "none for local Ship; optional push and PR integration require separate explicit authorization",
+  "next_action": "push the selector branch, open its PR, pass protected checks, merge to main, then reconcile the remote receipt",
   "manual_updated_at": "2026-07-20",
-  "manual_updated_by": "operator-authorized ship correction writer",
+  "manual_updated_by": "operator-authorized remote integration writer",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Codex 显式多账号选择器已完成本地 Ship，DCO、Security 与完整测试门禁均通过"
+      "value": "Codex 显式多账号选择器已完成本地 Ship，远程集成预检完成，准备推送 PR"
     },
     {
       "label": "在哪条线",
@@ -19,11 +19,11 @@
     },
     {
       "label": "用哪个入口",
-      "value": "无本地后续；如需远程集成，另行授权 push 与 PR"
+      "value": "推送功能分支，创建 PR，通过保护检查后合并 main，并完成远程收据对账"
     },
     {
       "label": "做到什么状态",
-      "value": "功能=SHIPPED（local）；Security=ACCEPTED；remote/release=未执行"
+      "value": "功能=SHIPPED（local）；Security=ACCEPTED；remote integration=authorized/preflight complete"
     }
   ],
   "phases": [
@@ -39,7 +39,7 @@
       "title": "Provider & Security Spikes",
       "state": "completed",
       "depends": "Phase 0",
-      "gate": "原七项决策已关闭；新增 Codex/Claude 不同真实账号隔离与 Claude Usage/Policy 证据待关闭"
+      "gate": "原七项决策及新增 Codex 不同真实账号与 Claude subscription Usage/Policy 负面决策均已关闭；macOS 身份验收仍由对应功能门禁管理"
     },
     {
       "id": "1",

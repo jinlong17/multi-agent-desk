@@ -11,9 +11,9 @@
 | Impacted Modules | `core, security, desktop, project-system` |
 | Current Phase | `SHIP` |
 | Status | `SHIPPED` |
-| Executor | `Codex (GPT-5) as ship` |
-| Updated | `2026-07-20 15:42 PDT` |
-| Suggested Next | `none for local Ship; optional remote integration requires separate explicit authorization` |
+| Executor | `Codex root as operator-authorized remote integration ship writer` |
+| Updated | `2026-07-20 16:52 PDT` |
+| Suggested Next | `push branch, open PR, pass protected checks, merge main, then persist the remote reconciliation receipt` |
 | Branch / Worktree | `codex/provider/codex-multi-account-selector @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/multi-account-usage-control` |
 | Plan Version | `v2` |
 | Provider Gate | `resolved for exact Linux Codex CLI 0.144.2; macOS distinct-identity and real Windows Codex remain open capability gates` |
@@ -47,6 +47,7 @@ Each build run completes one approved phase and stops at `READY_FOR_VERIFY`.
 | 2026-07-20 15:00 PDT | BUILD P3 CORRECTION | applied the selector platform gate before auth begin artifacts and repeated it before complete validation and confirm seal; added direct begin/complete/confirm cleanup negatives; reran full Go/vet/race, targeted race x10 and three-OS builds | `READY_FOR_VERIFY`; the P1 finding is closed in implementation and direct regression evidence | `docs/reviews/codex-multi-account-selector/2026-07-20-p3-correction-build.md`; updated `p3-as-built.md` |
 | 2026-07-20 15:01 PDT | BUILD P3 CORRECTION DASHBOARD | regenerated workflow/dashboard facts and verified Go format, local links, exact focus binding, project structure and diff integrity | all checks pass at restored `READY_FOR_VERIFY` | `docs/workflow/project/dashboard-state.json`; generated dashboard unchanged |
 | 2026-07-20 15:05 PDT | VERIFY P3 CORRECTION | independently reviewed `ec73d1c`, proved the prior P1 closed across begin/complete/confirm artifact ordering, reran full Go/vet/race, targeted race x10, three-OS builds, Web/Desktop and CI/project matrix | `READY_TO_SHIP`; no functional finding remains; Security Gate stays open | `docs/reviews/codex-multi-account-selector/2026-07-20-feature-verify-p3-v2.md` |
+| 2026-07-20 16:52 PDT | REMOTE INTEGRATION PREFLIGHT | fetched current GitHub `main`; proved direct ancestry and a conflict-free merge tree; reran full Go/vet/race, three-OS builds, Web/Desktop, workflow/dashboard, Actions/CODEOWNERS/fixtures/links/licenses/layout/format checks | `PASS`; all product, security, platform and governance gates remain green; first Rust invocation failure was environment-only (`cargo` omitted from explicit `PATH`) and passed unchanged after restoring `~/.cargo/bin` | live `origin/main`; current two-file reconciliation diff; this log |
 
 ## Risks and Blockers
 
@@ -60,8 +61,8 @@ Each build run completes one approved phase and stops at `READY_FOR_VERIFY`.
   upstream identity proof. Runtime plaintext, host/Provider compromise,
   already-copied credentials, upstream drift and SSH KEX hardening remain
   explicit residual risks.
-- Push, PR, merge, tag, package, release and deployment were not performed and
-  require separate explicit authorization.
+- Push, PR and merge for this feature were explicitly authorized on 2026-07-20
+  and remain in progress. No tag, package, release or deployment has occurred.
 
 ## Work Log (append only)
 
@@ -95,3 +96,5 @@ Each build run completes one approved phase and stops at `READY_FOR_VERIFY`.
 | 2026-07-20 15:09 PDT | Codex (GPT-5) as independent security-review | Reviewed identity attestation, five platform boundaries, preview replay/TOCTOU, Vault/materialization single-writer behavior, immutable runtime/Usage binding, scoped revocation, redaction and residual-risk wording; reran targeted race suites and modified only verdict surfaces | `docs/reviews/codex-multi-account-selector/2026-07-20-security-review.md`; this log | `ACCEPTED`; P0/P1 none; Security Gate resolved for exact Linux amd64 Codex CLI `0.144.2` only | explicit human `ship` |
 | 2026-07-20 15:24 PDT | Codex (GPT-5) as ship and operator-directed dashboard writer | Executed the authorized local Ship audit over branch/remote/range/untracked/docs/version/rollback/security/tests/platform builds/UI/governance/licenses/DCO/diff; synchronized the manual dashboard to the persisted blocker without performing remote or release actions | `docs/reviews/codex-multi-account-selector/2026-07-20-ship-receipt.md`; this log; `docs/workflow/project/dashboard-state.json` | `BLOCKED`; all functional/security/build/UI/license/project checks pass, but nine commits lack DCO trailers and five Markdown files contain 20 range-diff whitespace errors | operator authorizes local DCO history rewrite, then `ship` reruns the full matrix |
 | 2026-07-20 15:42 PDT | Codex (GPT-5) as ship and operator-directed dashboard writer | Applied the explicitly authorized local history rewrite, added DCO trailers to all nine missing commits without duplicating existing sign-off, removed the exact 20 Markdown whitespace findings, reran the complete Ship matrix, preserved the first blocked receipt, and reconciled the manual dashboard | corrected product/security head `3afef48`; whitespace `bdc0aa4`; `docs/reviews/codex-multi-account-selector/2026-07-20-ship-receipt-v2.md`; this log; dashboard state | `SHIPPED` locally; DCO/range diff and all functional/security/platform/UI/license/project checks pass; no remote or release action occurred | none for local Ship; remote integration requires separate authorization |
+| 2026-07-20 16:48 PDT | Codex root as operator-authorized remote integration ship writer via `mad-module-classify` and `mad-dashboard-sync` | Re-read repository and role contracts, fetched/pruned `origin`, verified GitHub `main` still equals local `origin/main`, confirmed the 31-commit branch is a direct descendant with a conflict-free merge tree and no existing remote feature ref, corrected the stale Phase 0.5 dashboard wording, and recorded the newly authorized remote scope | `origin/main=96ba36de0dababf0c74817885efcfaa74ab01877`; `HEAD=9e1d70ab19b2c7706f40da25734c5a77b878e332`; this log; `docs/workflow/project/dashboard-state.json` | local `SHIPPED` verdict unchanged; remote preflight complete; no push, PR or merge performed yet | regenerate/verify dashboard and full Ship matrix, commit the pre-integration reconciliation, then push and open the protected PR |
+| 2026-07-20 16:52 PDT | Codex root as operator-authorized remote integration ship writer | Ran the complete local Ship matrix after the dashboard correction, independently confirmed the 31/31 committed DCO baseline and exact direct ancestry, and kept the write set limited to the two authorized reconciliation documents | Go test/vet/race; Darwin/Linux/Windows builds; Web check/build; Desktop format/check; workflow/dashboard; Actions/CODEOWNERS/fixtures/links/licenses/layout/Go format; current diff | all checks `PASS`; the environment-only missing-`cargo` invocation was rerun unchanged with the correct tool path; no product, generated, untracked or remote state changed | commit the signed pre-integration reconciliation, making the PR range 32 commits, then push and open the protected PR |
