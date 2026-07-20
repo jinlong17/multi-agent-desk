@@ -663,11 +663,22 @@ func runTUI(args []string, stdout, stderr *os.File) error {
 	flags := flag.NewFlagSet("tui", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	root := flags.String("root", "", "private Device root")
+	profileSelector := flags.String("profile", "", "public Codex profile selector such as @A")
+	workspaceID := flags.String("workspace", "", "workspace ID for a confirmed Codex start")
 	if err := flags.Parse(args); err != nil || *root == "" {
 		return domain.NewError(domain.CodeInvalidArgument, "tui requires --root")
 	}
-	if _, err := fmt.Fprintln(stdout, "MultiAgentDesk TUI (minimal Phase 1 view)"); err != nil {
+	if (*profileSelector == "") != (*workspaceID == "") {
+		return domain.NewError(domain.CodeInvalidArgument, "tui Codex start requires both --profile and --workspace")
+	}
+	if _, err := fmt.Fprintln(stdout, "MultiAgentDesk TUI"); err != nil {
 		return err
+	}
+	if *profileSelector != "" {
+		if _, err := fmt.Fprintln(stderr, "Codex selector confirmation"); err != nil {
+			return err
+		}
+		return runSessionStart([]string{"codex", "--root", *root, "--profile", *profileSelector, "--workspace", *workspaceID}, stdout, stderr)
 	}
 	return runRPCCommand(*root, "sessions.list", domain.CapabilityMetadataRead, nil, nil, false, false, stdout)
 }

@@ -302,6 +302,33 @@ func (s *Store) ResolveProfile(ctx context.Context, selector string) (ProfileBin
 	return binding, nil
 }
 
+// ResolveProfileTarget is the administrative target surface. Unlike public
+// selector operations, it accepts either an explicit Profile ID or an alias so
+// a legacy Profile without an alias can be repaired without weakening Session
+// start or Provider-auth selector boundaries.
+func (s *Store) ResolveProfileTarget(ctx context.Context, target string) (ProfileBinding, error) {
+	if !strings.HasPrefix(target, "profile_") || domain.ValidateID(domain.ID(target)) != nil {
+		return s.ResolveProfile(ctx, target)
+	}
+	profile, err := s.Profile(ctx, domain.ID(target))
+	if err != nil {
+		return ProfileBinding{}, err
+	}
+	account, err := s.Account(ctx, profile.AccountID)
+	if err != nil {
+		return ProfileBinding{}, err
+	}
+	binding := ProfileBinding{Account: account, Profile: profile}
+	if profile.CredentialInstanceID != "" {
+		credential, credentialErr := s.CredentialInstance(ctx, profile.CredentialInstanceID)
+		if credentialErr != nil {
+			return ProfileBinding{}, credentialErr
+		}
+		binding.Credential = &credential
+	}
+	return binding, nil
+}
+
 func (s *Store) Profile(ctx context.Context, id domain.ID) (domain.RuntimeProfile, error) {
 	profile, err := scanProfile(s.db.QueryRowContext(ctx, `SELECT
 		id, account_id, credential_instance_id, device_id, name, provider,

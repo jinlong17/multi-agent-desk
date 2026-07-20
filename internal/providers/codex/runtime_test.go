@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -46,6 +47,15 @@ type fixtureWriter struct {
 	block      *atomic.Bool
 	closed     chan struct{}
 	closeOnce  *sync.Once
+}
+
+func runtimeTestID(t *testing.T, prefix string) domain.ID {
+	t.Helper()
+	id, err := domain.NewID(prefix)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return id
 }
 
 func (w fixtureWriter) Write(value []byte) (int, error) {
@@ -221,8 +231,12 @@ func runtimeManagerFixture(t *testing.T) (*RuntimeManager, RuntimeStartRequest, 
 	materializer.Sink = testMutationSink{store: store}
 	manager := NewRuntimeManager(store, materializer)
 	row := CompatibilityRows()[2]
+	executable := filepath.Join(t.TempDir(), "codex")
+	if err := os.WriteFile(executable, []byte("#!/bin/sh\nexit 0\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
 	manager.Discover = func(context.Context) (BinaryDescriptor, CapabilitySet, error) {
-		descriptor := BinaryDescriptor{Provider: ProviderName, Path: "/fixture/codex", Version: row.Version, SchemaFingerprint: row.SchemaFingerprint}
+		descriptor := BinaryDescriptor{Provider: ProviderName, Path: executable, Version: row.Version, SchemaFingerprint: row.SchemaFingerprint}
 		capabilities, err := CapabilitiesFor(descriptor)
 		return descriptor, capabilities, err
 	}
@@ -299,6 +313,192 @@ func TestRuntimeManagerSharesCredentialRuntimeAndKeepsBindingsIndependent(t *tes
 	}
 	if killed, err := store.Session(ctx, second.ID); err != nil || killed.Status != domain.SessionKilled {
 		t.Fatalf("second session=%+v err=%v", killed, err)
+	}
+}
+
+func TestRuntimeManagerStartsReservedSessionOnceAndFailsPostReservationDrift(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	manager, request, store, spawnCount, fixtures := runtimeManagerFixture(t)
+	executable := filepath.Join(t.TempDir(), "codex")
+	if err := os.WriteFile(executable, []byte("#!/bin/sh\necho codex-cli 0.144.2\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	row := CompatibilityRows()[2]
+	descriptor := BinaryDescriptor{Provider: ProviderName, Path: executable, Version: row.Version,
+		Platform: "linux", Architecture: "amd64", SchemaFingerprint: row.SchemaFingerprint}
+	capabilities, err := CapabilitiesFor(descriptor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manager.Discover = func(context.Context) (BinaryDescriptor, CapabilitySet, error) {
+		return descriptor, capabilities, nil
+	}
+	binaryFingerprint, err := BinaryFingerprint(descriptor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newReserved := func() RuntimeReservedStartRequest {
+		t.Helper()
+		sessionID, idErr := domain.NewID("session")
+		if idErr != nil {
+			t.Fatal(idErr)
+		}
+		session := domain.Session{ID: sessionID, DeviceID: request.DeviceID, AccountID: request.AccountID,
+			Provider: domain.ProviderCodex, CredentialInstanceID: request.CredentialInstanceID,
+			RuntimeProfileID: request.RuntimeProfileID, WorkspaceID: request.WorkspaceID,
+			Status: domain.SessionStarting, StartedAt: time.Now().UTC(),
+			CapabilitySnapshot: []domain.Capability{domain.CapabilityProviderUsageRead, domain.CapabilitySessionControl}}
+		if createErr := store.CreateSession(ctx, session); createErr != nil {
+			t.Fatal(createErr)
+		}
+		return RuntimeReservedStartRequest{SessionID: sessionID, RuntimeStartRequest: request,
+			ProviderVersion: descriptor.Version, BinaryFingerprint: binaryFingerprint,
+			SchemaFingerprint: capabilities.SchemaFingerprint, CapabilityDigest: CapabilityDigest(capabilities)}
+	}
+	reserved := newReserved()
+	start := make(chan struct{})
+	results := make(chan domain.Session, 2)
+	errors := make(chan error, 2)
+	for range 2 {
+		go func() {
+			<-start
+			result, startErr := manager.StartReserved(ctx, reserved)
+			results <- result
+			errors <- startErr
+		}()
+	}
+	close(start)
+	for range 2 {
+		result, startErr := <-results, <-errors
+		if startErr != nil || result.ID != reserved.SessionID || result.Status != domain.SessionRunning {
+			t.Fatalf("reserved result=%+v err=%v", result, startErr)
+		}
+	}
+	if spawnCount.Load() != 1 || len(*fixtures) != 1 || (*fixtures)[0].threads.Load() != 1 {
+		t.Fatalf("reserved replay spawned=%d fixtures=%d threads=%d", spawnCount.Load(), len(*fixtures), (*fixtures)[0].threads.Load())
+	}
+	credentialBefore, err := store.CredentialInstance(ctx, request.CredentialInstanceID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	drifted := newReserved()
+	if err := os.WriteFile(executable, []byte("#!/bin/sh\necho replaced bytes\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := manager.StartReserved(ctx, drifted); domain.CodeOf(err) != domain.CodeProviderVersionUnsupported {
+		t.Fatalf("post-reservation drift code=%v err=%v", domain.CodeOf(err), err)
+	}
+	driftedSession, err := store.Session(ctx, drifted.SessionID)
+	if err != nil || driftedSession.Status != domain.SessionFailed || driftedSession.FailureCode != string(domain.CodeProviderVersionUnsupported) {
+		t.Fatalf("drifted Session=%+v err=%v", driftedSession, err)
+	}
+	original, err := store.Session(ctx, reserved.SessionID)
+	if err != nil || original.Status != domain.SessionRunning {
+		t.Fatalf("original Session=%+v err=%v", original, err)
+	}
+	credentialAfter, err := store.CredentialInstance(ctx, request.CredentialInstanceID)
+	if err != nil || credentialAfter.CredentialRevision != credentialBefore.CredentialRevision {
+		t.Fatalf("drift changed credential before=%+v after=%+v err=%v", credentialBefore, credentialAfter, err)
+	}
+	if spawnCount.Load() != 1 || (*fixtures)[0].threads.Load() != 1 {
+		t.Fatalf("drift reached Provider spawn=%d threads=%d", spawnCount.Load(), (*fixtures)[0].threads.Load())
+	}
+	sharedRuntimeDrift := newReserved()
+	replacementFingerprint, err := BinaryFingerprint(descriptor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sharedRuntimeDrift.BinaryFingerprint = replacementFingerprint
+	if _, err := manager.StartReserved(ctx, sharedRuntimeDrift); domain.CodeOf(err) != domain.CodeProviderVersionUnsupported {
+		t.Fatalf("shared-runtime drift code=%v err=%v", domain.CodeOf(err), err)
+	}
+	sharedRuntimeDriftedSession, err := store.Session(ctx, sharedRuntimeDrift.SessionID)
+	if err != nil || sharedRuntimeDriftedSession.Status != domain.SessionFailed ||
+		sharedRuntimeDriftedSession.FailureCode != string(domain.CodeProviderVersionUnsupported) {
+		t.Fatalf("shared-runtime drifted Session=%+v err=%v", sharedRuntimeDriftedSession, err)
+	}
+	if spawnCount.Load() != 1 || (*fixtures)[0].threads.Load() != 1 {
+		t.Fatalf("shared-runtime drift reached Provider spawn=%d threads=%d", spawnCount.Load(), (*fixtures)[0].threads.Load())
+	}
+	if err := manager.Stop(ctx, reserved.SessionID, true); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRuntimeManagerKeepsConcurrentAccountsAndUsageIsolated(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	manager, requestA, store, spawnCount, fixtures := runtimeManagerFixture(t)
+	now := time.Now().UTC().Truncate(time.Microsecond)
+	accountB, credentialB, profileB, workspaceB := runtimeTestID(t, "account"), runtimeTestID(t, "credential"), runtimeTestID(t, "profile"), runtimeTestID(t, "workspace")
+	if err := store.CreateAccount(ctx, domain.Account{ID: accountB, Provider: domain.ProviderCodex, DisplayName: "B",
+		ProviderSubjectDigest: strings.Repeat("b", 64), CreatedAt: now, UpdatedAt: now}); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.CreateCredentialInstance(ctx, domain.CredentialInstance{ID: credentialB, DeviceID: requestA.DeviceID,
+		AccountID: accountB, Provider: domain.ProviderCodex, AuthMethod: domain.AuthMethodInteractive,
+		SecretRef: "vault:" + string(credentialB), Status: domain.CredentialHealthy, CredentialRevision: 1,
+		SecretDigest: strings.Repeat("b", 64), CreatedAt: now, UpdatedAt: now}); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.CreateRuntimeProfile(ctx, domain.RuntimeProfile{ID: profileB, DeviceID: requestA.DeviceID,
+		AccountID: accountB, CredentialInstanceID: credentialB, Name: "B", Provider: domain.ProviderCodex,
+		Settings: []byte(`{"approval_policy":"on-request","sandbox":"workspace-write"}`), CreatedAt: now, UpdatedAt: now}); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.CreateWorkspace(ctx, domain.Workspace{ID: workspaceB, DeviceID: requestA.DeviceID,
+		Path: t.TempDir(), Label: "B", Tags: []string{}, CreatedAt: now, UpdatedAt: now}); err != nil {
+		t.Fatal(err)
+	}
+	requestB := RuntimeStartRequest{DeviceID: requestA.DeviceID, AccountID: accountB,
+		CredentialInstanceID: credentialB, RuntimeProfileID: profileB, WorkspaceID: workspaceB}
+	sessionA, err := manager.Start(ctx, requestA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sessionB, err := manager.Start(ctx, requestB)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sessionA.AccountID == sessionB.AccountID || sessionA.CredentialInstanceID == sessionB.CredentialInstanceID ||
+		sessionA.ProviderSessionID == "" || sessionB.ProviderSessionID == "" || spawnCount.Load() != 2 || len(*fixtures) != 2 {
+		t.Fatalf("A/B Sessions=%+v/%+v spawn=%d fixtures=%d", sessionA, sessionB, spawnCount.Load(), len(*fixtures))
+	}
+	(*fixtures)[0].setUsageResult(`{"dailyUsageBuckets":[{"startDate":"2026-07-16","tokens":11}],"summary":{"lifetimeTokens":11}}`)
+	(*fixtures)[1].setUsageResult(`{"dailyUsageBuckets":[{"startDate":"2026-07-16","tokens":22}],"summary":{"lifetimeTokens":22}}`)
+	usageA, err := manager.ReadUsage(ctx, requestA.AccountID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	usageB, err := manager.ReadUsage(ctx, requestB.AccountID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if usageA.AccountID != requestA.AccountID || usageB.AccountID != requestB.AccountID ||
+		usageA.RawReferenceHash == "" || usageB.RawReferenceHash == "" || usageA.RawReferenceHash == usageB.RawReferenceHash {
+		t.Fatalf("A/B Usage=%+v/%+v", usageA, usageB)
+	}
+	credentialABefore, err := store.CredentialInstance(ctx, requestA.CredentialInstanceID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := manager.Stop(ctx, sessionB.ID, true); err != nil {
+		t.Fatal(err)
+	}
+	stillRunning, err := store.Session(ctx, sessionA.ID)
+	if err != nil || stillRunning.Status != domain.SessionRunning {
+		t.Fatalf("A changed after stopping B: %+v err=%v", stillRunning, err)
+	}
+	credentialAAfter, err := store.CredentialInstance(ctx, requestA.CredentialInstanceID)
+	if err != nil || credentialAAfter.CredentialRevision != credentialABefore.CredentialRevision {
+		t.Fatalf("A credential changed with B before=%+v after=%+v err=%v", credentialABefore, credentialAAfter, err)
+	}
+	if _, err := manager.ReadUsage(ctx, requestA.AccountID); err != nil {
+		t.Fatalf("A Usage failed after stopping B: %v", err)
+	}
+	if err := manager.Stop(ctx, sessionA.ID, true); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -434,11 +634,22 @@ func TestRuntimeManagerPersistsTruthfulUsageSuccessAndDegradation(t *testing.T) 
 			}
 			if snapshot.CapabilityStatus != test.status || snapshot.Confidence != test.confidence ||
 				snapshot.ErrorCode != test.errorCode || snapshot.WindowKind != test.window || snapshot.SourceVersion == "" ||
-				snapshot.ObservedAt.IsZero() || (snapshot.RawReferenceHash != "") != test.rawHash {
+				snapshot.ProviderVersion != snapshot.SourceVersion || snapshot.CredentialInstanceID != request.CredentialInstanceID ||
+				snapshot.StaleAt.IsZero() || !snapshot.StaleAt.Equal(snapshot.ObservedAt) || snapshot.ObservedAt.IsZero() ||
+				(snapshot.RawReferenceHash != "") != test.rawHash {
 				t.Fatalf("usage snapshot=%+v", snapshot)
 			}
+			expectedAvailability := domain.AvailabilityUnknown
+			if test.status == domain.UsageSupported {
+				expectedAvailability = domain.AvailabilityAvailable
+			}
+			if snapshot.Availability != expectedAvailability {
+				t.Fatalf("usage availability=%s want=%s", snapshot.Availability, expectedAvailability)
+			}
 			stored, err := store.UsageSnapshot(ctx, snapshot.ID)
-			if err != nil || stored.CapabilityStatus != test.status || stored.ErrorCode != test.errorCode {
+			if err != nil || stored.CapabilityStatus != test.status || stored.ErrorCode != test.errorCode ||
+				stored.CredentialInstanceID != request.CredentialInstanceID || stored.ProviderVersion != snapshot.ProviderVersion ||
+				stored.Availability != snapshot.Availability || !stored.StaleAt.Equal(snapshot.StaleAt) {
 				t.Fatalf("stored usage=%+v err=%v", stored, err)
 			}
 		})

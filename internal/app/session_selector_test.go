@@ -91,6 +91,16 @@ func TestSelectorPreviewAndConfirmedReservationAreTheOnlyCodexStartPath(t *testi
 		Capabilities: []domain.Capability{domain.CapabilityProviderUsageRead, domain.CapabilitySessionControl}}
 	service.SelectorPreflight = func(context.Context) (SelectorPreflight, error) { return preflight, nil }
 	auth := device.AuthContext{ClientID: clientID, IdentityRevision: 1, AuthenticatedAt: now, ExpiresAt: now.Add(time.Hour)}
+	refreshWithoutSelector, _ := device.JSONBody(map[string]any{})
+	if _, err := service.Handle(ctx, auth, device.Request{ProtocolMajor: device.ProtocolMajor,
+		RequestID: "usage-refresh-missing-selector", Method: "usage.refresh", Body: refreshWithoutSelector}); domain.CodeOf(err) != domain.CodeInvalidArgument {
+		t.Fatalf("missing-selector refresh code=%v err=%v", domain.CodeOf(err), err)
+	}
+	refreshBody, _ := device.JSONBody(map[string]any{"profile": "@A"})
+	if _, err := service.Handle(ctx, auth, device.Request{ProtocolMajor: device.ProtocolMajor,
+		RequestID: "usage-refresh-no-runtime", Method: "usage.refresh", Body: refreshBody}); domain.CodeOf(err) != domain.CodeUsageUnavailable {
+		t.Fatalf("inactive-runtime refresh code=%v err=%v", domain.CodeOf(err), err)
+	}
 	previewBody, _ := device.JSONBody(map[string]any{"provider": "codex", "profile_selector": "@A", "workspace_id": workspaceID})
 	result, err := service.Handle(ctx, auth, device.Request{ProtocolMajor: device.ProtocolMajor,
 		RequestID: "selector-preview", Method: "sessions.preview", Body: previewBody})

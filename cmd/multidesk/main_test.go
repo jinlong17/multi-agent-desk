@@ -155,6 +155,13 @@ func TestOfficialCodexLoginHonorsEnrollmentDeadline(t *testing.T) {
 	}
 }
 
+func TestTUISelectorStartRequiresCompleteExplicitTarget(t *testing.T) {
+	_, err := captureCLI(t, "tui", "--root", filepath.Join(t.TempDir(), "device"), "--profile", "@A")
+	if domain.CodeOf(err) != domain.CodeInvalidArgument || !strings.Contains(err.Error(), "--profile and --workspace") {
+		t.Fatalf("partial TUI selector target code=%v err=%v", domain.CodeOf(err), err)
+	}
+}
+
 func TestLoginEnvironmentAllowsSafeProxyAndDropsSecretVariables(t *testing.T) {
 	for _, name := range []string{"http_proxy", "HTTP_PROXY", "https_proxy", "HTTPS_PROXY", "all_proxy", "ALL_PROXY", "no_proxy", "NO_PROXY"} {
 		t.Setenv(name, "")

@@ -91,10 +91,8 @@ func (s *SessionService) selectorPreflight(ctx context.Context) (SelectorPreflig
 	if err != nil {
 		return SelectorPreflight{}, err
 	}
-	encoded, _ := json.Marshal(capabilities.Methods)
-	digest := sha256.Sum256(encoded)
 	return SelectorPreflight{ProviderVersion: descriptor.Version, BinaryFingerprint: binaryFingerprint,
-		SchemaFingerprint: capabilities.SchemaFingerprint, CapabilityDigest: hex.EncodeToString(digest[:]),
+		SchemaFingerprint: capabilities.SchemaFingerprint, CapabilityDigest: codex.CapabilityDigest(capabilities),
 		Capabilities: []domain.Capability{domain.CapabilityProviderUsageRead, domain.CapabilitySessionControl}}, nil
 }
 
@@ -1163,11 +1161,13 @@ func (s *SessionService) dispatch(ctx context.Context, auth device.AuthContext, 
 			if err != nil {
 				return nil, err
 			}
-			// P1 proves the reservation boundary without launching a Provider process.
-			// P2 replaces this deterministic terminal receipt with StartReserved.
 			if session.Status == domain.SessionStarting {
-				session, err = s.Store.TransitionSession(ctx, session.ID, domain.SessionStarting, domain.SessionFailed,
-					s.now(), nil, string(domain.CodeProviderCapabilityUnavailable))
+				session, err = s.Runtime.StartReserved(ctx, runtime.ReservedStartRequest{SessionID: session.ID,
+					DeviceID: binding.Profile.DeviceID, AccountID: binding.Account.ID,
+					CredentialInstanceID: binding.Credential.ID, RuntimeProfileID: binding.Profile.ID,
+					WorkspaceID: body.WorkspaceID, ProviderVersion: preflight.ProviderVersion,
+					BinaryFingerprint: preflight.BinaryFingerprint, SchemaFingerprint: preflight.SchemaFingerprint,
+					CapabilityDigest: preflight.CapabilityDigest})
 				if err != nil {
 					return nil, err
 				}

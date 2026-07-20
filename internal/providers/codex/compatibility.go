@@ -1,10 +1,22 @@
 package codex
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"slices"
 
 	"github.com/jinlong17/multi-agent-desk/internal/domain"
 )
+
+// CapabilityDigest binds a selector preview to the exact ordered method set
+// accepted by the compatibility row. It contains no Provider identity or
+// credential material.
+func CapabilityDigest(capabilities CapabilitySet) string {
+	encoded, _ := json.Marshal(capabilities.Methods)
+	digest := sha256.Sum256(encoded)
+	return hex.EncodeToString(digest[:])
+}
 
 var compatibilityRows = []CompatibilityRow{
 	{

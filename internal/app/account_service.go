@@ -194,7 +194,18 @@ func (s *SessionService) handleAccountMethod(ctx context.Context, request device
 		}
 		return map[string]any{"items": items, "next_cursor": nullableString(page.NextCursor)}, nil
 
-	case "profiles.show", "profiles.resolveAlias":
+	case "profiles.show":
+		var body targetBody
+		if err := decodeBody(request.Body, &body); err != nil {
+			return nil, err
+		}
+		binding, err := s.Store.ResolveProfileTarget(ctx, body.Target)
+		if err != nil {
+			return nil, err
+		}
+		return bindingView(binding), nil
+
+	case "profiles.resolveAlias":
 		var body targetBody
 		if err := decodeBody(request.Body, &body); err != nil {
 			return nil, err
@@ -210,7 +221,7 @@ func (s *SessionService) handleAccountMethod(ctx context.Context, request device
 		if err := decodeBody(request.Body, &body); err != nil {
 			return nil, err
 		}
-		binding, err := s.Store.ResolveProfile(ctx, body.Target)
+		binding, err := s.Store.ResolveProfileTarget(ctx, body.Target)
 		if err != nil {
 			return nil, err
 		}
@@ -258,7 +269,16 @@ func (s *SessionService) handleAccountMethod(ctx context.Context, request device
 		}
 		return map[string]any{"items": items}, nil
 
-	case "profiles.validate", "provider.login.begin", "provider.login.status", "provider.login.cancel", "provider.logout", "provider.shell":
+	case "profiles.validate":
+		var body targetBody
+		if err := decodeBody(request.Body, &body); err != nil {
+			return nil, err
+		}
+		if _, err := s.Store.ResolveProfileTarget(ctx, body.Target); err != nil {
+			return nil, err
+		}
+		return nil, domain.NewError(domain.CodeProviderUnavailable, "provider operation is not available in P1")
+	case "provider.login.begin", "provider.login.status", "provider.login.cancel", "provider.logout", "provider.shell":
 		var body targetBody
 		if err := decodeBody(request.Body, &body); err != nil {
 			return nil, err
@@ -272,12 +292,24 @@ func (s *SessionService) handleAccountMethod(ctx context.Context, request device
 		if err := decodeOptionalBody(request.Body, &body); err != nil {
 			return nil, err
 		}
-		if body.Profile != "" {
-			if _, err := s.Store.ResolveProfile(ctx, body.Profile); err != nil {
-				return nil, err
-			}
+		if body.Profile == "" {
+			return nil, domain.NewError(domain.CodeInvalidArgument, "usage refresh requires an explicit profile selector")
 		}
-		return nil, domain.NewError(domain.CodeProviderUnavailable, "provider operation is not available in P1")
+		binding, err := s.resolveCodexProfile(ctx, body.Profile, "")
+		if err != nil {
+			return nil, err
+		}
+		if binding.Credential == nil || binding.Credential.Status != domain.CredentialHealthy {
+			return nil, domain.NewError(domain.CodeIdentityConfirmationRequired, "profile login is not confirmed")
+		}
+		if s.Runtime == nil || s.Runtime.Codex == nil {
+			return nil, domain.NewError(domain.CodeUsageUnavailable, "codex usage is unavailable without an active supported runtime")
+		}
+		snapshot, err := s.Runtime.Codex.ReadUsage(ctx, binding.Account.ID)
+		if err != nil {
+			return nil, err
+		}
+		return registryUsageView(snapshot, s.now()), nil
 	default:
 		return nil, domain.NewError(domain.CodeMethodNotFound, "method is not available")
 	}

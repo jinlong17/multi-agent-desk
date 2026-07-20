@@ -9,11 +9,11 @@
 | Title | `Codex explicit multi-account selector` |
 | Owner Module | `provider` |
 | Impacted Modules | `core, security, desktop, project-system` |
-| Current Phase | `VERIFY P1` |
-| Status | `VERIFIED` |
-| Executor | `Codex (GPT-5) as independent feature-verify P1 correction` |
-| Updated | `2026-07-16 17:50 PDT` |
-| Suggested Next | `feature-build P2 selector-bound exact Linux runtime; P1 verification satisfied the reviewed dependency` |
+| Current Phase | `BUILD P2` |
+| Status | `READY_FOR_VERIFY` |
+| Executor | `Codex (GPT-5) as feature-build P2` |
+| Updated | `2026-07-20 14:36 PDT` |
+| Suggested Next | `independent feature-verify P2; inspect exact runtime binding, A/B Usage/logout isolation, redaction, and platform truthfulness` |
 | Branch / Worktree | `codex/provider/codex-multi-account-selector @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/multi-account-usage-control` |
 | Plan Version | `v2` |
 | Provider Gate | `resolved for exact Linux Codex CLI 0.144.2; macOS distinct-identity and real Windows Codex remain open capability gates` |
@@ -23,8 +23,8 @@
 
 | Phase | Scope | Dependencies | Acceptance | Status |
 |---|---|---|---|---|
-| P1 preview and enrollment confirmation contracts | migration 7; `awaiting_confirmation`; persistent one-time Session previews; alias-aware auth lifecycle; sole preview/confirm start contract; safe errors/audit; synthetic tests | independent plan approval; P1 registry and Phase 2 runtime | migration/restart, forged/cross-client/race/replay preview matrix, confirmation negatives, no PII/secret, raw-ID start denied | `READY_FOR_VERIFY` |
-| P2 selector-bound exact Linux runtime | public CLI/TUI selector path; confirmed Session start; alias status/logout/re-login; exact compatibility; A/B runtime and Usage tests | P1 verified; Vault/runtime baseline | two concurrent exact Linux Accounts, immutable tuple, active-logout denial, scoped B re-login, no auto-rotation | `PLANNED` |
+| P1 preview and enrollment confirmation contracts | migration 7; `awaiting_confirmation`; persistent one-time Session previews; alias-aware auth lifecycle; sole preview/confirm start contract; safe errors/audit; synthetic tests | independent plan approval; P1 registry and Phase 2 runtime | migration/restart, forged/cross-client/race/replay preview matrix, confirmation negatives, no PII/secret, raw-ID start denied | `VERIFIED` |
+| P2 selector-bound exact Linux runtime | public CLI/TUI selector path; confirmed Session start; alias status/logout/re-login; exact compatibility; A/B runtime and Usage tests | P1 verified; Vault/runtime baseline | two concurrent exact Linux Accounts, immutable tuple, active-logout denial, scoped B re-login, no auto-rotation | `READY_FOR_VERIFY` |
 | P3 platform/docs/security closure | macOS/Windows typed gates; user guide/compatibility/dashboard; full platform/governance matrix; final Security Review | P2 verified | truthfully labelled capabilities, all checks pass, Security Gate accepted | `PLANNED` |
 
 Each build run completes one approved phase and stops at `READY_FOR_VERIFY`.
@@ -38,10 +38,12 @@ Each build run completes one approved phase and stops at `READY_FOR_VERIFY`.
 | 2026-07-16 17:26 PDT | VERIFY P1 | independently inspected `d087cb5..50794df`; reran full Go/vet/race, three-OS builds, migration/preview/auth tests, Web/Desktop and governance matrix; adversarially traced raw-ID routing, enrollment crash replay, logout/re-login, cleanup retention, and Workspace drift | `BLOCKED`; all commands pass but five approved fail-closed/recovery contracts remain incomplete | `docs/reviews/codex-multi-account-selector/2026-07-16-feature-verify.md` |
 | 2026-07-16 17:41 PDT | BUILD P1 CORRECTION | closed raw-ID omission routing, attestation crash/succeeded replay and cleanup, logout Profile unbinding/re-login, 24-hour preview retention, and Workspace revision-surrogate TOCTOU; full Go/vet/race and three-OS builds | `READY_FOR_VERIFY`; all five findings have direct regression evidence; an intermediate Fake-provider routing regression was found and fixed | `docs/reviews/codex-multi-account-selector/2026-07-16-p1-correction-build.md` |
 | 2026-07-16 17:50 PDT | VERIFY P1 CORRECTION | independently inspected committed correction `c062738`; reran direct regressions for all five findings, native Fake cross-provider behavior, migration, preview race x10, full Go/vet/race and three-OS builds | `VERIFIED`; no remaining P1 finding; live P2 was not run and the P1-only approval does not authorize it | `docs/reviews/codex-multi-account-selector/2026-07-16-feature-verify-v2.md` |
+| 2026-07-20 14:36 PDT | BUILD P2 | connected confirmed selector reservation to exact runtime; added TUI start, credential-bound live Usage refresh, runtime fingerprint/replay protections, admin-target separation, A/B/logout regressions; ran official A/B Linux login/runtime/Usage/logout/re-login/cleanup acceptance | `READY_FOR_VERIFY`; full Go/vet, targeted race x10, three-OS builds, Web/Desktop checks and exact Linux `0.144.2` acceptance pass; macOS/Windows live and final Security gates remain open | `p2-as-built.md`; `docs/reviews/codex-multi-account-selector/2026-07-20-p2-build.md` |
+| 2026-07-20 14:40 PDT | BUILD P2 DASHBOARD | refreshed workflow mirrors and generated dashboard facts, then verified exact manual focus binding and the project structural gate | `workflow:generate`, `workflow:verify`, `dashboard`, `dashboard:verify`, and `project:verify` pass at `READY_FOR_VERIFY` | `docs/workflow/project/dashboard-state.json`; generated dashboard unchanged |
 
 ## Risks and Blockers
 
-- P1 is built and requires independent verification before P2 can begin.
+- P2 is built and requires independent verification before P3 can begin.
 - Exact Linux CLI `0.144.2` is the only live support claim. macOS distinct-
   identity, Windows, other versions and passive soak remain unaccepted.
 - Operator confirmation is an explicit attestation, not automated upstream
@@ -70,3 +72,5 @@ Each build run completes one approved phase and stops at `READY_FOR_VERIFY`.
 | 2026-07-16 17:45 PDT | Codex root as operator-directed feature-build writer via `mad-dashboard-sync` | Rebound manual focus to the corrected exact `READY_FOR_VERIFY` state, regenerated workflow/dashboard facts, and verified workflow, dashboard, layout, Go format, Actions, CODEOWNERS, fixtures and local links | `docs/workflow/project/dashboard-state.json`; generated dashboard unchanged; this log | all completed checks PASS; dashboard preserves P2 and platform/Security gates | finish licenses/diff checks, commit, then independent `feature-verify` |
 | 2026-07-16 17:50 PDT | Codex (GPT-5) as independent feature-verify P1 correction | Verified the committed correction against every prior finding and acceptance boundary; modified only this verdict log and the v2 verification report | `docs/reviews/codex-multi-account-selector/2026-07-16-feature-verify-v2.md`; this log | `VERIFIED`; no P1 finding remains; dashboard reconciliation is reserved for the next writer and P2 requires explicit phase authorization | original `feature-plan` / independent `feature-review` gate for P2 |
 | 2026-07-16 17:52 PDT | Codex root as operator-directed phase-entry writer via `mad-dashboard-sync` | Reconciled the P1 verdict with the repository's established multi-phase rule: the reviewed P2 dependency was independent P1 verification, now satisfied; rebound dashboard focus to exact `VERIFIED` without claiming any live P2 execution | `docs/workflow/project/dashboard-state.json`; this log; Phase 1 Device Kernel P1-to-P2 precedent | P2 is the next executable approved phase; exact Linux/operator participation and platform/Security gates remain open | `feature-build` P2 selector-bound exact Linux runtime |
+| 2026-07-20 14:36 PDT | Codex (GPT-5) as feature-build P2 | Implemented selector-bound reserved runtime launch, exact post-reservation compatibility recheck, replay coalescing, TUI entry, active-runtime Usage refresh with credential-bound persistence, administrative ID/public selector separation, and cross-Account isolation tests; completed official A/B Linux runtime, Usage, targeted logout/re-login, cleanup and three-platform build evidence | product/storage/CLI/tests; `p2-as-built.md`; `docs/reviews/codex-multi-account-selector/2026-07-20-p2-build.md` | `READY_FOR_VERIFY`; exact Linux `0.144.2` passes; no macOS/Windows live claim, final Security closure, push, merge, ship, or release | independent `feature-verify` P2 |
+| 2026-07-20 14:40 PDT | Codex root as operator-directed feature-build writer via `mad-dashboard-sync` | Bound dashboard focus to exact P2 `READY_FOR_VERIFY`, refreshed workflow/dashboard generated facts, and ran the project structural verification gate | `docs/workflow/project/dashboard-state.json`; generated dashboard unchanged; this log | all structural checks pass and manual/generated authority remains separated | commit the completed P2 build, then run independent `feature-verify` |
