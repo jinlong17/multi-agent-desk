@@ -77,8 +77,8 @@ func (s *SessionService) selectorPreflight(ctx context.Context) (SelectorPreflig
 	if err != nil {
 		return SelectorPreflight{}, err
 	}
-	if descriptor.Platform != "linux" || descriptor.Architecture != "amd64" {
-		return SelectorPreflight{}, domain.NewError(domain.CodeProviderPlatformUnsupported, "Codex multi-account selector is supported only on the accepted Linux target")
+	if err := codex.RequireSelectorPlatform(descriptor); err != nil {
+		return SelectorPreflight{}, err
 	}
 	capabilities, err := codex.Probe(ctx, descriptor, codex.ProbeOptions{})
 	if err != nil {

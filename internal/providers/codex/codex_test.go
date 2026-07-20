@@ -35,6 +35,28 @@ func TestCompatibilityRowsRequireExactVersionAndFingerprint(t *testing.T) {
 	}
 }
 
+func TestSelectorPlatformGateIsTruthfulAndFailClosed(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		platform     string
+		architecture string
+		code         domain.ErrorCode
+	}{
+		{name: "accepted_linux", platform: "linux", architecture: "amd64"},
+		{name: "linux_arm64", platform: "linux", architecture: "arm64", code: domain.CodeProviderPlatformUnsupported},
+		{name: "macos_schema_only", platform: "darwin", architecture: "arm64", code: domain.CodeProviderIdentityPending},
+		{name: "windows_build_only", platform: "windows", architecture: "amd64", code: domain.CodeProviderPlatformUnsupported},
+		{name: "unknown", platform: "plan9", architecture: "amd64", code: domain.CodeProviderPlatformUnsupported},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := RequireSelectorPlatform(BinaryDescriptor{Platform: test.platform, Architecture: test.architecture})
+			if domain.CodeOf(err) != test.code {
+				t.Fatalf("platform gate code=%v want=%v err=%v", domain.CodeOf(err), test.code, err)
+			}
+		})
+	}
+}
+
 func TestVersionDiscoveryUsesAbsoluteExecutableAndBoundedProbe(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("shell fixture is Unix-only")

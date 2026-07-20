@@ -66,6 +66,7 @@ const (
 	CodeConfirmationExpired           ErrorCode = "confirmation_expired"
 	CodeProviderCapabilityUnavailable ErrorCode = "provider_capability_unavailable"
 	CodeProviderPlatformUnsupported   ErrorCode = "provider_platform_unsupported"
+	CodeProviderIdentityPending       ErrorCode = "schema_compatible_identity_acceptance_pending"
 )
 
 // Error is safe to return across a public command or protocol boundary.

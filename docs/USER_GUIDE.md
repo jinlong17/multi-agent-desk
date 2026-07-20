@@ -1,10 +1,10 @@
 # MultiAgentDesk 用户操作手册（预发布）
 
-> 当前状态（2026-07-16）：Phase 1 Device Kernel 与 Phase 2 Codex Vertical
-> Slice 均已进入远端 `main`；Phase 2 已完成本地 Ship、独立验证、Security
-> Review 和七项检查保护的 PR 集成。仓库可从源码构建开发者预览，但仍没有
-> 受支持的安装包、正式 Release、Control Plane、Web 远程终端或 Desktop
-> 成品。不要把开发者预览当成生产版本。
+> 当前状态（2026-07-20）：Phase 1 Device Kernel 与 Phase 2 Codex Vertical
+> Slice 已进入远端 `main`。Codex 显式多账号选择器的精确 Linux P2 已在功能
+> 分支完成独立验证，P3 平台边界与文档正在收口；它尚未 Ship、合并或发布。
+> 仓库可从源码构建开发者预览，但仍没有受支持的安装包、正式 Release、
+> Control Plane、Web 远程终端或 Desktop 成品。不要把开发者预览当成生产版本。
 
 ## 1. 先判断你现在能做什么
 
@@ -51,8 +51,10 @@ MultiAgentDesk 不会自动轮换账号、规避额度或限流、代理 Provide
 |---|---|---|---|
 | CLI / Device Daemon | macOS、Windows、Linux | Phase 1 | 开发者预览；三平台基础已验证 |
 | Codex 真实 Session | Linux x86_64、CLI `0.144.2` | Phase 2 + Codex Spike | 已进入 `main` 的源码开发者预览 |
+| Codex 显式多账号选择器 | Linux amd64、CLI `0.144.2` | selector P1/P2/P3 | 功能分支 P2 已验证；P3/安全审查/Ship 尚未完成 |
 | Codex schema/handshake | macOS arm64、CLI `0.144.2` | Phase 2 | 已验证 smoke；非完整 Session 支持 |
-| Windows Codex | Windows amd64 | 后续平台验收 | build/protocol only；真实运行不支持 |
+| macOS Codex 多账号选择器 | macOS arm64 | 后续身份验收 | `schema_compatible_identity_acceptance_pending`；不启动 |
+| Windows Codex | Windows amd64 | 后续平台验收 | `provider_platform_unsupported`；build/protocol only，真实运行不支持 |
 | Claude Code PTY Session | macOS、Windows、Linux | Phase 3 + Claude/ConPTY Spike | 待验证 |
 | Control Plane 元数据页面 | Linux 自托管 Server + 浏览器 | Phase 4a | 规划中 |
 | Web 远程终端、审批和控制权 | 现代桌面浏览器 | Phase 4b + E2EE/Browser Spike | 待验证 |
@@ -111,20 +113,23 @@ root 或磁盘读取”后，才考虑受限 keyfile 或 systemd `LoadCredential
 
 ## 6. 登录 Provider 和管理账号
 
-Codex Phase 2 开发者预览提供以下薄 CLI；Claude 登录仍属于 Phase 3：
+Codex 开发者预览和选择器功能分支提供以下薄 CLI；Claude 登录仍属于
+独立的后续 Provider 工作：
 
 ```bash
-./bin/multidesk accounts create --root <device-root> --provider codex --name <display-name> --json
+./bin/multidesk accounts add --root <device-root> --provider codex \
+  --name <display-name> --alias A --json
 ./bin/multidesk accounts list --root <device-root> --json
-./bin/multidesk auth begin --root <device-root> --profile-id <profile-id> --json
-./bin/multidesk auth status --root <device-root> --credential-id <credential-id> --json
+./bin/multidesk auth begin --root <device-root> --profile @A
+./bin/multidesk auth status --root <device-root> --profile @A --json
 ./bin/multidesk provider health --root <device-root> --json
-./bin/multidesk usage --root <device-root> --provider codex --account <account-id> --json
+./bin/multidesk usage --root <device-root> --profile @A --refresh --json
 ```
 
-`auth begin` 只启动官方、owner-bound、十分钟有效的 `codex login` 流程；不会
-读取浏览器 Cookie 或接收 raw token 参数。稳定支持范围只包括 Linux x86_64
-Codex CLI `0.144.2`，其他版本/schema 必须明确返回 unsupported。
+`auth begin` 只启动官方、owner-bound、十分钟有效的 `codex login` 流程；登录
+完成后还必须输入同一个规范化 `@alias`，Daemon 才会封存 Credential。它不会
+读取浏览器 Cookie 或接收 raw token 参数。选择器支持范围只包括 Linux amd64
+Codex CLI `0.144.2`，其他版本/schema/平台必须明确返回 typed failure。
 
 计划流程：
 
@@ -158,13 +163,14 @@ Hook 和工作区默认值。每个 Profile 应使用独立运行目录：Codex 
 
 ## 8. 启动和控制 Session（Codex 开发者预览）
 
-以下命令已存在于 Phase 2 源码；占位符不是实际 ID。真实 Codex 支持仍受
-精确 Linux `0.144.2` 兼容矩阵约束，Claude 命令尚未实现：
+以下命令存在于选择器功能分支；占位符不是实际 ID。真实 Codex 支持仍受
+精确 Linux amd64 `0.144.2` 兼容矩阵约束，Claude 命令尚未实现：
 
 ```bash
-./bin/multidesk run codex --root <device-root> --workspace <workspace-id> \
-  --device-id <device-id> --credential-id <credential-id> \
-  --profile-id <profile-id> --account-id <account-id> --json
+./bin/multidesk run codex --root <device-root> --profile @A \
+  --workspace <workspace-id>
+./bin/multidesk tui --root <device-root> --profile @A \
+  --workspace <workspace-id>
 ./bin/multidesk sessions list --root <device-root> --json
 ./bin/multidesk sessions attach --root <device-root> --mode observer --json <session-id>
 ./bin/multidesk sessions observe --root <device-root> --from-sequence 0 --json <session-id>
@@ -175,9 +181,20 @@ Hook 和工作区默认值。每个 Profile 应使用独立运行目录：Codex 
   --json <session-id>
 ```
 
-启动前必须显示并让用户确认：Provider、Account、RuntimeProfile、Device、Usage
-来源和最近验证时间。系统只做推荐排序，不会自动切换账号。确认后 Session
-固定账号、Profile、设备和能力快照。
+启动前 Daemon 生成一次性 preview，显示内部 Account 标签、规范化 alias、
+RuntimeProfile、Device、Credential revision、Usage 来源和 Provider 版本；用户
+必须手工输入同一个 `@alias`。公共 CLI 不接受 Account/Profile/Credential raw ID
+作为 Codex 启动旁路。确认后 Session 固定账号、Profile、Credential、设备、
+Workspace 和能力快照，系统不会自动切换账号。
+
+平台失败必须发生在 preview/runtime materialization 之前：
+
+| 平台 | 选择器结果 |
+|---|---|
+| Linux amd64 + Codex `0.144.2` 精确 schema | 允许继续 preview、确认和 Session 启动 |
+| macOS（即使 schema smoke 兼容） | `schema_compatible_identity_acceptance_pending`；不创建选择器 Session/Home/进程 |
+| Windows | `provider_platform_unsupported`；不创建选择器 Session/Home/进程 |
+| 其他版本、schema 或架构 | typed unsupported；不回退到默认账号或其他 Profile |
 
 一个 Session 可以有多个 observer，但同一时间只有 ControllerLease 持有者
 可以输入、调整终端尺寸或响应审批。客户端断开不会自动停止 Provider 进程。
