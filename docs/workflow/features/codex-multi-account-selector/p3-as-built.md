@@ -2,12 +2,16 @@
 
 ## Platform gates
 
-The multi-account selector now has one explicit platform gate used at both
-external boundaries:
+The multi-account selector now has one explicit platform gate used throughout
+the enrollment and runtime lifecycle:
 
-1. `sessions.preview` checks the discovered descriptor before schema probing,
+1. `auth.begin` checks before creating an enrollment row, placeholder
+   CredentialInstance, or staging Home. `auth.complete` and `auth.confirm`
+   repeat the check before validation or Vault seal; platform drift marks the
+   enrollment failed and deletes its placeholder Credential/staging.
+2. `sessions.preview` checks the discovered descriptor before schema probing,
    preview issuance, Session reservation, credential materialization, or spawn.
-2. `Runtime.StartReserved` repeats the check after reservation and before
+3. `Runtime.StartReserved` repeats the check after reservation and before
    binary fingerprinting/materialization/spawn, so an injected or drifted
    non-Linux descriptor fails the persisted Session closed.
 

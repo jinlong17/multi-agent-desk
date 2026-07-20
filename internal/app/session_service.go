@@ -23,14 +23,15 @@ import (
 )
 
 type SessionService struct {
-	Store               *storage.Store
-	Runtime             *runtime.Manager
-	Vault               *vault.Manager
-	EnrollmentValidator func(context.Context, codex.BinaryDescriptor, string) error
-	CredentialHomeRoot  string
-	Now                 func() time.Time
-	SelectorPreflight   func(context.Context) (SelectorPreflight, error)
-	mu                  sync.Mutex
+	Store                *storage.Store
+	Runtime              *runtime.Manager
+	Vault                *vault.Manager
+	EnrollmentValidator  func(context.Context, codex.BinaryDescriptor, string) error
+	CredentialHomeRoot   string
+	Now                  func() time.Time
+	SelectorPreflight    func(context.Context) (SelectorPreflight, error)
+	SelectorPlatformGate func(codex.BinaryDescriptor) error
+	mu                   sync.Mutex
 }
 
 type SelectorPreflight struct {
@@ -77,7 +78,7 @@ func (s *SessionService) selectorPreflight(ctx context.Context) (SelectorPreflig
 	if err != nil {
 		return SelectorPreflight{}, err
 	}
-	if err := codex.RequireSelectorPlatform(descriptor); err != nil {
+	if err := s.requireSelectorPlatform(descriptor); err != nil {
 		return SelectorPreflight{}, err
 	}
 	capabilities, err := codex.Probe(ctx, descriptor, codex.ProbeOptions{})
@@ -94,6 +95,13 @@ func (s *SessionService) selectorPreflight(ctx context.Context) (SelectorPreflig
 	return SelectorPreflight{ProviderVersion: descriptor.Version, BinaryFingerprint: binaryFingerprint,
 		SchemaFingerprint: capabilities.SchemaFingerprint, CapabilityDigest: codex.CapabilityDigest(capabilities),
 		Capabilities: []domain.Capability{domain.CapabilityProviderUsageRead, domain.CapabilitySessionControl}}, nil
+}
+
+func (s *SessionService) requireSelectorPlatform(descriptor codex.BinaryDescriptor) error {
+	if s != nil && s.SelectorPlatformGate != nil {
+		return s.SelectorPlatformGate(descriptor)
+	}
+	return codex.RequireSelectorPlatform(descriptor)
 }
 
 func (s *SessionService) now() time.Time {
@@ -583,6 +591,9 @@ func (s *SessionService) dispatch(ctx context.Context, auth device.AuthContext, 
 		if err != nil {
 			return nil, err
 		}
+		if err := s.requireSelectorPlatform(descriptor); err != nil {
+			return nil, err
+		}
 		fingerprint, err := codex.BinaryFingerprint(descriptor)
 		if err != nil {
 			return nil, err
@@ -679,6 +690,9 @@ func (s *SessionService) dispatch(ctx context.Context, auth device.AuthContext, 
 		}
 		descriptor, err := codex.Discover(ctx, codex.DiscoverOptions{})
 		if err != nil {
+			return fail(err)
+		}
+		if err := s.requireSelectorPlatform(descriptor); err != nil {
 			return fail(err)
 		}
 		fingerprint, err := codex.BinaryFingerprint(descriptor)
@@ -817,6 +831,9 @@ func (s *SessionService) dispatch(ctx context.Context, auth device.AuthContext, 
 		}
 		descriptor, err := codex.Discover(ctx, codex.DiscoverOptions{})
 		if err != nil {
+			return failConfirm(err)
+		}
+		if err := s.requireSelectorPlatform(descriptor); err != nil {
 			return failConfirm(err)
 		}
 		fingerprint, err := codex.BinaryFingerprint(descriptor)
