@@ -9,11 +9,11 @@
 | Title | `Codex explicit multi-account selector` |
 | Owner Module | `provider` |
 | Impacted Modules | `core, security, desktop, project-system` |
-| Current Phase | `BUILD P3 CORRECTION` |
-| Status | `READY_FOR_VERIFY` |
-| Executor | `Codex (GPT-5) as feature-build P3 correction` |
-| Updated | `2026-07-20 15:00 PDT` |
-| Suggested Next | `independent feature-verify P3 correction; prove enrollment, preview, and runtime platform gates form one fail-closed boundary` |
+| Current Phase | `VERIFY P3 CORRECTION` |
+| Status | `READY_TO_SHIP` |
+| Executor | `Codex (GPT-5) as independent feature-verify P3 correction` |
+| Updated | `2026-07-20 15:05 PDT` |
+| Suggested Next | `security-review codex-multi-account-selector; Security Gate is still open and must be decided before ship` |
 | Branch / Worktree | `codex/provider/codex-multi-account-selector @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/multi-account-usage-control` |
 | Plan Version | `v2` |
 | Provider Gate | `resolved for exact Linux Codex CLI 0.144.2; macOS distinct-identity and real Windows Codex remain open capability gates` |
@@ -25,7 +25,7 @@
 |---|---|---|---|---|
 | P1 preview and enrollment confirmation contracts | migration 7; `awaiting_confirmation`; persistent one-time Session previews; alias-aware auth lifecycle; sole preview/confirm start contract; safe errors/audit; synthetic tests | independent plan approval; P1 registry and Phase 2 runtime | migration/restart, forged/cross-client/race/replay preview matrix, confirmation negatives, no PII/secret, raw-ID start denied | `VERIFIED` |
 | P2 selector-bound exact Linux runtime | public CLI/TUI selector path; confirmed Session start; alias status/logout/re-login; exact compatibility; A/B runtime and Usage tests | P1 verified; Vault/runtime baseline | two concurrent exact Linux Accounts, immutable tuple, active-logout denial, scoped B re-login, no auto-rotation | `VERIFIED` |
-| P3 platform/docs/security closure | macOS/Windows typed gates; user guide/compatibility/dashboard; full platform/governance matrix; final Security Review | P2 verified | truthfully labelled capabilities, all checks pass, Security Gate accepted | `READY_FOR_VERIFY` |
+| P3 platform/docs/security closure | macOS/Windows typed gates; user guide/compatibility/dashboard; full platform/governance matrix; final Security Review | P2 verified | truthfully labelled capabilities, all checks pass, Security Gate accepted | `READY_TO_SHIP` |
 
 Each build run completes one approved phase and stops at `READY_FOR_VERIFY`.
 
@@ -46,6 +46,7 @@ Each build run completes one approved phase and stops at `READY_FOR_VERIFY`.
 | 2026-07-20 14:55 PDT | VERIFY P3 | traced every selector entry across enrollment, preview and reserved runtime; preview/runtime gates and writer matrix pass, but auth begin/complete/confirm omit the platform gate | `BLOCKED`; macOS/Windows can create enrollment/Credential/staging or reach seal before later preview denial | `docs/reviews/codex-multi-account-selector/2026-07-20-feature-verify-p3.md` |
 | 2026-07-20 15:00 PDT | BUILD P3 CORRECTION | applied the selector platform gate before auth begin artifacts and repeated it before complete validation and confirm seal; added direct begin/complete/confirm cleanup negatives; reran full Go/vet/race, targeted race x10 and three-OS builds | `READY_FOR_VERIFY`; the P1 finding is closed in implementation and direct regression evidence | `docs/reviews/codex-multi-account-selector/2026-07-20-p3-correction-build.md`; updated `p3-as-built.md` |
 | 2026-07-20 15:01 PDT | BUILD P3 CORRECTION DASHBOARD | regenerated workflow/dashboard facts and verified Go format, local links, exact focus binding, project structure and diff integrity | all checks pass at restored `READY_FOR_VERIFY` | `docs/workflow/project/dashboard-state.json`; generated dashboard unchanged |
+| 2026-07-20 15:05 PDT | VERIFY P3 CORRECTION | independently reviewed `ec73d1c`, proved the prior P1 closed across begin/complete/confirm artifact ordering, reran full Go/vet/race, targeted race x10, three-OS builds, Web/Desktop and CI/project matrix | `READY_TO_SHIP`; no functional finding remains; Security Gate stays open | `docs/reviews/codex-multi-account-selector/2026-07-20-feature-verify-p3-v2.md` |
 
 ## Risks and Blockers
 
@@ -88,3 +89,4 @@ Each build run completes one approved phase and stops at `READY_FOR_VERIFY`.
 | 2026-07-20 14:55 PDT | Codex (GPT-5) as independent feature-verify P3 | Independently traced the platform boundary through auth enrollment, preview and reserved runtime; modified only this verdict and report | `docs/reviews/codex-multi-account-selector/2026-07-20-feature-verify-p3.md`; this log | `BLOCKED`; one P1 finding requires the same platform gate before enrollment artifacts, validation and seal | `feature-build` P3 correction |
 | 2026-07-20 15:00 PDT | Codex (GPT-5) as feature-build P3 correction | Closed the verifier's P1 finding across auth begin/complete/confirm, added artifact/cleanup/Vault negatives, and restored the last valid final-phase state after full and targeted race evidence | application service/tests; `docs/reviews/codex-multi-account-selector/2026-07-20-p3-correction-build.md`; `p3-as-built.md`; this log | `READY_FOR_VERIFY`; no other scope or support claim changed | independent `feature-verify` P3 correction |
 | 2026-07-20 15:01 PDT | Codex root as operator-directed P3 correction writer via `mad-dashboard-sync` | Rebound dashboard after the cleared blocker, regenerated workflow/dashboard facts, and verified format, links and project structural gates | `docs/workflow/project/dashboard-state.json`; generated dashboard unchanged; this log | all checks pass; Security Gate remains open | commit correction, then independent `feature-verify` |
+| 2026-07-20 15:05 PDT | Codex (GPT-5) as independent feature-verify P3 correction | Verified the correction and full final-phase acceptance matrix; modified only this verdict log and report | `docs/reviews/codex-multi-account-selector/2026-07-20-feature-verify-p3-v2.md`; this log | `READY_TO_SHIP`; prior P1 closed, no new finding, Security Gate open | independent `security-review` |
