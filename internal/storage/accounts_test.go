@@ -127,6 +127,13 @@ func TestManualRegistryPaginationRevisionAndAtomicDeletion(t *testing.T) {
 	if err != nil || binding.Account.ID != accounts[0].ID || binding.Profile.ID != profiles[0].ID || binding.Credential != nil {
 		t.Fatalf("unexpected binding %+v, %v", binding, err)
 	}
+	rawBinding, err := store.ResolveProfileTarget(ctx, string(profiles[0].ID))
+	if err != nil || rawBinding.Account.ID != accounts[0].ID || rawBinding.Profile.ID != profiles[0].ID {
+		t.Fatalf("unexpected raw-ID admin binding %+v, %v", rawBinding, err)
+	}
+	if _, err := store.ResolveProfile(ctx, string(profiles[0].ID)); domain.CodeOf(err) != domain.CodeAliasInvalid {
+		t.Fatalf("public raw-ID selector was accepted: %v", err)
+	}
 	newName := "Renamed"
 	updated, err := store.UpdateAccount(ctx, accounts[0].ID, 1, AccountPatch{DisplayName: &newName}, base.Add(time.Minute))
 	if err != nil || updated.Revision != 2 || updated.DisplayName != newName {

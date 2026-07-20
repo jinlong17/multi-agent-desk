@@ -1376,13 +1376,35 @@ func (s *Store) CreateUsageSnapshot(ctx context.Context, snapshot domain.UsageSn
 	if err := domain.ValidateUsageSnapshot(snapshot); err != nil {
 		return err
 	}
-	availability := domain.AvailabilityUnknown
-	if snapshot.CapabilityStatus == domain.UsageSupported {
-		availability = domain.AvailabilityAvailable
+	if snapshot.CredentialInstanceID != "" && domain.ValidateID(snapshot.CredentialInstanceID) != nil {
+		return domain.NewError(domain.CodeInvalidArgument, "invalid usage credential")
+	}
+	if snapshot.ProviderVersion == "" {
+		snapshot.ProviderVersion = snapshot.SourceVersion
+	}
+	if snapshot.Availability == "" {
+		snapshot.Availability = domain.AvailabilityUnknown
+		if snapshot.CapabilityStatus == domain.UsageSupported {
+			snapshot.Availability = domain.AvailabilityAvailable
+		}
+	}
+	if snapshot.StaleAt.IsZero() {
+		snapshot.StaleAt = snapshot.ObservedAt
 	}
 	return s.withTx(ctx, func(tx *sql.Tx) error {
 		if err := validateAccountForProvider(ctx, tx, snapshot.Provider, snapshot.AccountID); err != nil {
 			return err
+		}
+		if snapshot.CredentialInstanceID != "" {
+			var credentialMatches int
+			if err := tx.QueryRowContext(ctx, `SELECT count(*) FROM credential_instances
+				WHERE id=? AND account_id=? AND device_id=? AND provider=?`, snapshot.CredentialInstanceID,
+				snapshot.AccountID, snapshot.DeviceID, snapshot.Provider).Scan(&credentialMatches); err != nil {
+				return writeError("usage credential could not be checked", err)
+			}
+			if credentialMatches != 1 {
+				return domain.NewError(domain.CodeInvalidArgument, "usage credential does not match account")
+			}
 		}
 		var deviceExists int
 		if err := tx.QueryRowContext(ctx, "SELECT count(*) FROM device_identity WHERE id = ?", snapshot.DeviceID).Scan(&deviceExists); err != nil {
@@ -1391,17 +1413,21 @@ func (s *Store) CreateUsageSnapshot(ctx context.Context, snapshot domain.UsageSn
 		if deviceExists != 1 {
 			return domain.NewError(domain.CodeNotFound, "device not found")
 		}
+		var credentialValue any
+		if snapshot.CredentialInstanceID != "" {
+			credentialValue = snapshot.CredentialInstanceID
+		}
 		_, err := tx.ExecContext(ctx, `
 			INSERT INTO usage_snapshots(
-				id, provider, account_id, device_id, source, confidence, window_kind,
+				id, provider, account_id, credential_instance_id, device_id, source, confidence, window_kind,
 				used_value, limit_value, used_percent, resets_at, observed_at,
 				raw_reference_hash, source_version, capability_status, error_code,
 				provider_version, availability, stale_at
-			) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			snapshot.ID, snapshot.Provider, snapshot.AccountID, snapshot.DeviceID, snapshot.Source, snapshot.Confidence,
+			) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			snapshot.ID, snapshot.Provider, snapshot.AccountID, credentialValue, snapshot.DeviceID, snapshot.Source, snapshot.Confidence,
 			snapshot.WindowKind, optionalFloat(snapshot.UsedValue), optionalFloat(snapshot.LimitValue), optionalFloat(snapshot.UsedPercent),
 			optionalTimeValue(snapshot.ResetsAt), formatTime(snapshot.ObservedAt), snapshot.RawReferenceHash, snapshot.SourceVersion,
-			snapshot.CapabilityStatus, snapshot.ErrorCode, snapshot.SourceVersion, availability, formatTime(snapshot.ObservedAt))
+			snapshot.CapabilityStatus, snapshot.ErrorCode, snapshot.ProviderVersion, snapshot.Availability, formatTime(snapshot.StaleAt))
 		return writeError("usage snapshot could not be created", err)
 	})
 }
@@ -1411,15 +1437,16 @@ func (s *Store) UsageSnapshot(ctx context.Context, id domain.ID) (domain.UsageSn
 	var used, limit, percent sql.NullFloat64
 	var resetsAt sql.NullString
 	var rawHash sql.NullString
-	var observedAt string
+	var observedAt, staleAt string
 	err := s.db.QueryRowContext(ctx, `
-		SELECT id, provider, account_id, device_id, source, confidence, window_kind,
+		SELECT id, provider, account_id, coalesce(credential_instance_id, ''), device_id, source, confidence, window_kind,
 			used_value, limit_value, used_percent, resets_at, observed_at,
-			coalesce(raw_reference_hash, ''), source_version, capability_status, error_code
+			coalesce(raw_reference_hash, ''), source_version, capability_status, error_code,
+			provider_version, availability, stale_at
 		FROM usage_snapshots WHERE id = ?`, id).Scan(
-		&snapshot.ID, &snapshot.Provider, &snapshot.AccountID, &snapshot.DeviceID, &snapshot.Source, &snapshot.Confidence,
+		&snapshot.ID, &snapshot.Provider, &snapshot.AccountID, &snapshot.CredentialInstanceID, &snapshot.DeviceID, &snapshot.Source, &snapshot.Confidence,
 		&snapshot.WindowKind, &used, &limit, &percent, &resetsAt, &observedAt, &rawHash, &snapshot.SourceVersion,
-		&snapshot.CapabilityStatus, &snapshot.ErrorCode)
+		&snapshot.CapabilityStatus, &snapshot.ErrorCode, &snapshot.ProviderVersion, &snapshot.Availability, &staleAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return domain.UsageSnapshot{}, domain.NewError(domain.CodeNotFound, "usage snapshot not found")
 	}
@@ -1440,6 +1467,10 @@ func (s *Store) UsageSnapshot(ctx context.Context, id domain.ID) (domain.UsageSn
 		return domain.UsageSnapshot{}, err
 	}
 	snapshot.ObservedAt, err = parseTime(observedAt)
+	if err != nil {
+		return domain.UsageSnapshot{}, err
+	}
+	snapshot.StaleAt, err = parseTime(staleAt)
 	if err != nil {
 		return domain.UsageSnapshot{}, err
 	}

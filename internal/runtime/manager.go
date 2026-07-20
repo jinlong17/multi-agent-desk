@@ -22,6 +22,19 @@ type StartRequest struct {
 	ResumedFromSessionID domain.ID
 }
 
+type ReservedStartRequest struct {
+	SessionID            domain.ID
+	DeviceID             domain.ID
+	AccountID            domain.ID
+	CredentialInstanceID domain.ID
+	RuntimeProfileID     domain.ID
+	WorkspaceID          domain.ID
+	ProviderVersion      string
+	BinaryFingerprint    string
+	SchemaFingerprint    string
+	CapabilityDigest     string
+}
+
 // Start is the P0 provider gate. Fake remains fully runnable; Codex records
 // are representable in the Device store but cannot start until the versioned
 // app-server adapter lands in a later approved phase.
@@ -57,6 +70,50 @@ func (m *Manager) Start(ctx context.Context, request StartRequest) (domain.Sessi
 		return session, nil
 	}
 	return domain.Session{}, domain.NewError(domain.CodeInvalidArgument, "provider is unsupported")
+}
+
+// StartReserved launches a Codex runtime for the Session that was already
+// inserted atomically with selector-preview consumption. It never creates a
+// second Session or accepts a caller-selected tuple.
+func (m *Manager) StartReserved(ctx context.Context, request ReservedStartRequest) (domain.Session, error) {
+	if m == nil || m.Store == nil || domain.ValidateID(request.SessionID) != nil {
+		return domain.Session{}, domain.NewError(domain.CodeInvalidArgument, "reserved runtime start is incomplete")
+	}
+	reserved, err := m.Store.Session(ctx, request.SessionID)
+	if err != nil {
+		return domain.Session{}, err
+	}
+	if reserved.DeviceID != request.DeviceID || reserved.AccountID != request.AccountID ||
+		reserved.CredentialInstanceID != request.CredentialInstanceID || reserved.RuntimeProfileID != request.RuntimeProfileID ||
+		reserved.WorkspaceID != request.WorkspaceID || reserved.Provider != domain.ProviderCodex {
+		return domain.Session{}, domain.NewError(domain.CodeProfileBindingChanged, "reserved Session tuple changed")
+	}
+	if reserved.Status != domain.SessionStarting {
+		return reserved, nil
+	}
+	if m.Codex == nil {
+		failed, transitionErr := m.Store.TransitionSession(ctx, reserved.ID, domain.SessionStarting, domain.SessionFailed,
+			m.now(), nil, string(domain.CodeProviderCapabilityUnavailable))
+		if transitionErr != nil {
+			return domain.Session{}, transitionErr
+		}
+		return failed, nil
+	}
+	session, err := m.Codex.StartReserved(ctx, codex.RuntimeReservedStartRequest{SessionID: request.SessionID,
+		RuntimeStartRequest: codex.RuntimeStartRequest{DeviceID: request.DeviceID, AccountID: request.AccountID,
+			CredentialInstanceID: request.CredentialInstanceID, RuntimeProfileID: request.RuntimeProfileID,
+			WorkspaceID: request.WorkspaceID},
+		ProviderVersion: request.ProviderVersion, BinaryFingerprint: request.BinaryFingerprint,
+		SchemaFingerprint: request.SchemaFingerprint, CapabilityDigest: request.CapabilityDigest})
+	if err != nil {
+		return domain.Session{}, err
+	}
+	m.mu.Lock()
+	if m.rings[session.ID] == nil {
+		m.rings[session.ID] = NewDefaultRingBuffer()
+	}
+	m.mu.Unlock()
+	return session, nil
 }
 
 type InputRequest struct {

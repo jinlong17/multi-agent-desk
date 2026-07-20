@@ -29,6 +29,15 @@ type RuntimeStartRequest struct {
 	WorkspaceID          domain.ID
 }
 
+type RuntimeReservedStartRequest struct {
+	SessionID domain.ID
+	RuntimeStartRequest
+	ProviderVersion   string
+	BinaryFingerprint string
+	SchemaFingerprint string
+	CapabilityDigest  string
+}
+
 type RuntimeInputRequest struct {
 	SessionID domain.ID
 	Payload   string
@@ -69,6 +78,7 @@ type RuntimeManager struct {
 	workers  sync.WaitGroup
 	runtimes map[domain.ID]*CredentialRuntime
 	bindings map[domain.ID]*SessionBinding
+	starting map[domain.ID]chan struct{}
 	closed   bool
 }
 
@@ -76,6 +86,7 @@ type CredentialRuntime struct {
 	CredentialInstanceID domain.ID
 	CredentialRevision   int64
 	Descriptor           BinaryDescriptor
+	BinaryFingerprint    string
 	Capabilities         CapabilitySet
 	Process              *RuntimeProcess
 	Materialization      *MaterializationHandle
@@ -118,7 +129,8 @@ type codexProfileSettings struct {
 func NewRuntimeManager(store *storage.Store, materializer *CredentialMaterializationManager) *RuntimeManager {
 	return &RuntimeManager{Store: store, Materializer: materializer, Discover: discoverRuntime,
 		Spawn: spawnRuntime, Now: func() time.Time { return time.Now().UTC() },
-		runtimes: make(map[domain.ID]*CredentialRuntime), bindings: make(map[domain.ID]*SessionBinding)}
+		runtimes: make(map[domain.ID]*CredentialRuntime), bindings: make(map[domain.ID]*SessionBinding),
+		starting: make(map[domain.ID]chan struct{})}
 }
 
 func discoverRuntime(ctx context.Context) (BinaryDescriptor, CapabilitySet, error) {
@@ -168,6 +180,14 @@ func (m *RuntimeManager) now() time.Time {
 }
 
 func (m *RuntimeManager) Start(ctx context.Context, request RuntimeStartRequest) (domain.Session, error) {
+	return m.start(ctx, request, nil)
+}
+
+func (m *RuntimeManager) StartReserved(ctx context.Context, request RuntimeReservedStartRequest) (domain.Session, error) {
+	return m.start(ctx, request.RuntimeStartRequest, &request)
+}
+
+func (m *RuntimeManager) start(ctx context.Context, request RuntimeStartRequest, reserved *RuntimeReservedStartRequest) (domain.Session, error) {
 	if m == nil || m.Store == nil || m.Materializer == nil || m.Discover == nil || m.Spawn == nil || ctx == nil {
 		return domain.Session{}, domain.NewError(domain.CodeInvalidArgument, "codex runtime manager is incomplete")
 	}
@@ -201,22 +221,81 @@ func (m *RuntimeManager) Start(ctx context.Context, request RuntimeStartRequest)
 		workspace.DeviceID != request.DeviceID || credential.Status != domain.CredentialHealthy {
 		return domain.Session{}, domain.NewError(domain.CodeConflict, "codex runtime links do not match")
 	}
-	sessionID, err := domain.NewID("session")
-	if err != nil {
-		return domain.Session{}, err
-	}
 	capabilitySnapshot := []domain.Capability{domain.CapabilityApprovalRead, domain.CapabilityApprovalRespond,
 		domain.CapabilityProviderUsageRead, domain.CapabilitySessionControl, domain.CapabilitySessionObserve, domain.CapabilityTerminalControl}
-	session := domain.Session{ID: sessionID, DeviceID: request.DeviceID, AccountID: request.AccountID,
-		Provider: domain.ProviderCodex, CredentialInstanceID: request.CredentialInstanceID,
-		RuntimeProfileID: request.RuntimeProfileID, WorkspaceID: request.WorkspaceID,
-		Status: domain.SessionStarting, StartedAt: m.now(), CapabilitySnapshot: capabilitySnapshot}
-	if err := m.Store.CreateSession(ctx, session); err != nil {
-		return domain.Session{}, err
+	var session domain.Session
+	if reserved == nil {
+		sessionID, idErr := domain.NewID("session")
+		if idErr != nil {
+			return domain.Session{}, idErr
+		}
+		session = domain.Session{ID: sessionID, DeviceID: request.DeviceID, AccountID: request.AccountID,
+			Provider: domain.ProviderCodex, CredentialInstanceID: request.CredentialInstanceID,
+			RuntimeProfileID: request.RuntimeProfileID, WorkspaceID: request.WorkspaceID,
+			Status: domain.SessionStarting, StartedAt: m.now(), CapabilitySnapshot: capabilitySnapshot}
+		if err := m.Store.CreateSession(ctx, session); err != nil {
+			return domain.Session{}, err
+		}
+	} else {
+		if domain.ValidateID(reserved.SessionID) != nil || reserved.ProviderVersion == "" ||
+			!validRuntimeFingerprint(reserved.BinaryFingerprint) || !validRuntimeFingerprint(reserved.SchemaFingerprint) ||
+			!validRuntimeFingerprint(reserved.CapabilityDigest) {
+			return domain.Session{}, domain.NewError(domain.CodeInvalidArgument, "reserved Codex compatibility is invalid")
+		}
+		session, err = m.Store.Session(ctx, reserved.SessionID)
+		if err != nil {
+			return domain.Session{}, err
+		}
+		if session.DeviceID != request.DeviceID || session.AccountID != request.AccountID ||
+			session.CredentialInstanceID != request.CredentialInstanceID || session.RuntimeProfileID != request.RuntimeProfileID ||
+			session.WorkspaceID != request.WorkspaceID || session.Provider != domain.ProviderCodex {
+			return domain.Session{}, domain.NewError(domain.CodeProfileBindingChanged, "reserved Session tuple changed")
+		}
+		if session.Status != domain.SessionStarting {
+			return session, nil
+		}
+		m.mu.Lock()
+		if waiting := m.starting[session.ID]; waiting != nil {
+			m.mu.Unlock()
+			select {
+			case <-waiting:
+				return m.Store.Session(ctx, session.ID)
+			case <-ctx.Done():
+				return domain.Session{}, domain.NewError(domain.CodeDeadlineExceeded, "reserved Codex start wait expired")
+			}
+		}
+		waiting := make(chan struct{})
+		m.starting[session.ID] = waiting
+		m.mu.Unlock()
+		defer func() {
+			m.mu.Lock()
+			if current := m.starting[session.ID]; current == waiting {
+				delete(m.starting, session.ID)
+				close(waiting)
+			}
+			m.mu.Unlock()
+		}()
 	}
+	sessionID := session.ID
 	failStart := func(cause error) (domain.Session, error) {
 		_, _ = m.Store.TransitionSession(context.Background(), sessionID, domain.SessionStarting, domain.SessionFailed, m.now(), nil, string(domain.CodeOf(cause)))
 		return domain.Session{}, cause
+	}
+	var reservedDescriptor BinaryDescriptor
+	var reservedCapabilities CapabilitySet
+	if reserved != nil {
+		reservedDescriptor, reservedCapabilities, err = m.Discover(ctx)
+		if err != nil {
+			return failStart(err)
+		}
+		binaryFingerprint, fingerprintErr := BinaryFingerprint(reservedDescriptor)
+		if fingerprintErr != nil {
+			return failStart(fingerprintErr)
+		}
+		if reservedDescriptor.Version != reserved.ProviderVersion || binaryFingerprint != reserved.BinaryFingerprint ||
+			reservedCapabilities.SchemaFingerprint != reserved.SchemaFingerprint || CapabilityDigest(reservedCapabilities) != reserved.CapabilityDigest {
+			return failStart(domain.NewError(domain.CodeProviderVersionUnsupported, "Codex runtime changed after Session reservation"))
+		}
 	}
 
 	m.mu.Lock()
@@ -231,10 +310,22 @@ func (m *RuntimeManager) Start(ctx context.Context, request RuntimeStartRequest)
 		return failStart(domain.NewError(domain.CodeCredentialRevisionConflict, "codex shared runtime revision changed"))
 	}
 	if runtime == nil {
-		descriptor, capabilities, discoverErr := m.Discover(ctx)
-		if discoverErr != nil {
-			m.mu.Unlock()
-			return failStart(discoverErr)
+		descriptor, capabilities := reservedDescriptor, reservedCapabilities
+		binaryFingerprint := ""
+		if reserved == nil {
+			var discoverErr error
+			descriptor, capabilities, discoverErr = m.Discover(ctx)
+			if discoverErr != nil {
+				m.mu.Unlock()
+				return failStart(discoverErr)
+			}
+			binaryFingerprint, discoverErr = BinaryFingerprint(descriptor)
+			if discoverErr != nil {
+				m.mu.Unlock()
+				return failStart(discoverErr)
+			}
+		} else {
+			binaryFingerprint = reserved.BinaryFingerprint
 		}
 		materialization, acquireErr := m.Materializer.Acquire(ctx, request.CredentialInstanceID, request.RuntimeProfileID)
 		if acquireErr != nil {
@@ -265,11 +356,18 @@ func (m *RuntimeManager) Start(ctx context.Context, request RuntimeStartRequest)
 			return failStart(handshakeErr)
 		}
 		runtime = &CredentialRuntime{CredentialInstanceID: request.CredentialInstanceID,
-			CredentialRevision: credential.CredentialRevision, Descriptor: descriptor, Capabilities: capabilities,
+			CredentialRevision: credential.CredentialRevision, Descriptor: descriptor,
+			BinaryFingerprint: binaryFingerprint, Capabilities: capabilities,
 			Process: process, Materialization: materialization, Bindings: make(map[domain.ID]*SessionBinding),
 			Retired: make(map[string]retiredBinding)}
 		m.runtimes[request.CredentialInstanceID] = runtime
 		created = true
+	} else if reserved != nil && (runtime.Descriptor.Path != reservedDescriptor.Path ||
+		runtime.BinaryFingerprint != reserved.BinaryFingerprint ||
+		runtime.Descriptor.Version != reservedDescriptor.Version || runtime.Capabilities.SchemaFingerprint != reservedCapabilities.SchemaFingerprint ||
+		CapabilityDigest(runtime.Capabilities) != reserved.CapabilityDigest) {
+		m.mu.Unlock()
+		return failStart(domain.NewError(domain.CodeProviderVersionUnsupported, "Codex shared runtime does not match Session reservation"))
 	}
 	threadParams := map[string]any{"cwd": canonicalWorkspace, "approvalPolicy": settings.ApprovalPolicy,
 		"sandbox": settings.Sandbox, "ephemeral": false}
@@ -338,6 +436,14 @@ func (m *RuntimeManager) Start(ctx context.Context, request RuntimeStartRequest)
 		}()
 	}
 	return m.Store.Session(ctx, sessionID)
+}
+
+func validRuntimeFingerprint(value string) bool {
+	if len(value) != 64 {
+		return false
+	}
+	_, err := hex.DecodeString(value)
+	return err == nil
 }
 
 func decodeProfileSettings(raw json.RawMessage) (codexProfileSettings, error) {
@@ -839,11 +945,16 @@ func (m *RuntimeManager) ReadUsage(ctx context.Context, accountID domain.ID) (do
 	m.mu.Lock()
 	var runtime *CredentialRuntime
 	var deviceID domain.ID
+	var credentialID domain.ID
 	for _, binding := range m.bindings {
 		if binding.AccountID == accountID && binding.state == "running" {
 			runtime = m.runtimeForBindingLocked(binding)
+			if runtime == nil {
+				continue
+			}
 			session, _ := m.Store.Session(context.Background(), binding.SessionID)
 			deviceID = session.DeviceID
+			credentialID = runtime.CredentialInstanceID
 			break
 		}
 	}
@@ -855,7 +966,7 @@ func (m *RuntimeManager) ReadUsage(ctx context.Context, accountID domain.ID) (do
 	allowsUsage := runtime.Capabilities.Allows(MethodAccountUsage)
 	m.mu.Unlock()
 	if !allowsUsage {
-		return m.persistUsageSnapshot(context.Background(), accountID, deviceID, version, "unknown", "", domain.UsageUnavailable,
+		return m.persistUsageSnapshot(context.Background(), accountID, credentialID, deviceID, version, "unknown", "", domain.UsageUnavailable,
 			domain.CodeProviderVersionUnsupported, domain.UsageConfidenceLow)
 	}
 	var raw json.RawMessage
@@ -864,7 +975,7 @@ func (m *RuntimeManager) ReadUsage(ctx context.Context, accountID domain.ID) (do
 		if code == "" {
 			code = domain.CodeProviderFailed
 		}
-		return m.persistUsageSnapshot(context.Background(), accountID, deviceID, version, "unknown", "", domain.UsageError,
+		return m.persistUsageSnapshot(context.Background(), accountID, credentialID, deviceID, version, "unknown", "", domain.UsageError,
 			code, domain.UsageConfidenceLow)
 	}
 	projection, err := DecodeUsageResponse(raw, version, m.now())
@@ -873,14 +984,14 @@ func (m *RuntimeManager) ReadUsage(ctx context.Context, accountID domain.ID) (do
 		if code == "" {
 			code = domain.CodeProviderVersionUnsupported
 		}
-		return m.persistUsageSnapshot(context.Background(), accountID, deviceID, version, "unknown", "", domain.UsageSchemaChanged,
+		return m.persistUsageSnapshot(context.Background(), accountID, credentialID, deviceID, version, "unknown", "", domain.UsageSchemaChanged,
 			code, domain.UsageConfidenceLow)
 	}
-	return m.persistUsageSnapshot(ctx, accountID, deviceID, projection.SourceVersion, "daily", projection.RawReferenceHash,
+	return m.persistUsageSnapshot(ctx, accountID, credentialID, deviceID, projection.SourceVersion, "daily", projection.RawReferenceHash,
 		domain.UsageCapabilityStatus(projection.CapabilityStatus), "", domain.UsageConfidence(projection.Confidence))
 }
 
-func (m *RuntimeManager) persistUsageSnapshot(ctx context.Context, accountID, deviceID domain.ID, version, windowKind, rawHash string,
+func (m *RuntimeManager) persistUsageSnapshot(ctx context.Context, accountID, credentialID, deviceID domain.ID, version, windowKind, rawHash string,
 	status domain.UsageCapabilityStatus, errorCode domain.ErrorCode, confidence domain.UsageConfidence) (domain.UsageSnapshot, error) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -891,9 +1002,16 @@ func (m *RuntimeManager) persistUsageSnapshot(ctx context.Context, accountID, de
 	if err != nil {
 		return domain.UsageSnapshot{}, err
 	}
-	snapshot := domain.UsageSnapshot{ID: id, Provider: domain.ProviderCodex, AccountID: accountID, DeviceID: deviceID,
-		Source: domain.UsageSourceOfficial, Confidence: confidence, WindowKind: windowKind, ObservedAt: m.now(),
-		RawReferenceHash: rawHash, SourceVersion: version, CapabilityStatus: status, ErrorCode: errorCode}
+	observedAt := m.now()
+	availability := domain.AvailabilityUnknown
+	if status == domain.UsageSupported {
+		availability = domain.AvailabilityAvailable
+	}
+	snapshot := domain.UsageSnapshot{ID: id, Provider: domain.ProviderCodex, AccountID: accountID,
+		CredentialInstanceID: credentialID, DeviceID: deviceID,
+		Source: domain.UsageSourceOfficial, Confidence: confidence, WindowKind: windowKind, ObservedAt: observedAt,
+		RawReferenceHash: rawHash, SourceVersion: version, CapabilityStatus: status, ErrorCode: errorCode,
+		ProviderVersion: version, Availability: availability, StaleAt: observedAt}
 	if err := m.Store.CreateUsageSnapshot(persistCtx, snapshot); err != nil {
 		return domain.UsageSnapshot{}, err
 	}

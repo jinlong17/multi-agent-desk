@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -250,6 +251,51 @@ func TestAuthBeginCancelUsesPrivateOwnerBoundEnrollment(t *testing.T) {
 	if err := store.CreateWorkspace(ctx, domain.Workspace{ID: workspaceID, DeviceID: deviceID, Path: root, Label: "auth", Tags: []string{}, CreatedAt: now, UpdatedAt: now}); err != nil {
 		t.Fatal(err)
 	}
+	otherAccountID, otherProfileID, otherCredentialID := appTestID(t, "account"), appTestID(t, "profile"), appTestID(t, "credential")
+	if _, _, err := store.CreateAccountWithDefaultProfile(ctx,
+		domain.Account{ID: otherAccountID, Provider: domain.ProviderCodex, DisplayName: "other",
+			Enabled: true, Revision: 1, CreatedAt: now, UpdatedAt: now},
+		domain.RuntimeProfile{ID: otherProfileID, DeviceID: deviceID, AccountID: otherAccountID,
+			Name: "other", Provider: domain.ProviderCodex, SelectorAlias: "B", SelectorKey: "b",
+			Settings: []byte(`{}`), Enabled: true, Revision: 1, CreatedAt: now, UpdatedAt: now}); err != nil {
+		t.Fatal(err)
+	}
+	otherCredential := domain.CredentialInstance{ID: otherCredentialID, DeviceID: deviceID,
+		AccountID: otherAccountID, Provider: domain.ProviderCodex, AuthMethod: domain.AuthMethodInteractive,
+		SecretRef: "vault:" + string(otherCredentialID), Status: domain.CredentialUnknown, CredentialRevision: 1,
+		SecretDigest: strings.Repeat("a", 64), CreatedAt: now, UpdatedAt: now}
+	otherEnrollmentID := appTestID(t, "enrollment")
+	otherEnrollment := storage.AuthEnrollment{ID: otherEnrollmentID, ClientDeviceID: clientID,
+		RuntimeProfileID: otherProfileID, CredentialInstanceID: otherCredentialID,
+		BinaryFingerprint: strings.Repeat("b", 64), StagingPath: filepath.Join(root, string(otherEnrollmentID)),
+		State: storage.EnrollmentBegun, IdempotencyDigest: strings.Repeat("c", 64),
+		ExpiresAt: now.Add(time.Hour), CreatedAt: now, UpdatedAt: now}
+	if err := store.BeginAuthEnrollment(ctx, otherEnrollment, &otherCredential); err != nil {
+		t.Fatal(err)
+	}
+	otherCompletionDigest, otherAliasDigest := strings.Repeat("d", 64), strings.Repeat("e", 64)
+	if _, err := store.ClaimAuthEnrollment(ctx, otherEnrollmentID, clientID, otherCompletionDigest, now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.AwaitAuthEnrollmentConfirmation(ctx, otherEnrollmentID, clientID, otherAccountID,
+		otherProfileID, otherCredentialID, 1, 1, 1, otherAliasDigest, now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.ConfirmAuthEnrollmentAttestation(ctx, otherEnrollmentID, clientID, otherAliasDigest, now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := vaultManager.SealEnrollmentCredential(ctx, otherEnrollmentID, clientID, otherCompletionDigest,
+		vault.CredentialMetadata{CredentialInstanceID: otherCredentialID, AccountID: otherAccountID,
+			DeviceID: deviceID, Provider: domain.ProviderCodex, ExpectedRevision: 1,
+			CreatedAt: now, UpdatedAt: now}, []byte(`{"tokens":{"access":"other-test-only"}}`)); err != nil {
+		t.Fatal(err)
+	}
+	otherSessionID := appTestID(t, "session")
+	if err := store.CreateSession(ctx, domain.Session{ID: otherSessionID, DeviceID: deviceID, AccountID: otherAccountID,
+		Provider: domain.ProviderCodex, CredentialInstanceID: otherCredentialID, RuntimeProfileID: otherProfileID,
+		WorkspaceID: workspaceID, ProviderSessionID: "other-active", Status: domain.SessionStarting, StartedAt: now}); err != nil {
+		t.Fatal(err)
+	}
 	if err := store.CreateSession(ctx, domain.Session{ID: sessionID, DeviceID: deviceID, AccountID: accountID, Provider: domain.ProviderCodex, CredentialInstanceID: credentialID, RuntimeProfileID: profileID, WorkspaceID: workspaceID, ProviderSessionID: "auth-active", Status: domain.SessionStarting, StartedAt: now}); err != nil {
 		t.Fatal(err)
 	}
@@ -294,6 +340,16 @@ func TestAuthBeginCancelUsesPrivateOwnerBoundEnrollment(t *testing.T) {
 	loggedOutProfile, err := store.RuntimeProfile(ctx, profileID)
 	if err != nil || loggedOutProfile.CredentialInstanceID != "" || loggedOutProfile.Revision < 3 {
 		t.Fatalf("logout profile binding=%+v err=%v", loggedOutProfile, err)
+	}
+	otherProfile, profileErr := store.RuntimeProfile(ctx, otherProfileID)
+	otherCredential, credentialErr := store.CredentialInstance(ctx, otherCredentialID)
+	otherSession, sessionErr := store.Session(ctx, otherSessionID)
+	if profileErr != nil || credentialErr != nil || sessionErr != nil ||
+		otherProfile.CredentialInstanceID != otherCredentialID || otherProfile.Revision != 2 ||
+		otherCredential.Status != domain.CredentialHealthy || otherCredential.CredentialRevision != 2 ||
+		otherSession.Status != domain.SessionStarting {
+		t.Fatalf("target logout changed other tuple profile=%+v credential=%+v session=%+v errors=%v/%v/%v",
+			otherProfile, otherCredential, otherSession, profileErr, credentialErr, sessionErr)
 	}
 	// A fresh enrollment after logout must be able to seal and bind a new
 	// Credential to the same public Profile, not merely reach auth.begin.
