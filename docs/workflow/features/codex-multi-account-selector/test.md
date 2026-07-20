@@ -91,8 +91,11 @@ On the operator-approved Linux target with exact CLI `0.144.2`:
 - build commands for Darwin arm64, Linux amd64, and Windows amd64
 - storage migration tests compiled/run on available three-platform CI
 - macOS exact-schema/empty-home selector negative: pending identity acceptance,
-  no Provider start
-- Windows selector negative: unsupported, no Provider start
+  `schema_compatible_identity_acceptance_pending`, no Provider start
+- Windows selector negative: `provider_platform_unsupported`, no Provider start
+- reserved-runtime defense repeats the platform gate after Session reservation;
+  a non-Linux descriptor records the reserved Session failed without creating a
+  Home or Provider process
 - Web TypeScript and Desktop/Rust scaffold checks remain green
 - workflow, dashboard, Actions, CODEOWNERS, fixtures, links, licenses, layout,
   format, and `git diff --check`

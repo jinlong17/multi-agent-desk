@@ -288,6 +288,9 @@ func (m *RuntimeManager) start(ctx context.Context, request RuntimeStartRequest,
 		if err != nil {
 			return failStart(err)
 		}
+		if err := RequireSelectorPlatform(reservedDescriptor); err != nil {
+			return failStart(err)
+		}
 		binaryFingerprint, fingerprintErr := BinaryFingerprint(reservedDescriptor)
 		if fingerprintErr != nil {
 			return failStart(fingerprintErr)

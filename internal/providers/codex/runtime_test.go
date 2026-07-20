@@ -424,6 +424,27 @@ func TestRuntimeManagerStartsReservedSessionOnceAndFailsPostReservationDrift(t *
 	if err := manager.Stop(ctx, reserved.SessionID, true); err != nil {
 		t.Fatal(err)
 	}
+	descriptor.Platform, descriptor.Architecture = "darwin", "arm64"
+	capabilities, err = CapabilitiesFor(descriptor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	binaryFingerprint, err = BinaryFingerprint(descriptor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	macOSReserved := newReserved()
+	if _, err := manager.StartReserved(ctx, macOSReserved); domain.CodeOf(err) != domain.CodeProviderIdentityPending {
+		t.Fatalf("macOS selector gate code=%v err=%v", domain.CodeOf(err), err)
+	}
+	macOSSession, err := store.Session(ctx, macOSReserved.SessionID)
+	if err != nil || macOSSession.Status != domain.SessionFailed ||
+		macOSSession.FailureCode != string(domain.CodeProviderIdentityPending) {
+		t.Fatalf("macOS gated Session=%+v err=%v", macOSSession, err)
+	}
+	if spawnCount.Load() != 1 {
+		t.Fatalf("macOS selector gate reached Provider spawn=%d", spawnCount.Load())
+	}
 }
 
 func TestRuntimeManagerKeepsConcurrentAccountsAndUsageIsolated(t *testing.T) {

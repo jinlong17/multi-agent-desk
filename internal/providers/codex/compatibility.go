@@ -18,6 +18,26 @@ func CapabilityDigest(capabilities CapabilitySet) string {
 	return hex.EncodeToString(digest[:])
 }
 
+// RequireSelectorPlatform enforces the narrower platform acceptance boundary
+// for the explicit multi-account selector. General app-server schema evidence
+// does not by itself accept multi-account identity binding on that platform.
+func RequireSelectorPlatform(descriptor BinaryDescriptor) error {
+	switch descriptor.Platform {
+	case "linux":
+		if descriptor.Architecture == "amd64" {
+			return nil
+		}
+	case "darwin":
+		return domain.NewError(domain.CodeProviderIdentityPending,
+			"Codex multi-account selector identity acceptance is pending on macOS")
+	case "windows":
+		return domain.NewError(domain.CodeProviderPlatformUnsupported,
+			"Codex multi-account selector is unsupported on Windows")
+	}
+	return domain.NewError(domain.CodeProviderPlatformUnsupported,
+		"Codex multi-account selector is supported only on Linux amd64")
+}
+
 var compatibilityRows = []CompatibilityRow{
 	{
 		Version:           "0.142.5",

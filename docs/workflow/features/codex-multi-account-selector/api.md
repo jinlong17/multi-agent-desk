@@ -149,6 +149,7 @@ auth_health_unknown
 provider_version_unsupported
 provider_capability_unavailable
 provider_platform_unsupported
+schema_compatible_identity_acceptance_pending
 usage_stale
 vault_locked
 credential_quarantined
