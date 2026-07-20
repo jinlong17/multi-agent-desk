@@ -2,16 +2,16 @@
   "schema_version": 1,
   "state_owner": "project-system",
   "plan_version": "v0.2",
-  "current_phase": "Codex multi-account selector local Ship gate",
-  "current_status": "BLOCKED; DCO history correction requires explicit authorization",
+  "current_phase": "Codex multi-account selector locally shipped",
+  "current_status": "SHIPPED locally; no remote integration or release performed",
   "current_owner": "provider",
-  "next_action": "authorize local rewrite of nine commit messages for DCO sign-off, clean Markdown whitespace, then rerun Ship",
+  "next_action": "none for local Ship; optional push and PR integration require separate explicit authorization",
   "manual_updated_at": "2026-07-20",
-  "manual_updated_by": "operator-authorized ship writer",
+  "manual_updated_by": "operator-authorized ship correction writer",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Codex 显式多账号选择器功能与安全门已通过，本地 Ship 被 DCO 历史门禁阻止"
+      "value": "Codex 显式多账号选择器已完成本地 Ship，DCO、Security 与完整测试门禁均通过"
     },
     {
       "label": "在哪条线",
@@ -19,11 +19,11 @@
     },
     {
       "label": "用哪个入口",
-      "value": "ship correction：补签 9 个本地提交并清理 20 行 Markdown 尾随空格"
+      "value": "无本地后续；如需远程集成，另行授权 push 与 PR"
     },
     {
       "label": "做到什么状态",
-      "value": "功能=READY_TO_SHIP；Security=ACCEPTED；Ship=BLOCKED（DCO）"
+      "value": "功能=SHIPPED（local）；Security=ACCEPTED；remote/release=未执行"
     }
   ],
   "phases": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "codex-multi-account-selector",
-      "expected_status": "BLOCKED"
+      "expected_status": "SHIPPED"
     },
     {
       "slug": "multi-account-usage-control",
