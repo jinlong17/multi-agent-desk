@@ -9,11 +9,11 @@
 | Title | `Codex explicit multi-account selector` |
 | Owner Module | `provider` |
 | Impacted Modules | `core, security, desktop, project-system` |
-| Current Phase | `SECURITY REVIEW` |
-| Status | `READY_TO_SHIP` |
-| Executor | `Codex (GPT-5) as independent security-review` |
-| Updated | `2026-07-20 15:09 PDT` |
-| Suggested Next | `ship codex-multi-account-selector; explicit human authorization required` |
+| Current Phase | `SHIP` |
+| Status | `BLOCKED` |
+| Executor | `Codex (GPT-5) as ship` |
+| Updated | `2026-07-20 15:24 PDT` |
+| Suggested Next | `authorize local history rewrite for nine DCO trailers, then rerun ship` |
 | Branch / Worktree | `codex/provider/codex-multi-account-selector @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/multi-account-usage-control` |
 | Plan Version | `v2` |
 | Provider Gate | `resolved for exact Linux Codex CLI 0.144.2; macOS distinct-identity and real Windows Codex remain open capability gates` |
@@ -50,16 +50,17 @@ Each build run completes one approved phase and stops at `READY_FOR_VERIFY`.
 
 ## Risks and Blockers
 
-- P2 is independently verified; P3 platform/docs/security closure remains
-  required before final readiness.
-- Exact Linux CLI `0.144.2` is the only live support claim. macOS distinct-
-  identity, Windows, other versions and passive soak remain unaccepted.
-- Operator confirmation is an explicit attestation, not automated upstream
-  identity proof; UX and audit wording must not imply otherwise.
-- Migration 7 and the public raw-ID boundary require careful compatibility
-  review against the shipped Phase 2 acceptance harness.
-- Live P2 may require operator participation in official login, but must not
-  store identity/secret values or issue hidden quota-only requests.
+- Functional verification is `READY_TO_SHIP` and the Security Gate is
+  `ACCEPTED`; exact Linux CLI `0.144.2` remains the only live support claim.
+- Local Ship is blocked because nine base-to-head commits lack valid DCO
+  trailers. Correcting them requires explicit authorization to rewrite local
+  history; a later sign-off commit cannot satisfy the per-commit governance
+  check.
+- The exact range diff also contains 20 trailing-whitespace lines in five
+  Markdown files. This cleanup is non-destructive but does not clear DCO.
+- macOS distinct-identity, Windows, other versions and passive soak remain
+  unaccepted. Operator confirmation remains an internal attestation rather
+  than automated upstream identity proof.
 
 ## Work Log (append only)
 
@@ -91,3 +92,4 @@ Each build run completes one approved phase and stops at `READY_FOR_VERIFY`.
 | 2026-07-20 15:01 PDT | Codex root as operator-directed P3 correction writer via `mad-dashboard-sync` | Rebound dashboard after the cleared blocker, regenerated workflow/dashboard facts, and verified format, links and project structural gates | `docs/workflow/project/dashboard-state.json`; generated dashboard unchanged; this log | all checks pass; Security Gate remains open | commit correction, then independent `feature-verify` |
 | 2026-07-20 15:05 PDT | Codex (GPT-5) as independent feature-verify P3 correction | Verified the correction and full final-phase acceptance matrix; modified only this verdict log and report | `docs/reviews/codex-multi-account-selector/2026-07-20-feature-verify-p3-v2.md`; this log | `READY_TO_SHIP`; prior P1 closed, no new finding, Security Gate open | independent `security-review` |
 | 2026-07-20 15:09 PDT | Codex (GPT-5) as independent security-review | Reviewed identity attestation, five platform boundaries, preview replay/TOCTOU, Vault/materialization single-writer behavior, immutable runtime/Usage binding, scoped revocation, redaction and residual-risk wording; reran targeted race suites and modified only verdict surfaces | `docs/reviews/codex-multi-account-selector/2026-07-20-security-review.md`; this log | `ACCEPTED`; P0/P1 none; Security Gate resolved for exact Linux amd64 Codex CLI `0.144.2` only | explicit human `ship` |
+| 2026-07-20 15:24 PDT | Codex (GPT-5) as ship and operator-directed dashboard writer | Executed the authorized local Ship audit over branch/remote/range/untracked/docs/version/rollback/security/tests/platform builds/UI/governance/licenses/DCO/diff; synchronized the manual dashboard to the persisted blocker without performing remote or release actions | `docs/reviews/codex-multi-account-selector/2026-07-20-ship-receipt.md`; this log; `docs/workflow/project/dashboard-state.json` | `BLOCKED`; all functional/security/build/UI/license/project checks pass, but nine commits lack DCO trailers and five Markdown files contain 20 range-diff whitespace errors | operator authorizes local DCO history rewrite, then `ship` reruns the full matrix |
