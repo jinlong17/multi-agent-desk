@@ -1,7 +1,7 @@
 # Codex distinct-account managed Home spike
 
-Date: 2026-07-16  
-Owner: `provider`  
+Date: 2026-07-16
+Owner: `provider`
 Workflow target: `spike-codex-distinct-account-homes`
 
 ## Verdict

@@ -8,17 +8,17 @@
 
 ## Module classification
 
-Owner: `provider`  
-Confidence: high  
+Owner: `provider`
+Confidence: high
 Why: the change binds Account/Profile selection to the existing Codex
-app-server, official login, Usage, and managed `CODEX_HOME` runtime.  
+app-server, official login, Usage, and managed `CODEX_HOME` runtime.
 Impacts: `core` for CLI/application contracts and persistence, `security` for
 identity confirmation and credential binding, `desktop` for later capability
-display, and `project-system` for workflow/dashboard truth.  
-Branch: `codex/provider/codex-multi-account-selector`  
-Workflow: `feature`  
+display, and `project-system` for workflow/dashboard truth.
+Branch: `codex/provider/codex-multi-account-selector`
+Workflow: `feature`
 Gates: exact Linux `0.144.2` Provider matrix; open feature Security Gate;
-macOS distinct-identity and real Windows Codex remain capability gates.  
+macOS distinct-identity and real Windows Codex remain capability gates.
 Docs: this Feature Brief and
 `docs/workflow/features/codex-multi-account-selector/`.
 

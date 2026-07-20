@@ -5,7 +5,7 @@ request-bound idempotency for mutations, and existing capability checks.
 
 ## Preview
 
-Method: `sessions.preview`  
+Method: `sessions.preview`
 Capability: `metadata.read` in this phase; future fine-grained
 `profiles.read + usage.read` migration remains separate.
 
@@ -51,7 +51,7 @@ payload is returned.
 
 ## Confirmed Session start
 
-Method: `session.start`  
+Method: `session.start`
 Capability: `session.start`
 
 ```json
