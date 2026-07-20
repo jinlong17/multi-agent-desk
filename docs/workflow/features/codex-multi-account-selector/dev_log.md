@@ -9,11 +9,11 @@
 | Title | `Codex explicit multi-account selector` |
 | Owner Module | `provider` |
 | Impacted Modules | `core, security, desktop, project-system` |
-| Current Phase | `VERIFY P2` |
+| Current Phase | `BUILD P3` |
 | Status | `VERIFIED` |
-| Executor | `Codex (GPT-5) as independent feature-verify P2` |
-| Updated | `2026-07-20 14:44 PDT` |
-| Suggested Next | `feature-build P3 platform/docs/security closure; enforce typed macOS/Windows gates before final Security Review` |
+| Executor | `Codex root as operator-directed feature-build P3 writer` |
+| Updated | `2026-07-20 14:47 PDT` |
+| Suggested Next | `feature-build P3 typed macOS/Windows gates and user/compatibility docs, then stop at READY_FOR_VERIFY` |
 | Branch / Worktree | `codex/provider/codex-multi-account-selector @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/multi-account-usage-control` |
 | Plan Version | `v2` |
 | Provider Gate | `resolved for exact Linux Codex CLI 0.144.2; macOS distinct-identity and real Windows Codex remain open capability gates` |
@@ -77,3 +77,4 @@ Each build run completes one approved phase and stops at `READY_FOR_VERIFY`.
 | 2026-07-20 14:36 PDT | Codex (GPT-5) as feature-build P2 | Implemented selector-bound reserved runtime launch, exact post-reservation compatibility recheck, replay coalescing, TUI entry, active-runtime Usage refresh with credential-bound persistence, administrative ID/public selector separation, and cross-Account isolation tests; completed official A/B Linux runtime, Usage, targeted logout/re-login, cleanup and three-platform build evidence | product/storage/CLI/tests; `p2-as-built.md`; `docs/reviews/codex-multi-account-selector/2026-07-20-p2-build.md` | `READY_FOR_VERIFY`; exact Linux `0.144.2` passes; no macOS/Windows live claim, final Security closure, push, merge, ship, or release | independent `feature-verify` P2 |
 | 2026-07-20 14:40 PDT | Codex root as operator-directed feature-build writer via `mad-dashboard-sync` | Bound dashboard focus to exact P2 `READY_FOR_VERIFY`, refreshed workflow/dashboard generated facts, and ran the project structural verification gate | `docs/workflow/project/dashboard-state.json`; generated dashboard unchanged; this log | all structural checks pass and manual/generated authority remains separated | commit the completed P2 build, then run independent `feature-verify` |
 | 2026-07-20 14:44 PDT | Codex (GPT-5) as independent feature-verify P2 | Inspected committed P2 implementation/receipt, independently reran the risk-proportionate automated and governance matrix, and queried only safe stopped Linux acceptance fields to verify distinct tuples/digests and cleanup | `docs/reviews/codex-multi-account-selector/2026-07-20-feature-verify.md`; this log | `VERIFIED`; no finding; verdict writer did not change implementation, plan, or dashboard | original writer enters P3 and reconciles dashboard focus |
+| 2026-07-20 14:47 PDT | Codex root as operator-directed feature-build P3 writer via `mad-module-classify` and `mad-dashboard-sync` | Retained `provider` ownership with `core, security, desktop, project-system` impacts, entered the dependency-satisfied final phase, and rebound dashboard focus from the prior verifier transition to exact `VERIFIED` | `docs/workflow/project/dashboard-state.json`; this log | P3 build active; no platform acceptance or Security Gate closure inferred | implement typed platform gates and final documentation slice |
