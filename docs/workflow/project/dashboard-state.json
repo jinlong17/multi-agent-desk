@@ -2,16 +2,16 @@
   "schema_version": 1,
   "state_owner": "project-system",
   "plan_version": "v0.2",
-  "current_phase": "Codex multi-account selector P2 build complete",
-  "current_status": "READY_FOR_VERIFY; exact Linux A/B runtime acceptance complete",
+  "current_phase": "Codex multi-account selector P3 platform closure",
+  "current_status": "VERIFIED; P2 complete and P3 dependency satisfied",
   "current_owner": "provider",
-  "next_action": "run independent feature-verify P2 selector-bound exact Linux runtime",
+  "next_action": "run feature-build P3 typed platform gates, docs, and security handoff",
   "manual_updated_at": "2026-07-20",
-  "manual_updated_by": "operator-directed P2 feature-build writer",
+  "manual_updated_by": "operator-directed P3 phase-entry writer",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Codex 显式多账号选择器 P2 已完成精确 Linux A/B 实机闭环，等待独立验证"
+      "value": "Codex 显式多账号选择器 P2 已独立验证，进入 P3 平台边界与文档收口"
     },
     {
       "label": "在哪条线",
@@ -19,11 +19,11 @@
     },
     {
       "label": "用哪个入口",
-      "value": "feature-verify P2：复核固定会话绑定、A/B Usage、定向退出重登和平台边界"
+      "value": "feature-build P3：Mac 待验收、Windows 不支持的强制门与操作文档"
     },
     {
       "label": "做到什么状态",
-      "value": "父 P1=VERIFIED；两子门=GATE_RESOLVED；Codex selector P2=READY_FOR_VERIFY"
+      "value": "父 P1=VERIFIED；两子门=GATE_RESOLVED；Codex selector P2=VERIFIED，P3 可执行"
     }
   ],
   "phases": [
@@ -104,7 +104,7 @@
   "focus": [
     {
       "slug": "codex-multi-account-selector",
-      "expected_status": "READY_FOR_VERIFY"
+      "expected_status": "VERIFIED"
     },
     {
       "slug": "multi-account-usage-control",
