@@ -9,11 +9,11 @@
 | Title | `Codex explicit multi-account selector` |
 | Owner Module | `provider` |
 | Impacted Modules | `core, security, desktop, project-system` |
-| Current Phase | `VERIFY P3` |
-| Status | `BLOCKED` |
-| Executor | `Codex (GPT-5) as independent feature-verify P3` |
-| Updated | `2026-07-20 14:55 PDT` |
-| Suggested Next | `feature-build P3 correction; gate auth.begin/complete/confirm before enrollment artifacts or credential seal` |
+| Current Phase | `BUILD P3 CORRECTION` |
+| Status | `READY_FOR_VERIFY` |
+| Executor | `Codex (GPT-5) as feature-build P3 correction` |
+| Updated | `2026-07-20 15:00 PDT` |
+| Suggested Next | `independent feature-verify P3 correction; prove enrollment, preview, and runtime platform gates form one fail-closed boundary` |
 | Branch / Worktree | `codex/provider/codex-multi-account-selector @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/multi-account-usage-control` |
 | Plan Version | `v2` |
 | Provider Gate | `resolved for exact Linux Codex CLI 0.144.2; macOS distinct-identity and real Windows Codex remain open capability gates` |
@@ -25,7 +25,7 @@
 |---|---|---|---|---|
 | P1 preview and enrollment confirmation contracts | migration 7; `awaiting_confirmation`; persistent one-time Session previews; alias-aware auth lifecycle; sole preview/confirm start contract; safe errors/audit; synthetic tests | independent plan approval; P1 registry and Phase 2 runtime | migration/restart, forged/cross-client/race/replay preview matrix, confirmation negatives, no PII/secret, raw-ID start denied | `VERIFIED` |
 | P2 selector-bound exact Linux runtime | public CLI/TUI selector path; confirmed Session start; alias status/logout/re-login; exact compatibility; A/B runtime and Usage tests | P1 verified; Vault/runtime baseline | two concurrent exact Linux Accounts, immutable tuple, active-logout denial, scoped B re-login, no auto-rotation | `VERIFIED` |
-| P3 platform/docs/security closure | macOS/Windows typed gates; user guide/compatibility/dashboard; full platform/governance matrix; final Security Review | P2 verified | truthfully labelled capabilities, all checks pass, Security Gate accepted | `BLOCKED` |
+| P3 platform/docs/security closure | macOS/Windows typed gates; user guide/compatibility/dashboard; full platform/governance matrix; final Security Review | P2 verified | truthfully labelled capabilities, all checks pass, Security Gate accepted | `READY_FOR_VERIFY` |
 
 Each build run completes one approved phase and stops at `READY_FOR_VERIFY`.
 
@@ -44,6 +44,8 @@ Each build run completes one approved phase and stops at `READY_FOR_VERIFY`.
 | 2026-07-20 14:51 PDT | BUILD P3 | added shared selector platform gate at preview and reserved-runtime boundaries; typed macOS identity-pending and Windows/other unsupported outcomes; corrected user commands and compatibility/API/test docs; ran full Go/vet/race, gate race x10, three-OS builds and Web/Desktop checks | `READY_FOR_VERIFY`; exact Linux behavior retained, no macOS/Windows live support claimed, Security Gate still open | `p3-as-built.md`; `docs/reviews/codex-multi-account-selector/2026-07-20-p3-build.md` |
 | 2026-07-20 14:53 PDT | BUILD P3 DASHBOARD | regenerated workflow/dashboard facts and verified layout, format, Actions, CODEOWNERS, fixtures, links, licenses, exact focus binding, and project structural gate | all governance checks pass at P3 `READY_FOR_VERIFY` | `docs/workflow/project/dashboard-state.json`; generated dashboard unchanged |
 | 2026-07-20 14:55 PDT | VERIFY P3 | traced every selector entry across enrollment, preview and reserved runtime; preview/runtime gates and writer matrix pass, but auth begin/complete/confirm omit the platform gate | `BLOCKED`; macOS/Windows can create enrollment/Credential/staging or reach seal before later preview denial | `docs/reviews/codex-multi-account-selector/2026-07-20-feature-verify-p3.md` |
+| 2026-07-20 15:00 PDT | BUILD P3 CORRECTION | applied the selector platform gate before auth begin artifacts and repeated it before complete validation and confirm seal; added direct begin/complete/confirm cleanup negatives; reran full Go/vet/race, targeted race x10 and three-OS builds | `READY_FOR_VERIFY`; the P1 finding is closed in implementation and direct regression evidence | `docs/reviews/codex-multi-account-selector/2026-07-20-p3-correction-build.md`; updated `p3-as-built.md` |
+| 2026-07-20 15:01 PDT | BUILD P3 CORRECTION DASHBOARD | regenerated workflow/dashboard facts and verified Go format, local links, exact focus binding, project structure and diff integrity | all checks pass at restored `READY_FOR_VERIFY` | `docs/workflow/project/dashboard-state.json`; generated dashboard unchanged |
 
 ## Risks and Blockers
 
@@ -84,3 +86,5 @@ Each build run completes one approved phase and stops at `READY_FOR_VERIFY`.
 | 2026-07-20 14:51 PDT | Codex (GPT-5) as feature-build P3 | Implemented the final approved slice: Linux-only selector gate, distinct macOS pending and Windows unsupported errors, post-reservation defense, platform negatives, actual alias-based user commands, compatibility/API/test updates, and full writer matrix | provider/core tests and docs; `p3-as-built.md`; `docs/reviews/codex-multi-account-selector/2026-07-20-p3-build.md` | `READY_FOR_VERIFY`; final Security Gate remains open and no remote/release action occurred | independent `feature-verify` P3 |
 | 2026-07-20 14:53 PDT | Codex root as operator-directed feature-build writer via `mad-dashboard-sync` | Bound dashboard focus to exact final-phase `READY_FOR_VERIFY`, regenerated machine facts, and ran the full governance/project matrix | `docs/workflow/project/dashboard-state.json`; generated dashboard unchanged; this log | all checks pass; dashboard does not resolve verification or Security gates | commit P3 build, then independent `feature-verify` |
 | 2026-07-20 14:55 PDT | Codex (GPT-5) as independent feature-verify P3 | Independently traced the platform boundary through auth enrollment, preview and reserved runtime; modified only this verdict and report | `docs/reviews/codex-multi-account-selector/2026-07-20-feature-verify-p3.md`; this log | `BLOCKED`; one P1 finding requires the same platform gate before enrollment artifacts, validation and seal | `feature-build` P3 correction |
+| 2026-07-20 15:00 PDT | Codex (GPT-5) as feature-build P3 correction | Closed the verifier's P1 finding across auth begin/complete/confirm, added artifact/cleanup/Vault negatives, and restored the last valid final-phase state after full and targeted race evidence | application service/tests; `docs/reviews/codex-multi-account-selector/2026-07-20-p3-correction-build.md`; `p3-as-built.md`; this log | `READY_FOR_VERIFY`; no other scope or support claim changed | independent `feature-verify` P3 correction |
+| 2026-07-20 15:01 PDT | Codex root as operator-directed P3 correction writer via `mad-dashboard-sync` | Rebound dashboard after the cleared blocker, regenerated workflow/dashboard facts, and verified format, links and project structural gates | `docs/workflow/project/dashboard-state.json`; generated dashboard unchanged; this log | all checks pass; Security Gate remains open | commit correction, then independent `feature-verify` |

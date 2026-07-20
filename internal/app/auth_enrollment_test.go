@@ -72,6 +72,11 @@ func TestAuthBeginCancelUsesPrivateOwnerBoundEnrollment(t *testing.T) {
 	service.Vault = vaultManager
 	service.CredentialHomeRoot = filepath.Join(root, "codex-home")
 	service.Now = func() time.Time { return now }
+	allowLinuxSelector := func(descriptor codex.BinaryDescriptor) error {
+		descriptor.Platform, descriptor.Architecture = "linux", "amd64"
+		return codex.RequireSelectorPlatform(descriptor)
+	}
+	service.SelectorPlatformGate = allowLinuxSelector
 	auth := device.AuthContext{ClientID: clientID, IdentityRevision: 1, AuthenticatedAt: now, ExpiresAt: now.Add(time.Hour)}
 	otherAuth := device.AuthContext{ClientID: otherClientID, IdentityRevision: 1, AuthenticatedAt: now, ExpiresAt: now.Add(time.Hour)}
 	disabledBody, _ := device.JSONBody(map[string]any{"profile_id": profileID, "mode": "device-auth"})
@@ -79,6 +84,22 @@ func TestAuthBeginCancelUsesPrivateOwnerBoundEnrollment(t *testing.T) {
 		t.Fatalf("disabled auth mode code=%v err=%v", domain.CodeOf(err), err)
 	}
 	body, _ := device.JSONBody(map[string]any{"profile_id": profileID})
+	service.SelectorPlatformGate = func(codex.BinaryDescriptor) error {
+		return domain.NewError(domain.CodeProviderIdentityPending, "test macOS identity acceptance pending")
+	}
+	pendingBody, _ := device.JSONBody(map[string]any{"profile_selector": "@A"})
+	if _, err := service.Handle(ctx, auth, device.Request{ProtocolMajor: device.ProtocolMajor,
+		RequestID: "auth-begin-platform-pending", Method: "auth.begin", IdempotencyKey: "auth-begin-platform-pending-key",
+		Body: pendingBody}); domain.CodeOf(err) != domain.CodeProviderIdentityPending {
+		t.Fatalf("pending-platform auth begin code=%v err=%v", domain.CodeOf(err), err)
+	}
+	if credentials, err := store.ListCredentialInstances(ctx); err != nil || len(credentials) != 0 {
+		t.Fatalf("pending-platform auth begin created credentials=%+v err=%v", credentials, err)
+	}
+	if _, err := os.Stat(filepath.Join(filepath.Dir(store.Path()), "enrollments")); !os.IsNotExist(err) {
+		t.Fatalf("pending-platform auth begin created staging root: %v", err)
+	}
+	service.SelectorPlatformGate = allowLinuxSelector
 	result, err := service.Handle(ctx, auth, device.Request{ProtocolMajor: device.ProtocolMajor, RequestID: "auth-begin", Method: "auth.begin", IdempotencyKey: "auth-begin-key", Body: body})
 	if err != nil {
 		t.Fatal(err)
@@ -157,6 +178,35 @@ func TestAuthBeginCancelUsesPrivateOwnerBoundEnrollment(t *testing.T) {
 	if _, err := os.Stat(orphanStaging); !os.IsNotExist(err) {
 		t.Fatalf("orphan staging survived recovery: %v", err)
 	}
+
+	platformCompleteResult, err := service.Handle(ctx, auth, device.Request{ProtocolMajor: device.ProtocolMajor,
+		RequestID: "auth-begin-platform-complete", Method: "auth.begin", IdempotencyKey: "auth-begin-platform-complete-key", Body: body})
+	if err != nil {
+		t.Fatal(err)
+	}
+	platformCompleteView := platformCompleteResult.(map[string]any)
+	platformCompleteID := platformCompleteView["enrollment_id"].(domain.ID)
+	platformCompleteStaging := platformCompleteView["staging_path"].(string)
+	if err := os.WriteFile(filepath.Join(platformCompleteStaging, "auth.json"), []byte(`{"tokens":{"access":"platform-complete"}}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	service.SelectorPlatformGate = func(codex.BinaryDescriptor) error {
+		return domain.NewError(domain.CodeProviderIdentityPending, "test platform drift before completion")
+	}
+	platformCompleteBody, _ := device.JSONBody(map[string]any{"enrollment_id": platformCompleteID})
+	if _, err := service.Handle(ctx, auth, device.Request{ProtocolMajor: device.ProtocolMajor,
+		RequestID: "auth-complete-platform-pending", Method: "auth.complete", IdempotencyKey: "auth-complete-platform-pending-key",
+		Body: platformCompleteBody}); domain.CodeOf(err) != domain.CodeProviderIdentityPending {
+		t.Fatalf("pending-platform auth complete code=%v err=%v", domain.CodeOf(err), err)
+	}
+	platformCompleted, err := store.AuthEnrollment(ctx, platformCompleteID)
+	if err != nil || platformCompleted.State != storage.EnrollmentFailed || platformCompleted.CredentialInstanceID != "" {
+		t.Fatalf("pending-platform completion enrollment=%+v err=%v", platformCompleted, err)
+	}
+	if _, err := os.Stat(platformCompleteStaging); !os.IsNotExist(err) {
+		t.Fatalf("pending-platform completion staging survived: %v", err)
+	}
+	service.SelectorPlatformGate = allowLinuxSelector
 
 	thirdResult, err := service.Handle(ctx, auth, device.Request{ProtocolMajor: device.ProtocolMajor, RequestID: "auth-begin-3", Method: "auth.begin", IdempotencyKey: "auth-begin-key-3", Body: body})
 	if err != nil {
@@ -351,6 +401,40 @@ func TestAuthBeginCancelUsesPrivateOwnerBoundEnrollment(t *testing.T) {
 		t.Fatalf("target logout changed other tuple profile=%+v credential=%+v session=%+v errors=%v/%v/%v",
 			otherProfile, otherCredential, otherSession, profileErr, credentialErr, sessionErr)
 	}
+	platformConfirmResult, err := service.Handle(ctx, auth, device.Request{ProtocolMajor: device.ProtocolMajor,
+		RequestID: "auth-begin-platform-confirm", Method: "auth.begin", IdempotencyKey: "auth-begin-platform-confirm-key", Body: body})
+	if err != nil {
+		t.Fatal(err)
+	}
+	platformConfirmView := platformConfirmResult.(map[string]any)
+	platformConfirmID := platformConfirmView["enrollment_id"].(domain.ID)
+	platformConfirmStaging := platformConfirmView["staging_path"].(string)
+	if err := os.WriteFile(filepath.Join(platformConfirmStaging, "auth.json"), finalCredential, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	platformConfirmCompleteBody, _ := device.JSONBody(map[string]any{"enrollment_id": platformConfirmID})
+	if _, err := service.Handle(ctx, auth, device.Request{ProtocolMajor: device.ProtocolMajor,
+		RequestID: "auth-complete-platform-confirm", Method: "auth.complete", IdempotencyKey: "auth-complete-platform-confirm-key",
+		Body: platformConfirmCompleteBody}); err != nil {
+		t.Fatal(err)
+	}
+	service.SelectorPlatformGate = func(codex.BinaryDescriptor) error {
+		return domain.NewError(domain.CodeProviderIdentityPending, "test platform drift before confirmation")
+	}
+	platformConfirmBody, _ := device.JSONBody(map[string]any{"enrollment_id": platformConfirmID, "profile_selector": "@A", "confirmed": true})
+	if _, err := service.Handle(ctx, auth, device.Request{ProtocolMajor: device.ProtocolMajor,
+		RequestID: "auth-confirm-platform-pending", Method: "auth.confirm", IdempotencyKey: "auth-confirm-platform-pending-key",
+		Body: platformConfirmBody}); domain.CodeOf(err) != domain.CodeProviderIdentityPending {
+		t.Fatalf("pending-platform auth confirm code=%v err=%v", domain.CodeOf(err), err)
+	}
+	platformConfirmed, err := store.AuthEnrollment(ctx, platformConfirmID)
+	if err != nil || platformConfirmed.State != storage.EnrollmentFailed || platformConfirmed.CredentialInstanceID != "" {
+		t.Fatalf("pending-platform confirmation enrollment=%+v err=%v", platformConfirmed, err)
+	}
+	if _, err := os.Stat(platformConfirmStaging); !os.IsNotExist(err) {
+		t.Fatalf("pending-platform confirmation staging survived: %v", err)
+	}
+	service.SelectorPlatformGate = allowLinuxSelector
 	// A fresh enrollment after logout must be able to seal and bind a new
 	// Credential to the same public Profile, not merely reach auth.begin.
 	service.Now = func() time.Time { return now }
