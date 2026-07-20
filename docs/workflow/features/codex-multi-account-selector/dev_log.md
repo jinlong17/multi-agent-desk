@@ -13,7 +13,7 @@
 | Status | `READY_TO_SHIP` |
 | Executor | `Codex (GPT-5) as independent feature-verify P3 correction` |
 | Updated | `2026-07-20 15:05 PDT` |
-| Suggested Next | `security-review codex-multi-account-selector; Security Gate is still open and must be decided before ship` |
+| Suggested Next | `security-review codex-multi-account-selector; decide the open Security Gate` |
 | Branch / Worktree | `codex/provider/codex-multi-account-selector @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/multi-account-usage-control` |
 | Plan Version | `v2` |
 | Provider Gate | `resolved for exact Linux Codex CLI 0.144.2; macOS distinct-identity and real Windows Codex remain open capability gates` |
