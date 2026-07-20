@@ -8,17 +8,17 @@
 
 ## Module classification
 
-Owner: `provider`  
-Confidence: high  
+Owner: `provider`
+Confidence: high
 Why: the feature adapts official Claude Code CLI/PTY behavior, API-key auth,
-Provider health, cost/Usage semantics, and explicit Account selection.  
+Provider health, cost/Usage semantics, and explicit Account selection.
 Impacts: `core` for Vault-backed credential/session/PTY contracts, `security`
 for high-value key and billing-source boundaries, `desktop` for later platform
-capability display, and `project-system` for workflow/dashboard truth.  
-Branch: `codex/provider/claude-api-key-provider`  
-Workflow: `feature` with a prerequisite Provider Spike  
+capability display, and `project-system` for workflow/dashboard truth.
+Branch: `codex/provider/claude-api-key-provider`
+Workflow: `feature` with a prerequisite Provider Spike
 Gates: open Provider evidence and Security Gate; real Linux PTY acceptance;
-macOS/Windows capability acceptance remains separate.  
+macOS/Windows capability acceptance remains separate.
 Docs: this Feature Brief and
 `docs/workflow/features/claude-api-key-provider/`.
 

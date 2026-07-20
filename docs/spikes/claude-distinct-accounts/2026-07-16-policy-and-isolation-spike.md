@@ -1,7 +1,7 @@
 # Claude distinct-account isolation and subscription-policy Spike
 
-Date: 2026-07-16  
-Owner: `provider`  
+Date: 2026-07-16
+Owner: `provider`
 Workflow target: `spike-claude-distinct-account-usage`
 
 ## Verdict
