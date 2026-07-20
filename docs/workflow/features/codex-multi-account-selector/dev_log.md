@@ -9,15 +9,15 @@
 | Title | `Codex explicit multi-account selector` |
 | Owner Module | `provider` |
 | Impacted Modules | `core, security, desktop, project-system` |
-| Current Phase | `VERIFY P3 CORRECTION` |
+| Current Phase | `SECURITY REVIEW` |
 | Status | `READY_TO_SHIP` |
-| Executor | `Codex (GPT-5) as independent feature-verify P3 correction` |
-| Updated | `2026-07-20 15:05 PDT` |
-| Suggested Next | `security-review codex-multi-account-selector; decide the open Security Gate` |
+| Executor | `Codex (GPT-5) as independent security-review` |
+| Updated | `2026-07-20 15:09 PDT` |
+| Suggested Next | `ship codex-multi-account-selector; explicit human authorization required` |
 | Branch / Worktree | `codex/provider/codex-multi-account-selector @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/multi-account-usage-control` |
 | Plan Version | `v2` |
 | Provider Gate | `resolved for exact Linux Codex CLI 0.144.2; macOS distinct-identity and real Windows Codex remain open capability gates` |
-| Security Gate | `open — explicit identity confirmation, Vault/revision binding, selector TOCTOU, scoped logout, redaction, and public raw-ID bypass are in scope` |
+| Security Gate | `resolved — ACCEPTED for exact Linux amd64 Codex CLI 0.144.2; macOS identity acceptance, real Windows Codex, automatic rotation, and broader version/platform claims remain excluded` |
 
 ## Phase Plan
 
@@ -90,3 +90,4 @@ Each build run completes one approved phase and stops at `READY_FOR_VERIFY`.
 | 2026-07-20 15:00 PDT | Codex (GPT-5) as feature-build P3 correction | Closed the verifier's P1 finding across auth begin/complete/confirm, added artifact/cleanup/Vault negatives, and restored the last valid final-phase state after full and targeted race evidence | application service/tests; `docs/reviews/codex-multi-account-selector/2026-07-20-p3-correction-build.md`; `p3-as-built.md`; this log | `READY_FOR_VERIFY`; no other scope or support claim changed | independent `feature-verify` P3 correction |
 | 2026-07-20 15:01 PDT | Codex root as operator-directed P3 correction writer via `mad-dashboard-sync` | Rebound dashboard after the cleared blocker, regenerated workflow/dashboard facts, and verified format, links and project structural gates | `docs/workflow/project/dashboard-state.json`; generated dashboard unchanged; this log | all checks pass; Security Gate remains open | commit correction, then independent `feature-verify` |
 | 2026-07-20 15:05 PDT | Codex (GPT-5) as independent feature-verify P3 correction | Verified the correction and full final-phase acceptance matrix; modified only this verdict log and report | `docs/reviews/codex-multi-account-selector/2026-07-20-feature-verify-p3-v2.md`; this log | `READY_TO_SHIP`; prior P1 closed, no new finding, Security Gate open | independent `security-review` |
+| 2026-07-20 15:09 PDT | Codex (GPT-5) as independent security-review | Reviewed identity attestation, five platform boundaries, preview replay/TOCTOU, Vault/materialization single-writer behavior, immutable runtime/Usage binding, scoped revocation, redaction and residual-risk wording; reran targeted race suites and modified only verdict surfaces | `docs/reviews/codex-multi-account-selector/2026-07-20-security-review.md`; this log | `ACCEPTED`; P0/P1 none; Security Gate resolved for exact Linux amd64 Codex CLI `0.144.2` only | explicit human `ship` |
