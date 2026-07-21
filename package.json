@@ -5,6 +5,9 @@
   "description": "A unified workspace for AI coding agents, profiles, sessions, and usage.",
   "packageManager": "pnpm@10.23.0",
   "scripts": {
+    "api:generate": "node scripts/api/generate.mjs generate",
+    "api:verify": "node scripts/api/generate.mjs verify",
+    "api:licenses": "node scripts/api/verify-tool-licenses.mjs",
     "workflow:generate": "node scripts/workflow/generate-agent-mirrors.mjs",
     "workflow:verify": "node scripts/workflow/verify-workflow.mjs",
     "dashboard": "node scripts/dashboard/generate-state.mjs",
@@ -20,7 +23,7 @@
     "desktop:fmt-check": "cargo fmt --manifest-path apps/desktop/src-tauri/Cargo.toml --check",
     "desktop:check": "pnpm --filter @multi-agent-desk/web build && cargo check --locked --manifest-path apps/desktop/src-tauri/Cargo.toml",
     "desktop:build": "pnpm --filter @multi-agent-desk/desktop tauri build --no-bundle",
-    "scaffold:check": "npm run scaffold:structure && npm run go:fmt-check && npm run go:test && npm run web:check && npm run desktop:fmt-check && npm run desktop:check",
+    "scaffold:check": "npm run api:verify && npm run api:licenses && npm run scaffold:structure && npm run go:fmt-check && npm run go:test && npm run web:check && npm run desktop:fmt-check && npm run desktop:check",
     "scaffold:build": "npm run go:build && npm run web:build && npm run desktop:build",
     "scaffold:verify": "npm run scaffold:check && npm run scaffold:build",
     "ci:actions": "node scripts/ci/verify-actions.mjs",
@@ -34,5 +37,8 @@
   "engines": {
     "node": ">=24 <25",
     "pnpm": ">=10 <11"
+  },
+  "devDependencies": {
+    "openapi-typescript": "7.13.0"
   }
 }

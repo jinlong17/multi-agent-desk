@@ -3,6 +3,21 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "scripts": { "check": "tsc --noEmit", "build": "tsc" },
-  "devDependencies": { "typescript": "^5.9.0" }
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "test": "tsc && node --test dist/control-plane-client.test.js dist/control-plane-contract.test.js",
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.0",
+    "typescript": "^5.9.0"
+  }
 }
