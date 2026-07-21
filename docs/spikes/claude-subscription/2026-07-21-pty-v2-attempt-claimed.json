@@ -1,0 +1,13 @@
+{
+  "arm": "pty",
+  "attemptClaimed": true,
+  "billingSource": "claude_ai_team_included_subscription",
+  "claimedBeforeProcessSpawn": true,
+  "modelBearingCliProcessUpperBound": 1,
+  "printAllowed": false,
+  "rawContentRetained": false,
+  "retryAllowed": false,
+  "schemaVersion": 1,
+  "target": "spike-claude-subscription-cli-pty-compatibility-v2",
+  "usageCreditsDisabledOperatorDirected": true
+}
