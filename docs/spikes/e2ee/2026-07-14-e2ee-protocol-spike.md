@@ -150,7 +150,7 @@ that P1 must lock and license-scan before any import or generated artifact:
 | `github.com/oapi-codegen/oapi-codegen/v2 v2.8.0` | [immutable release](https://github.com/oapi-codegen/oapi-codegen/releases/tag/v2.8.0), commit `de2d8b2b0afb287198554eb305bb0d2687d26a85`, Go sum `h1:s4hxMxuqtR8jPzXkBTtFwY/SBuj3gEAYikmbBSdtLMM=` | Apache-2.0; module declares Go 1.25 and pins `kin-openapi v0.142.0`; release validates the specification before generation |
 | `github.com/getkin/kin-openapi v0.142.0` | [tagged source](https://github.com/getkin/kin-openapi/tree/v0.142.0), commit `1223a0f215d2cf9beb2d9eb9ea2649d001c21388`, Go sum `h1:izj0vBdFprMhitfzaX8sTqztsEQyvwhssBoB6n8NO7w=` | MIT; module declares Go 1.25; tool graph must be included in the P1 license scan |
 | `github.com/google/uuid v1.6.0` | [tagged source](https://github.com/google/uuid/tree/v1.6.0), commit `0f11ee6918f41a04c201eceeadf612a377bc7fbc`, Go sum `h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=` | BSD-3-Clause; direct P1 UUIDv7 dependency |
-| `openapi-typescript 7.13.0` | [npm package](https://www.npmjs.com/package/openapi-typescript/v/7.13.0), integrity `sha512-EFP392gcqXS7ntPvbhBzbF8TyBA+baIYEm791Hy5YkjDYKTnk/Tn5OQeKm5BIZvJihpp8Zzr4hzx0Irde1LNGQ==` | MIT; types only, no runtime client |
+| `openapi-typescript 7.13.0` | [npm registry manifest](https://registry.npmjs.org/openapi-typescript/7.13.0), integrity `sha512-EFP392gcqXS7ntPvbhBzbF8TyBA+baIYEm791Hy5YkjDYKTnk/Tn5OQeKm5BIZvJihpp8Zzr4hzx0Irde1LNGQ==` | MIT; types only, no runtime client |
 
 The repository pins Go 1.26.5, Node 24, and pnpm 10.23.0, which satisfy these
 declared minimums. P0's current resolved repository license scan must pass, but
