@@ -17,8 +17,9 @@ asynchronous session commands without pretending that a remote process starts
 synchronously.
 
 The outcome is a self-hosted `multidesk-server` and metadata-only Web surface.
-An operator can complete a one-time bootstrap ceremony with a Passkey and an
-OS-Vault-backed Daemon/Desktop trust anchor, use one-time recovery codes,
+An operator can complete a one-time bootstrap ceremony with a Passkey and a
+Daemon trust anchor whose new remote Device keys are encrypted in the already
+shipped portable password-derived Vault v1, use one-time recovery codes,
 approve additional Daemon/Web/Desktop identities through pinned keys and signed
 attestations, observe presence, revoke a device, synchronize allowed metadata
 with explicit revisions and tombstones, and submit/query asynchronous session
@@ -38,34 +39,53 @@ for Phase 4a.
    unknown-future-schema refusal.
 2. Implement an atomic ten-minute bootstrap ceremony that creates the first
    single user, verifies a Passkey for a fixed production RP ID/origin, registers
-   one OS-Vault-backed Daemon/Desktop as the initial trust anchor, issues
+   one portable-Vault-v1-backed Daemon as the initial trust anchor, issues
    one-time recovery codes, and removes the bootstrap-token hash only after the
-   ceremony commits in full.
+   ceremony commits in full. Before enabling bootstrap, add Device migration
+   `0008`, the generic UUID mapping, exact Vault-v1 `DeviceKeyEnvelopeV1`
+   create/open/CAS and pending-to-active lifecycle, plus the executable Daemon
+   prepare/prove/activate and Web import/verify actor flow. Add a local-only,
+   pre-user bootstrap-token rotate command; the storage mode is a signed client
+   assertion backed by official Daemon integration evidence, not a server-
+   verifiable at-rest claim.
 3. Implement Passkey authentication, secure cookie sessions, CSRF protection,
-   one-time hashed recovery-code consumption, session expiry/revocation, and
-   deployment validation for HTTPS and stable RP ID/origin constraints.
-4. Implement Daemon/Web/Desktop enrollment, challenge signatures, ten-minute
+   the exact pre-auth/authenticated/Device endpoint security matrix, ten-code
+   recovery batches/rotation, Passkey list/delete/recent-UV lifecycle,
+   recovery-to-normal session transition, session expiry/revocation, and fixed
+   HTTPS RP ID/origin constraints.
+4. Implement Daemon/Web enrollment plus the server-side `kind=desktop` contract,
+   challenge proofs, ten-minute
    one-time enrollment expiry, six-group fingerprint confirmation, signed
    DeviceAttestation validation, local pinned-key checks, presence, key-change
-   rejection, and revocation with immediate connection invalidation.
+   rejection, public signed activation receipts, versioned capability
+   attestation/elevation, and revocation with immediate invalidation.
 5. Define OpenAPI as the REST type authority and generate/verify Go and
-   TypeScript clients for bootstrap/auth, devices, accounts, profiles,
-   workspaces, sessions, usage, session commands, audit, health, and version.
+   TypeScript contract artifacts: generated Go server/client/models, generated
+   TypeScript OpenAPI types, and a first-party exhaustively typed runtime client
+   for bootstrap/auth, devices, accounts, profiles, workspaces, sessions, usage,
+   session commands, audit, health, and version.
 6. Implement metadata APIs with UUIDv7 identifiers, bounded cursor pagination,
    allowlisted filtering/sorting, `apiVersion`, stable typed errors,
    idempotency keys, and revision-based `If-Match` conflict responses.
 7. Implement asynchronous `start|stop|kill|resume|acquire_control|release_control`
-   Session Command creation/querying and daemon delivery/acknowledgement. The
+   Session Command creation/querying and daemon delivery/claim/ack/result with
+   durable receipt reconciliation, reserved-only expired-attempt CAS rebind,
+   later-state reconcile, and ambiguous-state refusal. The
    REST request returns `202 + commandId` and never claims a remote process has
    already started.
 8. Implement revisioned configuration synchronization through device outbox,
    server inbox, per-device cursors, idempotent replay, field-level conflicts,
-   deletion tombstones, and retention only after all known eligible devices
-   have acknowledged the relevant revision.
+   exact domain-separated canonical full-base/full-next/patch wire including
+   create sentinel and missing-history behavior, deletion tombstones plus
+   lifetime watermarks, authoritative topological snapshots with an already-
+   authenticated target Device prerequisite and canonical manifest/page/final
+   digest chain, bidirectional UUID mappings, and retention only after all known
+   eligible devices acknowledge the revision.
 9. Implement a responsive metadata-only Web/PWA shell and the Overview,
    Devices, Accounts, Profiles, Sessions, and Usage pages against generated
-   protocol clients, including loading/empty/error/offline/revoked states and
-   accessible keyboard/screen-reader behavior.
+   TypeScript types through the first-party runtime client, including loading/
+   empty/error/offline/revoked states and accessible keyboard/screen-reader
+   behavior.
 10. Add bounded audit events, redacted structured logs, metrics for API/device
     connection health, deployment examples needed to preserve the RP ID/TLS
     contract, and unit/contract/integration/security evidence for the Phase 4a
@@ -96,14 +116,17 @@ for Phase 4a.
    origin-mismatched ceremony fails without leaving an activated user or trust
    root.
 2. During bootstrap the operator registers a Passkey, records a one-time set of
-   recovery codes, and mutually confirms the fingerprint of an OS-Vault-backed
-   Daemon/Desktop. Only the atomic completion activates the account.
+   recovery codes, and mutually confirms the fingerprint of a Daemon whose new
+   remote keys are already encrypted in portable Vault v1. Only the atomic
+   completion activates the account.
 3. The operator signs in with the Passkey. Secure session cookies and CSRF
    checks protect mutations; one recovery code can be consumed once to regain
    access and register a replacement Passkey without changing the RP ID
    silently.
-4. A new Daemon, Web, or Desktop identity requests enrollment. An already
-   pinned device verifies the displayed fingerprint and signs an attestation;
+4. A new Daemon or Web identity requests enrollment. The same server contract
+   accepts a fixture-backed `kind=desktop`, while the Desktop product key-store
+   client remains Phase 5. An already pinned device verifies the displayed
+   fingerprint and signs an attestation;
    expired challenges, unpinned approvers, digest mismatch, and changed keys are
    rejected and audited.
 5. The operator views online/offline presence and revokes a device. Its active
@@ -137,9 +160,11 @@ for Phase 4a.
 - The server public-key directory is an index, not a trust anchor. Sensitive
   enrollment decisions require locally pinned approver keys and an attestation
   whose device/key digests match. A server-supplied key change fails closed.
-- Web and Desktop are distinct Device identities even when Desktop connects to
-  a daemon on the same host. Only `kind=daemon` owns credentials or Provider
-  processes.
+- Web and Desktop are distinct Device kinds even when Desktop later connects to
+  a daemon on the same host. Phase 4a implements Web key generation/storage and
+  enrollment; it accepts/tests the Desktop server contract only. The Desktop
+  product key-store client remains Phase 5. Only `kind=daemon` owns credentials
+  or Provider processes.
 - Control Plane SQLite and logs may contain metadata, hashes, revisions,
   ciphertext-free command status, and bounded audit context. They must not
   contain Provider tokens/auth files, Vault keys, terminal/model plaintext,
@@ -190,9 +215,14 @@ for Phase 4a.
 - [ ] Empty-server startup applies ordered server migrations once, enables WAL
       and foreign keys, preserves data across restart, bounds busy/cleanup work,
       and refuses an unknown future schema without destructive fallback.
-- [ ] Bootstrap token plaintext is emitted once, only its bounded hash persists,
+- [ ] Bootstrap token plaintext is emitted once, only its SHA-256 digest persists,
       the ceremony expires after ten minutes, and user + Passkey + recovery-code
-      hashes + OS-Vault trust anchor activate atomically or not at all.
+      hashes + portable-Vault-v1 Daemon trust anchor activate atomically or not
+      at all; P2 first verifies migration 0008, the separate <=4-KiB
+      `DeviceKeyEnvelopeV1`/mapping transaction, exact prepare/prove/activate
+      actor, and public bootstrap commit receipt with no activation secret;
+      local-only pre-user token rotation cannot reset an initialized or running
+      server.
 - [ ] A pure Web client cannot become the initial trust anchor; incomplete,
       expired, replayed, origin/RP-ID-mismatched, or concurrent bootstrap
       attempts leave no partial active identity and produce redacted audit facts.
@@ -200,36 +230,59 @@ for Phase 4a.
       user presence/verification policy, signature counter behavior, and replay;
       production config rejects insecure or mutable RP-ID/origin settings.
 - [ ] Auth sessions use `Secure`, `HttpOnly`, and appropriate `SameSite` cookies,
-      expire/revoke deterministically, and every state-changing browser request
-      passes origin and CSRF validation.
-- [ ] Recovery codes are generated from adequate randomness, displayed once,
-      stored only as individually salted/slow hashes, consumed atomically once,
-      rate limited, and never logged or returned by later reads.
-- [ ] Enrollment validates Device kind/capabilities, key formats, challenge
+      issue/rotate a memory-only 32-byte CSRF value whose digest is stored, and
+      enforce the frozen pre-auth/authenticated/Device Origin/Fetch-Metadata/
+      JSON/cookie/CSRF matrix.
+- [ ] Recovery uses exactly ten `MAD-RC1-` codes of 20 random bytes with strict
+      Base32 parsing, 16-byte salts/frozen Argon2id, atomic one-time consume and
+      recent-UV rotation; Passkey list/delete preserves the last key, and
+      replacement exits recovery by rotating/revoking browser sessions.
+- [ ] Enrollment validates Device kind/capabilities, key formats, exact
+      Ed25519/X25519 proof-of-possession transcript, challenge
       signature, expiry, one-time use, fingerprint derivation, pinned approver,
       attestation signature, and exact key digests before activation.
 - [ ] Duplicate/replayed enrollment, changed keys, invalid/unpinned approver,
       digest mismatch, unsupported device capability, and revoked identity all
       fail closed with stable error codes and redacted audit events.
+- [ ] Candidate Daemon/Web and anchor actor sequences persist pins before
+      signing/activation, verify the public approver-signed activation receipt,
+      return no connection secret, support cancel/resume/idempotency and strict
+      TTY/noninteractive fingerprint confirmation; versioned unknown
+      capabilities are preserved-but-ineffective and same-key elevation needs a
+      monotonic directly pinned capability attestation.
 - [ ] Presence transitions survive reconnect and restart without falsely
       treating an unauthenticated socket as online; revocation immediately
       closes active authenticated connections and blocks later reads/writes.
-- [ ] OpenAPI is the REST type authority; generated Go/TypeScript clients are
-      reproducible and CI rejects schema/client drift, undocumented fields,
-      invalid pagination/filter/sort values, and responses without `apiVersion`.
+- [ ] OpenAPI is the REST type authority; generated Go server/client and
+      TypeScript types plus the first-party exhaustive runtime client are
+      reproducible/type-safe, and exact `api:generate`/temp-byte `api:verify`
+      plus tool-graph license scan reject drift.
 - [ ] Every mutation honors `Idempotency-Key`; updates/deletes require
       `If-Match`; stale revisions return `409 sync_conflict` with bounded
       field-level differences and never silently overwrite server state.
 - [ ] Session Command creation returns `202 + commandId`; retries are idempotent;
       only an authenticated eligible target can claim/ack it; offline, expired,
       unsupported, duplicate, and daemon-restart paths have durable typed states
-      and never claim synchronous Provider success.
+      including reserved-only attempt rebind, later-state reconciliation, and
+      receipt ambiguity, and never claim synchronous/exactly-once Provider
+      success or repeat an uncertain local execution.
 - [ ] Sync outbox/inbox processing is ordered, bounded, transactional, and
       idempotent; cursors advance only after commit; replay creates no duplicate
       resource; secret fields and credential grants are rejected from this path.
-- [ ] Tombstones carry resource type/id/revision/deletion time, propagate to all
-      known eligible devices, resist stale resurrection, and are retained until
-      acknowledgement plus the configured retention condition is satisfied.
+- [ ] Device-origin rows commit mapping before push; server-created target
+      Profiles allocate a correct local prefixed ID + mapping only on the target
+      Daemon; missing parents, wrong ownership/type/binding, backup replay, or
+      mapping collision quarantine and block ack rather than overwrite.
+- [ ] Tombstones carry resource type/id/revision/digest/deletion time, propagate
+      to eligible devices, and leave lifetime deletion watermarks after payload
+      GC; domain-separated RFC 8785 typed revision/create digests plus exact
+      `fullBase/fullNext/patch` wire make create, history-missing, nested-map,
+      and atomic-array diffs reproducible, and initial/re-enrolled/restored
+      Devices finish a targeted snapshot before incrementals; the target Device
+      is an out-of-band enrolled/authenticated prerequisite, resources start at
+      Account, and exact RFC 8785 manifest/page/final digests reject mixed epoch,
+      reorder, omission, duplication, truncation, replay substitution, expiry,
+      or conflicting commit.
 - [ ] Overview, Devices, Accounts, Profiles, Sessions, and Usage pages render
       only allowed metadata and correct loading/empty/error/offline/revoked/
       conflict states; Usage always shows source, confidence, and observation
@@ -256,7 +309,8 @@ for Phase 4a.
 - WebAuthn libraries differ in counter policy, resident-key behavior, metadata
   validation, and origin configuration. The plan must choose and pin one library
   only after a bounded compatibility/license spike or documented evaluation.
-- Atomic bootstrap spans authentication material and a signed device trust
+- Atomic bootstrap spans authentication material and a portable-Vault-backed
+  Daemon trust
   anchor. A partial transaction or external ceremony retry must not produce an
   active user that lacks a recoverable trust root.
 - The server cannot prove a remote human compared fingerprints. It can verify
@@ -274,7 +328,8 @@ for Phase 4a.
   permanently revoked devices. The feature plan must freeze acknowledgement and
   retention semantics to avoid either stale resurrection or unbounded storage.
 - The existing Web/Desktop packages are scaffolds until implementation audit
-  proves otherwise. Visual polish cannot substitute for generated-client,
+  proves otherwise. Visual polish cannot substitute for generated types plus
+  the first-party typed runtime client,
   security, accessibility, and offline-state correctness.
 - Phase 4a is broad. The feature plan must split it into independently
   verifiable phases and keep E2EE realtime, credential transfer, packaging, and
