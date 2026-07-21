@@ -9,11 +9,11 @@
 | Title | `Claude API-key provider vertical slice` |
 | Owner Module | `provider` |
 | Impacted Modules | `core`, `security`, `desktop`, `project-system` |
-| Current Phase | `PLAN` |
-| Status | `NEEDS_REVIEW` |
-| Executor | `Codex (GPT-5) as feature-plan` |
-| Updated | `2026-07-20 17:37 PDT` |
-| Suggested Next | `feature-review` |
+| Current Phase | `REVIEW` |
+| Status | `BLOCKED` |
+| Executor | `Codex (GPT-5) as feature-review` |
+| Updated | `2026-07-20 20:57 PDT` |
+| Suggested Next | `feature-plan only after an explicit operator decision to resume API-key/cloud work` |
 | Branch / Worktree | `codex/provider/claude-api-key-provider` / `/Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/claude-api-key-provider` |
 | Plan Version | `v0.1` |
 | Provider Gate | `open — spike-claude-api-key-cli-compatibility must reach Security-accepted GATE_RESOLVED before feature-build` |
@@ -115,3 +115,4 @@ authority and evidence, and stops at `READY_FOR_VERIFY`. An independent
 | Time | Executor | Action | Files/commit | Result | Next |
 |---|---|---|---|---|---|
 | 2026-07-20 17:37 PDT | Codex (GPT-5) as feature-plan | Classified the API-key vertical slice as solely `provider`-owned, converted the existing Brief/ADR boundary into phased design/API/test contracts, froze secret/billing/platform/usage/rollback rules, and created the required credential-sensitive Provider Spike intake without touching product code or dashboard state | `docs/workflow/features/claude-api-key-provider/{design.md,api.md,test.md,dev_log.md}`; `docs/workflow/features/spike-claude-api-key-cli-compatibility/dev_log.md`; no commit | feature `NEEDS_REVIEW`; Provider/Security Gates open; first executable technical work is the child `provider-spike` and no feature-build is authorized | independent `feature-review`; execute `provider-spike` for child before any build |
+| 2026-07-20 20:57 PDT | Codex (GPT-5) as feature-review | Independently reviewed the API-key/Console-billing plan and Draft PR #25 against the operator's corrected scope: no API key or cloud auth, ignore Linux, and use only the existing macOS Claude.ai Team subscription; preserved all prior plan and Spike evidence without running a Provider call | this log; `docs/reviews/claude-api-key-provider/2026-07-20-feature-review.md`; no plan/product/dashboard/child-Spike change | `NEEDS_REVIEW -> BLOCKED`; every planned gate and build phase requires the auth, billing, and platform scope the operator explicitly declined, while the plan expressly rejects subscription use as acceptance evidence | `feature-plan` may clear only after a future explicit operator decision to resume API-key/cloud work; subscription-only experimentation requires its own separately planned lifecycle |
