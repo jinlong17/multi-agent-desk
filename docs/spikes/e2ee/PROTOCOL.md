@@ -92,8 +92,11 @@ Each enrolled device has:
 - a local, operator-verified pinned directory.
 
 Private keys remain in the device Vault selected by the platform key-storage
-decision. A key change creates a new device identity or explicit re-enrollment;
-the server cannot overwrite a pin.
+decision. The Phase 4a initial Daemon anchor stores its remote identity in the
+already-shipped portable password-derived Vault v1; this is not OS-backed.
+Browser storage follows ADR 0010, and OS Keychain/DPAPI/Secret Service wrapping
+remains Phase 5. A key change creates a new device identity or explicit
+re-enrollment; the server cannot overwrite a pin.
 
 The full pin digest is:
 
@@ -106,11 +109,14 @@ SHA-256(frame(
 ))
 ```
 
-The UI displays every byte as eight groups of eight lowercase hexadecimal
-characters. The approval ceremony compares the complete value on a previously
-pinned device and the enrolling device.
+The stored and attested pin digest is always the complete 32-byte value. The UI
+displays only `Base32NoPadding(pinDigest[0:15])` as six groups of four uppercase
+RFC 4648 Base32 characters. Parsers may normalize display hyphens and case,
+decode exactly 15 bytes, and compare those bytes in constant time. The 120-bit
+display is presentation-only and must never replace the stored full digest or
+either full key digest.
 
-A `DeviceAttestation` contains at least:
+A `DeviceAttestationV1` is the following closed typed object:
 
 ```json
 {
@@ -120,8 +126,8 @@ A `DeviceAttestation` contains at least:
   "expiresAt": "RFC3339",
   "issuedAt": "RFC3339",
   "subjectDeviceId": "uuidv7",
-  "subjectExchangeKey": "base64url-32-bytes",
-  "subjectSigningKey": "base64url-32-bytes",
+  "subjectExchangeKeyDigest": "base64url-sha256-32-bytes",
+  "subjectSigningKeyDigest": "base64url-sha256-32-bytes",
   "type": "device_attestation",
   "version": 1
 }
@@ -136,13 +142,66 @@ Ed25519.Sign(
 )
 ```
 
-Verification requires an unrevoked, locally pinned approver signing key,
-matching subject key bytes and digest, current validity, permitted capability
-delegation, and a previously unseen `attestationId`. Server-provided keys may
-help locate candidates but never satisfy this check.
+The restricted RFC 8785 codec permits only those known members, strings,
+non-negative safe integers, and arrays. Capabilities are sorted and
+deduplicated. Floats, negative/unsafe integers, arbitrary maps, duplicate or
+unknown members, non-I-JSON strings, and caller-selected member names are
+rejected before signature verification. Raw subject keys accompany enrollment
+outside this signed object; verification recomputes both full SHA-256 digests
+and requires exact matches.
 
-The initial trust anchor must be a Daemon/Desktop device with an OS-backed
-Vault. A pure browser cannot bootstrap the trust graph by itself.
+Verification also requires an unrevoked, locally pinned approver signing key,
+current validity, permitted capability delegation, and a previously unseen
+`attestationId`. Server-provided keys may help locate candidates but never
+satisfy this check.
+
+The initial trust anchor is a Daemon with the portable Vault-v1 remote-key
+envelope. A pure browser cannot bootstrap the trust graph by itself. Desktop
+key storage is only a server contract fixture in Phase 4a and becomes product
+behavior with OS-backed storage in Phase 5.
+
+### 4.1 Enrollment exchange-key proof of possession
+
+Bootstrap and enrollment prove both Device keys. Ed25519 signs the transcript;
+X25519 uses an ephemeral-DH/HKDF/HMAC proof:
+
+```text
+popContext = frame(
+  "multidesk-x25519-pop-context-v1", "v1",
+  purpose, ceremonyId, subjectDeviceId,
+  subjectSigningPublicKeyRaw, subjectExchangePublicKeyRaw,
+  storageMode, storageAssertionDigestRaw,
+  serverEphemeralX25519PublicKeyRaw,
+  challengeRaw, expiresAtRFC3339UTC
+)
+sharedSecret = X25519(subjectExchangePrivateKey,
+                      serverEphemeralX25519PublicKey)
+popSalt = SHA-256(frame("multidesk-x25519-pop-salt-v1",
+                       ceremonyId, challengeRaw))
+popKey = HKDF-SHA256(sharedSecret, popSalt, popContext, 32)
+exchangeProof = HMAC-SHA256(popKey,
+  frame("multidesk-x25519-pop-proof-v1", popContext))
+signingProof = Ed25519.Sign(subjectSigningPrivateKey,
+  frame("multidesk-ed25519-pop-proof-v1", popContext))
+```
+
+`storageAssertionDigestRaw` is SHA-256 of the strict restricted-JCS storage
+assertion. `storageMode` and that digest are client assertions bound by both
+proofs; possession does not prove encryption at rest. The server creates a
+fresh X25519 ephemeral pair and 32-byte challenge for each ceremony, retains
+the private key only in memory, rejects an all-zero shared secret, compares the
+HMAC in constant time, and consumes the ceremony once. Restart, expiry, or
+consume invalidates the proof. Mutating the purpose, IDs, either subject key,
+storage mode/assertion digest, server ephemeral key, challenge, or expiry must
+fail in both vector implementations.
+
+### 4.2 Phase boundary
+
+Phase 4a uses HTTPS REST for bootstrap, user/device authentication, enrollment,
+presence, metadata sync, and asynchronous Session Commands. It adds no WSS,
+Pairwise Root, HPKE production path, terminal, Approval, or Credential Grant.
+Sections 5-9 remain verified protocol/vector authority for Phase 4b/5, not a
+claim that Phase 4a implements realtime or grant behavior.
 
 ## 5. Pairwise root key and HPKE wrap
 
@@ -384,11 +443,21 @@ fixtures. The independent implementations are:
   `@hpke/chacha20poly1305` 1.8.0, and `@noble/ciphers` 2.2.0.
 
 `verify.mjs` requires exact equality for public keys, canonical bytes,
-signatures, HPKE encapsulation/ciphertext, per-peer derived traffic keys,
-nonces, XChaCha ciphertexts, pin digests, and rotation output. It includes two
-peer roots and also requires these negative cases to fail:
+signatures, the enrollment X25519 shared secret, HKDF `popKey`,
+HMAC exchange proof, Ed25519 signing proof, HPKE
+encapsulation/ciphertext, per-peer derived traffic keys, nonces, XChaCha
+ciphertexts, full pin digests, six-group fingerprints, and rotation output. It
+includes two peer roots and also requires these negative cases to fail:
 
 - changed attestation bytes;
+- changed attestation digest/capability/expiry/ID and invalid restricted-JCS
+  shape, duplicate/unknown member, Unicode/escaping/order/integer cases;
+- either raw subject key failing to match its separately signed full digest;
+- lowercase/unhyphenated fingerprint normalization, altered/invalid/23/25-character
+  display rejection, old full-hex display rejection, and refusal to use the
+  15-byte display value as the complete stored digest;
+- changed enrollment PoP purpose/ID/key/storage mode/storage assertion digest/
+  challenge/expiry/server ephemeral, all-zero X25519, replay, and restart;
 - changed wrap AAD;
 - a sender key different from the local pin;
 - changed envelope AAD;
