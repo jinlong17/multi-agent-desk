@@ -9,11 +9,11 @@
 | Title | `Windows Codex runtime CI deadline flake` |
 | Owner Module | `provider` |
 | Impacted Modules | `project-system` |
-| Current Phase | `FIX` |
-| Status | `READY_FOR_VERIFY` |
-| Executor | `Codex (GPT-5) as bug-fix` |
-| Updated | `2026-07-20 18:39 PDT` |
-| Suggested Next | `bug-verify` |
+| Current Phase | `VERIFY` |
+| Status | `READY_TO_SHIP` |
+| Executor | `Codex (GPT-5) as bug-verify` |
+| Updated | `2026-07-20 19:20 PDT` |
+| Suggested Next | `ship` |
 | Branch / Worktree | `codex/provider/windows-codex-runtime-ci-flake @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/windows-codex-runtime-ci-flake` |
 | Provider Gate | `resolved — diagnosis does not change the exact Linux amd64 Codex 0.144.2 support claim or any platform capability` |
 | Security Gate | `none` |
@@ -96,6 +96,14 @@ Codex runtime isolation failure or a SQLite locking defect.
 | 2026-07-20 18:35 PDT | FULL GO | `go test -count=1 ./...`; `go vet ./...` | PASS; all Go packages passed and vet reported no findings | local command output |
 | 2026-07-20 18:38 PDT | WINDOWS CROSS-COMPILE | `GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go test -c ./internal/providers/codex`; `GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build ./cmd/multidesk` | PASS; produced Windows amd64 test binary and CLI binary; compile evidence only, not native Windows runtime acceptance | `/tmp/mad-runtime-flake.4GKM3L/{codex.test.exe,multidesk.exe}` |
 | 2026-07-20 18:39 PDT | GOVERNANCE | exact underlying `workflow:generate`; `workflow:verify`; `dashboard`; `dashboard:verify`; scaffold structure/Go format; CI Actions/CODEOWNERS/fixtures/links/licenses; `git diff --check` | PASS after rerunning the license verifier with bundled Node on `PATH`; the first license invocation failed only because the pnpm shebang could not locate `node`, and is retained here rather than hidden | local command output |
+| 2026-07-20 19:10 PDT | VERIFY SCOPE | `git diff 154f882e8baea8165b729dfa53d7bdf4d3e546f1...6c53c6869cccf8081f3c1b3a7130d3a724123a02`; `git diff --check` | PASS; implementation delta is confined to `internal/providers/codex/runtime_test.go` (`44` additions, `46` deletions), moving all 15 same-shaped tests to post-setup bounded contexts plus one deterministic regression; no production or support-boundary change | local diff; PR #24 |
+| 2026-07-20 19:13 PDT | VERIFY TARGET STRESS | `go test -count=100 -run '^(TestRuntimeManagerFixtureSetupDoesNotConsumeOperationBudget\|TestRuntimeManagerSharesCredentialRuntimeAndKeepsBindingsIndependent\|TestRuntimeManagerKeepsConcurrentAccountsAndUsageIsolated)$' ./internal/providers/codex` | PASS; `300` targeted executions; package `20.342s` | local command output |
+| 2026-07-20 19:14 PDT | VERIFY TARGET RACE | `go test -race -count=10 -run '^(TestRuntimeManagerFixtureSetupDoesNotConsumeOperationBudget\|TestRuntimeManagerSharesCredentialRuntimeAndKeepsBindingsIndependent\|TestRuntimeManagerKeepsConcurrentAccountsAndUsageIsolated)$' ./internal/providers/codex` | PASS; `30` targeted race executions; package `21.344s` | local command output |
+| 2026-07-20 19:16 PDT | VERIFY FULL GO | `go test -count=1 ./...`; `go vet ./...` | PASS; all Go packages passed, Codex `5.087s`; vet reported no findings | local command output |
+| 2026-07-20 19:18 PDT | VERIFY ADJACENT | `go test -count=100 -run '^TestNativeTwoClientFakeSessionControl$' ./internal/device` | PASS; `100` executions; package `78.909s`; preserves but does not reproduce PR #24's first unrelated Ubuntu Device E2E failure | local command output |
+| 2026-07-20 19:20 PDT | VERIFY WINDOWS | PR #24 CI run `29794650755`, native Windows job `88525423470`, merge ref `3472cdb` = head `6c53c68` + base `154f882`; unfiltered `go test -count=1 ./...` and scaffold repetition | PASS; Go `1.26.5 windows/amd64`; Codex package passed twice in `32.059s` and `34.714s`, exercising both original tests and the regression; complete Windows job succeeded | [Windows job](https://github.com/jinlong17/multi-agent-desk/actions/runs/29794650755/job/88525423470) |
+| 2026-07-20 19:20 PDT | VERIFY REQUIRED CHECKS | PR #24 exact head `6c53c68`; required check rollup | PASS final `7/7`: `project-verify`, Ubuntu rerun, macOS, Windows, license, DCO, links. First Ubuntu job `88523410234` failed unrelated `internal/device/TestNativeTwoClientFakeSessionControl`; rerun job `88525411694` passed Device and Codex twice; failure remains recorded | [PR #24](https://github.com/jinlong17/multi-agent-desk/pull/24); [Ubuntu first job](https://github.com/jinlong17/multi-agent-desk/actions/runs/29794650755/job/88523410234); [Ubuntu rerun](https://github.com/jinlong17/multi-agent-desk/actions/runs/29794650755/job/88525411694) |
+| 2026-07-20 19:22 PDT | VERIFY GOVERNANCE | `pnpm run workflow:verify`; direct `pnpm run dashboard:verify`; `pnpm run ci:links`; `git diff --check` | Workflow, 283-file link check, and diff check PASS. Direct dashboard check reported `generated commit is stale` because the verdict writer did not run the writer-owned preceding dashboard refresh; canonical CI `project:verify` generated then verified the snapshot and passed at exact head | local command output; [project-verify job](https://github.com/jinlong17/multi-agent-desk/actions/runs/29794650755/job/88525424090) |
 
 ## Risks and Blockers
 
@@ -116,3 +124,4 @@ Codex runtime isolation failure or a SQLite locking defect.
 |---|---|---|---|---|---|
 | 2026-07-20 17:42 PDT | Codex (GPT-5) as bug-diagnose | Classified the runtime/account-isolation flake as Provider-owned with project-system CI impact; reproduced from two complete Windows job logs; correlated both failure sites with a five-second context created before slow fixture setup; checked unchanged-SHA attempt 3 and local stress/race controls; documented only diagnosis evidence | this file; `docs/reviews/windows-codex-runtime-ci-flake/2026-07-20-bug-diagnose.md` | `DIAGNOSED`; minimum repair is test-only context placement and Windows regression coverage; Named Pipe hang remains a separate bug | `bug-fix` |
 | 2026-07-20 18:39 PDT | Codex (GPT-5) as bug-fix | Replaced the repeated context-before-fixture pattern in all 15 runtime-manager tests with one fixture contract that starts the same bounded operation context after setup; added a deterministic setup/deadline ordering regression; completed targeted stress/race, full Go/vet, Windows cross-compile, and governance checks | this file; `internal/providers/codex/runtime_test.go` | `READY_FOR_VERIFY`; production behavior and the independent Named Pipe bug remain untouched | `bug-verify`, including a fresh protected Windows job |
+| 2026-07-20 19:20 PDT | Codex (GPT-5) as bug-verify | Independently reviewed the test-only diff for scope, repeated the new regression and both original tests under stress/race, ran full Go/vet and adjacent Device stress, inspected native Windows logs, preserved the first unrelated Ubuntu Device E2E failure and its successful rerun, and locked the verdict to exact head `6c53c68` with seven required checks green | this file; `docs/reviews/windows-codex-runtime-ci-flake/2026-07-20-bug-verify.md` | `READY_TO_SHIP`; no implementation, plan, dashboard, PR, commit, push, or merge mutation by verifier | `ship` with explicit human authorization |
