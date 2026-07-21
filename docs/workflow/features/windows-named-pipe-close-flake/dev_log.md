@@ -9,11 +9,11 @@
 | Title | Windows Named Pipe close can hang behind a synchronous read |
 | Owner Module | `core` |
 | Impacted Modules | `security`, `project-system` |
-| Current Phase | `FIX` |
-| Status | `READY_FOR_VERIFY` |
-| Executor | `Codex (GPT-5) as bug-fix` |
-| Updated | `2026-07-20 19:10 PDT` |
-| Suggested Next | `independent bug-verify on exact commit and a fresh Windows runner` |
+| Current Phase | `VERIFY` |
+| Status | `READY_TO_SHIP` |
+| Executor | `Codex (GPT-5) as bug-verify` |
+| Updated | `2026-07-20 19:18 PDT` |
+| Suggested Next | `ship only with explicit human authorization` |
 | Branch / Worktree | `codex/core/windows-named-pipe-close-flake` / `/Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/windows-named-pipe-close-flake` |
 | Provider Gate | `none` |
 | Security Gate | `none` |
@@ -103,6 +103,11 @@ SQLite change introduced this symptom.
 | 2026-07-20 19:04 PDT | bug-fix local/compile | `go test -count=1 ./internal/device`; `go test -race -count=1 ./internal/device`; `go test -count=1 ./...`; `go vet ./...`; `GOOS=windows GOARCH=amd64 go vet ./internal/device`; `GOOS=windows GOARCH=amd64 go test -c -o /tmp/mad-windows-device-test.exe ./internal/device` | `PASS`; Windows commands are compile/static evidence only, not native runtime acceptance | local command output |
 | 2026-07-20 19:05 PDT | bug-fix governance | `project:verify`; `ci:verify`; JSON/diff checks using fixed Node plus pnpm-10 npm shim | `PASS`; workflow `agents=10 skills=3 docs=17 edges=20 statuses=15`; seven CI contracts, fixtures, 282 Markdown links and licenses pass | local command output |
 | 2026-07-20 19:06 PDT | bug-fix environment correction | First `scaffold:verify` reached Go but Web checks could not find `tsc` because the new worktree had no `node_modules`; ran `pnpm install --offline --frozen-lockfile` and reran the unchanged command | initial environment-only failure retained; frozen install used 17 cached packages and changed no tracked file; final `scaffold:verify` passed Go/Web/Rust checks and the release no-bundle build | local command output |
+| 2026-07-20 19:14 PDT | bug-verify original-failure reproduction | Retrieved PR #23 run `29789591659`, attempt 1 job `88508269207`, directly from Actions | `FAIL` reproduced from the authoritative log: `TestNamedPipeAuthenticatedDaemon` timed out at 10m with `CloseHandle(0x218)` concurrent with synchronous `ReadFile(0x218)` and a pending `ConnectNamedPipe` | [job 88508269207](https://github.com/jinlong17/multi-agent-desk/actions/runs/29789591659/job/88508269207) |
+| 2026-07-20 19:18 PDT | bug-verify exact-tree and scope audit | Compared PR #26 head `4454dfc849f62fd89042c5e93782553e723809f3`, synthetic merge `524107c51ebd5191555af8ec886da9ed873ef1cb`, and base `154f882e8baea8165b729dfa53d7bdf4d3e546f1`; inspected `origin/main...HEAD` | `PASS`; merge and head trees are both `d563504fbf708eadd40aa9ba89b467bd72fd5b3f`; product diff is limited to the Windows endpoint and Windows tests; `server.go`, protocol/auth, Provider, storage and migrations are unchanged; DACL, Network deny, remote rejection, first-instance, message mode and same-session controls remain | [bug-verify report](../../../reviews/windows-named-pipe-close-flake/2026-07-20-bug-verify.md) |
+| 2026-07-20 19:18 PDT | bug-verify Windows runtime | PR #26 run `29795204963`, job `88525033621`, Windows Server 2025 `10.0.26100`, image `windows-2025-vs2026` `20260714.173.1`, Go `1.26.5 windows/amd64`; unfiltered `go test -count=1 ./...` plus `scaffold:verify -> go test ./...` | `PASS`; `internal/device` completed in `6.052s` and `6.601s`. Both native executions included the authenticated idle-server close regression plus pending-accept, 32-iteration pending-read close/double-close, and idle-read deadline tests; total pending-read close stress iterations=`64` | [job 88525033621](https://github.com/jinlong17/multi-agent-desk/actions/runs/29795204963/job/88525033621) |
+| 2026-07-20 19:18 PDT | bug-verify protected matrix | PR #26 required checks at exact head: `project-verify`, `build-ubuntu`, `build-macos`, `build-windows`, `license-gate`, `dco`, `link-check` | `PASS`; seven of seven successful, PR merge state `CLEAN` and Draft retained | [PR #26](https://github.com/jinlong17/multi-agent-desk/pull/26) |
+| 2026-07-20 19:16 PDT | bug-verify local adjacent/static | `go test -count=1 ./internal/device`; `go test -race -count=1 ./internal/device`; `go test -count=1 ./...`; `go vet ./...`; Windows `go vet` and test-binary cross-compile | `PASS`; device `1.407s`, race `6.077s`, full Go green; Windows commands treated only as compile/static corroboration, not runtime acceptance | local command output |
 
 ## Risks and Blockers
 
@@ -130,3 +135,4 @@ SQLite change introduced this symptom.
 |---|---|---|---|---|---|
 | 2026-07-20 17:43 PDT | `Codex bug-diagnose` | Classified the bug as `core`, retrieved both Windows attempts and prior Phase 1 evidence, reduced the captured stacks against Win32 and `go-winio` close semantics, and bounded the repair. | `docs/workflow/features/windows-named-pipe-close-flake/dev_log.md`; `docs/reviews/windows-named-pipe-close-flake/2026-07-20-bug-diagnose.md`; no commit | `DRAFT -> DIAGNOSED`; root cause supported; production/tests unchanged. | Run `bug-fix` for `windows-named-pipe-close-flake`. |
 | 2026-07-20 19:10 PDT | `Codex (GPT-5) as bug-fix` | Implemented overlapped, cancellation-aware and completion-tracked accept/read/write/close semantics; added synchronized Windows lifecycle regressions; preserved server, protocol, authentication, DACL and non-Windows behavior; ran local, race, Windows compile/static and full governance/scaffold evidence | this file; `internal/device/endpoint_windows.go`; `internal/device/endpoint_windows_test.go`; no commit yet | `DIAGNOSED -> READY_FOR_VERIFY`; no local blocker; native Windows acceptance remains deliberately unclaimed | independent `bug-verify` on a fresh protected Windows job |
+| 2026-07-20 19:18 PDT | `Codex (GPT-5) as bug-verify` | Independently reproduced the original failure from its authoritative Actions log; locked PR/head/base and tree identity; reviewed the completion-before-close implementation, scope and ADR 0013 controls; ran adjacent local/race/static checks; and inspected both fresh native Windows package executions plus all protected checks | `docs/reviews/windows-named-pipe-close-flake/2026-07-20-bug-verify.md`; this file; exact head `4454dfc849f62fd89042c5e93782553e723809f3` | `READY_FOR_VERIFY -> READY_TO_SHIP`; all required regression, scope, security-boundary and protected-CI evidence passes; no findings or blockers | `ship` only with explicit human authorization |
