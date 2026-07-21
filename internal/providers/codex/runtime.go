@@ -79,7 +79,10 @@ type RuntimeManager struct {
 	runtimes map[domain.ID]*CredentialRuntime
 	bindings map[domain.ID]*SessionBinding
 	starting map[domain.ID]chan struct{}
-	closed   bool
+	// beforeReservedStartGate is a nil-by-default test seam for deterministic
+	// scheduling at the reserved start singleflight boundary.
+	beforeReservedStartGate func()
+	closed                  bool
 }
 
 type CredentialRuntime struct {
@@ -242,6 +245,34 @@ func (m *RuntimeManager) start(ctx context.Context, request RuntimeStartRequest,
 			!validRuntimeFingerprint(reserved.CapabilityDigest) {
 			return domain.Session{}, domain.NewError(domain.CodeInvalidArgument, "reserved Codex compatibility is invalid")
 		}
+		if m.beforeReservedStartGate != nil {
+			m.beforeReservedStartGate()
+		}
+		for {
+			m.mu.Lock()
+			waiting := m.starting[reserved.SessionID]
+			if waiting == nil {
+				waiting = make(chan struct{})
+				m.starting[reserved.SessionID] = waiting
+				m.mu.Unlock()
+				defer func() {
+					m.mu.Lock()
+					if current := m.starting[reserved.SessionID]; current == waiting {
+						delete(m.starting, reserved.SessionID)
+						close(waiting)
+					}
+					m.mu.Unlock()
+				}()
+				break
+			}
+			m.mu.Unlock()
+			select {
+			case <-waiting:
+				continue
+			case <-ctx.Done():
+				return domain.Session{}, domain.NewError(domain.CodeDeadlineExceeded, "reserved Codex start wait expired")
+			}
+		}
 		session, err = m.Store.Session(ctx, reserved.SessionID)
 		if err != nil {
 			return domain.Session{}, err
@@ -254,27 +285,6 @@ func (m *RuntimeManager) start(ctx context.Context, request RuntimeStartRequest,
 		if session.Status != domain.SessionStarting {
 			return session, nil
 		}
-		m.mu.Lock()
-		if waiting := m.starting[session.ID]; waiting != nil {
-			m.mu.Unlock()
-			select {
-			case <-waiting:
-				return m.Store.Session(ctx, session.ID)
-			case <-ctx.Done():
-				return domain.Session{}, domain.NewError(domain.CodeDeadlineExceeded, "reserved Codex start wait expired")
-			}
-		}
-		waiting := make(chan struct{})
-		m.starting[session.ID] = waiting
-		m.mu.Unlock()
-		defer func() {
-			m.mu.Lock()
-			if current := m.starting[session.ID]; current == waiting {
-				delete(m.starting, session.ID)
-				close(waiting)
-			}
-			m.mu.Unlock()
-		}()
 	}
 	sessionID := session.ID
 	failStart := func(cause error) (domain.Session, error) {

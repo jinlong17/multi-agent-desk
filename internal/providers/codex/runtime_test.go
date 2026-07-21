@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -355,7 +356,9 @@ func TestRuntimeManagerStartsReservedSessionOnceAndFailsPostReservationDrift(t *
 	if err != nil {
 		t.Fatal(err)
 	}
+	var discoverCount atomic.Int64
 	manager.Discover = func(context.Context) (BinaryDescriptor, CapabilitySet, error) {
+		discoverCount.Add(1)
 		return descriptor, capabilities, nil
 	}
 	binaryFingerprint, err := BinaryFingerprint(descriptor)
@@ -381,26 +384,66 @@ func TestRuntimeManagerStartsReservedSessionOnceAndFailsPostReservationDrift(t *
 			SchemaFingerprint: capabilities.SchemaFingerprint, CapabilityDigest: CapabilityDigest(capabilities)}
 	}
 	reserved := newReserved()
-	start := make(chan struct{})
-	results := make(chan domain.Session, 2)
-	errors := make(chan error, 2)
-	for range 2 {
-		go func() {
-			<-start
-			result, startErr := manager.StartReserved(ctx, reserved)
-			results <- result
-			errors <- startErr
-		}()
+	type startResult struct {
+		session domain.Session
+		err     error
 	}
-	close(start)
-	for range 2 {
-		result, startErr := <-results, <-errors
-		if startErr != nil || result.ID != reserved.SessionID || result.Status != domain.SessionRunning {
-			t.Fatalf("reserved result=%+v err=%v", result, startErr)
+	lateAtGate := make(chan struct{})
+	releaseLate := make(chan struct{})
+	var releaseLateOnce sync.Once
+	release := func() { releaseLateOnce.Do(func() { close(releaseLate) }) }
+	t.Cleanup(release)
+	var gateCalls atomic.Int64
+	manager.beforeReservedStartGate = func() {
+		if gateCalls.Add(1) == 1 {
+			close(lateAtGate)
+			select {
+			case <-releaseLate:
+			case <-ctx.Done():
+			}
 		}
 	}
-	if spawnCount.Load() != 1 || len(*fixtures) != 1 || (*fixtures)[0].threads.Load() != 1 {
-		t.Fatalf("reserved replay spawned=%d fixtures=%d threads=%d", spawnCount.Load(), len(*fixtures), (*fixtures)[0].threads.Load())
+	lateResult := make(chan startResult, 1)
+	go func() {
+		session, startErr := manager.StartReserved(ctx, reserved)
+		lateResult <- startResult{session: session, err: startErr}
+	}()
+	select {
+	case <-lateAtGate:
+	case <-ctx.Done():
+		t.Fatal("late reserved caller did not reach the start gate")
+	}
+	leaderSession, leaderErr := manager.StartReserved(ctx, reserved)
+	release()
+	var late startResult
+	select {
+	case late = <-lateResult:
+	case <-ctx.Done():
+		t.Fatal("late reserved caller did not finish")
+	}
+	manager.beforeReservedStartGate = nil
+	if leaderErr != nil || late.err != nil || leaderSession.ID != reserved.SessionID ||
+		leaderSession.Status != domain.SessionRunning || !reflect.DeepEqual(leaderSession, late.session) {
+		t.Fatalf("reserved leader=%+v err=%v late=%+v err=%v", leaderSession, leaderErr, late.session, late.err)
+	}
+	if discoverCount.Load() != 1 || spawnCount.Load() != 1 || len(*fixtures) != 1 ||
+		(*fixtures)[0].threads.Load() != 1 || (*fixtures)[0].kills.Load() != 0 {
+		t.Fatalf("reserved replay discovered=%d spawned=%d fixtures=%d threads=%d kills=%d",
+			discoverCount.Load(), spawnCount.Load(), len(*fixtures), (*fixtures)[0].threads.Load(), (*fixtures)[0].kills.Load())
+	}
+	persisted, err := store.Session(ctx, reserved.SessionID)
+	if err != nil || persisted.Status != domain.SessionRunning || !reflect.DeepEqual(persisted, leaderSession) {
+		t.Fatalf("reserved durable Session=%+v err=%v", persisted, err)
+	}
+	manager.mu.Lock()
+	_, stillStarting := manager.starting[reserved.SessionID]
+	binding := manager.bindings[reserved.SessionID]
+	credentialRuntime := manager.runtimes[request.CredentialInstanceID]
+	intact := !stillStarting && binding != nil && credentialRuntime != nil && !credentialRuntime.finalizing &&
+		credentialRuntime.Bindings[reserved.SessionID] == binding && binding.ThreadID == leaderSession.ProviderSessionID
+	manager.mu.Unlock()
+	if !intact {
+		t.Fatalf("reserved runtime/binding was not preserved: starting=%t binding=%+v runtime=%+v", stillStarting, binding, credentialRuntime)
 	}
 	credentialBefore, err := store.CredentialInstance(ctx, request.CredentialInstanceID)
 	if err != nil {
