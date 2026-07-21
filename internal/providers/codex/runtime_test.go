@@ -204,7 +204,7 @@ func (f *fixtureRuntime) crash() {
 	})
 }
 
-func runtimeManagerFixture(t *testing.T) (*RuntimeManager, RuntimeStartRequest, *storage.Store, *atomic.Int64, *[]*fixtureRuntime) {
+func prepareRuntimeManagerFixture(t *testing.T) (*RuntimeManager, RuntimeStartRequest, *storage.Store, *atomic.Int64, *[]*fixtureRuntime) {
 	t.Helper()
 	ctx := context.Background()
 	store, credentialID, accountID := setupCodexCredential(t)
@@ -256,10 +256,36 @@ func runtimeManagerFixture(t *testing.T) (*RuntimeManager, RuntimeStartRequest, 
 		CredentialInstanceID: credentialID, RuntimeProfileID: profileID, WorkspaceID: workspaceID}, store, spawnCount, fixtures
 }
 
+func runtimeManagerFixture(t *testing.T) (*RuntimeManager, RuntimeStartRequest, *storage.Store, *atomic.Int64, *[]*fixtureRuntime, context.Context) {
+	t.Helper()
+	return runtimeManagerFixtureAfterSetup(t, nil, 5*time.Second)
+}
+
+func runtimeManagerFixtureAfterSetup(t *testing.T, afterSetup func(), operationTimeout time.Duration) (*RuntimeManager, RuntimeStartRequest, *storage.Store, *atomic.Int64, *[]*fixtureRuntime, context.Context) {
+	t.Helper()
+	manager, request, store, spawnCount, fixtures := prepareRuntimeManagerFixture(t)
+	if afterSetup != nil {
+		afterSetup()
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), operationTimeout)
+	t.Cleanup(cancel)
+	return manager, request, store, spawnCount, fixtures, ctx
+}
+
+func TestRuntimeManagerFixtureSetupDoesNotConsumeOperationBudget(t *testing.T) {
+	const operationTimeout = time.Minute
+	var setupFinished time.Time
+	_, _, _, _, _, ctx := runtimeManagerFixtureAfterSetup(t, func() {
+		setupFinished = time.Now()
+	}, operationTimeout)
+	deadline, ok := ctx.Deadline()
+	if !ok || deadline.Before(setupFinished.Add(operationTimeout)) {
+		t.Fatalf("operation budget started before setup completed: setup_finished=%v deadline=%v", setupFinished, deadline)
+	}
+}
+
 func TestRuntimeManagerSharesCredentialRuntimeAndKeepsBindingsIndependent(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	manager, request, store, spawnCount, fixtures := runtimeManagerFixture(t)
+	manager, request, store, spawnCount, fixtures, ctx := runtimeManagerFixture(t)
 	first, err := manager.Start(ctx, request)
 	if err != nil {
 		t.Fatal(err)
@@ -317,9 +343,7 @@ func TestRuntimeManagerSharesCredentialRuntimeAndKeepsBindingsIndependent(t *tes
 }
 
 func TestRuntimeManagerStartsReservedSessionOnceAndFailsPostReservationDrift(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	manager, request, store, spawnCount, fixtures := runtimeManagerFixture(t)
+	manager, request, store, spawnCount, fixtures, ctx := runtimeManagerFixture(t)
 	executable := filepath.Join(t.TempDir(), "codex")
 	if err := os.WriteFile(executable, []byte("#!/bin/sh\necho codex-cli 0.144.2\n"), 0o700); err != nil {
 		t.Fatal(err)
@@ -448,9 +472,7 @@ func TestRuntimeManagerStartsReservedSessionOnceAndFailsPostReservationDrift(t *
 }
 
 func TestRuntimeManagerKeepsConcurrentAccountsAndUsageIsolated(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	manager, requestA, store, spawnCount, fixtures := runtimeManagerFixture(t)
+	manager, requestA, store, spawnCount, fixtures, ctx := runtimeManagerFixture(t)
 	now := time.Now().UTC().Truncate(time.Microsecond)
 	accountB, credentialB, profileB, workspaceB := runtimeTestID(t, "account"), runtimeTestID(t, "credential"), runtimeTestID(t, "profile"), runtimeTestID(t, "workspace")
 	if err := store.CreateAccount(ctx, domain.Account{ID: accountB, Provider: domain.ProviderCodex, DisplayName: "B",
@@ -534,9 +556,7 @@ func TestRuntimeManagerRetiresStoppedTurnsWithoutFailingSharedRuntime(t *testing
 		{name: "forced_after_interrupt_rejection", killed: true, reject: true, status: domain.SessionKilled},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			manager, request, store, _, fixtures := runtimeManagerFixture(t)
+			manager, request, store, _, fixtures, ctx := runtimeManagerFixture(t)
 			first, err := manager.Start(ctx, request)
 			if err != nil {
 				t.Fatal(err)
@@ -578,9 +598,7 @@ func TestRuntimeManagerRetiresStoppedTurnsWithoutFailingSharedRuntime(t *testing
 }
 
 func TestRuntimeManagerGracefulInterruptRejectionRestoresBinding(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	manager, request, store, _, fixtures := runtimeManagerFixture(t)
+	manager, request, store, _, fixtures, ctx := runtimeManagerFixture(t)
 	session, err := manager.Start(ctx, request)
 	if err != nil {
 		t.Fatal(err)
@@ -599,9 +617,7 @@ func TestRuntimeManagerGracefulInterruptRejectionRestoresBinding(t *testing.T) {
 }
 
 func TestRuntimeManagerUnknownThreadStillFailsClosed(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	manager, request, store, _, fixtures := runtimeManagerFixture(t)
+	manager, request, store, _, fixtures, ctx := runtimeManagerFixture(t)
 	session, err := manager.Start(ctx, request)
 	if err != nil {
 		t.Fatal(err)
@@ -640,9 +656,7 @@ func TestRuntimeManagerPersistsTruthfulUsageSuccessAndDegradation(t *testing.T) 
 			errorCode: domain.CodeProviderProtocolError, window: "unknown"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			manager, request, store, _, fixtures := runtimeManagerFixture(t)
+			manager, request, store, _, fixtures, ctx := runtimeManagerFixture(t)
 			if _, err := manager.Start(ctx, request); err != nil {
 				t.Fatal(err)
 			}
@@ -690,9 +704,7 @@ func TestCodexV1ProfileRejectsUnknownAndDangerFullAccess(t *testing.T) {
 }
 
 func TestRuntimeManagerChildCrashFailsAllBindingsOnce(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	manager, request, store, _, fixtures := runtimeManagerFixture(t)
+	manager, request, store, _, fixtures, ctx := runtimeManagerFixture(t)
 	first, err := manager.Start(ctx, request)
 	if err != nil {
 		t.Fatal(err)
@@ -719,9 +731,7 @@ func TestRuntimeManagerChildCrashFailsAllBindingsOnce(t *testing.T) {
 }
 
 func TestRuntimeManagerApprovalDispatchPersistsOnlyAfterProviderWrite(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	manager, request, store, _, fixtures := runtimeManagerFixture(t)
+	manager, request, store, _, fixtures, ctx := runtimeManagerFixture(t)
 	session, err := manager.Start(ctx, request)
 	if err != nil {
 		t.Fatal(err)
@@ -800,9 +810,7 @@ func TestRuntimeManagerApprovalDecisionTable(t *testing.T) {
 			{local: domain.ApprovalDecisionCancel, provider: "cancel", status: domain.ApprovalCancelled},
 		} {
 			t.Run(method+"_"+string(decision.local), func(t *testing.T) {
-				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-				defer cancel()
-				manager, request, store, _, fixtures := runtimeManagerFixture(t)
+				manager, request, store, _, fixtures, ctx := runtimeManagerFixture(t)
 				session, err := manager.Start(ctx, request)
 				if err != nil {
 					t.Fatal(err)
@@ -854,9 +862,7 @@ func TestRuntimeManagerApprovalDecisionTable(t *testing.T) {
 }
 
 func TestRuntimeManagerPermissionsApprovalFailsClosedWithoutResponse(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	manager, request, store, _, fixtures := runtimeManagerFixture(t)
+	manager, request, store, _, fixtures, ctx := runtimeManagerFixture(t)
 	session, err := manager.Start(ctx, request)
 	if err != nil {
 		t.Fatal(err)
@@ -890,9 +896,7 @@ func TestRuntimeManagerPermissionsApprovalFailsClosedWithoutResponse(t *testing.
 }
 
 func TestRuntimeManagerRejectsPersistentAndPolicyApprovalVariants(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	manager, request, store, _, fixtures := runtimeManagerFixture(t)
+	manager, request, store, _, fixtures, ctx := runtimeManagerFixture(t)
 	session, err := manager.Start(ctx, request)
 	if err != nil {
 		t.Fatal(err)
@@ -944,9 +948,7 @@ func TestRuntimeManagerRejectsProviderPolicyAmendmentsWithoutResponse(t *testing
 		{name: "network_policy", field: "proposedNetworkPolicyAmendments", value: []any{map[string]any{"host": "example.invalid"}}},
 	} {
 		t.Run(amendment.name, func(t *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			manager, request, store, _, fixtures := runtimeManagerFixture(t)
+			manager, request, store, _, fixtures, ctx := runtimeManagerFixture(t)
 			session, err := manager.Start(ctx, request)
 			if err != nil {
 				t.Fatal(err)
@@ -983,9 +985,7 @@ func TestRuntimeManagerRejectsProviderPolicyAmendmentsWithoutResponse(t *testing
 }
 
 func TestRuntimeManagerApprovalWriteFailureBecomesAmbiguous(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	manager, request, store, _, fixtures := runtimeManagerFixture(t)
+	manager, request, store, _, fixtures, ctx := runtimeManagerFixture(t)
 	session, err := manager.Start(ctx, request)
 	if err != nil {
 		t.Fatal(err)
@@ -1029,9 +1029,7 @@ func TestRuntimeManagerApprovalWriteFailureBecomesAmbiguous(t *testing.T) {
 }
 
 func TestRuntimeManagerBlockedApprovalWriteIsBoundedAndCannotReplay(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	manager, request, store, _, fixtures := runtimeManagerFixture(t)
+	manager, request, store, _, fixtures, ctx := runtimeManagerFixture(t)
 	session, err := manager.Start(ctx, request)
 	if err != nil {
 		t.Fatal(err)
