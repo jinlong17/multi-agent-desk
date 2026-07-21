@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-07-20T22:37:26-07:00",
+  "target": "spike-claude-subscription-cli-pty-compatibility",
+  "scope": "direct-official-cli-external-experimental",
+  "result": "FALSIFIED_STRICT_NO_WRITE_CRITERION",
+  "platform": {
+    "system": "Darwin",
+    "osVersion": "26.5.2",
+    "architecture": "arm64"
+  },
+  "claude": {
+    "version": "2.1.207",
+    "binarySha256": "1397a062c6889675055e3314dd956376ac51262a7734ad9e819c26975d71547a",
+    "pinnedFileAndHostMatchedBeforeExecution": true,
+    "requiredFlagSurfaceSupported": true,
+    "positionalPromptSurfaceSupported": true
+  },
+  "auth": {
+    "loggedIn": true,
+    "authMethod": "claude.ai",
+    "apiProvider": "firstParty",
+    "subscriptionType": "team",
+    "officialCliSubscriptionOAuthInUse": true,
+    "apiKeyOverrideUsed": false,
+    "authTokenOverrideUsed": false,
+    "cloudCredentialOverrideUsed": false,
+    "credentialOverrideDetected": false
+  },
+  "billing": {
+    "source": "claude_ai_team_subscription",
+    "usageCreditsDisabledOperatorAttested": true,
+    "dollarBudgetFlagUsed": false
+  },
+  "controls": {
+    "safeMode": true,
+    "toolsDisabled": true,
+    "mcpDisabled": true,
+    "slashCommandsDisabled": true,
+    "promptHistoryDisabled": true,
+    "printSessionPersistenceDisabled": true,
+    "minimalEnvironment": true,
+    "runtimePromptCaptureRetained": false,
+    "runtimeResponseCaptureRetained": false,
+    "syntheticFixtureDefinitionRetained": true,
+    "rawTerminalRetained": false,
+    "rawAuthJsonRetained": false,
+    "piiRetained": false
+  },
+  "attempts": {
+    "modelBearingCliInvocationCount": 1,
+    "providerNetworkRequestCountObserved": null,
+    "printAttemptLedger": {
+      "claimed": true,
+      "claimedBeforeProcessSpawn": true,
+      "mode": "0600"
+    },
+    "ptyAttemptLedger": {
+      "claimed": false
+    },
+    "retryPerformed": false
+  },
+  "print": {
+    "processSpawned": true,
+    "modelBearingCliInvocationCount": 1,
+    "model": "haiku",
+    "fixtureSha256": "60226345d334dd6111e86f30ab1c45905ef7f8058ab0c7bfa99b1d9205c43d80",
+    "classification": "UNEXPECTED_LOCAL_WRITE",
+    "exitCode": 0,
+    "durationMs": 2422,
+    "timedOut": false,
+    "outputCapExceeded": false,
+    "stdoutByteCount": 27,
+    "stderrByteCount": 206,
+    "markerMatched": true,
+    "blockingPromptClass": null,
+    "workspaceUnchanged": true,
+    "selectedConfigScopesMetadataUnchanged": false,
+    "cleanup": "not_needed"
+  },
+  "pty": {
+    "processSpawned": false,
+    "modelBearingCliInvocationCount": 0,
+    "classification": "NOT_RUN_AFTER_PRINT_FAILURE"
+  },
+  "sanitizedWriteDiagnostics": {
+    "diagnosticFileContentParsedOrRetained": false,
+    "selectedConfigScopesMetadataUnchanged": false,
+    "historicalPerPathAttributionReproducible": false,
+    "limitation": "The durable one-shot evidence proves aggregate selected-config metadata drift but retained no historical per-path diagnostic command or output."
+  },
+  "providerSideRetention": "Team plan standard provider retention applies; only project evidence and inspected local scopes were constrained from retaining raw content.",
+  "stableManagedSubscriptionCapability": false,
+  "phase3Satisfied": false,
+  "fallback": "Use the official Claude Code CLI directly outside the MultiAgentDesk managed surface. Any cache-write allowlist or separate PTY experiment requires a new feature-plan decision; do not delete ledgers or retry this Spike."
+}
