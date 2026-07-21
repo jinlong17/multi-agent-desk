@@ -388,8 +388,9 @@ pass. No WSS, HPKE, Pairwise Root, terminal/Approval/grant code path exists.
 
 ### Push/pull/ack and tombstones
 
-- P4 migration `0009_control_plane_sync.sql` upgrades the P2 Device DB without
-  changing migration 0008 envelope/mapping rows; exact-prior/restart/failure/
+- P4 migration `0010_control_plane_sync.sql` upgrades the P3 Device DB without
+  changing migration 0008 envelope/mapping or 0009 trust/receipt rows;
+  exact-prior/restart/failure/
   rollback-backup cases pass before sync handlers enable.
 - Push commits valid typed batches, maps UUIDv7 relations, deduplicates batch
   and change IDs, and emits change log atomically. Duplicate at-least-once push
@@ -507,7 +508,8 @@ semantics exactly.
 
 ### Daemon idempotency and failures
 
-- P5 migration `0010_remote_command_receipts.sql` preserves migration 0008/0009
+- P5 migration `0011_remote_command_receipts.sql` preserves migrations
+  0008/0009/0010
   rows and adds the exact strict receipt/claim-reconciliation storage before
   command delivery enables. Go golden tests compute the domain-framed receipt
   digest over every listed field and receipt revision.
@@ -629,6 +631,263 @@ Provider plaintext, or generic secret input.
 - Run full repository, three-platform, browser, dependency/license, secret
   scan, migration/restart/concurrency/failure, documentation/link, and project
   structural gates against the final phase diff.
+
+## Plan v0.7 mandatory regression matrix
+
+These tests supersede conflicting pre-v0.6 expectations and are required in
+addition to the phase suites above.
+
+### P1 v0.7 reconciliation
+
+- Regenerate the complete OpenAPI, Go strict server/client/models, TypeScript
+  types, and exhaustive runtime client from v0.7 twice in clean temporary
+  directories; byte-compare both runs and checked-in artifacts. A stale
+  pre-v0.6
+  DTO, operation, migration number, enum, response bound, or generator output
+  fails P1.
+- Route inventory proves every P2-P6 operation is described and typed, while a
+  runtime probe proves only health/readiness/version handlers are mounted.
+  Attempts against bootstrap/auth/enrollment/metadata/sync/command operations
+  create no row, token, cookie, identity, audit success, or side effect.
+
+### P2 v0.7 identity, migration, and Passkey gates
+
+- Canonical-origin goldens cover IDNA/case/default port and reject HTTP,
+  userinfo, path/query/fragment, wildcard, production IP, percent-host,
+  trailing-dot, alternate serialization, and cross-server open/rebind. Envelope
+  row, plaintext, AAD, descriptor, challenge, and receipt all byte-bind the
+  same origin; a new origin yields new keys, remote identity ID, and UUID.
+- v7->v8 tests create the exact backup directory/manifest, verify SQLite
+  integrity/FKs/digest/size and Unix 0700/0600 or Windows owner+SYSTEM DACL,
+  fsync before migration, and restore atomically with the exact prior binary.
+  Symlink, inherited/world access, missing Vault row, changed digest, interrupted
+  backup, running Daemon, and unknown schema abort without migration writes.
+- Cookie assertions inspect the raw Set-Cookie header for the exact
+  `__Host-mad_session` name, Secure/HttpOnly/SameSite=Strict/Path=/ and absence
+  of Domain, including clear-cookie behavior.
+- Registration/assertion DTO fixtures round-trip all Base64url binary fields in
+  Go/TypeScript and reject padding, standard Base64, arrays, duplicate/unknown
+  fields/extensions, invalid decoded bounds, and browser object leakage.
+- Go/TypeScript JSON-shape goldens byte-match the exact creation/request
+  options, including 32-byte challenge, RP/user fields, fixed algorithm tuple,
+  descriptor/transports, 60-second timeout, authenticator selection,
+  attestation, UV, and every nested `additionalProperties:false`. The only v1
+  extension request/result is `{}`. Empty extension objects pass; `credProps`,
+  `appid`, `largeBlob`, `prf`, `uvm`, unknown fields, reordered/changed
+  algorithm tuples, numeric byte arrays, and library-native maps fail before
+  WebAuthn verification.
+- A transactional counter table covers `0->0`, `0->N`, `N->N+1`, `N->N`, and
+  `N->N-1`, plus two concurrent assertions at one credential revision. Equal or
+  lower nonzero count rejects and revokes every session authenticated by that
+  Passkey. A CAS loser reloads/re-evaluates rather than overwriting a higher
+  count.
+- Passkey deletion revokes all credential-derived sessions; deleting the
+  current credential clears the cookie and cannot return CurrentAuth. Last-key
+  and concurrent-delete guards have one winner.
+- A P2 receipt freezes exact Chrome+Safari/macOS-arm64 and Edge+Firefox/
+  Windows-11-x64 versions/OS builds before execution. Real registration/login/
+  logout/recovery/delete runs on those same binaries; Safari Passkey evidence is
+  real/manual and cannot be substituted by WebKit emulation or protocol fixture.
+
+### P3 v0.7 device-auth and enrollment gates
+
+- Go/browser goldens byte-match `DeviceAuthChallengeV1`, server signature, and
+  subject exchange signature. Mutation of origin, IDs, key digest, nonce,
+  challenge, times, type/domain, server signature, or subject signature fails.
+  Challenge expiry uses the half-open boundary.
+- Restart preserves an issued signed Device-auth challenge and request nonce
+  rows. Concurrent exchange has one consume winner; only SHA-256 of the
+  returned 32-byte token is stored. Reusing a nonce before/after server restart
+  fails, and session expiry removes authority without replaying a mutation.
+- Enrollment table tests every legal state edge and reject skips/backward/
+  terminal changes. Restart before proof increments challengeRevision and
+  invalidates the old ephemeral proof; restart after proof/approval resumes the
+  byte-identical durable state. Idempotent replay returns no private value.
+- Daemon candidate operations require pending-key EnrollmentPreAuth signatures;
+  Web candidate mutations require both that signature and browser cookie/CSRF;
+  active Device credentials cannot stand in for candidate authority. Approve
+  requires active signed approver capability. Cross-class requests make no
+  write.
+- Independent Go/browser restricted-JCS vectors byte-match every transcript,
+  attestation, capability-attestation, receipt, and subject-activation digest/
+  signature formula. A valid signature replayed under another type/domain
+  returns `cross_type_signature_replay`.
+- Byte-level package vectors prove `ActivationReceiptV1` JCS contains no raw
+  keys or signatures, while `EnrollmentActivationPackageV1` contains the exact
+  transcript, attestation, detached signatures, strict receipt, raw approver
+  keys, and revision. Go/browser encoders byte-match package digest and final
+  `SubjectActivationAckV1` signature. Raw-key digest mismatch, key/signature
+  moved into the signed receipt, omitted wrapper member, unknown member,
+  receipt/attestation/transcript disagreement, changed package digest, old
+  pre-v0.6 legacy activate body, and cross-type signature substitution reject.
+- Final activation fixture accepts only
+  `EnrollmentActivateRequestV1{ack,subjectActivationSignature,
+  expectedEnrollmentRevision}` after local pin persistence and returns only
+  `EnrollmentActivateResultV1`; replay returns that result and never emits an
+  activation/device-session secret.
+- Approval stores but does not activate. Candidate receives raw approver public
+  keys, recomputes digests, verifies receipt/attestation with a locally supplied
+  pin, confirms the fingerprint, persists that pin, then signs the final ack.
+  Server-directory substitution, ack-before-pin, changed origin/transcript/
+  receipt, concurrent activate, and operator-decline fail closed.
+- Migration matrix proves 0009 adds only pins/receipts/trust lifecycle, P4 is
+  0010, and P5 is 0011. P3 activation only sets `snapshot_required`; schema/
+  route/source scans prove no snapshot page/manifest/commit implementation.
+- Mapping tests prove local IPC Device ID, local `remote_identity_<hex>`, and
+  server UUID are distinct and immutable; key replacement creates a new pair
+  and cannot rebind the old mapping.
+- AuthCapability and DeviceCapability parsers/authorization are exhaustive and
+  non-coercing. Unknown Device strings remain ineffective; delegation is an
+  eligible subset; approve does not imply revoke; browser command authority
+  does not grant `mad.v1.session.command_create` to a Device.
+- Lifecycle/presence fake-clock tests require active + current boot epoch +
+  `lastSeenAt<=60s`. Restart makes all offline; heartbeat cannot reactivate a
+  revoked identity.
+- Real browser `software_wrapped` tests execute @noble/curves 2.2.0 X25519 PoP,
+  non-exportable AES-GCM wrapping, IndexedDB CAS, ciphertext tamper and wrong-
+  origin rejection, transient-buffer cleanup hooks, and exact storage assertion
+  digest/signature. A label-only or fake shared secret cannot activate.
+
+### P4 v0.7 sync/projection gates
+
+- Worst-case four 192-KiB revisions plus envelope overhead remain below one
+  MiB on all generated clients. `pageSize=0|5`, response overflow, and an
+  oversized encoded page return a stable error with no state/cursor write.
+  Pull stops before 900 KiB even below 100 records and sets `hasMore`; replay is
+  byte-stable.
+- OpenAPI/DB/sync/UI scans reject `provider=fake` for network Sessions. Fake may
+  drive local deterministic tests only; it cannot create a serialized Session,
+  Overview row, or audit projection.
+- Browser Profile create always returns disabled/pending-local-completion.
+  Target materialization stores allowed model/environment/reference intent,
+  local operator supplies approval/sandbox policy, Provider validation passes,
+  signed ready revision commits, and only then can browser CAS enable. Canary
+  local policy strings are absent from wire/DB/log/conflict/outbox.
+- Concurrency/failure tests keep `localEntityRevision` and
+  `serverSyncRevision` separate through Workspace/Session/Profile updates,
+  snapshot, conflict, retry, backup/restore, and rollback. Advancing one cannot
+  silently advance or overwrite the other; joint writes are atomic.
+- `ProfileMutationV1` schema vectors accept only the closed patch/delete union,
+  unique ordered mutable changes, and exact per-field types/bounds. They reject
+  create-only/ownership/server-managed/materialization/revision/timestamp
+  fields, duplicate changes, null on non-nullable fields, and >32-KiB mutation.
+  Conflict goldens byte-match Go/TypeScript omitted/null/value digest domains,
+  field-name binding, delete `resource` semantics, unique enum ordering, and
+  64-KiB response bound; cross-field/state digest reuse fails.
+- Migration inventory/generation scan contains no P4 `0009` reference: P3 trust
+  is 0009, P4 sync is 0010, and P5 receipts are 0011.
+
+### P5 v0.7 command gates
+
+- Go/TypeScript goldens byte-match `CanonicalSessionCommandRequestV1` and the
+  domain digest for every kind, default/edge TTL, creator, resource revision,
+  and optional result ID. Start/resume preallocate one resultSessionId in the
+  idempotency/command transaction; retry/restart returns it. The raw browser
+  Idempotency-Key never appears in offer, Device DB, log, or receipt.
+- Delivery fixtures prove append-only revisions, stable ordering/hasMore,
+  redelivery before cursor commit, and cursor advancement only after current
+  claim plus durable reserved receipt commit. Requeue appends N+1 and cannot
+  mutate N. The signed Device query returns authoritative current/terminal
+  state after every lost response/restart.
+- Exact Go/TypeScript/OpenAPI round trips cover
+  `SessionCommandDeliveryListResultV1`, offer, claim request/result, ack
+  request/result, result request/result, reconcile request/result,
+  `DeviceCommandStateV1`, and `DeviceCommandCursorCommitV1`. A golden sequence
+  proves list persists only an offer/expectedNextAttempt; claim alone allocates
+  attempt/lease and leaves the server cursor unchanged; the Daemon then commits
+  `ReservedReceiptV1` locally; ack validates its delivery/attempt/claim/
+  receiptRevision/digest and atomically advances only the contiguous server
+  cursor prefix. The returned cursor-commit wire fact matches server state,
+  while the earlier local receipt transaction remains a distinct Device DB
+  fact. Out-of-order ack cannot skip an offer.
+- Every mutation golden recomputes the derived idempotency formula with exact
+  deliveryRevision, attempt, callKind, and receiptRevision (`0` only for claim),
+  and requires the same HTTP/body value. Wrong/stale/missing revision or raw
+  browser creation key fails. Rebind changes delivery+attempt, increments only
+  receiptRevision, and preserves the strict reservation.
+- Fake-clock boundary rows test equality and one microsecond either side for
+  command TTL and claim expiry. Transaction races assert priority: revocation,
+  existing terminal, TTL, feature disable, claim expiry, mutation. Feature
+  disable permits only already-acknowledged result/reconcile through TTL.
+- Attempts 1..8 work; a ninth is never issued and terminal outcome is
+  `delivery_attempts_exhausted`. Thirty-day row GC, 24-hour idempotency, 365-day
+  compact audit digest, FK order, batch bounds, and restart interruption pass.
+- Receipt JSON-schema oneOf rejects cross-state/kind fields. Integrity status is
+  orthogonal; quarantined rows never execute/report success. Legal transitions
+  prohibit `local_committed->ambiguous`; only executing with unprovable commit
+  may become ambiguous.
+- All closed `SessionCommandOutcomeV1` branches round-trip each allowed
+  kind/state/code/required ID/status combination and reject cross-kind codes,
+  missing result IDs, extra fields, or unsupported acquire/release delivery.
+  Every Start/Resume/Stop/Kill reservation and `KindProofV1` branch round-trips
+  its exact IDs/revisions/status/outbox/service digest; a proof whose kind does
+  not equal command/reservation/outcome rejects before receipt digest checking.
+- A cross-document authority scan normalizes the current P5 stable-outcome
+  block in `design.md` and the `CommonFailureCode` plus
+  `SessionCommandOutcomeV1` oneOf in `api.md`, then requires byte-equal branch,
+  field, state, and code sets. It rejects the exact stale token
+  `execution_ambiguous`, any omission of `target_revoked|feature_disabled|
+  delivery_attempts_exhausted|daemon_shutting_down|
+  command_execution_ambiguous`, and any omission/substitution of
+  `provider_session_start_unsupported|provider_resume_unsupported|
+  provider_stop_unsupported|provider_kill_unsupported`.
+- Negative OpenAPI fixtures submit every removed pre-v0.6 shape: offer with an
+  allocated claim expiry/attempt, claim without delivery revision, ack/result/
+  reconcile without receipt revision, generic outcome/code maps, optional
+  catch-all receipt fields, and the old authoritative query. All fail schema;
+  generators expose only the v0.7 DTOs.
+- Per-kind restart proof tests: start/resume require result mapping + local
+  Session + P4 outbox; stop/kill require the dedicated operation row + exact
+  pre/post revisions/status. Missing/mismatched proof quarantines and never
+  re-executes. Generic application-service idempotency alone is a failing
+  fixture.
+- `RemoteCommandService` tests compute the deterministic per-call key and commit
+  it with each receipt CAS. Duplicate/concurrent workers have one singleflight
+  winner; two commands for one Session serialize; different Sessions honor the
+  configured 4/default, 16/max worker bound.
+- Every per-kind outcome allowlist has positive and cross-kind negative cases.
+  Acquire/release return terminal `phase4b_controller_required` and are never
+  offered to a Daemon.
+- Shutdown stops polls/claims, refuses a new Provider call, waits no more than
+  ten seconds for local commits, and leaves a receipt that the matching restart
+  proof path can resolve without duplicate execution.
+
+### P6 v0.7 Web/runtime gates
+
+- Enrollment list tests cover state/kind/subject filters, stable cursor, exact
+  `EnrollmentSummaryV1`, expiry, redaction, and unknown filter rejection.
+  Overview returns bounded counts/freshness and at most five recent items per
+  section; network instrumentation proves the UI does not full-page resources.
+- Usage unit/scale fixtures cover integer decimal strings, USD scale six only
+  with official source, basis-point bounds, provider-unit nonconversion,
+  missing-not-zero, overflow/exponent/leading-zero rejection, and exact stale
+  rendering. Legacy floating fields fail schema.
+- `ProfileConflictV1` round-trips current/submitted revisions/resources and only
+  allowlisted conflicting fields/digests, remains bounded, and exposes no local
+  policy or secret-like field.
+- Production browser crypto tests run without Buffer/Node crypto and do not
+  import P0 Node harnesses. Restricted JCS/framing/pin/attestation/PoP vectors
+  byte-match Go. IndexedDB v1 transaction/CAS, restart, wrong origin/revision,
+  pin substitution, site-data loss, and Safari wrapped-X25519 paths pass.
+- Service-worker route tests prove every `/v1/**`, auth/bootstrap/enrollment/
+  recovery/health/version, and non-GET request is network-only, absent from
+  Cache Storage/background sync, and excluded from SPA fallback. Only
+  content-hashed static assets may be served offline.
+- Exact frozen Chrome/Safari macOS-arm64 and Edge/Firefox Windows-11-x64 rows
+  run auth, metadata, enrollment, command polling, logout, and cache inspection;
+  Safari runs real Passkey and wrapped-X25519. Version/OS receipts accompany
+  results. The macOS Tauri app is launched and visually/navigationally smoke-
+  tested; compile/cargo-check alone fails the row.
+- Online UI uses lifecycle active + current boot epoch + <=60-second lastSeen;
+  capability elevation shows the local pin source and explicit confirmation.
+  Command polling stops on terminal/expiry/logout/session expiry/revoke/API
+  incompatibility and honors bounded jitter/Retry-After.
+- Recovery copy/download/print requires explicit user action/privacy warning.
+  Canary codes are absent from screenshots, traces, service-worker/cache,
+  analytics, storage, crash reports, and test artifacts. Logout clears session/
+  CSRF but retains Web keys/pins; only recent-UV Forget Device deletes them.
+- Exact candidate dependencies/integrities are locked and the full transitive
+  graph passes license/toolchain gates. Registry metadata alone is not a pass.
 
 ## Explicit exclusions from a pass
 

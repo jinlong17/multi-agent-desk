@@ -210,6 +210,65 @@ for Phase 4a.
   Ship receipt, and dashboard reconciliation are part of the operator-authorized
   completion sequence. Release/tag/deployment remains a Phase 6 gate.
 
+## Plan v0.7 contract amendment
+
+The P0 contract remains independently verified. Plan v0.7 retains every v0.6
+contract and every v0.5 architectural boundary, including Feature Review v5's
+five closed wire-definition findings, and closes Feature Review v6's sole P5
+cross-document outcome-union contradiction. P1 implementation is paused at
+a safe checkpoint while the complete Phase 4a OpenAPI and generated clients are
+reconciled to this amendment. P1 may expose runtime behavior only for
+`healthz`, `readyz`, and `version`; every P2+ operation must exist as a complete
+OpenAPI/generator contract but remain unmounted or fail closed until its own
+verified build phase.
+
+The v0.7 amendment retains these additional exit requirements without expanding
+the Phase 4a product boundary:
+
+1. P2 binds every remote identity to one immutable canonical HTTPS server
+   origin in local storage, Vault AAD, bootstrap descriptors, and receipts;
+   completes the exact WebAuthn binary DTO/counter-CAS/session-revocation and
+   passkey-deletion semantics; uses the `__Host-mad_session` cookie; and requires
+   a verified v7 backup before Device migration 0008 plus real-browser receipts.
+2. P3 defines the signed Device-auth challenge/exchange protocol, persistent
+   nonce/restart behavior, all typed JCS/digest/signature domains, candidate
+   pre-auth and the complete enrollment state machine. Candidate pin/receipt
+   verification precedes the final activation acknowledgement. Migration 0009
+   owns remote pins/receipts, remote identity IDs remain distinct from the local
+   IPC Device ID, browser and Device capabilities are separate, lifecycle and
+   presence are separate, and `software_wrapped` Web Devices perform real
+   X25519 proof of possession. P3 only sets `snapshot_required`.
+3. P4 caps snapshot pages so every worst-case response fits the one-MiB wire
+   limit, excludes Fake Sessions from the network projection, creates browser
+   Profiles disabled pending local-only policy completion, and keeps server sync
+   revisions separate from Device-local entity revisions. P4 migration moves to
+   0010.
+4. P5 freezes canonical command/request digests, preallocated result Session
+   IDs, an authoritative signed Device query, append-only delivery revisions,
+   exact half-open clocks/priorities, bounded attempts/retention, state-specific
+   receipts and restart proofs, a dedicated `RemoteCommandService`, stable
+   per-kind outcomes, deterministic per-call idempotency, and bounded worker/
+   per-Session concurrency. `acquire_control|release_control` are always typed
+   unsupported until Phase 4b. P5 migration moves to 0011.
+5. P6 adds enrollment listing, a bounded Overview aggregate, exact Usage units/
+   scales and Profile conflict DTO, browser-safe crypto/JCS/pin/PoP plus
+   IndexedDB pin/key CAS, strict PWA/API cache boundaries, executable browser
+   and Desktop render receipts, and exact UI behavior for online derivation,
+   capability elevation, command polling, recovery-output privacy, and logout
+   key retention. P6 may be reviewed as P6A/P6B without scope expansion.
+
+For complete P1 generation, v0.7 keeps these shapes closed and
+non-overlapping: P5 list offers do not claim, claim alone allocates attempt/
+lease, and ack alone validates the locally durable reserved receipt and commits
+the contiguous server delivery cursor; every claim/ack/result/reconcile/query
+DTO carries its exact delivery/receipt revision and closed outcome/proof oneOf.
+P3 signs only the strict `ActivationReceiptV1` payload while raw approver keys,
+attestation, and detached signatures live in
+`EnrollmentActivationPackageV1`; the subject signs the final exact ack. P2
+WebAuthn creation/request/credential shapes are fully enumerated with empty v1
+extension results. Profile conflict mutations/fields/digests are closed and
+distinguish omitted, null, and value. P4's migration is uniformly 0010.
+
 ## Acceptance criteria
 
 - [ ] Empty-server startup applies ordered server migrations once, enables WAL
@@ -227,9 +286,12 @@ for Phase 4a.
       expired, replayed, origin/RP-ID-mismatched, or concurrent bootstrap
       attempts leave no partial active identity and produce redacted audit facts.
 - [ ] Passkey registration/authentication verifies challenge, origin, RP ID,
-      user presence/verification policy, signature counter behavior, and replay;
+      user presence/verification policy, exact `0->0`, `0->N`, and increasing
+      counter success plus equal/regressed nonzero counter clone handling under
+      CAS, session revocation, and replay;
       production config rejects insecure or mutable RP-ID/origin settings.
 - [ ] Auth sessions use `Secure`, `HttpOnly`, and appropriate `SameSite` cookies,
+      with exact name `__Host-mad_session`, `Path=/`, and no `Domain`,
       issue/rotate a memory-only 32-byte CSRF value whose digest is stored, and
       enforce the frozen pre-auth/authenticated/Device Origin/Fetch-Metadata/
       JSON/cookie/CSRF matrix.
@@ -251,7 +313,9 @@ for Phase 4a.
       capabilities are preserved-but-ineffective and same-key elevation needs a
       monotonic directly pinned capability attestation.
 - [ ] Presence transitions survive reconnect and restart without falsely
-      treating an unauthenticated socket as online; revocation immediately
+      treating an unauthenticated socket as online; lifecycle and presence are
+      separate and online requires active lifecycle, the current server boot
+      epoch, and `lastSeenAt` no older than 60 seconds; revocation immediately
       closes active authenticated connections and blocks later reads/writes.
 - [ ] OpenAPI is the REST type authority; generated Go server/client and
       TypeScript types plus the first-party exhaustive runtime client are
@@ -266,6 +330,12 @@ for Phase 4a.
       including reserved-only attempt rebind, later-state reconciliation, and
       receipt ambiguity, and never claim synchronous/exactly-once Provider
       success or repeat an uncertain local execution.
+- [ ] `start|resume` commands bind a server-preallocated UUIDv7
+      `resultSessionId`; command delivery/query, append-only delivery revision,
+      bounded attempt/retention, receipt oneOf, per-kind restart proof, stable
+      outcome allowlist, and deterministic derived local-call idempotency are
+      executable and never send the browser's creation Idempotency-Key to a
+      Daemon. `acquire_control|release_control` remain typed unsupported.
 - [ ] Sync outbox/inbox processing is ordered, bounded, transactional, and
       idempotent; cursors advance only after commit; replay creates no duplicate
       resource; secret fields and credential grants are rejected from this path.
@@ -286,7 +356,9 @@ for Phase 4a.
 - [ ] Overview, Devices, Accounts, Profiles, Sessions, and Usage pages render
       only allowed metadata and correct loading/empty/error/offline/revoked/
       conflict states; Usage always shows source, confidence, and observation
-      time and never fabricates official Claude quota.
+      time with explicit unit/scale and never fabricates a zero, dollar value,
+      or official Claude quota; Overview is a bounded server aggregate rather
+      than client-side unbounded pagination.
 - [ ] An authenticated but unapproved Web Device remains metadata-only and the
       Phase 4a Web bundle exposes no terminal input, Approval response,
       CredentialGrant, E2EE key delivery, or Provider plaintext path.
@@ -347,4 +419,4 @@ for Phase 4a.
 
 ## Handoff
 
-Next role: `feature-plan`.
+Next role: `feature-review v7` for plan v0.7.

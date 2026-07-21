@@ -114,10 +114,12 @@ batches and cannot delay request shutdown indefinitely.
   digest, and timestamps. P2 uses the mapping table for the anchor Device;
   later resource types reuse the already-verified table without changing its
   uniqueness contract.
-- P4 migration `0009_control_plane_sync.sql` adds sync outbox/inbox and
+- P3 migration `0009_remote_device_trust.sql` adds local peer pins, activation
+  receipts, and remote-identity lifecycle evidence without sync behavior.
+- P4 migration `0010_control_plane_sync.sql` adds sync outbox/inbox and
   acknowledged cursors; they remain device-local and commit atomically with
   local projection/mapping changes.
-- P5 migration `0010_remote_command_receipts.sql` adds
+- P5 migration `0011_remote_command_receipts.sql` adds
   `remote_command_receipts`. It durably stores command/target/request digest,
   immutable local operation/session identity, claim attempt, receipt revision,
   reconciliation state, safe result, and timestamps. Its state machine is
@@ -136,6 +138,7 @@ duplicate fields, and is exactly:
 ```text
 DeviceKeyEnvelopeV1 {
   version: 1
+  serverOrigin: CanonicalServerOriginV1
   serverDeviceId: UUIDv7
   ed25519Seed: base64url(32)
   x25519PrivateKey: base64url(32)
@@ -157,9 +160,9 @@ the KEK using independent random 12-byte nonces. Ciphertexts include their
 16-byte tags. Canonical length-framed AAD is:
 
 ```text
-frame("multidesk-device-key-envelope-v1", "1", localOpaqueDeviceId,
-      serverDeviceId, signingKeyDigestRaw, exchangeKeyDigestRaw,
-      decimalKeyRevision)
+frame("multidesk-device-key-envelope-v1", "1", serverOrigin,
+      localRemoteIdentityId, serverDeviceId, signingKeyDigestRaw,
+      exchangeKeyDigestRaw, decimalKeyRevision)
 ```
 
 The row stores SHA-256 of the AAD and plaintext. Open recomputes public keys
@@ -565,12 +568,14 @@ UTF-8 bytes, at most 64 entries, and a denylist covering token/key/secret/
 password/cookie/auth/proxy credential names. Reference keys and labels are
 bounded UTF-8 strings, not filesystem paths. Unknown fields fail validation.
 
-Usage preserves the shipped P1 model: source is
+Usage preserves the shipped P1 provenance model: source is
 `official|cli_derived|local_estimate|unofficial|unavailable`; confidence is
 `high|medium|low|none`; availability is
 `available|limited|unavailable|unknown`; `observedAt` and `staleAt` are required;
-each window has kind/label and optional duration, used/limit/percentage,
-remaining percentage, and reset time. Optional means unknown, never zero.
+each window has kind/label, explicit `unit`, `scale`, optional decimal-string
+scaled used/limit quantities, optional remaining basis points, and reset time.
+Optional means unknown, never zero. USD requires unit `usd`, scale 6, and an
+explicit official source; provider units are never converted to dollars.
 Claude data cannot be labeled official remaining quota without a verified
 official source; unavailable Claude quota is rendered unavailable.
 
@@ -711,7 +716,7 @@ Workspace -> Session -> Usage, then canonical lowercase UUIDv7 ascending within
 each type rank. Only the latest authorized upsert/delete revision for a resource
 appears, exactly once.
 
-Snapshot creation freezes a server `snapshotEpoch`, the target, a 1..100
+Snapshot creation freezes a server `snapshotEpoch`, the target, a 1..4
 `pageSize`, expiry ten minutes after creation, an `incrementalBaseCursor`, and
 the complete ordered resource set. `SnapshotManifestV1` contains schema version
 1, snapshot/epoch/target IDs, page size/count, resource count, expiry, base
@@ -849,10 +854,11 @@ attempt `N+1`. On redelivery the daemon applies these state rules:
 
 - An old `reserved` receipt may be rebound, and only while still `reserved`.
   One local transaction CASes `(command,device,requestDigest,state=reserved,
-  attempt=N,receiptRevision=R)` to the current server attempt, increments only
-  `receiptRevision`, and recomputes the receipt digest. Local operation ID,
-  Session reservation/mapping, request digest, and all other fields are
-  byte-identical. It then acks the current attempt. Repeated expiry may perform
+  deliveryRevision=D,attempt=N,receiptRevision=R)` to the current append-only
+  delivery revision and server attempt, increments only `receiptRevision`, and
+  recomputes the receipt digest. Local operation ID, Session reservation/
+  mapping, request digest, and all command/reservation fields are byte-identical.
+  It then acks the current attempt. Repeated expiry may perform
   the same reserved-only CAS again; concurrent/stale rebind loses and reloads.
 - An old `executing` receipt is never rebound and the application service is
   never invoked again. The daemon reconciles the already-reserved local
@@ -881,6 +887,352 @@ at-least-once transport with a durable idempotency/reconciliation boundary,
 never distributed exactly-once or a claim that ambiguous Provider effects are
 at-most-once.
 
+## Plan v0.7 decision-complete amendments
+
+These rules replace conflicting pre-v0.6 wording. They do not reopen verified P0
+or authorize P1 runtime behavior beyond health/readiness/version.
+
+### P1 contract reconciliation boundary
+
+P1 checks in the complete Phase 4a OpenAPI, generated Go strict server/client/
+models, generated TypeScript types, and the exhaustive first-party runtime
+client for every P1-P6 operation. Before P1 verification, those artifacts must
+be regenerated from v0.7 and byte-verified twice. Only `healthz`, `readyz`, and
+`version` are mounted as product handlers in P1. Bootstrap, auth, enrollment,
+metadata, sync, and command routes are contract-only and must return the common
+unavailable response if accidentally reached; no P2+ row, token, cookie,
+identity, or mutation is created.
+
+### P2 server-origin, migration, and WebAuthn boundary
+
+`CanonicalServerOriginV1` is the immutable remote-identity namespace. It is
+ASCII `https://host[:port]` with lowercase scheme/IDNA ASCII host, no userinfo,
+path, query, or fragment, and no explicit default port. Parsing rejects IP
+literals in production, trailing-dot ambiguity, percent-encoded host bytes,
+wildcards, and any value whose parse/serialize round trip changes. Localhost is
+allowed only under the existing explicit development flag.
+
+The origin is stored in `remote_device_identities`, mapped with the remote
+identity, included in `DeviceKeyEnvelopeV1`, its AAD, the bootstrap descriptor/
+challenge/commit receipt, and every later activation receipt. An existing row
+can be opened only for that byte-identical origin. A different origin always
+creates new remote keys, a new local remote-identity ID, a new server UUIDv7,
+and a new enrollment; no cross-server rebind API exists.
+
+Before Device schema v7 becomes v8/migration 0008, the stopped or exclusively
+locked Daemon uses SQLite Online Backup into
+`<device-data>/backups/schema-v7/<UTC-basic>-<db-sha256-prefix>/device.sqlite`
+and writes a restricted-JCS `manifest.json` containing schema version, size,
+SHA-256, created time, and binary version. It fsyncs file and parent directory,
+reopens the copy read-only with integrity/FK checks, and only then migrates.
+Unix directory/file modes are `0700/0600`; Windows grants the current logon SID
+and SYSTEM only and denies inherited/network access. Unsafe paths, symlinks,
+digest mismatch, missing Vault rows, or unverifiable backup abort migration.
+Recovery requires the Daemon stopped: verify the manifest/digest/permissions,
+copy to a same-directory temporary file, fsync, atomically replace, then open
+with the exact prior binary. No down migration or partial-table copy exists.
+
+The browser cookie is exactly `__Host-mad_session`; it is Secure, HttpOnly,
+SameSite=Strict, Path=/, and has no Domain attribute. Authentication counter
+updates use a credential-revision CAS in the same transaction as assertion use:
+`0->0`, `0->N (N>0)`, and `N->M (M>N)` succeed; `N->N` and `N->M (M<N)` for
+nonzero N are clone/regression failures. A losing concurrent CAS reloads and
+re-evaluates these rules. Clone/regression rejects the assertion and atomically
+revokes every browser session whose authentication credential is that Passkey.
+Deleting a non-last Passkey similarly revokes all sessions authenticated by it;
+if that includes the current session the response clears the host cookie and
+cannot return an authenticated continuation. The last active Passkey remains
+undeletable.
+
+Real-browser P2 acceptance is not a floating “current browser” claim. At P2
+build start one receipt freezes exact browser version plus OS build for Chrome
+and Safari on macOS arm64 and Edge and Firefox on Windows 11 x64. The same
+frozen binaries run registration, login, counter fixtures where injectable,
+logout, recovery replacement, and passkey deletion. Safari's platform Passkey
+ceremony is manual/real-browser evidence; protocol fixtures or WebKit emulation
+cannot replace it. Any browser upgrade invalidates that row and requires rerun.
+
+### P3 remote identity, device auth, and enrollment boundary
+
+Migration ownership is now: `0008_control_plane_remote_identity.sql` (P2 base
+envelope/mapping), `0009_remote_device_trust.sql` (P3 local peer pins,
+activation receipts, remote identity lifecycle), `0010_control_plane_sync.sql`
+(P4), and `0011_remote_command_receipts.sql` (P5). P3 must not create sync
+tables or snapshot payload/page/commit behavior; activation only sets the
+server/local `snapshot_required` flag consumed by P4.
+
+The singleton local IPC Device ID is never a remote identity ID. Each remote
+row has a generated `remote_identity_<32 lowercase hex>` local ID, its canonical
+server origin, and its own server UUIDv7 mapping. Local IPC identity may be a
+relation/audit fact but never occupies that mapping key. New key material means
+a new local remote-identity ID and server UUID; mappings cannot rebind.
+
+Device lifecycle is `pending|active|revoked`; presence is a separate
+`online|offline` projection. At every server start a random UUIDv7 `bootEpoch`
+is generated. Online is derived only when lifecycle is active, the last
+authenticated heartbeat was accepted under the current boot epoch, and
+`now-lastSeenAt <= 60s`; restart therefore renders all devices offline until a
+new authenticated heartbeat. Presence never changes lifecycle.
+
+Device-auth challenge rows and request nonces are durable. A 60-second signed
+challenge can survive restart because the server challenge-signing key and
+row are durable; one exchange CAS consumes it. Concurrent exchanges have one
+winner. The returned device-session token is 32 random bytes, only its SHA-256
+digest is stored, and it expires after 15 minutes. Request nonces are stored by
+session until session expiry, so restart cannot reset replay protection.
+Validity intervals are half-open (`issuedAt <= now < expiresAt`).
+
+Candidate authorization is distinct from active Device auth. Daemon candidates
+use `EnrollmentPreAuthV1`: every create/prove/activate/resume/cancel request is
+signed by the pending subject Ed25519 key over the canonical request plus
+enrollment transcript/challenge revision; Web candidates additionally require
+the normal same-origin browser cookie/CSRF class. No opaque activation bearer
+secret is introduced. Approve requires an active signed approver Device with
+the recognized approval capability and a locally pinned subject.
+
+Enrollment state is exactly `pending_proof -> proof_verified -> approved ->
+activated`, with terminal `cancelled|expired`. Mutations use state/revision CAS
+and Idempotency-Key. Restart before proof invalidates only the memory-only
+ephemeral X25519 challenge; resume increments `challengeRevision`, returns a
+fresh challenge, and makes all earlier proofs invalid. `proof_verified` and
+`approved` persist and resume byte-identically. Approve stores the public
+attestation/receipt package but does not activate. The candidate first obtains
+the package including raw approver public keys, recomputes their digests,
+verifies the attestation and receipt under its locally supplied/pinned
+approver key, displays/requires approver fingerprint confirmation, persists the
+pin, and only then sends the final subject activation signature. Server
+directory keys are lookup data and can never satisfy this local verification.
+
+Browser `AuthCapabilityV1` and signed `DeviceCapabilityV1` are separate closed
+types and authorization evaluators. Browser authentication never delegates a
+Device capability. `mad.v1.session.command_create` is a recognized Device
+capability for a signed eligible key-bearing client, while the browser command
+endpoint separately requires its server-derived Auth capability. Unknown
+well-formed Device strings are preserved but ineffective; malformed strings
+reject. An approver can delegate only the intersection of its recognized
+delegable set, kind/storage eligibility, and explicit user confirmation.
+Revocation authority is not implied by enrollment approval.
+
+For `software_wrapped`, P3 pins `@noble/curves@2.2.0` and performs real X25519
+key generation/shared-secret proof in browser code. The 32-byte private key is
+wrapped immediately with a non-exportable WebCrypto AES-256-GCM key; transient
+buffers are zeroed best-effort. `WebDeviceStorageAssertionV1` binds origin,
+device/key IDs and digests, storage mode, wrapping-key algorithm/extractability,
+ciphertext digest, key revision, IndexedDB schema version, and probe time; the
+subject signs its digest in enrollment PoP. A storage label without successful
+X25519 PoP is rejected.
+
+### P4 metadata and synchronization boundary
+
+The 1-MiB response limit is absolute. A canonical sync revision remains capped
+at 192 KiB, so snapshot `pageSize` is exactly 1..4 and every page response is
+measured before send; overflow is `snapshot_page_too_large` with no cursor/state
+advance. Ordinary pull remains count-bounded to 100 and additionally stops at
+900 KiB canonical JSON, returning `hasMore=true`. It never emits an oversized
+response.
+
+Network `SessionProjectionV1.provider` is only `codex|claude`; `fake` is an
+in-process deterministic test adapter and never appears in OpenAPI, sync rows,
+overview, or audit projections. Tests may drive the local service with Fake but
+must assert the serialized provider remains an allowed fixture value or that
+no network Session row is emitted.
+
+A browser-created Profile is always committed `enabled=false`. The server wire
+contains only allowed model/environment/reference intent. The target Daemon
+stores that intent in `controlplane_profile_materializations` with
+`pending_local_completion`, allocates the local prefixed Profile/mapping, and
+requires the local operator to set local-only approval and sandbox policies and
+pass local Provider validation. Those policy values never enter outbox,
+OpenAPI, sync digest, conflict, log, or server DB. Only a signed Daemon
+`materialization_ready` revision permits a later browser CAS to enable it.
+
+`serverSyncRevision` belongs to the mapping/projection/outbox protocol and is
+never copied into the Device-local Workspace/Session/domain `revision` fields.
+The local entity CAS and server sync CAS commit together where needed but are
+separate columns/counters; rollback or conflict in either aborts the whole
+transaction. Server restore cannot rewrite local revisions.
+
+### P5 command execution boundary
+
+The server preallocates command UUIDv7 and, for start/resume, one immutable
+`resultSessionId` UUIDv7 in the creation transaction. The strict
+`CanonicalSessionCommandRequestV1` binds schema version, command/result IDs,
+creator class/ID, target Device, kind, typed parameters, referenced server
+resource revisions, created/expiry times, and the default 300-second TTL. Its
+domain-separated digest is the only command identity sent to a Daemon; the
+browser's raw creation Idempotency-Key never crosses the server boundary.
+
+Delivery offers are append-only `(commandId, deliveryRevision,
+expectedNextAttempt)` rows. Listing creates/returns an offer but never allocates
+an attempt/lease, changes command state, or advances the committed cursor.
+Requeue appends a new revision; it never mutates/reuses an old offer. Claim is
+the sole CAS that allocates the expected attempt and 30-second lease, but still
+does not advance the cursor. After claim, the Daemon locally commits the exact
+`ReservedReceiptV1`; ack validates it and atomically marks the delivery accepted
+plus advances the server cursor only across a contiguous accepted/terminal/
+superseded prefix. Responses are ordered by delivery revision, expose
+`hasMore`, and may redeliver an uncommitted offer. The ack result's
+`DeviceCommandCursorCommitV1` is the only server wire cursor-commit fact; the
+Daemon's local reserved-receipt transaction precedes that request and is not
+misdescribed as a server transaction. A signed authoritative Device query
+returns command, current attempt/delivery, claim expiry, receipt revision/
+digest, committed cursor, terminal result, and command revision so restart
+never infers state from a stale offer.
+
+All time checks are half-open: a claim/command is valid only while
+`now < expiresAt`; equality is expired. Transaction priority is target
+revocation, existing terminal state, command TTL, feature-disable policy, claim
+expiry/reaper, then the requested mutation. Revocation blocks every new signed
+call and terminalizes nonterminal commands with the stable revoked outcome.
+Feature disable blocks create/offer/new claim but permits an already
+acknowledged current attempt to report/reconcile until command TTL. Claim
+attempts cap at eight; exhaustion terminates `delivery_attempts_exhausted`.
+Terminal command/delivery/claim/receipt metadata is retained 30 days,
+idempotency results 24 hours, then bounded FK-safe GC removes payload rows while
+retaining compact audit digests for 365 days.
+
+`DaemonCommandReceiptV1` is a discriminator oneOf by execution state and
+command kind. `integrityStatus=verified|quarantined` is separate from execution
+state. Reserved binds the immutable local operation and, for start/resume,
+local/server result Session mapping; executing adds start time and exact
+pre-state; local_committed adds a kind-specific durable operation proof and
+safe result; ambiguous is reachable only from executing when restart cannot
+prove commit; completed adds accepted server result revision. A
+`local_committed` receipt can never become ambiguous. Quarantined receipts
+cannot execute or report success.
+
+Per-kind restart proof is mandatory: start/resume proves command binding,
+reserved result Session mapping, local Session row, and P4 outbox revision;
+stop/kill proves the dedicated local operation record plus before/after Session
+revision/status. Generic post-effect idempotency is insufficient. A dedicated
+`RemoteCommandService` owns reserve/execute/reconcile and calls local Session
+services through a deterministic derived key committed with the receipt CAS:
+
+```text
+base64url(SHA-256(frame("multidesk-remote-command-call-v1", "1",
+  commandId, requestDigest, decimalDeliveryRevision, decimalAttempt,
+  callKind, decimalReceiptRevision)))
+```
+
+The terminal outcome is also a closed discriminator union. `CommonFailureCode`
+is `target_revoked|feature_disabled|delivery_attempts_exhausted|
+daemon_shutting_down|command_execution_ambiguous`; it may appear only in a
+failed variant:
+
+```text
+StartSucceededV1 {kind:start,state:succeeded,code:session_started,
+  resultSessionId:UUIDv7,sessionStatus:starting|running}
+StartFailedV1 {kind:start,state:failed,
+  code:CommonFailureCode|vault_locked|profile_disabled|
+       credential_unavailable|mapping_invalid,
+  resultSessionId:UUIDv7}
+StartUnsupportedV1 {kind:start,state:unsupported,
+  code:provider_session_start_unsupported,resultSessionId:UUIDv7}
+
+ResumeSucceededV1 {kind:resume,state:succeeded,code:session_resumed,
+  sourceSessionId:UUIDv7,resultSessionId:UUIDv7,
+  sessionStatus:starting|running}
+ResumeFailedV1 {kind:resume,state:failed,
+  code:CommonFailureCode|vault_locked|profile_disabled|
+       credential_unavailable|mapping_invalid|session_not_found|
+       session_state_conflict,
+  sourceSessionId:UUIDv7,resultSessionId:UUIDv7}
+ResumeUnsupportedV1 {kind:resume,state:unsupported,
+  code:provider_resume_unsupported,sourceSessionId:UUIDv7,
+  resultSessionId:UUIDv7}
+
+StopSucceededV1 {kind:stop,state:succeeded,code:session_stopped,
+  sessionId:UUIDv7,sessionStatus:exited}
+StopFailedV1 {kind:stop,state:failed,
+  code:CommonFailureCode|session_not_found|session_state_conflict,
+  sessionId:UUIDv7}
+StopUnsupportedV1 {kind:stop,state:unsupported,
+  code:provider_stop_unsupported,sessionId:UUIDv7}
+
+KillSucceededV1 {kind:kill,state:succeeded,code:session_killed,
+  sessionId:UUIDv7,sessionStatus:killed}
+KillFailedV1 {kind:kill,state:failed,
+  code:CommonFailureCode|session_not_found|session_state_conflict,
+  sessionId:UUIDv7}
+KillUnsupportedV1 {kind:kill,state:unsupported,
+  code:provider_kill_unsupported,sessionId:UUIDv7}
+
+AcquireUnsupportedV1 {kind:acquire_control,state:unsupported,
+  code:phase4b_controller_required,sessionId:UUIDv7}
+ReleaseUnsupportedV1 {kind:release_control,state:unsupported,
+  code:phase4b_controller_required,sessionId:UUIDv7}
+
+SessionCommandOutcomeV1 = oneOf(
+  StartSucceededV1,StartFailedV1,StartUnsupportedV1,
+  ResumeSucceededV1,ResumeFailedV1,ResumeUnsupportedV1,
+  StopSucceededV1,StopFailedV1,StopUnsupportedV1,
+  KillSucceededV1,KillFailedV1,KillUnsupportedV1,
+  AcquireUnsupportedV1,ReleaseUnsupportedV1)
+```
+
+No design alias or shortened allowlist is permitted. Acquire/release are never
+delivered in Phase 4a because their exact branches terminate unsupported before
+offer/claim.
+
+Workers default to four and cap at sixteen per Daemon, with one singleflight per
+command and serialization per local Session. Start/resume reservations also
+serialize on result Session mapping. Shutdown stops polling/claiming first,
+allows at most ten seconds for in-flight local DB commits, never begins a
+Provider call after shutdown starts, and leaves durable reserved/executing
+state for the exact restart proof path.
+
+### P6 browser and presentation boundary
+
+P6 exposes bounded enrollment list/filter state and a server-computed Overview
+aggregate with `generatedAt`, per-section `observedAt|staleAt`, counts, and at
+most five recent items per section. The Web must not full-page every resource
+to calculate Overview. Usage window quantities use decimal-string scaled
+integers plus an explicit unit and scale; missing stays absent. USD is legal
+only as unit `usd` with scale 6 from an explicit official source. Provider
+units are never converted to dollars and no absent value is rendered zero.
+
+Production browser crypto lives in browser-safe modules under
+`packages/protocol`: no Node `Buffer`, `crypto`, or P0 harness import. It owns
+restricted JCS, framing, pin/attestation/PoP verification, real X25519, and
+constant-time digest comparison where possible. IndexedDB schema v1 has
+separate identity, wrapped-key, local-pin, receipt, and CAS-metadata stores;
+every write checks `(deviceId,keyRevision,recordRevision,serverOrigin)` and
+never replaces a pin from the server directory.
+
+The service worker caches only content-addressed static assets. `/v1/**`, auth,
+bootstrap, enrollment, recovery, health/version, and mutation requests are
+network-only and are never cached, background-synced, replayed, or served by SPA
+fallback. SPA fallback applies only to same-origin navigation with an HTML
+Accept header outside reserved server paths. Logout revokes/clears the browser
+session and in-memory CSRF but retains the enrolled Web Device keys and local
+pins; an explicit UV-protected Forget Device/revocation flow is the only key
+deletion path.
+
+Command polling stops on a terminal command, command expiry, logout/session
+expiry, device revocation, or unrecoverable API version error; retry uses
+bounded jittered backoff and honors `Retry-After`. Recovery plaintext remains
+memory-only. Copy, user-chosen download, and print are explicit actions with a
+privacy warning; no screenshots, traces, service-worker cache, analytics,
+local/session storage, crash report, or test artifact may contain it. Clipboard
+or printed/downloaded copies are described as user-controlled and not remotely
+erasable.
+
+The real acceptance matrix freezes exact browser/OS builds in receipts:
+Chrome+Safari on macOS arm64 and Edge+Firefox on Windows 11 x64, including a
+real Safari Passkey/storage run. Desktop evidence launches the macOS Tauri shell
+and verifies visible shared-UI rendering and navigation; `cargo check` alone is
+not a render receipt. Any matrix row not executed is a release blocker, not a
+structural pass.
+
+Registry metadata was checked on 2026-07-21 for the exact candidate pins:
+React 19.2.8, React Router 7.18.1, TanStack Query 5.101.4,
+SimpleWebAuthn/browser 13.3.0, noble-curves 2.2.0, idb 8.0.3,
+vite-plugin-pwa 1.3.0, Vite React plugin 5.2.0, Vitest 4.1.10, jsdom 29.1.1,
+Testing Library React 16.3.2/user-event 14.6.1/jest-dom 7.0.0,
+Playwright 1.61.1, axe-core 4.12.1, and selenium-webdriver 4.46.0. P3/P6 must
+lock the applicable exact versions/integrities and run the full transitive
+license gate; registry existence/license metadata is not transitive approval.
+
 ## Phase plan
 
 ### P0 — Contract freeze
@@ -897,7 +1249,8 @@ Implement server lifecycle/config, forward server migrations, health/version,
 OpenAPI authority, deterministic generated Go server/client plus TS types,
 first-party exhaustive typed runtime client, middleware bounds, UUIDv7/cursor/
 idempotency primitives, and exact drift/tool-license gates. No user or Device
-becomes active yet.
+becomes active yet. The full contract must be reconciled to plan v0.7 before P1
+verification; runtime remains health/readiness/version only.
 
 ### P2 — Bootstrap, Passkey, recovery, and browser session
 
@@ -916,6 +1269,8 @@ identities; add Web ADR 0010 key storage, Desktop-kind server contracts,
 actor-complete pin/attestation/public-receipt activation, versioned capability
 evolution, signed device REST, heartbeats, key-change rejection, revocation,
 and the enrollment `snapshot_required` gate. No Pairwise Root/HPKE/WSS.
+Migration 0009 owns local pins/activation receipts; it adds no snapshot
+implementation.
 
 ### P4 — Metadata projection and sync
 
@@ -924,15 +1279,16 @@ projections, CRUD/list filtering, revision/If-Match conflicts, device
 push/snapshot/pull/ack, exact canonical full-base/full-next/patch wire and
 revision/create-sentinel digests, Account-first snapshot resources with an out-
 of-band target Device and exact manifest/page/final digest chain, migration
-0009, replay-safe cursors, tombstones plus lifetime deletion watermarks, and
-cleanup.
+0010, replay-safe cursors, tombstones plus lifetime deletion watermarks, and
+cleanup. Snapshot pages are capped at four, network Session
+provider excludes Fake, and Profile/local-vs-server revision rules above apply.
 
 ### P5 — Async Session Commands
 
 Add durable command creation/query, bounded long-poll delivery,
 tokenless claim/ack/result/expiry/reclaim DTOs, daemon reserved/executing/local-
 committed/ambiguous/completed reconciliation, reserved-only attempt rebind,
-later-state reconcile DTO, migration 0010, restart/offline behavior, and mapped
+later-state reconcile DTO, migration 0011, restart/offline behavior, and mapped
 local actions. No terminal input or Approval response.
 
 ### P6 — Web metadata UI and integration/security handoff

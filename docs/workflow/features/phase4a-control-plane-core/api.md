@@ -182,8 +182,10 @@ GET    /v1/auth/sessions
 DELETE /v1/auth/sessions/{sessionId}
 ```
 
-Options responses expose standard PublicKeyCredential options plus a UUIDv7
-`ceremonyId`; they do not expose serialized go-webauthn `SessionData`.
+Options responses are exactly `WebAuthnCreationOptionsV1` or
+`WebAuthnRequestOptionsV1` (defined below) and include UUIDv7 `ceremonyId`;
+they do not expose serialized go-webauthn `SessionData` or a generic library
+map.
 Verification accepts only `ceremonyId` and the bounded browser credential
 response. The server consumes the full stored SessionData exactly once.
 
@@ -366,24 +368,26 @@ unknown-schema states.
 
 P2 Device migration `0008_control_plane_remote_identity.sql` creates
 `remote_device_identities` separately from credential `vault_items` plus the
-generic `controlplane_id_mappings` table. Receipt and sync tables are not a
-hidden bootstrap dependency: P4 migration `0009_control_plane_sync.sql` and P5
-migration `0010_remote_command_receipts.sql` add them in their own verified
-phases. The strict JSON plaintext is no more than 4096 bytes and contains only
+generic `controlplane_id_mappings` table. Later trust/receipt/sync tables are not
+a hidden bootstrap dependency: P3 migration `0009_remote_device_trust.sql`, P4
+migration `0010_control_plane_sync.sql`, and P5 migration
+`0011_remote_command_receipts.sql` add them in their own verified phases. The
+strict JSON plaintext is no more than 4096 bytes and contains only
 `version=1`, server Device UUIDv7, 32-byte
 Ed25519 seed, 32-byte X25519 private key, both 32-byte public keys/full SHA-256
 digests, `keyRevision=1`, `pending|active|retired`, and created/updated times.
 
-The row contains local opaque Device ID, server UUIDv7, public metadata,
+The row contains a local `remote_identity_<hex>` ID distinct from the singleton
+local IPC Device ID, server UUIDv7, canonical server origin, public metadata,
 key/record revisions, lifecycle, AES-256-GCM payload/wrap names, independent
 12-byte nonces and tagged ciphertexts, AAD/plaintext digests, timestamps, and a
 safe quarantine reason. It reuses Vault-v1 KEK; every write uses a random
 32-byte DEK and independent payload/wrap encryption. AAD is exactly:
 
 ```text
-frame("multidesk-device-key-envelope-v1", "1", localOpaqueDeviceId,
-      serverDeviceId, signingKeyDigestRaw, exchangeKeyDigestRaw,
-      decimalKeyRevision)
+frame("multidesk-device-key-envelope-v1", "1", serverOrigin,
+      localRemoteIdentityId, serverDeviceId, signingKeyDigestRaw,
+      exchangeKeyDigestRaw, decimalKeyRevision)
 ```
 
 Envelope + public metadata + Device UUID mapping commit with record-revision CAS
@@ -397,7 +401,8 @@ enrollment and then retires the old identity.
 
 ```text
 DeviceKind = daemon | web | desktop
-DeviceStatus = pending | active | offline | revoked
+DeviceLifecycle = pending | active | revoked
+DevicePresence = online | offline
 DeviceStorageMode = portable_vault_v1 | native | software_wrapped |
                     metadata_only | desktop_key_store_deferred
 
@@ -425,7 +430,9 @@ Device {
   storageMode: DeviceStorageMode
   declaredCapabilities: string[]
   effectiveCapabilities: DeviceCapability[]
-  status: DeviceStatus
+  lifecycle: DeviceLifecycle
+  presence: DevicePresence
+  serverBootEpoch?: UUIDv7
   keyRevision: integer>=1
   capabilityRevision: integer>=1
   revision: integer>=1
@@ -547,6 +554,7 @@ POST   /v1/device-enrollments
 GET    /v1/device-enrollments/{enrollmentId}
 POST   /v1/device-enrollments/{enrollmentId}/prove
 POST   /v1/device-enrollments/{enrollmentId}/approve
+GET    /v1/device-enrollments/{enrollmentId}/activation-package
 POST   /v1/device-enrollments/{enrollmentId}/activate
 POST   /v1/device-enrollments/{enrollmentId}/cancel
 GET    /v1/device-enrollments/{enrollmentId}/resume
@@ -570,19 +578,21 @@ EnrollmentCreated {
   state: pending_proof
 }
 EnrollmentProofRequest { ExchangeKeyProofV1 }
-EnrollmentApproveRequest {
+EnrollmentApproveRequestV1 {
   enrollmentId: UUIDv7
   transcriptDigest: base64url(32)
   fingerprintConfirmed: true
   attestation: DeviceAttestationV1
   attestationSignature: base64url(64)
-  activationReceipt: ActivationReceiptV1
-  activationReceiptSignature: base64url(64)
+  receipt: ActivationReceiptV1
+  receiptSignature: base64url(64)
+  approverKeys: ApproverPublicKeysV1
 }
 ActivationReceiptV1 {
   version: 1
   type: device_activation_receipt
   enrollmentId: UUIDv7
+  serverOrigin: CanonicalServerOriginV1
   subjectDeviceId: UUIDv7
   approverDeviceId: UUIDv7
   subjectSigningKeyDigest: base64url(32)
@@ -593,20 +603,66 @@ ActivationReceiptV1 {
   attestationDigest: base64url(32)
   capabilities: DeviceCapability[]
   capabilityRevision: 1
-  activatedAt: time
+  approvedAt: time
   expiresAt: time
 }
-EnrollmentActivateRequest {
+ApproverPublicKeysV1 {
+  signingPublicKey: base64url(32)
+  exchangePublicKey: base64url(32)
+}
+EnrollmentActivationPackageV1 {
+  version: 1
+  type: enrollment_activation_package
   enrollmentId: UUIDv7
+  state: approved
+  enrollmentRevision: integer>=1
+  transcript: EnrollmentTranscriptV1
   transcriptDigest: base64url(32)
+  attestation: DeviceAttestationV1
+  attestationDigest: base64url(32)
+  attestationSignature: base64url(64)
+  receipt: ActivationReceiptV1
   receiptDigest: base64url(32)
+  receiptSignature: base64url(64)
+  approverKeys: ApproverPublicKeysV1
+}
+EnrollmentActivationPackageResultV1 {
+  activationPackage: EnrollmentActivationPackageV1
+  activationPackageDigest: base64url(32)
+}
+EnrollmentActivateRequestV1 {
+  ack: SubjectActivationAckV1
   subjectActivationSignature: base64url(64)
+  expectedEnrollmentRevision: integer>=1
 }
-EnrollmentActivateResult {
+EnrollmentActivateResultV1 {
+  enrollmentId: UUIDv7
+  state: activated
   device: Device
-  activationReceipt: ActivationReceiptV1
-  activationReceiptSignature: base64url(64)
+  receipt: ActivationReceiptV1
+  receiptDigest: base64url(32)
+  activationPackageDigest: base64url(32)
+  activatedAt: time
+  enrollmentRevision: integer>=1
 }
+```
+
+Every object above has `additionalProperties:false`. `ActivationReceiptV1` is
+the complete signed restricted-JCS payload: it contains digests but no raw
+public key, detached signature, or transport wrapper. The raw approver keys,
+attestation payload/signature, receipt signature, and transcript are carried
+only by `EnrollmentActivationPackageV1`. Before returning or accepting the
+package, the server and candidate decode both raw approver keys, recompute their
+SHA-256 digests, and require exact equality with the signed receipt's
+`approverSigningKeyDigest`/`approverExchangeKeyDigest`; the attestation and
+receipt subject/approver/transcript digests must also agree.
+
+The package digest is external to the package to avoid self-reference:
+
+```text
+activationPackageDigest = SHA-256(frame(
+  "multidesk-enrollment-activation-package-digest-v1", "1",
+  JCS(EnrollmentActivationPackageV1)))
 ```
 
 Enrollment expiry is ten minutes. Candidate Daemon CLI or Web invokes create,
@@ -614,9 +670,11 @@ prove, resume/activate/cancel; a directly pinned eligible Device invokes
 approve after recomputing the transcript and persisting the candidate pin
 locally. Every mutation uses Idempotency-Key; exact replay returns current
 state/receipt, not a new secret. `resume` returns public state/transcript only.
-`activate` returns only the approver-signed public receipt and Device metadata—
-no connection credential. Candidate verifies the receipt/transcript/approver
-signature and persists approver pin before local active state. Device-auth
+`activate` accepts only `EnrollmentActivateRequestV1` and returns only
+`EnrollmentActivateResultV1`—no connection credential. Candidate verifies the
+package/receipt/attestation/raw-key digests and signatures and persists the
+approver pin before signing the exact SubjectActivationAck and before local
+active state. Device-auth
 challenge/PoP later creates the short session. Changed keys under an existing
 Device ID always return `device_key_changed`; v1 has no key-update mutation.
 
@@ -727,7 +785,7 @@ WorkspaceProjection {
 SessionProjection {
   id: UUIDv7
   deviceId: UUIDv7
-  provider: fake | codex | claude
+  provider: codex | claude
   accountId?: UUIDv7
   credentialStatusId?: UUIDv7
   runtimeProfileId: UUIDv7
@@ -765,11 +823,11 @@ UsageWindow {
   providerLimitId?: string(0..128)
   kind: rolling | calendar | spend_control | sdk_credit | unknown
   label: string(1..128)
-  durationSeconds?: integer>0
-  usedValue?: number>=0
-  limitValue?: number>=0
-  usedPercent?: number[0,100]
-  remainingPercent?: number[0,100]
+  unit: request | token | second | usd | provider_unit | percent
+  scale: integer[0,9] // USD requires 6
+  usedScaled?: canonical non-negative decimal string <= int64 max
+  limitScaled?: canonical non-negative decimal string <= int64 max
+  remainingBasisPoints?: integer[0,10000]
   resetsAt?: time
 }
 ```
@@ -925,7 +983,7 @@ SnapshotManifestV1 {
   snapshotId: UUIDv7
   snapshotEpoch: UUIDv7
   targetDeviceId: UUIDv7
-  pageSize: integer[1,100]
+  pageSize: integer[1,4]
   pageCount: integer>=1
   resourceCount: integer>=0
   resources: SnapshotManifestEntryV1[] // complete ordered manifest
@@ -943,12 +1001,12 @@ SnapshotPageDigestInputV1 {
   snapshotEpoch: UUIDv7
   targetDeviceId: UUIDv7
   manifestDigest: base64url(32)
-  pageSize: integer[1,100]
+  pageSize: integer[1,4]
   pageIndex: integer>=0
   pageCount: integer>=1
   resourceCount: integer>=0
   priorPageDigest: base64url(32) | null
-  resources: CanonicalSyncRevisionV1[0..100]
+  resources: CanonicalSyncRevisionV1[0..4]
   continuation: SnapshotContinuationV1
   expiresAt: time
   incrementalBaseCursor: string
@@ -1159,7 +1217,7 @@ revocation/audit transaction, invalidates device sessions/challenges/claims,
 wakes long polls, blocks future sync/command/auth, and marks presence revoked.
 It does not delete metadata or claim remote erasure.
 
-## Session Command DTOs and endpoints
+## Session Command v0.7 DTOs and endpoints
 
 ```text
 POST /v1/session-commands
@@ -1167,6 +1225,7 @@ GET  /v1/session-commands
 GET  /v1/session-commands/{commandId}
 
 GET  /v1/device/session-commands?cursor=&limit=&waitSeconds=
+GET  /v1/device/session-commands/{commandId}
 POST /v1/device/session-commands/{commandId}/claim
 POST /v1/device/session-commands/{commandId}/ack
 POST /v1/device/session-commands/{commandId}/result
@@ -1179,7 +1238,7 @@ SessionCommandKind = start | stop | kill | resume |
 SessionCommandState = queued | claimed | acknowledged |
                       succeeded | failed | unsupported | expired
 
-SessionCommandCreate {
+SessionCommandCreateV1 {
   targetDeviceId: UUIDv7
   kind: SessionCommandKind
   expiresInSeconds?: integer[30,900] // default 300
@@ -1190,100 +1249,199 @@ SessionCommandCreate {
     resume { sessionId }
 }
 
-SessionCommand {
+CanonicalSessionCommandRequestV1 {
+  schemaVersion: 1
+  commandId: UUIDv7
+  resultSessionId?: UUIDv7 // required for start|resume; forbidden otherwise
+  creatorClass: browser | signed_device
+  creatorId: UUIDv7
+  targetDeviceId: UUIDv7
+  kind: SessionCommandKind
+  request: exact SessionCommandCreateV1.request branch selected by kind
+  resourceRevisions: ResourceRevisionRefV1[1..16]
+  createdAt: time
+  expiresAt: time
+  ttlSeconds: integer[30,900]
+}
+
+ResourceRevisionRefV1 {
+  resourceType: account | credential_status | profile | workspace | session
+  resourceId: UUIDv7
+  serverSyncRevision: integer>=1
+}
+
+SessionCommandV1 {
   id: UUIDv7
   targetDeviceId: UUIDv7
   kind: SessionCommandKind
   state: SessionCommandState
   requestDigest: base64url(32)
-  attempt: integer>=0
+  currentAttempt: integer[0,8]
+  currentDeliveryRevision?: integer>=1
   claimExpiresAt?: time
   acknowledgedAt?: time
-  result?: {
-    code: string
-    sessionId?: UUIDv7
-    sessionStatus?: SessionStatus
-  }
+  result?: SessionCommandOutcomeV1
   expiresAt: time
   createdAt: time
   updatedAt: time
+  revision: integer>=1
 }
 
-SessionCommandClaimRequest {
-  targetDeviceId: UUIDv7
-  commandId: UUIDv7
+SessionCommandOfferV1 {
+  command: CanonicalSessionCommandRequestV1
   requestDigest: base64url(32)
+  deliveryRevision: integer>=1
+  expectedNextAttempt: integer[1,8]
+  offeredAt: time
+  commandExpiresAt: time
 }
-SessionCommandClaimResult {
+
+SessionCommandDeliveryListResultV1 {
+  committedCursor: opaque command cursor
+  scanCursor: opaque command scan cursor
+  offers: SessionCommandOfferV1[0..50]
+  nextScanCursor: opaque command scan cursor
+  hasMore: boolean
+}
+
+SessionCommandClaimRequestV1 {
   targetDeviceId: UUIDv7
   commandId: UUIDv7
   requestDigest: base64url(32)
-  attempt: integer>=1
+  deliveryRevision: integer>=1
+  expectedNextAttempt: integer[1,8]
+  expectedCommandRevision: integer>=1
+  derivedIdempotencyKey: base64url(32) // formula uses receiptRevision=0
+}
+SessionCommandClaimResultV1 {
+  targetDeviceId: UUIDv7
+  commandId: UUIDv7
+  requestDigest: base64url(32)
+  deliveryRevision: integer>=1
+  attempt: integer[1,8]
   claimExpiresAt: time
-  command: exact SessionCommandCreate request union
+  command: CanonicalSessionCommandRequestV1
+  commandRevision: integer>=1
+  committedCursor: opaque command cursor // unchanged by claim
 }
-SessionCommandAckRequest {
+
+SessionCommandAckRequestV1 {
   targetDeviceId: UUIDv7
   commandId: UUIDv7
   requestDigest: base64url(32)
-  attempt: integer>=1
+  deliveryRevision: integer>=1
+  attempt: integer[1,8]
   claimExpiresAt: time
-  receiptDigest: base64url(32)
-  receiptState: reserved
-}
-SessionCommandResultRequest {
-  targetDeviceId: UUIDv7
-  commandId: UUIDv7
-  requestDigest: base64url(32)
-  attempt: integer>=1
-  receiptDigest: base64url(32)
-  receiptState: local_committed | ambiguous
-  outcome: {
-    state: succeeded | failed | unsupported
-    code: stable bounded code
-    sessionId?: UUIDv7
-    sessionStatus?: SessionStatus
-  }
-}
-
-SessionCommandReconcileRequest {
-  targetDeviceId: UUIDv7
-  commandId: UUIDv7
-  requestDigest: base64url(32)
-  currentClaimAttempt: integer>=1
-  currentClaimExpiresAt: time
-  receiptAttempt: integer>=1       // issued historical attempt; < current
-  receiptDigest: base64url(32)
-  receiptState: local_committed | ambiguous
-  outcome: exact terminal outcome  // ambiguous only permits failed +
-                                   // command_execution_ambiguous
-}
-
-DaemonCommandReceipt {
-  version: 1
-  commandId: UUIDv7
-  targetDeviceId: UUIDv7
-  requestDigest: base64url(32)
-  attempt: integer>=1
   receiptRevision: integer>=1
-  state: reserved | executing | local_committed | ambiguous | completed
-  localOperationId?: prefixed local ID
-  localSessionId?: prefixed local ID
-  serverSessionId?: UUIDv7
-  safeResult?: exact outcome
-  createdAt: time
-  updatedAt: time
+  receipt: ReservedReceiptV1
+  receiptDigest: base64url(32)
+  expectedCommandRevision: integer>=1
+  expectedCommittedCursor: opaque command cursor
+  derivedIdempotencyKey: base64url(32)
+}
+SessionCommandAckResultV1 {
+  command: SessionCommandV1
+  deliveryRevision: integer>=1
+  attempt: integer[1,8]
+  receiptRevision: integer>=1
+  receiptDigest: base64url(32)
+  cursorCommit: DeviceCommandCursorCommitV1
+}
+
+DeviceCommandCursorCommitV1 {
+  previousCommittedDeliveryRevision: integer>=0
+  committedDeliveryRevision: integer>=previous
+  committedCursor: opaque command cursor
+}
+
+SessionCommandResultRequestV1 {
+  targetDeviceId: UUIDv7
+  commandId: UUIDv7
+  requestDigest: base64url(32)
+  deliveryRevision: integer>=1
+  attempt: integer[1,8]
+  claimExpiresAt: time
+  receiptRevision: integer>=1
+  receipt: LocalCommittedReceiptV1 | AmbiguousReceiptV1
+  receiptDigest: base64url(32)
+  outcome: SessionCommandOutcomeV1 // byte-equal to receipt safe result;
+                                   // ambiguous has its sole failed outcome
+  expectedCommandRevision: integer>=1
+  derivedIdempotencyKey: base64url(32)
+}
+SessionCommandResultResultV1 {
+  command: SessionCommandV1
+  deliveryRevision: integer>=1
+  attempt: integer[1,8]
+  receiptRevision: integer>=1
+  receiptDigest: base64url(32)
+  acceptedCommandRevision: integer>=1
+  outcome: SessionCommandOutcomeV1
+}
+
+SessionCommandReconcileRequestV1 {
+  targetDeviceId: UUIDv7
+  commandId: UUIDv7
+  requestDigest: base64url(32)
+  currentDeliveryRevision: integer>=1
+  currentClaimAttempt: integer[1,8]
+  currentClaimExpiresAt: time
+  receiptDeliveryRevision: integer>=1
+  receiptAttempt: integer[1,8]       // historical attempt; < current
+  receiptRevision: integer>=1
+  receipt: LocalCommittedReceiptV1 | AmbiguousReceiptV1
+  receiptDigest: base64url(32)
+  outcome: SessionCommandOutcomeV1
+  expectedCommandRevision: integer>=1
+  derivedIdempotencyKey: base64url(32)
+}
+SessionCommandReconcileResultV1 {
+  command: SessionCommandV1
+  currentDeliveryRevision: integer>=1
+  currentClaimAttempt: integer[1,8]
+  receiptDeliveryRevision: integer>=1
+  receiptAttempt: integer[1,8]
+  receiptRevision: integer>=1
+  receiptDigest: base64url(32)
+  acceptedCommandRevision: integer>=1
+  outcome: SessionCommandOutcomeV1
+}
+
+DeviceCommandStateV1 {
+  command: SessionCommandV1
+  requestDigest: base64url(32)
+  latestDeliveryRevision?: integer>=1
+  currentAttempt: integer[0,8]
+  claimExpiresAt?: time
+  acknowledgedReceiptRevision?: integer>=1
+  acknowledgedReceiptDigest?: base64url(32)
+  committedCursor: opaque command cursor
+  terminalOutcome?: SessionCommandOutcomeV1
+  commandRevision: integer>=1
 }
 ```
 
 Create returns HTTP 202 whether the target is currently online or offline.
 Authorization validates mapped resources and target capability but does not
-claim execution. Device delivery returns queued/reclaimable commands and a
-cursor. Claim lease is 30 seconds and has no token. Each claim/ack/result/
-reconcile mutation also requires its own Idempotency-Key and signed Device
-request. Queued -> claimed increments attempt. The server retains a bounded
+claim execution. Listing allocates/persists an immutable append-only
+`deliveryRevision` offer and computes `expectedNextAttempt`, but does not change
+command state, increment attempt, allocate a lease, or advance the Device's
+committed delivery cursor. `claim` is the only operation that CASes
+queued/reclaimable -> claimed, assigns that expected attempt, and sets the
+30-second `claimExpiresAt`; claim leaves the cursor unchanged. The Daemon then
+commits `ReservedReceiptV1` locally. `ack` verifies that exact receipt/digest/
+revision and current claim, atomically changes claimed -> acknowledged, marks
+that delivery accepted, and advances the server Device cursor only through the
+highest contiguous accepted/terminal/superseded delivery. Thus an out-of-order
+ack cannot skip an earlier live offer. The returned
+`DeviceCommandCursorCommitV1` is the only cursor-advance fact.
+
+Each claim/ack/result/reconcile mutation requires its derived idempotency value
+inside the body and the identical value as the HTTP Idempotency-Key. The
+browser's creation key is never forwarded. The server retains a bounded
 append-only claim-attempt history row containing Device/command/digest/attempt/
-issued/expired/ack time for command retention. Only an unacked expired claim
+delivery revision/issued/expired/ack time for command retention. Only an
+unacked expired claim
 requeues; the lease reaper and ack serialize on one CAS. Ack-first freezes the
 attempt; expiry-first records attempt N and the next winning claim is exactly
 N+1. Acknowledged never requeues and ends by result or command TTL. Stale
@@ -1301,11 +1459,12 @@ command binding in the `reserved` transaction before Provider work. Other kinds
 persist target/pre-state first. Local commit records `local_committed`; accepted
 server result records `completed`.
 
-When an expired unacked attempt N is redelivered as current N+1, only an exact
-old `reserved` receipt may rebind. One local CAS changes `attempt` to the current
-attempt and increments `receiptRevision`; it changes no local operation ID,
-Session ID/mapping, request digest, or other field, then recomputes the digest
-and acks. It may repeat across further expiries. `executing`,
+When an expired unacked attempt N is redelivered under a new append-only
+delivery revision as current N+1, only an exact old `reserved` receipt may
+rebind. One local CAS changes `deliveryRevision` and `attempt` to the current
+claim and increments `receiptRevision`; it changes no local operation ID,
+Session ID/mapping, reservation, request digest, or command field, then
+recomputes the digest and acks. It may repeat across further expiries. `executing`,
 `local_committed`, `ambiguous`, and `completed` are forbidden from attempt
 rebind.
 
@@ -1328,6 +1487,677 @@ uncertain Provider effect.
 The request cannot pass server-supplied binary paths, secretRefs, workspace
 paths, raw Provider settings, terminal input, Approval decisions, or capability
 snapshots.
+
+## Plan v0.7 normative contract replacements
+
+This section supersedes conflicting pre-v0.6 schemas or bounds above. The complete
+OpenAPI and both generated languages must express these replacements before P1
+verification, although only health/readiness/version are mounted in P1.
+
+### Canonical origin, cookie, and WebAuthn wire
+
+```text
+CanonicalServerOriginV1 = "https://" + lowercase IDNA-ASCII host +
+                          optional non-default decimal port
+
+DeviceKeyEnvelopeV1 adds:
+  serverOrigin: CanonicalServerOriginV1
+
+BootstrapAnchorDescriptorV1,
+BootstrapAnchorChallengeV1,
+BootstrapCommitReceiptV1,
+ActivationReceiptV1 add the same serverOrigin.
+```
+
+The Device envelope AAD becomes:
+
+```text
+frame("multidesk-device-key-envelope-v1", "1", serverOrigin,
+      localRemoteIdentityId, serverDeviceId, signingKeyDigestRaw,
+      exchangeKeyDigestRaw, decimalKeyRevision)
+```
+
+The browser cookie is named `__Host-mad_session` and has Secure, HttpOnly,
+SameSite=Strict, Path=/, and no Domain. Clearing it uses the same name/path,
+`Max-Age=0`, and an already-expired date.
+
+Browser credential bytes are JSON Base64url, never numeric arrays or browser-
+specific objects:
+
+```text
+WebAuthnExtensionResultsV1 {} // empty in v1; additionalProperties:false
+
+WebAuthnCredentialDescriptorV1 {
+  type: public-key
+  id: base64url(decoded 1..1024 bytes)
+  transports?: (ble|cable|hybrid|internal|nfc|smart-card|usb)[0..7]
+}
+
+WebAuthnCreationOptionsV1 {
+  ceremonyId: UUIDv7
+  publicKey: {
+    challenge: base64url(32)
+    rp: {id:string(1..253),name:string(1..128)}
+    user: {
+      id: base64url(decoded 1..64 bytes)
+      name: string(1..128)
+      displayName: string(1..128)
+    }
+    pubKeyCredParams: [
+      {type:public-key,alg:-7},
+      {type:public-key,alg:-8},
+      {type:public-key,alg:-257}
+    ]
+    timeout: 60000
+    excludeCredentials: WebAuthnCredentialDescriptorV1[0..64]
+    authenticatorSelection: {
+      authenticatorAttachment?: platform | cross-platform
+      residentKey: preferred
+      requireResidentKey: false
+      userVerification: required
+    }
+    attestation: none
+    extensions: {} // WebAuthnExtensionResultsV1 shape
+  }
+}
+
+WebAuthnRequestOptionsV1 {
+  ceremonyId: UUIDv7
+  publicKey: {
+    challenge: base64url(32)
+    timeout: 60000
+    rpId: string(1..253)
+    allowCredentials: WebAuthnCredentialDescriptorV1[1..64]
+    userVerification: required
+    extensions: {} // WebAuthnExtensionResultsV1 shape
+  }
+}
+
+WebAuthnRegistrationCredentialV1 {
+  id: base64url(1..1024)
+  rawId: base64url(1..1024)
+  type: public-key
+  authenticatorAttachment?: platform | cross-platform
+  response: {
+    clientDataJSON: base64url(1..65536)
+    attestationObject: base64url(1..262144)
+    transports?: (ble|cable|hybrid|internal|nfc|smart-card|usb)[]
+  }
+  clientExtensionResults: WebAuthnExtensionResultsV1
+}
+
+WebAuthnAssertionCredentialV1 {
+  id: base64url(1..1024)
+  rawId: base64url(1..1024)
+  type: public-key
+  authenticatorAttachment?: platform | cross-platform
+  response: {
+    clientDataJSON: base64url(1..65536)
+    authenticatorData: base64url(37..65536)
+    signature: base64url(1..65536)
+    userHandle?: base64url(1..1024)
+  }
+  clientExtensionResults: WebAuthnExtensionResultsV1
+}
+```
+
+Every nested object above has `additionalProperties:false`; tuple order and
+algorithm values are fixed. v1 requests no WebAuthn extension and accepts only
+the exact empty `{}` from `getClientExtensionResults()`. Any member such as
+`credProps`, `appid`, `largeBlob`, `prf`, `uvm`, or an unknown future extension
+is rejected until a reviewed API version defines it.
+
+Base64url decodes before the library call; padding, whitespace, standard Base64
+alphabet, unknown extensions, duplicate JSON members, or noncanonical
+credential type reject. Options responses are exactly
+`WebAuthnCreationOptionsV1|WebAuthnRequestOptionsV1`, with every binary member
+encoded Base64url and `Cache-Control:no-store`; no library-native generic map is
+serialized.
+
+Passkey rows store `signCount` and `credentialRevision`. Assertion result and
+session issuance use one CAS: `0->0`, `0->N>0`, and `N->M>N` succeed;
+nonzero `N->N|M<N` returns `passkey_counter_regressed` and revokes all sessions
+authenticated with that passkey. Passkey deletion returns
+`PasskeyDeleteResultV1 {passkeyId,revokedSessionCount,currentSessionRevoked}`;
+when currentSessionRevoked is true it clears the cookie and returns no
+`CurrentAuth`.
+
+### Signed Device-auth contract
+
+```text
+DeviceAuthChallengeRequestV1 {
+  deviceId: UUIDv7
+  serverOrigin: CanonicalServerOriginV1
+  signingKeyDigest: base64url(32)
+  clientNonce: base64url(32)
+}
+
+DeviceAuthChallengeV1 {
+  version: 1
+  type: device_auth_challenge
+  challengeId: UUIDv7
+  serverOrigin: CanonicalServerOriginV1
+  deviceId: UUIDv7
+  signingKeyDigest: base64url(32)
+  clientNonce: base64url(32)
+  challenge: base64url(32)
+  issuedAt: time
+  expiresAt: time                 // issuedAt + 60 seconds
+}
+
+DeviceAuthChallengeResponseV1 {
+  challenge: DeviceAuthChallengeV1
+  serverSigningPublicKey: base64url(32)
+  challengeSignature: base64url(64)
+}
+
+DeviceAuthExchangeRequestV1 {
+  challenge: DeviceAuthChallengeV1
+  challengeSignature: base64url(64)
+  subjectSignature: base64url(64)
+}
+
+DeviceAuthExchangeResultV1 {
+  deviceSessionId: UUIDv7
+  deviceSessionToken: base64url(32) // returned once; digest stored
+  deviceId: UUIDv7
+  issuedAt: time
+  expiresAt: time                 // issuedAt + 15 minutes
+}
+```
+
+Exact signatures are:
+
+```text
+challengeSignature = Ed25519.Sign(serverChallengePrivateKey,
+  frame("multidesk-device-auth-challenge-signature-v1", "1",
+        JCS(DeviceAuthChallengeV1)))
+
+subjectSignature = Ed25519.Sign(subjectSigningPrivateKey,
+  frame("multidesk-device-auth-exchange-signature-v1", "1",
+        JCS(DeviceAuthChallengeV1), challengeSignatureRaw))
+```
+
+Challenge state is `issued|consumed|expired`; consume is one persistent CAS and
+uses `issuedAt <= now < expiresAt`. The server signing key and issued row survive
+restart. Session token digest is `SHA-256(tokenRaw)`. Request nonces are durable
+`(deviceSessionId,nonce)` rows retained through session expiry, so restart does
+not reset replay state.
+
+### Enrollment pre-auth, state, and typed signatures
+
+The endpoint set adds list/filter and activation-package retrieval:
+
+```text
+GET  /v1/device-enrollments?state=&kind=&subjectDeviceId=&limit=&cursor=
+GET  /v1/device-enrollments/{id}/activation-package
+
+EnrollmentState = pending_proof | proof_verified | approved | activated |
+                  cancelled | expired
+
+EnrollmentSummaryV1 {
+  enrollmentId: UUIDv7
+  subjectDeviceId: UUIDv7
+  subjectKind: daemon | web | desktop
+  subjectName: string
+  state: EnrollmentState
+  challengeRevision: integer>=1
+  capabilityRevision: integer>=1
+  fingerprint: six groups
+  requestedCapabilities: DeviceCapabilityV1[]
+  createdAt: time
+  expiresAt: time
+  updatedAt: time
+}
+```
+
+Daemon candidate calls carry `Authorization: Enrollment <enrollmentId>` plus
+the ordinary timestamp/nonce/content-digest headers and
+`X-MAD-Enrollment-Signature`. Create uses `enrollmentId` from the request body;
+all calls sign:
+
+```text
+frame("multidesk-enrollment-preauth-request-v1", "1", serverOrigin,
+      enrollmentId, subjectDeviceId, decimalChallengeRevision, method,
+      canonicalPathAndQuery, contentSHA256Raw, timestamp, nonceRaw)
+```
+
+The signature key is the pending subject key in the submitted transcript. Web
+candidates require both this signature and the authenticated browser cookie/
+CSRF mutation class. Active Device bearer/session headers are not candidate
+authority.
+
+The exact typed canonical objects and formulas are:
+
+```text
+EnrollmentTranscriptV1 {
+  version: 1; type: enrollment_transcript
+  enrollmentId; serverOrigin; subjectDeviceId; subjectKind; subjectName
+  subjectSigningPublicKey; subjectExchangePublicKey
+  subjectSigningKeyDigest; subjectExchangeKeyDigest
+  pinDigest; storageMode; storageAssertionDigest
+  requestedCapabilities; challengeRevision; challenge; serverEphemeralKey
+  issuedAt; expiresAt
+}
+
+transcriptDigest = SHA-256(frame(
+  "multidesk-enrollment-transcript-digest-v1", "1",
+  JCS(EnrollmentTranscriptV1)))
+
+attestationDigest = SHA-256(frame(
+  "multidesk-device-attestation-digest-v1", "1",
+  JCS(DeviceAttestationV1)))
+
+attestationSignature = Ed25519.Sign(approverKey, frame(
+  "multidesk-device-attestation-signature-v1", "1",
+  JCS(DeviceAttestationV1)))
+
+capabilityAttestationDigest = SHA-256(frame(
+  "multidesk-device-capability-attestation-digest-v1", "1",
+  JCS(DeviceCapabilityAttestationV1)))
+
+capabilityAttestationSignature = Ed25519.Sign(approverKey, frame(
+  "multidesk-device-capability-attestation-signature-v1", "1",
+  JCS(DeviceCapabilityAttestationV1)))
+
+receiptDigest = SHA-256(frame(
+  "multidesk-device-activation-receipt-digest-v1", "1",
+  JCS(ActivationReceiptV1)))
+
+activationReceiptSignature = Ed25519.Sign(approverKey, frame(
+  "multidesk-device-activation-receipt-signature-v1", "1",
+  JCS(ActivationReceiptV1)))
+
+SubjectActivationAckV1 {
+  version:1; type:subject_activation_ack; enrollmentId; serverOrigin
+  subjectDeviceId; approverDeviceId; transcriptDigest; attestationDigest
+  receiptDigest; activationPackageDigest; challengeRevision
+  confirmedApproverPinDigest; confirmedAt
+}
+
+subjectActivationSignature = Ed25519.Sign(subjectKey, frame(
+  "multidesk-subject-activation-ack-signature-v1", "1",
+  JCS(SubjectActivationAckV1)))
+```
+
+`ActivationReceiptV1` is exactly the strict signed payload defined in the
+Enrollment section. Raw approver public keys and every detached signature are
+outside that payload and exist only in `EnrollmentActivationPackageV1`; their
+digests must match its signed receipt and attestation. The activation-package
+response is available only in `approved` state. Final activate accepts only
+`EnrollmentActivateRequestV1` containing the exact ack above and returns only
+`EnrollmentActivateResultV1`, after the client locally verifies/pins the
+approver. Each type/domain is distinct; using any valid signature/digest in
+another type returns `cross_type_signature_replay`.
+
+```text
+AuthCapabilityV1 = metadata_read | profile_write | device_enroll_request |
+                   device_enroll_approve | device_revoke |
+                   session_command_create | passkey_manage | session_revoke
+
+DeviceCapabilityV1 = mad.v1.metadata.read | mad.v1.metadata.write |
+  mad.v1.sync.pull | mad.v1.sync.push | mad.v1.presence.write |
+  mad.v1.device.enroll_request | mad.v1.device.enroll_approve |
+  mad.v1.device.revoke | mad.v1.session.command_create |
+  mad.v1.session.command_claim | mad.v1.session.command_ack |
+  mad.v1.session.command_result
+```
+
+These enums are never coerced. Device lifecycle is
+`pending|active|revoked`; `DevicePresenceV1` is separately
+`online|offline` with `serverBootEpoch`, `lastSeenAt`, and `derivedAt`.
+
+```text
+WebDeviceStorageAssertionV1 {
+  version:1; type:web_device_storage_assertion
+  serverOrigin; deviceId; signingKeyDigest; exchangeKeyDigest
+  storageMode:native|software_wrapped
+  wrappingAlgorithm:AES-256-GCM
+  wrappingKeyExtractable:false
+  wrappedExchangePrivateKeyDigest?:base64url(32)
+  indexedDbSchemaVersion:1
+  keyRevision:1
+  recordRevision:integer>=1
+  probedAt:time
+}
+```
+
+`software_wrapped` requires @noble/curves 2.2.0 X25519 PoP; an assertion alone
+cannot activate.
+
+### Metadata/sync replacements
+
+`SessionProjection.provider` is `codex|claude`; `fake` is removed from all
+network schemas. Snapshot `pageSize|limit` is 1..4. Sync pull stops before
+900 KiB canonical response bytes as well as 100 changes and sets `hasMore`.
+Oversized snapshot construction returns `snapshot_page_too_large` with no
+state/cursor write.
+
+Browser `ProfileCreateRequest.enabled` is forbidden; the server always creates
+false. `ProfileProjectionV1` adds:
+
+```text
+materializationState: pending_local_completion | ready | quarantined
+materializationRevision: integer>=1
+```
+
+`ProfileMaterializationReadyV1` is a signed Device mutation binding profile ID,
+target Device, server sync revision, local prefixed ID mapping digest, Provider
+validation digest, and `readyAt`; it contains no local approval/sandbox policy.
+Enable PATCH requires state ready. Device storage uses separate
+`localEntityRevision` and `serverSyncRevision` columns; only the latter appears
+in canonical sync revisions.
+
+Stale browser Profile mutations use:
+
+```text
+ProfilePatchMutationV1 {
+  operation: patch
+  profileId: UUIDv7
+  baseRevision: integer>=1
+  changes: ProfileMutableChangeV1[1..8] // unique field, enum order
+}
+ProfileDeleteMutationV1 {
+  operation: delete
+  profileId: UUIDv7
+  baseRevision: integer>=1
+}
+ProfileMutationV1 = oneOf(ProfilePatchMutationV1,ProfileDeleteMutationV1)
+
+ProfileMutableChangeV1 = oneOf(
+  {field:name,value:string(1..128)},
+  {field:selector_alias,value:string(1..32)|null},
+  {field:enabled,value:boolean},
+  {field:model_preference,value:string(1..128)|null},
+  {field:environment_non_secret,value:bounded denylisted map<string,string>},
+  {field:mcp_ref_keys,value:string[0..64]},
+  {field:skill_ref_keys,value:string[0..64]},
+  {field:hook_ref_keys,value:string[0..64]})
+
+ProfileConflictFieldNameV1 = resource | name | selector_alias | enabled |
+  model_preference | environment_non_secret | mcp_ref_keys |
+  skill_ref_keys | hook_ref_keys
+
+ProfileConflictFieldV1 {
+  field: ProfileConflictFieldNameV1
+  currentState: omitted | null | value
+  currentValueDigest: base64url(32)
+  submittedState: omitted | null | value
+  submittedValueDigest: base64url(32)
+}
+
+ProfileConflictV1 {
+  profileId: UUIDv7
+  submittedIfMatchRevision: integer>=1
+  currentRevision: integer>=1
+  current: ProfileProjectionV1
+  submitted: ProfileMutationV1
+  conflictingFields: ProfileConflictFieldV1[1..9] // unique enum order
+}
+```
+
+Every object/union branch has `additionalProperties:false`; mutation canonical
+JSON is capped at 32 KiB and the complete conflict detail at 64 KiB. Create-only
+or server-managed `targetDeviceId`, `provider`, `accountId`, every
+`materialization*` field, revisions, timestamps, and IDs other than the
+path/profile ID are forbidden
+in `ProfileMutationV1`. `enabled=true` additionally requires the separately
+verified materialization-ready precondition; it is not inferred from conflict
+data.
+
+Conflict digests bind the field name and distinguish absence from JSON null:
+
+```text
+omittedDigest = SHA-256(frame("multidesk-profile-conflict-field-v1", "1",
+  fieldName, "omitted"))
+nullDigest = SHA-256(frame("multidesk-profile-conflict-field-v1", "1",
+  fieldName, "null", JCS(null)))
+valueDigest = SHA-256(frame("multidesk-profile-conflict-field-v1", "1",
+  fieldName, "value", JCS(exact typed field value)))
+```
+
+For patch, unmentioned mutable fields have submittedState `omitted`; an
+explicit nullable clear has `null`; every supplied non-null value has `value`.
+For delete, the sole conflict field is `resource`: current is `value` over
+JCS(current ProfileProjectionV1), submitted is `omitted`. No digest can be
+reused under another field/state.
+
+### Canonical commands, delivery, and receipts
+
+The canonical request, offer/list, claim, ack, result, reconcile, authoritative
+query, and cursor-commit DTOs are the exact v0.7 schemas in the preceding
+Session Command section. Request digest and derived mutation idempotency are:
+
+```text
+requestDigest = SHA-256(frame(
+  "multidesk-session-command-request-v1", "1",
+  JCS(CanonicalSessionCommandRequestV1)))
+
+derivedCallIdempotencyKey = base64url(SHA-256(frame(
+  "multidesk-remote-command-call-v1", "1", commandId, requestDigest,
+  decimalDeliveryRevision, decimalAttempt, callKind,
+  decimalReceiptRevision)))
+```
+
+`callKind` is exactly `claim|ack|result|reconcile`. Claim uses the offered
+`expectedNextAttempt` and decimal receipt revision `0`; every later call uses
+the current claim attempt and the exact durable receipt revision. The value is
+sent both as the JSON `derivedIdempotencyKey` and HTTP Idempotency-Key. Any
+field/revision/call-kind mismatch is `idempotency_key_reused` or
+`command_digest_mismatch`, never recomputed optimistically by the server.
+
+All schemas below have `additionalProperties:false`. Command reservation is a
+closed discriminator union; acquire/release have no reservation or receipt
+variant because they terminalize unsupported before delivery:
+
+```text
+StartReservationV1 {
+  kind: start
+  localOperationId: prefixed local ID
+  resultSessionId: UUIDv7
+  localSessionId: prefixed local ID
+  mappingDigest: base64url(32)
+}
+ResumeReservationV1 {
+  kind: resume
+  localOperationId: prefixed local ID
+  sourceServerSessionId: UUIDv7
+  sourceLocalSessionId: prefixed local ID
+  sourceLocalSessionRevision: integer>=1
+  resultSessionId: UUIDv7
+  localSessionId: prefixed local ID
+  mappingDigest: base64url(32)
+}
+StopReservationV1 {
+  kind: stop
+  localOperationId: prefixed local ID
+  targetServerSessionId: UUIDv7
+  targetLocalSessionId: prefixed local ID
+  preState: {localRevision:integer>=1,status:starting|running|stopping}
+}
+KillReservationV1 {
+  kind: kill
+  localOperationId: prefixed local ID
+  targetServerSessionId: UUIDv7
+  targetLocalSessionId: prefixed local ID
+  preState: {localRevision:integer>=1,status:starting|running|stopping}
+}
+CommandReservationV1 = oneOf(StartReservationV1,ResumeReservationV1,
+                             StopReservationV1,KillReservationV1)
+```
+
+The terminal outcome is also a closed discriminator union. `CommonFailureCode`
+is `target_revoked|feature_disabled|delivery_attempts_exhausted|
+daemon_shutting_down|command_execution_ambiguous`; it may appear only in a
+failed variant:
+
+```text
+StartSucceededV1 {kind:start,state:succeeded,code:session_started,
+  resultSessionId:UUIDv7,sessionStatus:starting|running}
+StartFailedV1 {kind:start,state:failed,
+  code:CommonFailureCode|vault_locked|profile_disabled|
+       credential_unavailable|mapping_invalid,
+  resultSessionId:UUIDv7}
+StartUnsupportedV1 {kind:start,state:unsupported,
+  code:provider_session_start_unsupported,resultSessionId:UUIDv7}
+
+ResumeSucceededV1 {kind:resume,state:succeeded,code:session_resumed,
+  sourceSessionId:UUIDv7,resultSessionId:UUIDv7,
+  sessionStatus:starting|running}
+ResumeFailedV1 {kind:resume,state:failed,
+  code:CommonFailureCode|vault_locked|profile_disabled|
+       credential_unavailable|mapping_invalid|session_not_found|
+       session_state_conflict,
+  sourceSessionId:UUIDv7,resultSessionId:UUIDv7}
+ResumeUnsupportedV1 {kind:resume,state:unsupported,
+  code:provider_resume_unsupported,sourceSessionId:UUIDv7,
+  resultSessionId:UUIDv7}
+
+StopSucceededV1 {kind:stop,state:succeeded,code:session_stopped,
+  sessionId:UUIDv7,sessionStatus:exited}
+StopFailedV1 {kind:stop,state:failed,
+  code:CommonFailureCode|session_not_found|session_state_conflict,
+  sessionId:UUIDv7}
+StopUnsupportedV1 {kind:stop,state:unsupported,
+  code:provider_stop_unsupported,sessionId:UUIDv7}
+
+KillSucceededV1 {kind:kill,state:succeeded,code:session_killed,
+  sessionId:UUIDv7,sessionStatus:killed}
+KillFailedV1 {kind:kill,state:failed,
+  code:CommonFailureCode|session_not_found|session_state_conflict,
+  sessionId:UUIDv7}
+KillUnsupportedV1 {kind:kill,state:unsupported,
+  code:provider_kill_unsupported,sessionId:UUIDv7}
+
+AcquireUnsupportedV1 {kind:acquire_control,state:unsupported,
+  code:phase4b_controller_required,sessionId:UUIDv7}
+ReleaseUnsupportedV1 {kind:release_control,state:unsupported,
+  code:phase4b_controller_required,sessionId:UUIDv7}
+
+SessionCommandOutcomeV1 = oneOf(
+  StartSucceededV1,StartFailedV1,StartUnsupportedV1,
+  ResumeSucceededV1,ResumeFailedV1,ResumeUnsupportedV1,
+  StopSucceededV1,StopFailedV1,StopUnsupportedV1,
+  KillSucceededV1,KillFailedV1,KillUnsupportedV1,
+  AcquireUnsupportedV1,ReleaseUnsupportedV1)
+```
+
+The proof union exists only after a verified local commit and its `kind` must
+equal both the command and outcome kind:
+
+```text
+StartProofV1 {kind:start,resultSessionId:UUIDv7,localSessionId:prefixed ID,
+  mappingDigest:base64url(32),localSessionRevision:integer>=1,
+  outboxChangeId:prefixed ID,outboxServerSyncRevision:integer>=1,
+  outboxDigest:base64url(32)}
+ResumeProofV1 {kind:resume,sourceServerSessionId:UUIDv7,
+  sourceLocalSessionId:prefixed ID,sourceLocalSessionRevision:integer>=1,
+  resultSessionId:UUIDv7,localSessionId:prefixed ID,
+  mappingDigest:base64url(32),localSessionRevision:integer>=1,
+  outboxChangeId:prefixed ID,outboxServerSyncRevision:integer>=1,
+  outboxDigest:base64url(32)}
+StopProofV1 {kind:stop,targetServerSessionId:UUIDv7,
+  targetLocalSessionId:prefixed ID,beforeLocalRevision:integer>=1,
+  beforeStatus:starting|running|stopping,
+  afterLocalRevision:integer>beforeLocalRevision,afterStatus:exited,
+  remoteOperationRevision:integer>=1,serviceResultDigest:base64url(32)}
+KillProofV1 {kind:kill,targetServerSessionId:UUIDv7,
+  targetLocalSessionId:prefixed ID,beforeLocalRevision:integer>=1,
+  beforeStatus:starting|running|stopping,
+  afterLocalRevision:integer>beforeLocalRevision,afterStatus:killed,
+  remoteOperationRevision:integer>=1,serviceResultDigest:base64url(32)}
+KindProofV1 = oneOf(StartProofV1,ResumeProofV1,StopProofV1,KillProofV1)
+```
+
+`DaemonCommandReceiptV1` is a closed state discriminator. Every common field is
+required: `version=1,type=daemon_command_receipt,commandId,targetDeviceId,
+requestDigest,deliveryRevision,attempt,claimExpiresAt,receiptRevision,kind,
+integrityStatus=verified|quarantined,reservation,createdAt,updatedAt`.
+
+```text
+ReservedReceiptV1 {
+  common fields; state:reserved
+}
+ExecutingReceiptV1 {
+  common fields; state:executing; executingAt:time
+}
+LocalCommittedReceiptV1 {
+  common fields; state:local_committed; executingAt:time;
+  operationProof:KindProofV1; safeResult:SessionCommandOutcomeV1;
+  committedAt:time
+}
+AmbiguousReceiptV1 {
+  common fields; state:ambiguous; executingAt:time;
+  ambiguityCode:execution_commit_unprovable;
+  safeResult: exact failed outcome for the same kind with
+              code=command_execution_ambiguous; detectedAt:time
+}
+CompletedReceiptV1 {
+  all LocalCommittedReceiptV1 fields; state:completed;
+  acceptedServerResultRevision:integer>=1; completedAt:time
+}
+DaemonCommandReceiptV1 = oneOf(ReservedReceiptV1,ExecutingReceiptV1,
+  LocalCommittedReceiptV1,AmbiguousReceiptV1,CompletedReceiptV1)
+```
+
+`integrityStatus=verified|quarantined` is orthogonal. Only verified receipts
+transition. The reservation/proof/outcome kind must match byte-for-byte;
+cross-kind or extra/omitted fields fail schema before digest verification.
+`local_committed -> ambiguous` is illegal. Acquire/release return their exact
+terminal unsupported outcomes without an offer, claim, cursor event, or receipt.
+
+Time comparison is `now < expiry`. Resolution priority is revoked target,
+existing terminal state, command TTL, feature disable, claim expiry, then
+mutation. Attempt nine is never issued; after eight expired attempts the result
+is failed `delivery_attempts_exhausted`. Terminal rows/deliveries/claims/
+receipts retain 30 days, idempotency 24 hours, compact audit digests 365 days.
+
+### Overview and Usage units
+
+```text
+GET /v1/overview
+
+OverviewV1 {
+  generatedAt: time
+  freshness: {section,observedAt?,staleAt?,state:fresh|stale|unavailable}[]
+  counts: {devices,accounts,profiles,sessions,usageWindows}
+  recentDevices: Device[0..5]
+  recentSessions: SessionProjection[0..5]
+  recentUsage: UsageProjection[0..5]
+}
+
+UsageWindowV1 {
+  providerLimitId?: string
+  kind: rolling | calendar | spend_control | sdk_credit | unknown
+  label: string
+  unit: request | token | second | usd | provider_unit | percent
+  scale: integer[0,9]               // USD requires 6
+  usedScaled?: decimal string
+  limitScaled?: decimal string
+  remainingBasisPoints?: integer[0,10000]
+  resetsAt?: time
+}
+```
+
+`usedValue`, `limitValue`, floating percentages, and implicit unit inference are
+removed. Decimal strings have no sign, exponent, leading zeros (except `0`), or
+value above signed 63-bit maximum. Missing is unknown, not zero. `usd/scale=6`
+requires an explicit official source; `provider_unit` cannot be converted.
+
+### Browser runtime and PWA contract
+
+Production Web cryptography is an exported browser-only module with no Node
+imports. IndexedDB schema v1 contains `identities`, `wrapped_keys`,
+`pinned_peers`, `activation_receipts`, and `record_cas`; every record is bound
+to serverOrigin/deviceId/keyRevision/recordRevision. The service worker route
+table is deny-by-default: `/v1/**`, auth/bootstrap/enrollment/recovery,
+health/ready/version, and every non-GET are network-only and cannot be cached,
+queued, or receive SPA fallback. Static cache entries must be content-hashed.
+
+Logout clears cookie/auth cache/in-memory CSRF only; Web Device keys and pins
+remain. Explicit Forget Device is a separate recent-UV revocation/delete flow.
+Recovery copy/download/print never enters browser persistence, service worker,
+trace, screenshot, analytics, or automated test artifacts.
 
 ## Health and version
 
@@ -1361,6 +2191,7 @@ sync_patch_too_large             invalid_cursor
 stale_resurrection               snapshot_required
 snapshot_in_progress             snapshot_expired
 snapshot_page_invalid            snapshot_commit_conflict
+snapshot_page_too_large          cross_server_identity_rebind
 bootstrap_unavailable            bootstrap_expired
 bootstrap_replayed               bootstrap_anchor_required
 origin_mismatch                  rp_id_mismatch
@@ -1375,6 +2206,7 @@ device_key_changed               key_digest_mismatch
 device_key_envelope_corrupt      device_key_envelope_conflict
 pin_mismatch                     attestation_invalid
 attestation_expired              attestation_replayed
+cross_type_signature_replay      enrollment_preauth_invalid
 approver_not_pinned              capability_denied
 capability_revision_conflict     capability_not_recognized
 activation_receipt_invalid       enrollment_cancelled
@@ -1384,6 +2216,7 @@ command_claimed                  command_state_conflict
 command_digest_mismatch          projection_read_only
 command_attempt_stale            command_execution_ambiguous
 command_reconciliation_required  command_receipt_inconsistent
+delivery_attempts_exhausted      phase4b_controller_required
 mapping_quarantined              forbidden_metadata_field
 provider_control_unsupported     provider_resume_unsupported
 daemon_unavailable
