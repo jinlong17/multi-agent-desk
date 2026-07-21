@@ -20,6 +20,7 @@ import (
 const (
 	pipeAccessDuplex           = 0x00000003
 	fileFlagFirstPipeInstance  = 0x00080000
+	fileFlagOverlapped         = 0x40000000
 	pipeTypeMessage            = 0x00000004
 	pipeReadmodeMessage        = 0x00000002
 	pipeWait                   = 0x00000000
@@ -38,6 +39,8 @@ const (
 	errPipeBusy                = syscall.Errno(231)
 	errMoreData                = syscall.Errno(234)
 	errPipeConnected           = syscall.Errno(535)
+	errOperationAborted        = syscall.Errno(995)
+	errIOPending               = syscall.Errno(997)
 )
 
 var (
@@ -45,7 +48,9 @@ var (
 	advapi32                              = syscall.NewLazyDLL("advapi32.dll")
 	procCreateNamedPipeW                  = kernel32.NewProc("CreateNamedPipeW")
 	procConnectNamedPipe                  = kernel32.NewProc("ConnectNamedPipe")
+	procCreateEventW                      = kernel32.NewProc("CreateEventW")
 	procDisconnectNamedPipe               = kernel32.NewProc("DisconnectNamedPipe")
+	procGetOverlappedResult               = kernel32.NewProc("GetOverlappedResult")
 	procSetNamedPipeHandleState           = kernel32.NewProc("SetNamedPipeHandleState")
 	procWaitNamedPipeW                    = kernel32.NewProc("WaitNamedPipeW")
 	procCancelIoEx                        = kernel32.NewProc("CancelIoEx")
@@ -59,17 +64,24 @@ var (
 )
 
 type windowsListener struct {
-	mu      sync.Mutex
-	name    string
-	pending syscall.Handle
-	closed  bool
+	mu            sync.Mutex
+	name          string
+	pending       syscall.Handle
+	accepting     syscall.Handle
+	acceptStarted chan struct{}
+	acceptDone    chan struct{}
+	closed        bool
 }
 
 type pipeConn struct {
-	handle   syscall.Handle
-	mu       sync.Mutex
-	closed   bool
-	deadline time.Time
+	handle     syscall.Handle
+	mu         sync.Mutex
+	operations sync.WaitGroup
+	active     int
+	closed     bool
+	closeDone  chan struct{}
+	closeErr   error
+	deadline   time.Time
 }
 
 func Listen(root string) (Listener, error) {
@@ -97,7 +109,7 @@ func Dial(root string, timeout time.Duration) (io.ReadWriteCloser, error) {
 	for {
 		handle, err := openNamedPipe(name)
 		if err == nil {
-			return &pipeConn{handle: handle}, nil
+			return newPipeConn(handle), nil
 		}
 		if !errors.Is(err, errPipeBusy) || time.Now().After(deadline) {
 			return nil, domain.WrapError(domain.CodeDaemonUnavailable, "daemon endpoint could not be reached", err)
@@ -109,39 +121,52 @@ func Dial(root string, timeout time.Duration) (io.ReadWriteCloser, error) {
 
 func (l *windowsListener) Accept() (io.ReadWriteCloser, error) {
 	l.mu.Lock()
-	if l.closed {
+	if l.closed || l.pending == 0 || l.accepting != 0 {
 		l.mu.Unlock()
 		return nil, os.ErrClosed
 	}
 	pending := l.pending
 	l.pending = 0
+	l.accepting = pending
+	started := make(chan struct{})
+	l.acceptStarted = started
+	done := make(chan struct{})
+	l.acceptDone = done
 	l.mu.Unlock()
-	if pending == 0 {
-		return nil, os.ErrClosed
+
+	connectErr := connectNamedPipe(pending, started)
+	if connectErr == nil {
+		connectErr = sameWindowsSession(pending)
 	}
-	if err := connectNamedPipe(pending); err != nil {
-		_ = syscall.CloseHandle(pending)
-		return nil, err
+	var next syscall.Handle
+	if connectErr == nil {
+		next, connectErr = createNamedPipe(l.name, false)
 	}
-	if err := sameWindowsSession(pending); err != nil {
-		_ = disconnectAndClosePipe(pending)
-		return nil, err
-	}
-	connection := &pipeConn{handle: pending}
-	next, err := createNamedPipe(l.name, false)
-	if err != nil {
-		_ = connection.Close()
-		return nil, err
-	}
+
 	l.mu.Lock()
-	if l.closed {
-		l.mu.Unlock()
-		_ = syscall.CloseHandle(next)
-		_ = connection.Close()
-		return nil, os.ErrClosed
+	closed := l.closed
+	if !closed && connectErr == nil {
+		l.pending = next
+		next = 0
 	}
-	l.pending = next
+	l.accepting = 0
+	l.acceptStarted = nil
+	l.acceptDone = nil
 	l.mu.Unlock()
+
+	if next != 0 {
+		_ = syscall.CloseHandle(next)
+	}
+	if closed || connectErr != nil {
+		_ = disconnectAndClosePipe(pending)
+		close(done)
+		if closed || errors.Is(connectErr, errOperationAborted) {
+			return nil, os.ErrClosed
+		}
+		return nil, connectErr
+	}
+	connection := newPipeConn(pending)
+	close(done)
 	return connection, nil
 }
 
@@ -154,9 +179,21 @@ func (l *windowsListener) Close() error {
 	l.closed = true
 	pending := l.pending
 	l.pending = 0
+	accepting := l.accepting
+	started := l.acceptStarted
+	done := l.acceptDone
 	l.mu.Unlock()
 	if pending != 0 {
 		_ = disconnectAndClosePipe(pending)
+	}
+	if accepting != 0 {
+		if started != nil {
+			<-started
+		}
+		_ = cancelPipeIO(accepting)
+		if done != nil {
+			<-done
+		}
 	}
 	return nil
 }
@@ -166,35 +203,40 @@ func (l *windowsListener) Address() string { return l.name }
 func localEndpointPath(root string) (string, error) { return `\\.\pipe\` + endpointName(root), nil }
 
 func (c *pipeConn) Read(data []byte) (int, error) {
-	return c.withDeadline(func() (int, error) {
-		var read uint32
-		err := syscall.ReadFile(c.handle, data, &read, nil)
-		if err != nil && !errors.Is(err, errMoreData) {
-			return int(read), err
-		}
-		return int(read), nil
-	})
+	return c.doIO(data, false)
 }
 
 func (c *pipeConn) Write(data []byte) (int, error) {
-	return c.withDeadline(func() (int, error) {
-		var written uint32
-		err := syscall.WriteFile(c.handle, data, &written, nil)
-		return int(written), err
-	})
+	return c.doIO(data, true)
 }
 
 func (c *pipeConn) Close() error {
 	c.mu.Lock()
 	if c.closed {
+		done := c.closeDone
 		c.mu.Unlock()
-		return nil
+		if done != nil {
+			<-done
+		}
+		c.mu.Lock()
+		err := c.closeErr
+		c.mu.Unlock()
+		return err
 	}
 	c.closed = true
-	_ = cancelPipeIO(c.handle)
 	handle := c.handle
 	c.mu.Unlock()
-	return syscall.CloseHandle(handle)
+
+	_ = cancelPipeIO(handle)
+	c.operations.Wait()
+	err := syscall.CloseHandle(handle)
+
+	c.mu.Lock()
+	c.handle = 0
+	c.closeErr = err
+	close(c.closeDone)
+	c.mu.Unlock()
+	return err
 }
 
 func (c *pipeConn) SetDeadline(deadline time.Time) error {
@@ -204,27 +246,77 @@ func (c *pipeConn) SetDeadline(deadline time.Time) error {
 	return nil
 }
 
-func (c *pipeConn) withDeadline(fn func() (int, error)) (int, error) {
+func newPipeConn(handle syscall.Handle) *pipeConn {
+	return &pipeConn{handle: handle, closeDone: make(chan struct{})}
+}
+
+func (c *pipeConn) doIO(data []byte, write bool) (int, error) {
+	overlapped, cleanup, err := newOverlapped()
+	if err != nil {
+		return 0, err
+	}
+	defer cleanup()
+
 	c.mu.Lock()
 	if c.closed {
 		c.mu.Unlock()
 		return 0, os.ErrClosed
 	}
 	deadline := c.deadline
-	c.mu.Unlock()
 	if !deadline.IsZero() && time.Now().After(deadline) {
+		c.mu.Unlock()
 		return 0, os.ErrDeadlineExceeded
 	}
+	handle := c.handle
+	c.operations.Add(1)
+	c.active++
+	var transferred uint32
+	if write {
+		err = syscall.WriteFile(handle, data, &transferred, overlapped)
+	} else {
+		err = syscall.ReadFile(handle, data, &transferred, overlapped)
+	}
+	c.mu.Unlock()
+	defer func() {
+		c.mu.Lock()
+		c.active--
+		c.mu.Unlock()
+		c.operations.Done()
+	}()
+
 	var timer *time.Timer
 	if !deadline.IsZero() {
-		timer = time.AfterFunc(time.Until(deadline), func() { _ = cancelPipeIO(c.handle) })
-		defer timer.Stop()
+		timerDone := make(chan struct{})
+		timer = time.AfterFunc(time.Until(deadline), func() {
+			_ = cancelOverlappedIO(handle, overlapped)
+			close(timerDone)
+		})
+		defer func() {
+			if !timer.Stop() {
+				<-timerDone
+			}
+		}()
 	}
-	n, err := fn()
-	if err != nil && !deadline.IsZero() && time.Now().After(deadline) {
-		return n, os.ErrDeadlineExceeded
+	if errors.Is(err, errIOPending) {
+		err = waitOverlapped(handle, overlapped, &transferred)
 	}
-	return n, err
+	runtime.KeepAlive(data)
+	runtime.KeepAlive(overlapped)
+	if err != nil {
+		c.mu.Lock()
+		closed := c.closed
+		c.mu.Unlock()
+		if closed && errors.Is(err, errOperationAborted) {
+			return int(transferred), os.ErrClosed
+		}
+		if !deadline.IsZero() && !time.Now().Before(deadline) && errors.Is(err, errOperationAborted) {
+			return int(transferred), os.ErrDeadlineExceeded
+		}
+		if !write && errors.Is(err, errMoreData) {
+			return int(transferred), nil
+		}
+	}
+	return int(transferred), err
 }
 
 func createNamedPipe(name string, first bool) (syscall.Handle, error) {
@@ -237,9 +329,9 @@ func createNamedPipe(name string, first bool) (syscall.Handle, error) {
 		return 0, err
 	}
 	defer cleanup()
-	flags := uint32(0)
+	flags := uint32(fileFlagOverlapped)
 	if first {
-		flags = fileFlagFirstPipeInstance
+		flags |= fileFlagFirstPipeInstance
 	}
 	value, _, callErr := procCreateNamedPipeW.Call(uintptr(unsafe.Pointer(path)), uintptr(pipeAccessDuplex|flags),
 		uintptr(pipeTypeMessage|pipeReadmodeMessage|pipeWait|pipeRejectRemoteClients), uintptr(pipeUnlimitedInstances),
@@ -251,10 +343,21 @@ func createNamedPipe(name string, first bool) (syscall.Handle, error) {
 	return handle, nil
 }
 
-func connectNamedPipe(handle syscall.Handle) error {
-	ok, _, err := procConnectNamedPipe.Call(uintptr(handle), 0)
+func connectNamedPipe(handle syscall.Handle, started chan<- struct{}) error {
+	overlapped, cleanup, err := newOverlapped()
+	if err != nil {
+		close(started)
+		return err
+	}
+	defer cleanup()
+	ok, _, err := procConnectNamedPipe.Call(uintptr(handle), uintptr(unsafe.Pointer(overlapped)))
+	close(started)
 	if ok != 0 || errors.Is(err, errPipeConnected) {
 		return nil
+	}
+	if errors.Is(err, errIOPending) {
+		var transferred uint32
+		return waitOverlapped(handle, overlapped, &transferred)
 	}
 	return fmt.Errorf("named pipe connection failed: %w", err)
 }
@@ -265,7 +368,7 @@ func openNamedPipe(name string) (syscall.Handle, error) {
 		return 0, err
 	}
 	handle, err := syscall.CreateFile(path, genericRead|genericWrite, 0, nil, openExisting,
-		securitySQOSPresent|securityIdentification, 0)
+		securitySQOSPresent|securityIdentification|fileFlagOverlapped, 0)
 	if err != nil {
 		return 0, err
 	}
@@ -284,9 +387,32 @@ func disconnectAndClosePipe(handle syscall.Handle) error {
 }
 
 func cancelPipeIO(handle syscall.Handle) error {
-	ok, _, err := procCancelIoEx.Call(uintptr(handle), 0)
+	return cancelOverlappedIO(handle, nil)
+}
+
+func cancelOverlappedIO(handle syscall.Handle, overlapped *syscall.Overlapped) error {
+	ok, _, err := procCancelIoEx.Call(uintptr(handle), uintptr(unsafe.Pointer(overlapped)))
 	if ok == 0 && !errors.Is(err, syscall.ERROR_NOT_FOUND) {
 		return err
+	}
+	return nil
+}
+
+func newOverlapped() (*syscall.Overlapped, func(), error) {
+	value, _, callErr := procCreateEventW.Call(0, 1, 0, 0)
+	handle := syscall.Handle(value)
+	if handle == 0 || handle == syscall.InvalidHandle {
+		return nil, nil, fmt.Errorf("overlapped event could not be created: %w", callErr)
+	}
+	overlapped := &syscall.Overlapped{HEvent: handle}
+	return overlapped, func() { _ = syscall.CloseHandle(handle) }, nil
+}
+
+func waitOverlapped(handle syscall.Handle, overlapped *syscall.Overlapped, transferred *uint32) error {
+	ok, _, callErr := procGetOverlappedResult.Call(uintptr(handle), uintptr(unsafe.Pointer(overlapped)),
+		uintptr(unsafe.Pointer(transferred)), 1)
+	if ok == 0 {
+		return callErr
 	}
 	return nil
 }

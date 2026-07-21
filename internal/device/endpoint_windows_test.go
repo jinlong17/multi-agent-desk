@@ -6,6 +6,9 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
+	"errors"
+	"io"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -83,6 +86,204 @@ func TestNamedPipeAuthenticatedDaemon(t *testing.T) {
 	case <-serveErr:
 	case <-time.After(2 * time.Second):
 		t.Fatal("server did not stop")
+	}
+}
+
+func TestNamedPipeListenerCloseUnblocksPendingAccept(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "device")
+	if err := createPrivateDirectory(root); err != nil {
+		t.Fatal(err)
+	}
+	listenerValue, err := Listen(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	listener := listenerValue.(*windowsListener)
+	acceptErr := make(chan error, 1)
+	go func() {
+		connection, acceptError := listener.Accept()
+		if connection != nil {
+			_ = connection.Close()
+		}
+		acceptErr <- acceptError
+	}()
+	waitForPendingAccept(t, listener)
+	closeDone := make(chan error, 1)
+	go func() { closeDone <- listener.Close() }()
+	select {
+	case err := <-closeDone:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("listener close did not cancel pending accept")
+	}
+	select {
+	case err := <-acceptErr:
+		if !errors.Is(err, os.ErrClosed) {
+			t.Fatalf("pending accept error=%v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("pending accept did not return")
+	}
+}
+
+func TestNamedPipeCloseUnblocksPendingRead(t *testing.T) {
+	for iteration := 0; iteration < 32; iteration++ {
+		testNamedPipeCloseUnblocksPendingRead(t, iteration)
+	}
+}
+
+func testNamedPipeCloseUnblocksPendingRead(t *testing.T, iteration int) {
+	t.Helper()
+	root := filepath.Join(t.TempDir(), "device")
+	if err := createPrivateDirectory(root); err != nil {
+		t.Fatal(err)
+	}
+	listener, err := Listen(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer listener.Close()
+	type acceptResult struct {
+		connection io.ReadWriteCloser
+		err        error
+	}
+	accepted := make(chan acceptResult, 1)
+	go func() {
+		connection, acceptErr := listener.Accept()
+		accepted <- acceptResult{connection: connection, err: acceptErr}
+	}()
+	client, err := Dial(root, 5*time.Second)
+	if err != nil {
+		t.Fatalf("iteration %d dial: %v", iteration, err)
+	}
+	defer client.Close()
+	var result acceptResult
+	select {
+	case result = <-accepted:
+	case <-time.After(2 * time.Second):
+		t.Fatalf("iteration %d accept did not return", iteration)
+	}
+	if result.err != nil {
+		t.Fatalf("iteration %d accept: %v", iteration, result.err)
+	}
+	serverConnection := result.connection.(*pipeConn)
+	defer serverConnection.Close()
+	readDone := make(chan error, 1)
+	go func() {
+		_, readErr := serverConnection.Read(make([]byte, 1))
+		readDone <- readErr
+	}()
+	waitForPipeOperation(t, serverConnection, iteration)
+	closeDone := make(chan error, 1)
+	go func() { closeDone <- serverConnection.Close() }()
+	select {
+	case err := <-closeDone:
+		if err != nil {
+			t.Fatalf("iteration %d close: %v", iteration, err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatalf("iteration %d close did not cancel pending read", iteration)
+	}
+	select {
+	case err := <-readDone:
+		if !errors.Is(err, os.ErrClosed) {
+			t.Fatalf("iteration %d read error=%v", iteration, err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatalf("iteration %d pending read did not return", iteration)
+	}
+	if err := serverConnection.Close(); err != nil {
+		t.Fatalf("iteration %d repeated close: %v", iteration, err)
+	}
+}
+
+func TestNamedPipeReadDeadlineCancelsPendingRead(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "device")
+	if err := createPrivateDirectory(root); err != nil {
+		t.Fatal(err)
+	}
+	listener, err := Listen(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer listener.Close()
+	type acceptResult struct {
+		connection io.ReadWriteCloser
+		err        error
+	}
+	accepted := make(chan acceptResult, 1)
+	go func() {
+		connection, acceptErr := listener.Accept()
+		accepted <- acceptResult{connection: connection, err: acceptErr}
+	}()
+	client, err := Dial(root, 5*time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+	var result acceptResult
+	select {
+	case result = <-accepted:
+	case <-time.After(2 * time.Second):
+		t.Fatal("accept did not return")
+	}
+	if result.err != nil {
+		t.Fatal(result.err)
+	}
+	serverConnection := result.connection.(*pipeConn)
+	defer serverConnection.Close()
+	if err := serverConnection.SetDeadline(time.Now().Add(100 * time.Millisecond)); err != nil {
+		t.Fatal(err)
+	}
+	readDone := make(chan error, 1)
+	go func() {
+		_, readErr := serverConnection.Read(make([]byte, 1))
+		readDone <- readErr
+	}()
+	waitForPipeOperation(t, serverConnection, 0)
+	select {
+	case err := <-readDone:
+		if !errors.Is(err, os.ErrDeadlineExceeded) {
+			t.Fatalf("deadline read error=%v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("deadline did not cancel pending read")
+	}
+}
+
+func waitForPendingAccept(t *testing.T, listener *windowsListener) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		listener.mu.Lock()
+		pending := listener.accepting != 0
+		listener.mu.Unlock()
+		if pending {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("accept did not become pending")
+		}
+		time.Sleep(time.Millisecond)
+	}
+}
+
+func waitForPipeOperation(t *testing.T, connection *pipeConn, iteration int) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		connection.mu.Lock()
+		active := connection.active
+		connection.mu.Unlock()
+		if active > 0 {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("iteration %d read did not become pending", iteration)
+		}
+		time.Sleep(time.Millisecond)
 	}
 }
 
