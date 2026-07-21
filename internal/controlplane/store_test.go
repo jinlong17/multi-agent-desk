@@ -18,7 +18,7 @@ import (
 
 func openTestStore(t *testing.T, path string) *Store {
 	t.Helper()
-	if err := os.Chmod(filepath.Dir(path), 0o700); err != nil {
+	if err := protectPrivateDirectory(filepath.Dir(path)); err != nil {
 		t.Fatal(err)
 	}
 	store, err := OpenStore(context.Background(), StoreOptions{Path: path, BusyTimeout: 500 * time.Millisecond, Now: func() time.Time { return time.Unix(1_900_000_000, 0) }})
@@ -49,7 +49,7 @@ func assertStoreFilesPrivate(t *testing.T, path string) {
 }
 
 func TestStoreEmptyRestartPragmasAndIdempotency(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "server.sqlite")
+	path := filepath.Join(privateTestDirectory(t), "server.sqlite")
 	store := openTestStore(t, path)
 	var migrationCount, userVersion int
 	if err := store.db.QueryRow("SELECT count(*) FROM schema_migrations").Scan(&migrationCount); err != nil {
@@ -96,10 +96,7 @@ func TestStoreEmptyRestartPragmasAndIdempotency(t *testing.T) {
 }
 
 func TestStoreRestartPreservesFoundationDataWithoutMigrationReplay(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "server.sqlite")
-	if err := os.Chmod(filepath.Dir(path), 0o700); err != nil {
-		t.Fatal(err)
-	}
+	path := filepath.Join(privateTestDirectory(t), "server.sqlite")
 	first, err := OpenStore(t.Context(), StoreOptions{Path: path, BusyTimeout: 500 * time.Millisecond})
 	if err != nil {
 		t.Fatal(err)
@@ -136,10 +133,7 @@ func TestStoreRestartPreservesFoundationDataWithoutMigrationReplay(t *testing.T)
 }
 
 func TestStoreConcurrentMigrationHasOneCompleteLedger(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "server.sqlite")
-	if err := os.Chmod(filepath.Dir(path), 0o700); err != nil {
-		t.Fatal(err)
-	}
+	path := filepath.Join(privateTestDirectory(t), "server.sqlite")
 	start := make(chan struct{})
 	results := make(chan error, 2)
 	var storesMu sync.Mutex
@@ -184,7 +178,7 @@ func TestStoreConcurrentMigrationHasOneCompleteLedger(t *testing.T) {
 }
 
 func TestStorePriorSchemaBacksUpAndUpgrades(t *testing.T) {
-	directory := t.TempDir()
+	directory := privateTestDirectory(t)
 	path := filepath.Join(directory, "server.sqlite")
 	migrations, err := servermigrations.List()
 	if err != nil {
@@ -212,7 +206,7 @@ func TestStorePriorSchemaBacksUpAndUpgrades(t *testing.T) {
 	if err := raw.Close(); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chmod(path, 0o600); err != nil {
+	if err := protectPrivateFile(path); err != nil {
 		t.Fatal(err)
 	}
 	store := openTestStore(t, path)
@@ -273,12 +267,11 @@ func TestStoreRejectsFuturePartialChecksumCorruptAndBusy(t *testing.T) {
 		}},
 	} {
 		t.Run(setup.name, func(t *testing.T) {
-			path := filepath.Join(t.TempDir(), "server.sqlite")
-			if err := os.Chmod(filepath.Dir(path), 0o700); err != nil {
+			path := filepath.Join(privateTestDirectory(t), "server.sqlite")
+			setup.apply(t, path)
+			if err := protectPrivateFile(path); err != nil {
 				t.Fatal(err)
 			}
-			setup.apply(t, path)
-			_ = os.Chmod(path, 0o600)
 			if store, err := OpenStore(context.Background(), StoreOptions{Path: path, BusyTimeout: 200 * time.Millisecond}); err == nil {
 				_ = store.Close()
 				t.Fatal("unsafe database was accepted")
@@ -286,7 +279,7 @@ func TestStoreRejectsFuturePartialChecksumCorruptAndBusy(t *testing.T) {
 		})
 	}
 	t.Run("busy", func(t *testing.T) {
-		path := filepath.Join(t.TempDir(), "server.sqlite")
+		path := filepath.Join(privateTestDirectory(t), "server.sqlite")
 		first := openTestStore(t, path)
 		conn, err := first.db.Conn(context.Background())
 		if err != nil {

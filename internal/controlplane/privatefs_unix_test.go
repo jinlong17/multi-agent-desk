@@ -8,6 +8,8 @@ import (
 	"testing"
 )
 
+func makeTestFileUnsafe(path string) error { return os.Chmod(path, 0o644) }
+
 func TestPrivatePathsRejectSymlinksAndBroadExistingDirectory(t *testing.T) {
 	directory := t.TempDir()
 	target := filepath.Join(directory, "target")

@@ -2,15 +2,49 @@ import type { components, operations } from "./generated/control-plane-v1.js";
 
 type OperationId = keyof operations;
 type Method = "GET" | "POST" | "PATCH" | "DELETE";
-type RequestBody<K extends OperationId> = operations[K] extends {
-  requestBody: { content: { "application/json": infer Body } };
-} ? Body : never;
-type OperationParameter<K extends OperationId, Group extends "path" | "query"> =
-  operations[K] extends { parameters: infer Parameters }
+const enrollmentOperationIds = [
+  "createDeviceEnrollment",
+  "getDeviceEnrollment",
+  "proveDeviceEnrollment",
+  "getDeviceEnrollmentActivationPackage",
+  "activateDeviceEnrollment",
+  "cancelDeviceEnrollment",
+  "resumeDeviceEnrollment",
+] as const satisfies readonly OperationId[];
+type EnrollmentOperationId = typeof enrollmentOperationIds[number];
+
+type PropertyIsRequired<T, Key extends PropertyKey> = T extends object
+  ? Key extends keyof T
+    ? {} extends Pick<T, Key> ? false : true
+    : false
+  : false;
+type RequestBodyFor<Operation> = Operation extends { requestBody?: infer RequestBody }
+  ? Exclude<RequestBody, undefined> extends { content: { "application/json": infer Body } }
+    ? Body
+    : never
+  : never;
+type ParameterFor<Operation, Group extends "header" | "path" | "query"> =
+  Operation extends { parameters: infer Parameters }
     ? Group extends keyof Parameters
       ? Exclude<Parameters[Group], undefined>
       : never
     : never;
+type BodyInputFor<Operation> = [RequestBodyFor<Operation>] extends [never]
+  ? { body?: never }
+  : PropertyIsRequired<Operation, "requestBody"> extends true
+    ? { body: RequestBodyFor<Operation> }
+    : { body?: RequestBodyFor<Operation> };
+type ParameterInputFor<Operation, Group extends "path" | "query"> = [ParameterFor<Operation, Group>] extends [never]
+  ? { [Key in Group]?: never }
+  : Operation extends { parameters: infer Parameters }
+    ? PropertyIsRequired<Parameters, Group> extends true
+      ? { [Key in Group]: Readonly<ParameterFor<Operation, Group>> }
+      : { [Key in Group]?: Readonly<ParameterFor<Operation, Group>> }
+    : { [Key in Group]?: never };
+
+export type ControlPlaneCallShape<Operation> = BodyInputFor<Operation> &
+  ParameterInputFor<Operation, "path"> &
+  ParameterInputFor<Operation, "query">;
 type ResponseMap<K extends OperationId> = operations[K] extends { responses: infer Responses } ? Responses : never;
 type JsonContent<T> = T extends { content: { "application/json": infer Body } } ? Body : never;
 type SuccessBody<K extends OperationId> = JsonContent<
@@ -26,14 +60,28 @@ export interface DeviceRequestHeaders {
   signature: string;
 }
 
-export type ControlPlaneCallInput<K extends OperationId> = {
-  body?: RequestBody<K>;
-  path?: Readonly<OperationParameter<K, "path">>;
-  query?: Readonly<OperationParameter<K, "query">>;
+type EnrollmentGeneratedHeaders = ParameterFor<operations["createDeviceEnrollment"], "header">;
+
+export interface EnrollmentRequestHeaders {
+  enrollmentId: RequestBodyFor<operations["createDeviceEnrollment"]>["enrollmentId"];
+  timestamp: EnrollmentGeneratedHeaders["X-MAD-Timestamp"];
+  nonce: EnrollmentGeneratedHeaders["X-MAD-Nonce"];
+  contentSHA256: EnrollmentGeneratedHeaders["X-MAD-Content-SHA256"];
+  signature: EnrollmentGeneratedHeaders["X-MAD-Enrollment-Signature"];
+  browserCandidate: boolean;
+}
+
+type StandardAuthorizationInput =
+  | { bootstrapToken?: undefined; device?: undefined; enrollment?: never }
+  | { bootstrapToken: string; device?: never; enrollment?: never }
+  | { bootstrapToken?: never; device: DeviceRequestHeaders; enrollment?: never };
+type AuthorizationInput<K extends OperationId> = K extends EnrollmentOperationId
+  ? { bootstrapToken?: never; device?: never; enrollment: EnrollmentRequestHeaders }
+  : StandardAuthorizationInput;
+
+export type ControlPlaneCallInput<K extends OperationId> = ControlPlaneCallShape<operations[K]> & AuthorizationInput<K> & {
   idempotencyKey?: string;
   ifMatch?: `"rev-${number}"`;
-  bootstrapToken?: string;
-  device?: DeviceRequestHeaders;
   signal?: AbortSignal;
 };
 
@@ -57,10 +105,13 @@ interface OperationDefinition {
   method: Method;
   path: `/v1/${string}`;
   csrf: boolean;
+  authorization: "standard" | "enrollment";
 }
 
-const mutation = (path: `/v1/${string}`, csrf = true): OperationDefinition => ({ method: "POST", path, csrf });
-const get = (path: `/v1/${string}`): OperationDefinition => ({ method: "GET", path, csrf: false });
+const mutation = (path: `/v1/${string}`, csrf = true): OperationDefinition => ({ method: "POST", path, csrf, authorization: "standard" });
+const get = (path: `/v1/${string}`): OperationDefinition => ({ method: "GET", path, csrf: false, authorization: "standard" });
+const enrollmentMutation = (path: `/v1/${string}`): OperationDefinition => ({ method: "POST", path, csrf: false, authorization: "enrollment" });
+const enrollmentGet = (path: `/v1/${string}`): OperationDefinition => ({ method: "GET", path, csrf: false, authorization: "enrollment" });
 
 export const operationDefinitions = {
   getHealth: get("/v1/healthz"),
@@ -77,9 +128,9 @@ export const operationDefinitions = {
   rotateRecoveryCodes: mutation("/v1/auth/recovery-codes/rotate"),
   logout: mutation("/v1/auth/logout"),
   listPasskeys: get("/v1/auth/passkeys"),
-  deletePasskey: { method: "DELETE", path: "/v1/auth/passkeys/{passkeyId}", csrf: true },
+  deletePasskey: { method: "DELETE", path: "/v1/auth/passkeys/{passkeyId}", csrf: true, authorization: "standard" },
   listBrowserSessions: get("/v1/auth/sessions"),
-  deleteBrowserSession: { method: "DELETE", path: "/v1/auth/sessions/{sessionId}", csrf: true },
+  deleteBrowserSession: { method: "DELETE", path: "/v1/auth/sessions/{sessionId}", csrf: true, authorization: "standard" },
   getBootstrapStatus: get("/v1/bootstrap/status"),
   createBootstrapOptions: mutation("/v1/bootstrap/options", false),
   verifyBootstrap: mutation("/v1/bootstrap/verify", false),
@@ -87,14 +138,14 @@ export const operationDefinitions = {
   listDevices: get("/v1/devices"),
   getDevice: get("/v1/devices/{deviceId}"),
   listDeviceEnrollments: get("/v1/device-enrollments"),
-  createDeviceEnrollment: mutation("/v1/device-enrollments"),
-  getDeviceEnrollment: get("/v1/device-enrollments/{enrollmentId}"),
-  proveDeviceEnrollment: mutation("/v1/device-enrollments/{enrollmentId}/prove", false),
+  createDeviceEnrollment: enrollmentMutation("/v1/device-enrollments"),
+  getDeviceEnrollment: enrollmentGet("/v1/device-enrollments/{enrollmentId}"),
+  proveDeviceEnrollment: enrollmentMutation("/v1/device-enrollments/{enrollmentId}/prove"),
   approveDeviceEnrollment: mutation("/v1/device-enrollments/{enrollmentId}/approve", false),
-  getDeviceEnrollmentActivationPackage: get("/v1/device-enrollments/{enrollmentId}/activation-package"),
-  activateDeviceEnrollment: mutation("/v1/device-enrollments/{enrollmentId}/activate", false),
-  cancelDeviceEnrollment: mutation("/v1/device-enrollments/{enrollmentId}/cancel", false),
-  resumeDeviceEnrollment: get("/v1/device-enrollments/{enrollmentId}/resume"),
+  getDeviceEnrollmentActivationPackage: enrollmentGet("/v1/device-enrollments/{enrollmentId}/activation-package"),
+  activateDeviceEnrollment: enrollmentMutation("/v1/device-enrollments/{enrollmentId}/activate"),
+  cancelDeviceEnrollment: enrollmentMutation("/v1/device-enrollments/{enrollmentId}/cancel"),
+  resumeDeviceEnrollment: enrollmentGet("/v1/device-enrollments/{enrollmentId}/resume"),
   updateDeviceCapabilities: mutation("/v1/devices/{deviceId}/capabilities", false),
   revokeDevice: mutation("/v1/devices/{deviceId}/revoke"),
   createDeviceAuthChallenge: mutation("/v1/device-auth/challenges", false),
@@ -109,8 +160,8 @@ export const operationDefinitions = {
   listAuditEvents: get("/v1/audit-events"),
   getAccount: get("/v1/accounts/{id}"),
   getProfile: get("/v1/profiles/{id}"),
-  deleteProfile: { method: "DELETE", path: "/v1/profiles/{id}", csrf: true },
-  updateProfile: { method: "PATCH", path: "/v1/profiles/{id}", csrf: true },
+  deleteProfile: { method: "DELETE", path: "/v1/profiles/{id}", csrf: true, authorization: "standard" },
+  updateProfile: { method: "PATCH", path: "/v1/profiles/{id}", csrf: true, authorization: "standard" },
   getSession: get("/v1/sessions/{id}"),
   pushDeviceSync: mutation("/v1/device/sync/push", false),
   getDeviceSyncSnapshot: get("/v1/device/sync/snapshot"),
@@ -156,9 +207,16 @@ const stableErrorCodes = new Set<string>([
   "provider_kill_unsupported", "daemon_shutting_down", "daemon_unavailable",
 ]);
 
-export type ControlPlaneMethods = {
-  [K in OperationId]: (input?: ControlPlaneCallInput<K>) => Promise<SuccessBody<K>>;
-};
+type RequiredKeys<Value> = {
+  [Key in keyof Value]-?: {} extends Pick<Value, Key> ? never : Key;
+}[keyof Value];
+type ControlPlaneMethod<K extends OperationId> = K extends EnrollmentOperationId
+  ? (input: ControlPlaneCallInput<K>) => Promise<SuccessBody<K>>
+  : [RequiredKeys<ControlPlaneCallShape<operations[K]>>] extends [never]
+    ? (input?: ControlPlaneCallInput<K>) => Promise<SuccessBody<K>>
+    : (input: ControlPlaneCallInput<K>) => Promise<SuccessBody<K>>;
+
+export type ControlPlaneMethods = { [K in OperationId]: ControlPlaneMethod<K> };
 
 export interface ControlPlaneClient {
   readonly methods: ControlPlaneMethods;
@@ -177,41 +235,64 @@ export function createControlPlaneClient(baseURL: string, fetchImpl: typeof fetc
   }
   let csrfToken: string | undefined;
 
-  async function invoke<K extends OperationId>(id: K, input: ControlPlaneCallInput<K> = {}): Promise<SuccessBody<K>> {
+  const enrollmentOperations = new Set<OperationId>(enrollmentOperationIds);
+
+  async function invoke<K extends OperationId>(id: K, input?: ControlPlaneCallInput<K>): Promise<SuccessBody<K>> {
     const definition = operationDefinitions[id];
+    const call = (input ?? {}) as ControlPlaneCallInput<K>;
+    const suppliedAuthorization = [call.bootstrapToken, call.device, call.enrollment].filter((value) => value !== undefined).length;
+    if (suppliedAuthorization > 1) throw new Error(`${id}: authorization classes are mutually exclusive`);
+    if (definition.authorization === "enrollment" && !call.enrollment) throw new Error(`${id}: Enrollment pre-auth headers are required`);
+    if (definition.authorization !== "enrollment" && call.enrollment) throw new Error(`${id}: Enrollment pre-auth is forbidden for this operation`);
+    if (enrollmentOperations.has(id) !== (definition.authorization === "enrollment")) {
+      throw new Error(`${id}: Enrollment operation classification drifted`);
+    }
     let path = definition.path as string;
-    for (const [name, value] of Object.entries(input.path ?? {} as Record<string, string>)) {
+    for (const [name, value] of Object.entries(call.path ?? {} as Record<string, string>)) {
       path = path.replace(`{${name}}`, encodeURIComponent(value));
     }
     if (path.includes("{")) throw new Error(`${id}: missing path parameter`);
     const url = new URL(path, parsedBase);
-    for (const [name, value] of Object.entries(input.query ?? {} as Record<string, string | number | boolean | undefined>)) {
+    for (const [name, value] of Object.entries(call.query ?? {} as Record<string, string | number | boolean | undefined>)) {
       if (value !== undefined) url.searchParams.set(name, String(value));
     }
     const headers = new Headers({ Accept: "application/json" });
     if (definition.method !== "GET") headers.set("Content-Type", "application/json");
-    if (input.idempotencyKey) headers.set("Idempotency-Key", input.idempotencyKey);
-    if (input.ifMatch) headers.set("If-Match", input.ifMatch);
-    if (definition.csrf) {
+    if (call.idempotencyKey) headers.set("Idempotency-Key", call.idempotencyKey);
+    if (call.ifMatch) headers.set("If-Match", call.ifMatch);
+    if (definition.csrf || (definition.method !== "GET" && call.enrollment?.browserCandidate === true)) {
       if (!csrfToken) throw new Error(`${id}: CSRF token is not loaded`);
       headers.set("X-CSRF-Token", csrfToken);
     }
-    if (input.bootstrapToken) headers.set("Authorization", `Bootstrap ${input.bootstrapToken}`);
-    if (input.device) {
-      headers.set("Authorization", input.device.authorization);
-      headers.set("X-MAD-Device-ID", input.device.deviceId);
-      headers.set("X-MAD-Timestamp", input.device.timestamp);
-      headers.set("X-MAD-Nonce", input.device.nonce);
-      headers.set("X-MAD-Content-SHA256", input.device.contentSHA256);
-      headers.set("X-MAD-Signature", input.device.signature);
+    if (call.bootstrapToken) headers.set("Authorization", `Bootstrap ${call.bootstrapToken}`);
+    if (call.device) {
+      headers.set("Authorization", call.device.authorization);
+      headers.set("X-MAD-Device-ID", call.device.deviceId);
+      headers.set("X-MAD-Timestamp", call.device.timestamp);
+      headers.set("X-MAD-Nonce", call.device.nonce);
+      headers.set("X-MAD-Content-SHA256", call.device.contentSHA256);
+      headers.set("X-MAD-Signature", call.device.signature);
+    }
+    if (call.enrollment) {
+      const pathEnrollmentId = (call.path as { enrollmentId?: string } | undefined)?.enrollmentId;
+      const bodyEnrollmentId = (call.body as { enrollmentId?: string } | undefined)?.enrollmentId;
+      if ((pathEnrollmentId && pathEnrollmentId !== call.enrollment.enrollmentId) ||
+          (bodyEnrollmentId && bodyEnrollmentId !== call.enrollment.enrollmentId)) {
+        throw new Error(`${id}: Enrollment authorization does not match the request enrollmentId`);
+      }
+      headers.set("Authorization", `Enrollment ${call.enrollment.enrollmentId}`);
+      headers.set("X-MAD-Timestamp", call.enrollment.timestamp);
+      headers.set("X-MAD-Nonce", call.enrollment.nonce);
+      headers.set("X-MAD-Content-SHA256", call.enrollment.contentSHA256);
+      headers.set("X-MAD-Enrollment-Signature", call.enrollment.signature);
     }
     const timeout = AbortSignal.timeout(30_000);
-    const signal = input.signal ? AbortSignal.any([input.signal, timeout]) : timeout;
+    const signal = call.signal ? AbortSignal.any([call.signal, timeout]) : timeout;
     const response = await fetchImpl(url, {
       method: definition.method,
       credentials: "include",
       headers,
-      body: definition.method === "GET" ? undefined : JSON.stringify(input.body ?? {}),
+      body: definition.method === "GET" ? undefined : JSON.stringify(call.body ?? {}),
       signal,
     });
     const contentType = response.headers.get("content-type")?.split(";", 1)[0].trim();

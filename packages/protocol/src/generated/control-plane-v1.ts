@@ -3859,6 +3859,10 @@ export interface components {
         IdempotencyKey: string;
         IfMatch: string;
         Csrf: string;
+        RequestTimestamp: string;
+        RequestNonce: string;
+        RequestContentSHA256: string;
+        EnrollmentSignature: string;
         Cursor: string | null;
         Limit: number;
         Wait: number;
@@ -11486,6 +11490,10 @@ export interface operations {
             query?: never;
             header: {
                 "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                "X-MAD-Timestamp": components["parameters"]["RequestTimestamp"];
+                "X-MAD-Nonce": components["parameters"]["RequestNonce"];
+                "X-MAD-Content-SHA256": components["parameters"]["RequestContentSHA256"];
+                "X-MAD-Enrollment-Signature": components["parameters"]["EnrollmentSignature"];
             };
             path?: never;
             cookie?: never;
@@ -11836,7 +11844,12 @@ export interface operations {
     getDeviceEnrollment: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-MAD-Timestamp": components["parameters"]["RequestTimestamp"];
+                "X-MAD-Nonce": components["parameters"]["RequestNonce"];
+                "X-MAD-Content-SHA256": components["parameters"]["RequestContentSHA256"];
+                "X-MAD-Enrollment-Signature": components["parameters"]["EnrollmentSignature"];
+            };
             path: {
                 enrollmentId: string;
             };
@@ -12171,6 +12184,10 @@ export interface operations {
             query?: never;
             header: {
                 "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                "X-MAD-Timestamp": components["parameters"]["RequestTimestamp"];
+                "X-MAD-Nonce": components["parameters"]["RequestNonce"];
+                "X-MAD-Content-SHA256": components["parameters"]["RequestContentSHA256"];
+                "X-MAD-Enrollment-Signature": components["parameters"]["EnrollmentSignature"];
             };
             path: {
                 enrollmentId: string;
@@ -12910,7 +12927,12 @@ export interface operations {
     getDeviceEnrollmentActivationPackage: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-MAD-Timestamp": components["parameters"]["RequestTimestamp"];
+                "X-MAD-Nonce": components["parameters"]["RequestNonce"];
+                "X-MAD-Content-SHA256": components["parameters"]["RequestContentSHA256"];
+                "X-MAD-Enrollment-Signature": components["parameters"]["EnrollmentSignature"];
+            };
             path: {
                 enrollmentId: string;
             };
@@ -13278,6 +13300,10 @@ export interface operations {
             query?: never;
             header: {
                 "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                "X-MAD-Timestamp": components["parameters"]["RequestTimestamp"];
+                "X-MAD-Nonce": components["parameters"]["RequestNonce"];
+                "X-MAD-Content-SHA256": components["parameters"]["RequestContentSHA256"];
+                "X-MAD-Enrollment-Signature": components["parameters"]["EnrollmentSignature"];
             };
             path: {
                 enrollmentId: string;
@@ -13650,6 +13676,10 @@ export interface operations {
             query?: never;
             header: {
                 "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                "X-MAD-Timestamp": components["parameters"]["RequestTimestamp"];
+                "X-MAD-Nonce": components["parameters"]["RequestNonce"];
+                "X-MAD-Content-SHA256": components["parameters"]["RequestContentSHA256"];
+                "X-MAD-Enrollment-Signature": components["parameters"]["EnrollmentSignature"];
             };
             path: {
                 enrollmentId: string;
@@ -13993,7 +14023,12 @@ export interface operations {
     resumeDeviceEnrollment: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-MAD-Timestamp": components["parameters"]["RequestTimestamp"];
+                "X-MAD-Nonce": components["parameters"]["RequestNonce"];
+                "X-MAD-Content-SHA256": components["parameters"]["RequestContentSHA256"];
+                "X-MAD-Enrollment-Signature": components["parameters"]["EnrollmentSignature"];
+            };
             path: {
                 enrollmentId: string;
             };

@@ -121,7 +121,7 @@ func OpenStore(ctx context.Context, options StoreOptions) (*Store, error) {
 		file, err := os.OpenFile(options.Path, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0o600)
 		if errors.Is(err, os.ErrExist) {
 			existed = true
-			if err := verifyPrivateFile(options.Path); err != nil {
+			if err := waitForPrivateFile(ctx, options.Path, options.BusyTimeout); err != nil {
 				return nil, err
 			}
 		} else if err != nil {
@@ -130,7 +130,7 @@ func OpenStore(ctx context.Context, options StoreOptions) (*Store, error) {
 			if err := file.Close(); err != nil {
 				return nil, fmt.Errorf("close private database file: %w", err)
 			}
-			if err := verifyPrivateFile(options.Path); err != nil {
+			if err := protectPrivateFile(options.Path); err != nil {
 				return nil, err
 			}
 		}
@@ -160,6 +160,28 @@ func OpenStore(ctx context.Context, options StoreOptions) (*Store, error) {
 		return cleanup(err)
 	}
 	return store, nil
+}
+
+func waitForPrivateFile(ctx context.Context, path string, timeout time.Duration) error {
+	deadline := time.NewTimer(timeout)
+	defer deadline.Stop()
+	ticker := time.NewTicker(5 * time.Millisecond)
+	defer ticker.Stop()
+	var lastErr error
+	for {
+		if err := verifyPrivateFile(path); err == nil {
+			return nil
+		} else {
+			lastErr = err
+		}
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("wait for concurrently created private database file: %w", ctx.Err())
+		case <-deadline.C:
+			return lastErr
+		case <-ticker.C:
+		}
+	}
 }
 
 func (s *Store) backupPriorSchema(ctx context.Context, directory string) error {

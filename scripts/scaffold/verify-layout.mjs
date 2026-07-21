@@ -76,4 +76,14 @@ for (const path of [
   "packages/config/tsconfig.json"
 ]) JSON.parse(readFileSync(resolve(repoRoot, path), "utf8"));
 
+const protocolPackage = JSON.parse(readFileSync(resolve(repoRoot, "packages/protocol/package.json"), "utf8"));
+assert(protocolPackage.main === "./src/index.ts", "Protocol workspace main must resolve without a prebuilt dist");
+assert(protocolPackage.types === "./src/index.ts", "Protocol workspace types must resolve without a prebuilt dist");
+assert(protocolPackage.exports?.["."]?.types === "./src/index.ts", "Protocol type export must use workspace source");
+assert(protocolPackage.exports?.["."]?.import === "./src/index.ts", "Protocol runtime export must use workspace source");
+assert(existsSync(resolve(repoRoot, "packages/protocol/src/index.ts")), "Protocol workspace source export is missing");
+
+const webPackage = JSON.parse(readFileSync(resolve(repoRoot, "apps/web/package.json"), "utf8"));
+assert(webPackage.dependencies?.["@multi-agent-desk/protocol"] === "workspace:*", "Web must consume Protocol through the workspace topology");
+
 console.log(`verified scaffold layout: directories=${requiredDirectories.length}, files=${requiredFiles.length}, modules=${registry.modules.length}`);

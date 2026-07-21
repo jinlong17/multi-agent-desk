@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -19,11 +18,7 @@ import (
 
 func privateFile(t *testing.T, directory, name string, contents []byte) string {
 	t.Helper()
-	path := filepath.Join(directory, name)
-	if err := os.WriteFile(path, contents, 0o600); err != nil {
-		t.Fatal(err)
-	}
-	return path
+	return privateTestFile(t, directory, name, contents)
 }
 
 func validConfigMap(t *testing.T, directory string) map[string]any {
@@ -48,7 +43,7 @@ func writeConfig(t *testing.T, directory string, value any) string {
 }
 
 func TestLoadConfigStrictAndPrivate(t *testing.T) {
-	directory := t.TempDir()
+	directory := privateTestDirectory(t)
 	path := writeConfig(t, directory, validConfigMap(t, directory))
 	config, err := LoadConfig(path)
 	if err != nil {
@@ -82,7 +77,7 @@ func TestLoadConfigStrictAndPrivate(t *testing.T) {
 			}
 		})
 	}
-	if err := os.Chmod(path, 0o644); err != nil {
+	if err := makeTestFileUnsafe(path); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := LoadConfig(path); err == nil {
@@ -92,7 +87,7 @@ func TestLoadConfigStrictAndPrivate(t *testing.T) {
 
 func testServer(t *testing.T) (*Server, *Store) {
 	t.Helper()
-	directory := t.TempDir()
+	directory := privateTestDirectory(t)
 	store := openTestStore(t, filepath.Join(directory, "server.sqlite"))
 	server := NewServer(Config{Listen: "127.0.0.1:0", shutdownTimeout: time.Second}, store)
 	return server, store

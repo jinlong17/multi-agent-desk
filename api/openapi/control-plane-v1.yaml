@@ -7931,6 +7931,18 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/RequestTimestamp"
+          },
+          {
+            "$ref": "#/components/parameters/RequestNonce"
+          },
+          {
+            "$ref": "#/components/parameters/RequestContentSHA256"
+          },
+          {
+            "$ref": "#/components/parameters/EnrollmentSignature"
           }
         ],
         "requestBody": {
@@ -8303,6 +8315,18 @@
               "format": "uuidv7",
               "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
             }
+          },
+          {
+            "$ref": "#/components/parameters/RequestTimestamp"
+          },
+          {
+            "$ref": "#/components/parameters/RequestNonce"
+          },
+          {
+            "$ref": "#/components/parameters/RequestContentSHA256"
+          },
+          {
+            "$ref": "#/components/parameters/EnrollmentSignature"
           }
         ],
         "responses": {
@@ -8655,6 +8679,18 @@
           },
           {
             "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/RequestTimestamp"
+          },
+          {
+            "$ref": "#/components/parameters/RequestNonce"
+          },
+          {
+            "$ref": "#/components/parameters/RequestContentSHA256"
+          },
+          {
+            "$ref": "#/components/parameters/EnrollmentSignature"
           }
         ],
         "requestBody": {
@@ -9435,6 +9471,18 @@
               "format": "uuidv7",
               "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
             }
+          },
+          {
+            "$ref": "#/components/parameters/RequestTimestamp"
+          },
+          {
+            "$ref": "#/components/parameters/RequestNonce"
+          },
+          {
+            "$ref": "#/components/parameters/RequestContentSHA256"
+          },
+          {
+            "$ref": "#/components/parameters/EnrollmentSignature"
           }
         ],
         "responses": {
@@ -9820,6 +9868,18 @@
           },
           {
             "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/RequestTimestamp"
+          },
+          {
+            "$ref": "#/components/parameters/RequestNonce"
+          },
+          {
+            "$ref": "#/components/parameters/RequestContentSHA256"
+          },
+          {
+            "$ref": "#/components/parameters/EnrollmentSignature"
           }
         ],
         "requestBody": {
@@ -10213,6 +10273,18 @@
           },
           {
             "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/RequestTimestamp"
+          },
+          {
+            "$ref": "#/components/parameters/RequestNonce"
+          },
+          {
+            "$ref": "#/components/parameters/RequestContentSHA256"
+          },
+          {
+            "$ref": "#/components/parameters/EnrollmentSignature"
           }
         ],
         "requestBody": {
@@ -10576,6 +10648,18 @@
               "format": "uuidv7",
               "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
             }
+          },
+          {
+            "$ref": "#/components/parameters/RequestTimestamp"
+          },
+          {
+            "$ref": "#/components/parameters/RequestNonce"
+          },
+          {
+            "$ref": "#/components/parameters/RequestContentSHA256"
+          },
+          {
+            "$ref": "#/components/parameters/EnrollmentSignature"
           }
         ],
         "responses": {
@@ -22047,6 +22131,57 @@
           "format": "base64url",
           "pattern": "^[A-Za-z0-9_-]+$",
           "x-mad-decoded-bytes": 32
+        }
+      },
+      "RequestTimestamp": {
+        "name": "X-MAD-Timestamp",
+        "in": "header",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 20,
+          "maxLength": 27,
+          "format": "date-time",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]{1,6})?Z$"
+        }
+      },
+      "RequestNonce": {
+        "name": "X-MAD-Nonce",
+        "in": "header",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 22,
+          "maxLength": 22,
+          "format": "base64url",
+          "pattern": "^[A-Za-z0-9_-]{22}$",
+          "x-mad-decoded-bytes": 16
+        }
+      },
+      "RequestContentSHA256": {
+        "name": "X-MAD-Content-SHA256",
+        "in": "header",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 43,
+          "maxLength": 43,
+          "format": "base64url",
+          "pattern": "^[A-Za-z0-9_-]{43}$",
+          "x-mad-decoded-bytes": 32
+        }
+      },
+      "EnrollmentSignature": {
+        "name": "X-MAD-Enrollment-Signature",
+        "in": "header",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 86,
+          "maxLength": 86,
+          "format": "base64url",
+          "pattern": "^[A-Za-z0-9_-]{86}$",
+          "x-mad-decoded-bytes": 64
         }
       },
       "Cursor": {

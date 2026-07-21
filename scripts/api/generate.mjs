@@ -37,6 +37,7 @@ function validateContract() {
     "reconcileSessionCommand",
   ]);
   const operations = [];
+  const operationsById = new Map();
   for (const [path, item] of Object.entries(spec.paths)) {
     if (!path.startsWith("/v1/")) throw new Error(`unversioned path: ${path}`);
     for (const [method, operation] of Object.entries(item)) {
@@ -53,6 +54,7 @@ function validateContract() {
         throw new Error(`${operation.operationId}: Idempotency-Key missing`);
       }
       operations.push(operation.operationId);
+      operationsById.set(operation.operationId, operation);
     }
   }
   if (operations.length !== 65) throw new Error(`expected 65 operations, got ${operations.length}`);
@@ -61,6 +63,41 @@ function validateContract() {
     if (!expectedOperations.delete(operation)) throw new Error(`unexpected operation: ${operation}`);
   }
   if (expectedOperations.size) throw new Error(`missing v0.7 operations: ${[...expectedOperations].join(", ")}`);
+
+  const enrollmentOperations = [
+    "createDeviceEnrollment", "getDeviceEnrollment", "proveDeviceEnrollment",
+    "getDeviceEnrollmentActivationPackage", "activateDeviceEnrollment",
+    "cancelDeviceEnrollment", "resumeDeviceEnrollment",
+  ];
+  const enrollmentHeaderRefs = [
+    "RequestTimestamp", "RequestNonce", "RequestContentSHA256", "EnrollmentSignature",
+  ];
+  for (const operationId of enrollmentOperations) {
+    const operation = operationsById.get(operationId);
+    if (JSON.stringify(operation.security) !== JSON.stringify([{ EnrollmentPreAuth: [] }])) {
+      throw new Error(`${operationId}: EnrollmentPreAuth must be the sole authorization scheme`);
+    }
+    const actualHeaderRefs = operation.parameters
+      .flatMap((parameter) => parameter.$ref?.startsWith("#/components/parameters/") ? [parameter.$ref.split("/").at(-1)] : [])
+      .filter((name) => enrollmentHeaderRefs.includes(name));
+    if (JSON.stringify(actualHeaderRefs) !== JSON.stringify(enrollmentHeaderRefs)) {
+      throw new Error(`${operationId}: exact Enrollment pre-auth signed headers are missing or reordered`);
+    }
+  }
+  const exactEnrollmentParameters = {
+    RequestTimestamp: ["X-MAD-Timestamp", 20, 27, undefined],
+    RequestNonce: ["X-MAD-Nonce", 22, 22, 16],
+    RequestContentSHA256: ["X-MAD-Content-SHA256", 43, 43, 32],
+    EnrollmentSignature: ["X-MAD-Enrollment-Signature", 86, 86, 64],
+  };
+  for (const [name, [header, minimum, maximum, decodedBytes]] of Object.entries(exactEnrollmentParameters)) {
+    const parameter = spec.components.parameters[name];
+    if (!parameter || parameter.name !== header || parameter.in !== "header" || parameter.required !== true ||
+        parameter.schema.minLength !== minimum || parameter.schema.maxLength !== maximum ||
+        (decodedBytes !== undefined && parameter.schema["x-mad-decoded-bytes"] !== decodedBytes)) {
+      throw new Error(`${name}: Enrollment pre-auth header contract drifted`);
+    }
+  }
 
   const requiredSchemas = [
     "WebAuthnCreationOptionsV1", "WebAuthnRequestOptionsV1", "WebAuthnRegistrationCredentialV1",
