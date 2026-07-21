@@ -1,18 +1,20 @@
-import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+
+import { directInvocation, execFileNoShell, nodeCLIInvocation } from "./process-runner.mjs";
 
 const root = resolve(import.meta.dirname, "../..");
 const specPath = join(root, "api/openapi/control-plane-v1.yaml");
 const configPath = join(root, "api/openapi/oapi-codegen-v1.yaml");
 const goOutput = join(root, "internal/controlplane/api/generated/control_plane_v1.gen.go");
 const tsOutput = join(root, "packages/protocol/src/generated/control-plane-v1.ts");
+const openapiTypescriptCLI = join(root, "node_modules/openapi-typescript/bin/cli.js");
 const mode = process.argv[2] ?? "generate";
 const env = { ...process.env, LC_ALL: "C", LANG: "C", TZ: "UTC" };
 
-function run(command, args) {
-  execFileSync(command, args, { cwd: root, env, stdio: "inherit" });
+function run(command) {
+  execFileNoShell(command, { cwd: root, env, stdio: "inherit" });
 }
 
 function validateContract() {
@@ -184,8 +186,8 @@ function validateContract() {
 }
 
 function generate(goPath, tsPath) {
-  run("go", ["tool", "oapi-codegen", "-config", configPath, "-o", goPath, specPath]);
-  run("pnpm", ["exec", "openapi-typescript", specPath, "--output", tsPath]);
+  run(directInvocation("go", ["tool", "oapi-codegen", "-config", configPath, "-o", goPath, specPath]));
+  run(nodeCLIInvocation(openapiTypescriptCLI, [specPath, "--output", tsPath]));
 }
 
 validateContract();

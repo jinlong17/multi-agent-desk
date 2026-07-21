@@ -1,6 +1,7 @@
-import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+
+import { directInvocation, execFileNoShell, pnpmInvocation } from "./process-runner.mjs";
 
 const root = resolve(import.meta.dirname, "../..");
 const commandOptions = { cwd: root, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 };
@@ -12,7 +13,7 @@ const pins = new Map([
 ]);
 
 for (const [modulePath, expected] of pins) {
-  const metadata = JSON.parse(execFileSync("go", ["list", "-m", "-json", modulePath], commandOptions));
+  const metadata = JSON.parse(execFileNoShell(directInvocation("go", ["list", "-m", "-json", modulePath]), commandOptions));
   if (metadata.Path !== modulePath || metadata.Version !== expected.version || !metadata.Dir) {
     throw new Error(`${modulePath}: expected ${expected.version} in the resolved Go graph`);
   }
@@ -31,9 +32,9 @@ const lock = readFileSync(join(root, "pnpm-lock.yaml"), "utf8");
 if (!workspace.includes("'js-yaml@4.2.0>argparse': '-'") || /argparse@|Python-2\.0/.test(lock)) {
   throw new Error("the reviewed js-yaml CLI-edge override is absent or argparse remains locked");
 }
-const whyArgparse = execFileSync("pnpm", ["why", "argparse"], commandOptions);
+const whyArgparse = execFileNoShell(pnpmInvocation(["why", "argparse"]), commandOptions);
 if (/argparse\s+\d/.test(whyArgparse)) throw new Error("argparse remains reachable in the pnpm dependency graph");
-const pnpmLicenses = JSON.parse(execFileSync("pnpm", ["licenses", "list", "--json"], commandOptions));
+const pnpmLicenses = JSON.parse(execFileNoShell(pnpmInvocation(["licenses", "list", "--json"]), commandOptions));
 if (Object.keys(pnpmLicenses).some((license) => /Python-2\.0/i.test(license))) {
   throw new Error("Python-2.0 remains in the pnpm license graph");
 }

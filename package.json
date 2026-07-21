@@ -6,7 +6,7 @@
   "packageManager": "pnpm@10.23.0",
   "scripts": {
     "api:generate": "node scripts/api/generate.mjs generate",
-    "api:verify": "node scripts/api/generate.mjs verify",
+    "api:verify": "node --test scripts/api/process-runner.test.mjs && node scripts/api/generate.mjs verify",
     "api:licenses": "node scripts/api/verify-tool-licenses.mjs",
     "workflow:generate": "node scripts/workflow/generate-agent-mirrors.mjs",
     "workflow:verify": "node scripts/workflow/verify-workflow.mjs",
