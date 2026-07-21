@@ -9,12 +9,12 @@
 | Title | `Codex reserved start singleflight race` |
 | Owner Module | `provider` |
 | Impacted Modules | `core, project-system` |
-| Current Phase | `VERIFY` |
-| Status | `READY_TO_SHIP` |
-| Executor | `Codex (GPT-5) as bug-verify` |
-| Updated | `2026-07-20 23:42 PDT` |
-| Suggested Next | `ship` |
-| Branch / Worktree | `codex/provider/codex-reserved-start-singleflight-race @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/codex-reserved-start-singleflight-race` |
+| Current Phase | `SHIP` |
+| Status | `SHIPPED` |
+| Executor | `Codex (GPT-5) as ship` |
+| Updated | `2026-07-20 23:55 PDT` |
+| Suggested Next | `none` |
+| Branch / Worktree | `PR #29 merged to main@281c151; receipt reconciliation @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/codex-reserved-start-singleflight-race-receipt` |
 | Provider Gate | `resolved — no Provider compatibility or platform claim changes` |
 | Security Gate | `none` |
 
@@ -93,13 +93,16 @@ did not change this pre-gate Session read.
 | 2026-07-20 23:36 PDT | INDEPENDENT REPRO | read-only GitHub job `88556037636`; exact-base archive `2d3b416` with `GOMAXPROCS=1 go test -count=100 -run '^TestRuntimeManagerStartsReservedSessionOnceAndFailsPostReservationDrift$' ./internal/providers/codex` outside the worktree | CONFIRMED: remote and independent base both fail at the same assertion with `conflict: provider session identity changed`; diagnosis ledger's `59/100` is consistent with the reproduced scheduling race | [bug-verify report](../../../reviews/codex-reserved-start-singleflight-race/2026-07-20-bug-verify.md) |
 | 2026-07-20 23:39 PDT | INDEPENDENT TARGET / RACE | deterministic target; `GOMAXPROCS=1` count `100`; `GOMAXPROCS=2 go test -race` count `20`; `go test -race -count=1 ./internal/providers/codex` | PASS: exact-once assertions hold (`discover/spawn/thread=1`, `kills=0`), durable Session remains `running`, and binding/runtime remain intact; Codex package race passed in `24.415s` | [bug-verify report](../../../reviews/codex-reserved-start-singleflight-race/2026-07-20-bug-verify.md) |
 | 2026-07-20 23:41 PDT | INDEPENDENT ADJACENT / GOVERNANCE | `go test -count=1 ./...`; `go vet ./...`; `pnpm run workflow:verify`; `pnpm run ci:links`; `pnpm run ci:licenses`; isolated `project:verify` attempt | PASS: all Go, vet, workflow, links, and licenses; isolated `project:verify` stopped before assertions because nested `npm` was absent from that diagnostic PATH, recorded as an environment limitation rather than a product failure | [bug-verify report](../../../reviews/codex-reserved-start-singleflight-race/2026-07-20-bug-verify.md) |
+| 2026-07-20 23:50 PDT | PROTECTED PR | PR #29 locked head `776498b1470f734d515a9ded90fc517736326be4`; CI run `29808094137`; Governance run `29808094113` | PASS: project verification, Ubuntu/macOS/Windows builds, license, DCO, and link checks all succeeded; protected rebase merge landed as `281c151d120f53365ecbc1f9150c084ca28d1205` | [PR #29](https://github.com/jinlong17/multi-agent-desk/pull/29) |
+| 2026-07-20 23:54 PDT | EXACT MAIN RECONCILIATION | `main@281c151`; CI run `29808322809`; Governance run `29808322805`; direct PR-head/main tree comparison | PASS: all seven checks succeeded on exact final main and the rebase-landed tree is content-identical to the locked PR head | [ship receipt](../../../reviews/codex-reserved-start-singleflight-race/2026-07-20-ship-receipt.md) |
 
 ## Risks and Blockers
 
-- No blocker remains for `bug-fix`; the exact remote symptom is locally
-  reproducible at high frequency with a scheduling-only control.
-- Do not unblock PR #28 by rerunning macOS alone. A green rerun can miss the
-  schedule while the production idempotency race remains.
+- No blocker remains. The production race is fixed and reconciled on protected
+  `main@281c151`; all seven required checks passed on both the locked PR head
+  and exact final main.
+- PR #28 must be refreshed onto this shipped fix and pass a new complete check
+  matrix; the old failed macOS job must not be treated as a rerun-only flake.
 - This unit is separate from the shipped Windows runtime fixture-deadline fix,
   the Windows Named Pipe close fix, and the unrelated Device E2E flake.
 - No Provider process or credentialed Provider call was used during diagnosis.
@@ -114,3 +117,4 @@ did not change this pre-gate Session read.
 | 2026-07-20 23:15 PDT | Codex (GPT-5) as bug-diagnose | Classified the recurrence as Provider-owned with Core and CI impacts; inspected exact main/PR history and macOS logs; separated it from the prior deadline fixture bug; reproduced the same CAS conflict `59/100` times under single-P Darwin scheduling; traced the stale pre-gate Session read through duplicate Provider start and destructive cleanup | this file; `docs/reviews/codex-reserved-start-singleflight-race/2026-07-20-bug-diagnose.md` | `DIAGNOSED`; production singleflight ordering plus focused concurrency regression required; rerun-only is insufficient | `bug-fix` |
 | 2026-07-20 23:31 PDT | Codex (GPT-5) as bug-fix | Added a deterministic late-caller regression that fails on the diagnosed ordering; moved reserved-start gate ownership before the fresh durable Session read; made waiters re-compete and revalidate rather than return an unchecked snapshot; verified identical success, exact-once Provider contact, zero finalization, durable running state, and intact runtime/binding | `internal/providers/codex/runtime.go`; `internal/providers/codex/runtime_test.go`; this file | `READY_FOR_VERIFY`; target stress, target/package race, full Go, and vet pass; no Store, compatibility, platform, or Provider-call changes | `bug-verify` |
 | 2026-07-20 23:42 PDT | Codex (GPT-5) as bug-verify | Independently reproduced the base and remote CAS conflict; reviewed the exact two-file implementation diff and gate/read, waiter, cancellation, terminal, tuple, and failStart boundaries; ran deterministic, single-P stress, target/package race, full Go/vet, workflow, link, and license checks; checked exact-once durable/runtime postconditions and scope | this file; `docs/reviews/codex-reserved-start-singleflight-race/2026-07-20-bug-verify.md` | `READY_TO_SHIP`; no findings or product blockers; isolated project verifier lacked nested `npm`, while its directly relevant constituent checks passed and protected CI remains required | `ship` |
+| 2026-07-20 23:55 PDT | Codex (GPT-5) as ship | Audited the exact signed fix commit and scoped diff; confirmed all seven protected checks on locked PR #29 head; rebase-merged the content-identical tree; verified the landed DCO signoff and all seven checks on exact final `main@281c151`; recorded rollback and receipt without claiming a tag, release, publish, or deploy | this file; `docs/reviews/codex-reserved-start-singleflight-race/2026-07-20-ship-receipt.md`; PR #29; main `281c151d120f53365ecbc1f9150c084ca28d1205` | `SHIPPED`; production singleflight race is repaired and remotely reconciled with no blocker | `none` |
