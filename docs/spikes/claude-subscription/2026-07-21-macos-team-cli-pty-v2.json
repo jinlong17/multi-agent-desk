@@ -1,0 +1,112 @@
+{
+  "attempt": {
+    "claimedBeforeProcessSpawn": true,
+    "ledgerClaimed": true,
+    "ledgerMode": "0600",
+    "modelBearingProcessCount": 1,
+    "printProcessCount": 0,
+    "processSpawned": true,
+    "providerNetworkRequestCount": null,
+    "retryPerformed": false
+  },
+  "auth": {
+    "apiKeyOverridePresent": false,
+    "apiProvider": "firstParty",
+    "authMethod": "claude.ai",
+    "authTokenOverridePresent": false,
+    "cloudCredentialOverridePresent": false,
+    "loggedIn": true,
+    "networkOverridePresent": false,
+    "settingsOverridePresent": false,
+    "subscriptionType": "team"
+  },
+  "billing": {
+    "dollarBudgetFlagUsed": false,
+    "source": "claude_ai_team_included_subscription",
+    "usageCreditsDisabledOperatorDirected": true
+  },
+  "claims": {
+    "accountCapability": false,
+    "billingCapability": false,
+    "exactPlatformVersionEvidence": true,
+    "linuxSupported": false,
+    "phase3Satisfied": false,
+    "stableManagedSupport": false,
+    "usageCapability": false,
+    "windowsSupported": false
+  },
+  "claude": {
+    "binarySha256": "1397a062c6889675055e3314dd956376ac51262a7734ad9e819c26975d71547a",
+    "exactTupleRevalidatedBeforeLedger": true,
+    "exactTupleRevalidatedBeforeSpawn": true,
+    "flagSurfaceSupported": true,
+    "version": "2.1.207"
+  },
+  "controls": {
+    "browserDisabled": true,
+    "mcpDisabled": true,
+    "minimalEnvironment": true,
+    "promptHistoryDisabled": true,
+    "rawAuthCaptureRetained": false,
+    "rawTerminalCaptureRetained": false,
+    "runtimePromptCaptureRetained": false,
+    "runtimeResponseCaptureRetained": false,
+    "sessionReuseDisabled": true,
+    "slashCommandsDisabled": true,
+    "toolsDisabled": true
+  },
+  "fallback": "Use the official Claude Code CLI directly outside the MultiAgentDesk managed surface. Any further experiment requires a new lifecycle and fresh ledger.",
+  "platform": {
+    "architecture": "arm64",
+    "osVersion": "26.5.2",
+    "system": "Darwin"
+  },
+  "pty": {
+    "blockerClass": "trust",
+    "classification": "INCONCLUSIVE_SAFE_STOP",
+    "cleanupClass": "ambiguous",
+    "durationMs": 5185,
+    "eofSentAfterMarker": false,
+    "exitClass": "nonzero_or_signal",
+    "fixtureSha256": "7f77b062114bb2dc42d7b64d434373827fb9d158171f96a884e8b4147250feae",
+    "markerMatched": false,
+    "outputCapExceeded": false,
+    "positionalDeliveryClass": "initial_positional_argument",
+    "processGroupClear": true,
+    "resizeCount": 3,
+    "timedOut": false,
+    "totalByteCount": 796
+  },
+  "recordedAt": "2026-07-21T09:34:05-07:00",
+  "result": "INCONCLUSIVE_SAFE_STOP",
+  "retention": {
+    "localPromptResponseCaptureRetained": false,
+    "localRawAuthRetained": false,
+    "localRawTerminalRetained": false,
+    "perPathOrPerFileDigestRetained": false,
+    "providerSide": "Anthropic and the official Claude Code CLI may process or retain the public synthetic request under the Team subscription policy."
+  },
+  "schemaVersion": 1,
+  "scope": "direct_official_cli_external_experimental_exact_macos_pty_only",
+  "stateDiff": {
+    "allowedTouchCount": 0,
+    "contentRetained": false,
+    "forbiddenCategoryCount": 0,
+    "metadataOnlyAllowlistSatisfied": true,
+    "protectedStateUnchanged": true,
+    "repositoryUnchanged": true,
+    "snapshotErrorCount": 0,
+    "workspaceUnchanged": true
+  },
+  "target": "spike-claude-subscription-cli-pty-compatibility-v2",
+  "tty": {
+    "passed": true,
+    "processGroupCleanupPrimitive": true,
+    "rawContentRetained": false,
+    "resizeFixtureCount": 3,
+    "sameSlave": true,
+    "stderrIsTty": true,
+    "stdinIsTty": true,
+    "stdoutIsTty": true
+  }
+}
