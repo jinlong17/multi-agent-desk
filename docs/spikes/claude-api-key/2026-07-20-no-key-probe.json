@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "target": "spike-claude-api-key-cli-compatibility",
+  "captured_at": "2026-07-20T19:04:00-07:00",
+  "status": "blocked",
+  "planning_host": {
+    "os": "Darwin 26.5.2",
+    "architecture": "arm64",
+    "claude_code_version": "2.1.207",
+    "binary_sha256": "1397a062c6889675055e3314dd956376ac51262a7734ad9e819c26975d71547a",
+    "binary_format": "Mach-O 64-bit executable arm64"
+  },
+  "redacted_auth_projection": {
+    "logged_in": true,
+    "auth_method": "claude.ai",
+    "api_provider": "firstParty",
+    "subscription_type": "team",
+    "used_as_api_key_evidence": false
+  },
+  "override_presence": {
+    "ANTHROPIC_API_KEY": false,
+    "ANTHROPIC_AUTH_TOKEN": false,
+    "ANTHROPIC_BASE_URL": false,
+    "ANTHROPIC_CUSTOM_HEADERS": false,
+    "CLAUDE_CODE_USE_BEDROCK": false,
+    "CLAUDE_CODE_USE_VERTEX": false,
+    "CLAUDE_CODE_USE_FOUNDRY": false,
+    "AWS_ACCESS_KEY_ID": false,
+    "AWS_PROFILE": false,
+    "GOOGLE_APPLICATION_CREDENTIALS": false,
+    "CLAUDE_CONFIG_DIR": false
+  },
+  "cli_surface": {
+    "print": true,
+    "output_format": true,
+    "max_budget_usd": true,
+    "no_session_persistence": true,
+    "bare": true,
+    "max_turns": false
+  },
+  "invalid_sentinel_arm": {
+    "isolated_environment": true,
+    "empty_home_and_config": true,
+    "bare_mode": true,
+    "ordinary_billed_request_completed": false,
+    "exit_code": 1,
+    "sanitized_output_bytes": 752,
+    "error_class": "authentication",
+    "billing_class": false,
+    "rate_class": false,
+    "network_class": false,
+    "sentinel_echoed": false,
+    "email_like_value_emitted": false,
+    "files_created": 2,
+    "created_file_bytes": 28970,
+    "sentinel_persisted": false,
+    "email_like_value_persisted": false,
+    "active_temp_root_removed": true
+  },
+  "not_run": [
+    "valid dedicated Console API-key request",
+    "ordinary billed print request",
+    "interactive PTY request",
+    "Linux amd64 acceptance",
+    "macOS API-key versus Team subscription crossover acceptance",
+    "status-line or hook metric projection",
+    "remote key revocation"
+  ],
+  "blockers": [
+    "dedicated test API key through a non-recorded channel",
+    "operator-selected Linux amd64 target",
+    "explicit authorization and bound for each ordinary billed request"
+  ]
+}

@@ -11,11 +11,11 @@
 | Impacted Modules | `security`, `core`, `project-system` |
 | Hypothesis | `On exact pinned macOS arm64 and Linux amd64 Claude Code versions, a dedicated Claude Console API key injected only after tuple and billing confirmation into an empty CLAUDE_CONFIG_DIR plus reviewed minimal environment is the sole effective auth source, supports a bounded ordinary paid CLI/PTY Session with deterministic redacted health/error and safe session-metric projection, and cleans up without persisting the key or raw identity/output.` |
 | Time-box | `8 operator-active hours across documentation, macOS, Linux, sanitization, and cleanup arms; waiting for secret/host/billing authorization is excluded` |
-| Current Phase | `INTAKE` |
-| Status | `SPIKE_READY` |
-| Executor | `Codex (GPT-5) as feature-plan spike intake` |
-| Updated | `2026-07-20 17:37 PDT` |
-| Suggested Next | `provider-spike` |
+| Current Phase | `EXPERIMENT` |
+| Status | `BLOCKED` |
+| Executor | `Codex (GPT-5) as provider-spike` |
+| Updated | `2026-07-20 19:04 PDT` |
+| Suggested Next | `clear dedicated-key, Linux-target and per-request billing gates; then resume provider-spike` |
 | Security Gate | `open — Provider key, billing authorization, child environment, status/hook input, PTY control, local cleanup and retained evidence` |
 | Evidence Path | `docs/spikes/claude-api-key/` |
 | Decision Record | `pending docs/adr/0017-claude-api-key-cli-boundary.md and docs/PROVIDER_COMPATIBILITY.md exact rows` |
@@ -145,12 +145,19 @@ the Spike request or satisfy API-key acceptance.
 | 2026-07-20 17:32 PDT | Anthropic official environment, CLI, status-line, hook and error references | docs describe API-key precedence, bounded print-mode flags and client-estimated status-line cost; exact CLI/PTY/isolation/sanitizer behavior remains unproven | official URLs recorded in parent design |
 | 2026-07-20 17:37 PDT | `/Users/jinlong/.local/bin/claude --version`; redacted auth-status projection; presence-only checks for API/OAuth/cloud variables | planning host `2.1.207`, current `claude.ai` Team/first-party class, checked overrides absent; no PII/secret emitted and no Provider request made | planning terminal evidence only |
 | 2026-07-20 17:37 PDT | `feature-plan` Spike intake | falsifiable two-platform hypothesis, eight-hour active time-box, ordered no-key/paid/PTY arms, Security Gate and deterministic fallbacks frozen | this log |
+| 2026-07-20 19:00 PDT | Exact binary/OS/digest, sanitized four-field auth projection, presence-only override matrix, and `--help` surface | macOS arm64 Claude Code `2.1.207` pinned; current Team subscription retained only as a negative canary; print/JSON/budget/no-persistence/bare flags present, `--max-turns` absent | `docs/spikes/claude-api-key/2026-07-20-no-key-probe.json` |
+| 2026-07-20 19:02 PDT | `env -i` disposable HOME/config, invalid sentinel API key, `CLAUDE_CODE_SIMPLE=1`, `--bare -p`, JSON, max budget `0.01`, no session persistence; raw output streamed only through boolean/class sanitizer | exit `1`, authentication class; no billing/rate/network class; no sentinel/email echo or persistence; no successful/billed request; active temp root recoverably removed after scan | sanitized JSON and `2026-07-20-compatibility-spike.md` |
 
 ## Result, limitations, and fallback
 
-No experiment has run yet. `SPIKE_READY` authorizes only the bounded
-`provider-spike` procedure above; it is not API-key, PTY, usage, or platform
-support evidence.
+The authorized no-key arm ran and is reproducible. It pins exact macOS CLI
+facts, proves an isolated invalid API key fails as authentication without
+falling through to the current Team subscription, and shows the sentinel and
+an email-like value were neither emitted by the sanitizer nor retained in the
+disposable root. This is negative mechanism evidence only. It does not prove a
+valid API key, ordinary billing, PTY, status/usage projection, Linux behavior,
+or remote key revocation, so the Spike is `BLOCKED` rather than
+`EVIDENCE_READY`.
 
 If the operator cannot yet provide the dedicated key, Linux target, or paid-
 request authorization, preserve the completed documentation/no-key evidence and
@@ -177,6 +184,9 @@ tuple.
 - `--max-budget-usd` applies to print mode; the interactive PTY arm requires a
   separate bounded task and explicit authorization rather than an assumed hard
   dollar cap.
+- Exact CLI `2.1.207` does not expose `--max-turns` in `--help`; the resumed
+  Spike must revise that candidate bound rather than assume the official CLI
+  reference matches this pinned binary.
 - `--bare` may disable settings, hooks, MCP, plugins, and session persistence in
   ways that invalidate the required product path. It is a candidate to compare,
   not a preselected answer.
@@ -192,3 +202,4 @@ tuple.
 | Time | Executor | Action | Files/commit | Result | Next |
 |---|---|---|---|---|---|
 | 2026-07-20 17:37 PDT | Codex (GPT-5) as feature-plan spike intake | Classified the compatibility question as solely `provider`-owned with an open Security Gate; froze the two-platform API-key/auth/billing/PTY/status hypothesis, eight-hour active time-box, ordered no-key then explicitly authorized paid arms, success/failure criteria, redaction and deterministic fallbacks | this log; parent Feature Brief/design/API/test; no commit | `SPIKE_READY`; no real key supplied, no billed request run, and no compatibility/support claim changed | `provider-spike` after non-recorded dedicated-key injection, Linux target availability, and explicit bounded paid-request authorization |
+| 2026-07-20 19:04 PDT | Codex (GPT-5) as provider-spike | Completed all no-key arms: official-contract refresh, exact host/binary pin, allowlisted auth projection, presence-only environment inspection, CLI surface check, and disposable invalid-sentinel authentication/error/persistence probe; retained only sanitized evidence and moved the no-secret temp root out of active `/tmp` | this log; `docs/spikes/claude-api-key/2026-07-20-{compatibility-spike.md,no-key-probe.json}`; `docs/PROVIDER_COMPATIBILITY.md`; no production code | `SPIKE_READY -> BLOCKED`; no valid key, paid request, PTY, Linux target, support row, ADR decision or Security verdict inferred | operator clears dedicated-key, Linux-target and per-request billing gates; resume `provider-spike` |
