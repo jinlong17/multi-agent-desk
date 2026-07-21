@@ -2,28 +2,28 @@
   "schema_version": 1,
   "state_owner": "project-system",
   "plan_version": "v0.2",
-  "current_phase": "Codex multi-account selector remote integration complete",
-  "current_status": "SHIPPED and integrated on protected remote main via PR #22; PR and exact source-integration main checks green",
+  "current_phase": "Claude subscription-only compatibility decision integrated",
+  "current_status": "GATE_RESOLVED negative evidence integrated via PR #28; Team-subscription print returned its marker, strict no-write failed, PTY was not run, and Phase 3 remains gated",
   "current_owner": "provider",
-  "next_action": "begin the next separately reviewed product phase; the selector needs no further source-integration action",
-  "manual_updated_at": "2026-07-20",
-  "manual_updated_by": "operator-authorized remote reconciliation writer",
+  "next_action": "do not retry the claimed one-shot or introduce an API key; any continued subscription-only work requires a new macOS feature-plan Spike, fresh ledger, explicit cache-write or PTY criteria, and Security Review",
+  "manual_updated_at": "2026-07-21",
+  "manual_updated_by": "operator-authorized project-system dashboard reconciliation writer",
   "status_rows": [
     {
       "label": "现在做什么",
-      "value": "Codex 显式多账号选择器已通过 PR #22 受保护 rebase merge 进入远程 main，PR 与精确 main 七项检查均通过"
+      "value": "Claude.ai Team 订阅单次 print 已返回标记，但严格无配置元数据写入条件失败；PTY 未运行，负面决策已通过 PR #28 进入远程 main"
     },
     {
       "label": "在哪条线",
-      "value": "main（selector source integration ad420cd）"
+      "value": "main（Claude subscription evidence integration dc1aeb0）"
     },
     {
       "label": "用哪个入口",
-      "value": "选择器无需后续集成动作；下一产品阶段须独立规划、审查与授权"
+      "value": "保持订阅专用且不引入 API key；若继续，须新建 macOS-only feature-plan Spike，使用新 ledger 并重新通过 Security Review"
     },
     {
       "label": "做到什么状态",
-      "value": "功能=SHIPPED；Security=ACCEPTED；remote integration=complete；release/deploy=not performed"
+      "value": "Spike=GATE_RESOLVED；Security=ACCEPTED negative evidence；stable managed subscription=unsupported；Phase 3=gated；release/deploy=not performed"
     }
   ],
   "phases": [
@@ -39,7 +39,7 @@
       "title": "Provider & Security Spikes",
       "state": "completed",
       "depends": "Phase 0",
-      "gate": "原七项决策及新增 Codex 不同真实账号与 Claude subscription Usage/Policy 负面决策均已关闭；macOS 身份验收仍由对应功能门禁管理"
+      "gate": "原七项决策、Codex 不同真实账号及 Claude Team subscription CLI/PTY 负面决策均已关闭；macOS 身份验收仍由对应功能门禁管理"
     },
     {
       "id": "1",
@@ -60,7 +60,7 @@
       "title": "Claude Vertical Slice",
       "state": "gated",
       "depends": "Phase 1 + Claude spikes",
-      "gate": "不同真实账号 CLAUDE_CONFIG_DIR 隔离、Usage/Policy、PTY attach/control/reconnect"
+      "gate": "Team subscription 稳定托管仍不受支持：严格无写入条件失败且 PTY 未测试；继续前须新 Spike 明确 cache-write allowlist 或 PTY 安全边界"
     },
     {
       "id": "4a",
@@ -117,6 +117,14 @@
     {
       "slug": "spike-claude-distinct-account-usage",
       "expected_status": "GATE_RESOLVED"
+    },
+    {
+      "slug": "spike-claude-subscription-cli-pty-compatibility",
+      "expected_status": "GATE_RESOLVED"
+    },
+    {
+      "slug": "codex-reserved-start-singleflight-race",
+      "expected_status": "SHIPPED"
     }
   ]
 }
