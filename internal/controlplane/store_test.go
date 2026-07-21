@@ -227,6 +227,20 @@ func TestStorePriorSchemaBacksUpAndUpgrades(t *testing.T) {
 	if err := verifyPrivateFile(backups[0]); err != nil {
 		t.Fatal(err)
 	}
+	synced, err := os.OpenFile(backups[0], os.O_RDWR, 0)
+	if err != nil {
+		t.Fatalf("open protected backup read-write: %v", err)
+	}
+	if err := synced.Sync(); err != nil {
+		_ = synced.Close()
+		t.Fatalf("sync protected backup read-write: %v", err)
+	}
+	if err := synced.Close(); err != nil {
+		t.Fatalf("close protected backup read-write: %v", err)
+	}
+	if err := verifyPrivateFile(backups[0]); err != nil {
+		t.Fatal(err)
+	}
 	if err := verifySQLiteBackup(t.Context(), backups[0]); err != nil {
 		t.Fatal(err)
 	}

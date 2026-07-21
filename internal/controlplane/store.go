@@ -343,7 +343,7 @@ func (s *Store) Backup(ctx context.Context, directory string) (string, error) {
 	if err := protectPrivateFile(path); err != nil {
 		return "", err
 	}
-	file, err := os.Open(path)
+	file, err := os.OpenFile(path, os.O_RDWR, 0)
 	if err != nil {
 		return "", fmt.Errorf("open server backup for sync: %w", err)
 	}
