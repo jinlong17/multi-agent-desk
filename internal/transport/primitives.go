@@ -64,7 +64,7 @@ func ParseUTCDateTime(value string) (time.Time, error) {
 }
 
 func ParseIfMatch(value string) (uint64, error) {
-	if len(value) < 8 || !strings.HasPrefix(value, `"rev-`) || !strings.HasSuffix(value, `"`) {
+	if len(value) < 7 || !strings.HasPrefix(value, `"rev-`) || !strings.HasSuffix(value, `"`) {
 		return 0, fmt.Errorf("If-Match must be a strong revision tag")
 	}
 	revisionText := value[5 : len(value)-1]

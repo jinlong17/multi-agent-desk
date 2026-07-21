@@ -18,24 +18,48 @@ var BuildVersion = "devel"
 var BuildCommit = "unknown"
 
 type Server struct {
-	config Config
-	store  *Store
-	http   *http.Server
-	ready  atomic.Bool
+	config          Config
+	store           *Store
+	http            *http.Server
+	ready           atomic.Bool
+	webauthn        *WebAuthnService
+	bootstrap       *BootstrapService
+	auth            *AuthService
+	recoveryLimiter *RecoveryLimiter
+	preAuthLimiter  *RequestLimiter
+	ceremonyLimiter *RequestLimiter
 }
 
-func NewServer(config Config, store *Store) *Server {
-	server := &Server{config: config, store: store}
+func NewServer(config Config, store *Store) (*Server, error) {
+	if store == nil {
+		return nil, fmt.Errorf("control-plane store is required")
+	}
+	webauthnService, err := NewWebAuthnService(config, store)
+	if err != nil {
+		return nil, fmt.Errorf("configure WebAuthn: %w", err)
+	}
+	if err := webauthnService.Ceremonies.InvalidateAll(context.Background()); err != nil {
+		return nil, err
+	}
+	server := &Server{
+		config: config, store: store, recoveryLimiter: &RecoveryLimiter{},
+		preAuthLimiter:  &RequestLimiter{PerSource: 30, Global: 300},
+		ceremonyLimiter: &RequestLimiter{PerSource: 30, Global: 300},
+		webauthn:        webauthnService,
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /v1/healthz", server.health)
 	mux.HandleFunc("GET /v1/readyz", server.readiness)
 	mux.HandleFunc("GET /v1/version", server.version)
+	server.bootstrap = &BootstrapService{Config: config, Store: store, WebAuthn: webauthnService}
+	server.auth = &AuthService{Config: config, Store: store, WebAuthn: webauthnService}
+	server.mountP2(mux)
 	mux.HandleFunc("/", func(writer http.ResponseWriter, _ *http.Request) {
 		safeError(writer, http.StatusNotFound, "not_found", "endpoint not found", writer.Header().Get("X-Request-ID"))
 	})
-	server.http = &http.Server{Addr: config.Listen, Handler: server.middleware(mux), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 32 << 10}
+	server.http = &http.Server{Addr: config.Listen, Handler: server.middleware(mux), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 32 << 10}
 	server.ready.Store(true)
-	return server
+	return server, nil
 }
 
 func (s *Server) Run(ctx context.Context) error {
@@ -103,11 +127,11 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 				return
 			}
 		}
-		if request.ContentLength > 0 || len(request.TransferEncoding) != 0 {
-			safeError(writer, http.StatusBadRequest, "invalid_argument", "foundation GET endpoints do not accept bodies", requestID)
+		if request.Method == http.MethodGet && (request.ContentLength > 0 || len(request.TransferEncoding) != 0) {
+			safeError(writer, http.StatusBadRequest, "invalid_argument", "GET endpoints do not accept bodies", requestID)
 			return
 		}
-		deadlineContext, cancel := context.WithTimeout(request.Context(), 5*time.Second)
+		deadlineContext, cancel := context.WithTimeout(request.Context(), 30*time.Second)
 		defer cancel()
 		next.ServeHTTP(writer, request.WithContext(deadlineContext))
 	})
@@ -132,7 +156,11 @@ func (s *Server) readiness(writer http.ResponseWriter, request *http.Request) {
 }
 
 func (s *Server) version(writer http.ResponseWriter, _ *http.Request) {
-	writeJSON(writer, http.StatusOK, map[string]any{"apiVersion": "v1", "data": map[string]any{"version": boundedBuildValue(BuildVersion), "commit": boundedBuildValue(BuildCommit), "minimumClientProtocol": "v1", "enabledFeatures": []string{"foundation"}}, "meta": map[string]any{"requestId": writer.Header().Get("X-Request-ID"), "nextCursor": nil}})
+	features := []string{"foundation"}
+	if s.auth != nil {
+		features = append(features, "bootstrap", "passkey", "recovery", "browser-session")
+	}
+	writeJSON(writer, http.StatusOK, map[string]any{"apiVersion": "v1", "data": map[string]any{"version": boundedBuildValue(BuildVersion), "commit": boundedBuildValue(BuildCommit), "minimumClientProtocol": "v1", "enabledFeatures": features}, "meta": map[string]any{"requestId": writer.Header().Get("X-Request-ID"), "nextCursor": nil}})
 }
 
 func boundedBuildValue(value string) string {

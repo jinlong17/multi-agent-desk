@@ -89,6 +89,9 @@ func Open(ctx context.Context, path string) (*Store, error) {
 	if err := store.configure(ctx); err != nil {
 		return nil, err
 	}
+	if err := store.backupSchemaV7BeforeMigration(ctx, DeviceBinaryVersion, time.Now); err != nil {
+		return nil, err
+	}
 	if err := store.migrate(ctx); err != nil {
 		return nil, err
 	}

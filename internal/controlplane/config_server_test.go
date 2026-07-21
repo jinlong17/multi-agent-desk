@@ -89,7 +89,10 @@ func testServer(t *testing.T) (*Server, *Store) {
 	t.Helper()
 	directory := privateTestDirectory(t)
 	store := openTestStore(t, filepath.Join(directory, "server.sqlite"))
-	server := NewServer(Config{Listen: "127.0.0.1:0", shutdownTimeout: time.Second}, store)
+	server, err := NewServer(Config{Listen: "127.0.0.1:0", PublicOrigin: "https://control.example.test", RPID: "example.test", shutdownTimeout: time.Second}, store)
+	if err != nil {
+		t.Fatal(err)
+	}
 	return server, store
 }
 
@@ -102,7 +105,7 @@ func request(t *testing.T, server *Server, method, target string, body string, h
 	return recorder
 }
 
-func TestFoundationHandlersExposeOnlyHealthReadyVersion(t *testing.T) {
+func TestP2HandlersExposeFoundationBootstrapAndAuthenticationOnly(t *testing.T) {
 	server, store := testServer(t)
 	for _, endpoint := range []struct{ path, status string }{{"/v1/healthz", "ok"}, {"/v1/readyz", "ready"}} {
 		response := request(t, server, http.MethodGet, endpoint.path, "", nil)
@@ -117,13 +120,21 @@ func TestFoundationHandlersExposeOnlyHealthReadyVersion(t *testing.T) {
 		}
 	}
 	version := request(t, server, http.MethodGet, "/v1/version", "", nil)
-	if version.Code != http.StatusOK || !strings.Contains(version.Body.String(), `"enabledFeatures":["foundation"]`) {
+	if version.Code != http.StatusOK || !strings.Contains(version.Body.String(), `"enabledFeatures":["foundation","bootstrap","passkey","recovery","browser-session"]`) {
 		t.Fatalf("version=%s", version.Body.String())
 	}
-	for _, path := range []string{"/v1/bootstrap/status", "/v1/devices", "/v1/auth/current"} {
+	bootstrap := request(t, server, http.MethodGet, "/v1/bootstrap/status", "", nil)
+	if bootstrap.Code != http.StatusOK || !strings.Contains(bootstrap.Body.String(), `"state":"uninitialized"`) {
+		t.Fatalf("bootstrap status=%d %s", bootstrap.Code, bootstrap.Body.String())
+	}
+	current := request(t, server, http.MethodGet, "/v1/auth/current", "", nil)
+	if current.Code != http.StatusUnauthorized || !strings.Contains(current.Body.String(), `"code":"unauthenticated"`) {
+		t.Fatalf("auth current=%d %s", current.Code, current.Body.String())
+	}
+	for _, path := range []string{"/v1/devices", "/v1/accounts", "/v1/overview"} {
 		response := request(t, server, http.MethodGet, path, "", nil)
 		if response.Code != http.StatusNotFound || !strings.Contains(response.Body.String(), `"code":"not_found"`) {
-			t.Fatalf("P2+ endpoint %s exposed: %d %s", path, response.Code, response.Body.String())
+			t.Fatalf("P3+ endpoint %s exposed: %d %s", path, response.Code, response.Body.String())
 		}
 	}
 	_ = store.Close()
@@ -133,7 +144,7 @@ func TestFoundationHandlersExposeOnlyHealthReadyVersion(t *testing.T) {
 	}
 }
 
-func TestCompleteContractInventoryRemainsUnmountedAndSideEffectFree(t *testing.T) {
+func TestCompleteContractInventoryMountsOnlyP2AndLeavesLaterPhasesSideEffectFree(t *testing.T) {
 	server, store := testServer(t)
 	contract, err := generatedapi.GetSwagger()
 	if err != nil {
@@ -154,9 +165,9 @@ func TestCompleteContractInventoryRemainsUnmountedAndSideEffectFree(t *testing.T
 	if err := rows.Close(); err != nil {
 		t.Fatal(err)
 	}
-	wantTables := []string{"idempotency_records", "pre_user_audit_events", "schema_migrations", "server_metadata"}
+	wantTables := []string{"anchor_devices", "auth_audit_events", "bootstrap_receipts", "bootstrap_state", "browser_sessions", "idempotency_records", "one_time_operations", "passkeys", "pre_user_audit_events", "recovery_batches", "recovery_codes", "schema_migrations", "server_metadata", "users", "webauthn_ceremonies"}
 	if !slices.Equal(tables, wantTables) {
-		t.Fatalf("P1 schema created P2+ state tables: %v", tables)
+		t.Fatalf("P2 schema inventory mismatch: %v", tables)
 	}
 	var beforeChanges int64
 	if err := store.db.QueryRow("SELECT total_changes()").Scan(&beforeChanges); err != nil {
@@ -165,11 +176,21 @@ func TestCompleteContractInventoryRemainsUnmountedAndSideEffectFree(t *testing.T
 
 	operationCount := 0
 	foundationCount := 0
+	p2Paths := map[string]bool{
+		"/v1/bootstrap/status": true, "/v1/bootstrap/options": true, "/v1/bootstrap/verify": true, "/v1/bootstrap/ceremonies/{ceremonyId}": true,
+		"/v1/auth/current": true, "/v1/auth/logout": true, "/v1/auth/passkeys/options": true, "/v1/auth/passkeys/verify": true,
+		"/v1/auth/passkeys/registration/options": true, "/v1/auth/passkeys/registration/verify": true, "/v1/auth/passkeys": true,
+		"/v1/auth/passkeys/{passkeyId}": true, "/v1/auth/uv/options": true, "/v1/auth/uv/verify": true, "/v1/auth/recovery/verify": true,
+		"/v1/auth/recovery-codes/rotate": true, "/v1/auth/sessions": true, "/v1/auth/sessions/{sessionId}": true,
+	}
 	for path, item := range contract.Paths.Map() {
 		for method := range item.Operations() {
 			operationCount++
 			if path == "/v1/healthz" || path == "/v1/readyz" || path == "/v1/version" {
 				foundationCount++
+				continue
+			}
+			if p2Paths[path] {
 				continue
 			}
 			target := path
@@ -178,7 +199,7 @@ func TestCompleteContractInventoryRemainsUnmountedAndSideEffectFree(t *testing.T
 			}
 			response := request(t, server, strings.ToUpper(method), target, "", nil)
 			if response.Code != http.StatusNotFound || !strings.Contains(response.Body.String(), `"code":"not_found"`) {
-				t.Fatalf("P2+ operation mounted: %s %s -> %d %s", method, target, response.Code, response.Body.String())
+				t.Fatalf("P3+ operation mounted: %s %s -> %d %s", method, target, response.Code, response.Body.String())
 			}
 			if len(response.Header().Values("Set-Cookie")) != 0 || response.Header().Get("Location") != "" {
 				t.Fatalf("P2+ operation emitted authority: %s %s headers=%v", method, target, response.Header())

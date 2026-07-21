@@ -58,22 +58,25 @@ func TestStoreEmptyRestartPragmasAndIdempotency(t *testing.T) {
 	if err := store.db.QueryRow("PRAGMA user_version").Scan(&userVersion); err != nil {
 		t.Fatal(err)
 	}
-	if migrationCount != 2 || userVersion != 2 {
+	if migrationCount != 3 || userVersion != 3 {
 		t.Fatalf("migrationCount=%d userVersion=%d", migrationCount, userVersion)
 	}
 	if err := store.verifyPragmas(context.Background(), 500*time.Millisecond); err != nil {
 		t.Fatal(err)
 	}
 	assertStoreFilesPrivate(t, path)
-	var userCount, deviceCount int
-	if err := store.db.QueryRow("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='users'").Scan(&userCount); err != nil {
+	var userTableCount, userRowCount, deviceCount int
+	if err := store.db.QueryRow("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='users'").Scan(&userTableCount); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.db.QueryRow("SELECT count(*) FROM users").Scan(&userRowCount); err != nil {
 		t.Fatal(err)
 	}
 	if err := store.db.QueryRow("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='devices'").Scan(&deviceCount); err != nil {
 		t.Fatal(err)
 	}
-	if userCount != 0 || deviceCount != 0 {
-		t.Fatal("P1 activated a user or Device table")
+	if userTableCount != 1 || userRowCount != 0 || deviceCount != 0 {
+		t.Fatal("P2 schema or empty activation state is invalid")
 	}
 	now := time.Unix(1_900_000_000, 0)
 	var scope, request, changed [32]byte
@@ -127,7 +130,7 @@ func TestStoreRestartPreservesFoundationDataWithoutMigrationReplay(t *testing.T)
 	if err := second.db.QueryRow("SELECT count(*) FROM schema_migrations").Scan(&migrationCount); err != nil {
 		t.Fatal(err)
 	}
-	if gotEpoch != epoch || auditCount != 1 || migrationCount != 2 {
+	if gotEpoch != epoch || auditCount != 1 || migrationCount != 3 {
 		t.Fatalf("restart changed foundation data: epoch=%q/%q audit=%d migrations=%d", epoch, gotEpoch, auditCount, migrationCount)
 	}
 }
@@ -172,7 +175,7 @@ func TestStoreConcurrentMigrationHasOneCompleteLedger(t *testing.T) {
 	if err := stores[0].db.QueryRow("SELECT count(*) FROM schema_migrations").Scan(&count); err != nil {
 		t.Fatal(err)
 	}
-	if count != 2 {
+	if count != 3 {
 		t.Fatalf("ledger count=%d", count)
 	}
 }
@@ -214,7 +217,7 @@ func TestStorePriorSchemaBacksUpAndUpgrades(t *testing.T) {
 	if err := store.db.QueryRow("SELECT count(*) FROM schema_migrations").Scan(&count); err != nil {
 		t.Fatal(err)
 	}
-	if count != 2 {
+	if count != 3 {
 		t.Fatalf("migration count=%d", count)
 	}
 	backups, err := filepath.Glob(filepath.Join(directory, "backups", "server-*.sqlite"))

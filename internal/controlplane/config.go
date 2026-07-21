@@ -15,19 +15,20 @@ import (
 )
 
 type Config struct {
-	Listen              string   `json:"listen"`
-	PublicOrigin        string   `json:"publicOrigin"`
-	RPID                string   `json:"rpId"`
-	DatabasePath        string   `json:"databasePath"`
-	TLSCertificateFile  string   `json:"tlsCertificateFile"`
-	TLSPrivateKeyFile   string   `json:"tlsPrivateKeyFile"`
-	CursorHMACKeyFile   string   `json:"cursorHmacKeyFile"`
-	TrustedProxyCIDRs   []string `json:"trustedProxyCidrs"`
-	ShutdownTimeout     string   `json:"shutdownTimeout"`
-	DatabaseBusyTimeout string   `json:"databaseBusyTimeout"`
-	shutdownTimeout     time.Duration
-	busyTimeout         time.Duration
-	cursorHMACKey       [32]byte
+	Listen                    string   `json:"listen"`
+	PublicOrigin              string   `json:"publicOrigin"`
+	RPID                      string   `json:"rpId"`
+	DatabasePath              string   `json:"databasePath"`
+	TLSCertificateFile        string   `json:"tlsCertificateFile"`
+	TLSPrivateKeyFile         string   `json:"tlsPrivateKeyFile"`
+	CursorHMACKeyFile         string   `json:"cursorHmacKeyFile"`
+	TrustedProxyCIDRs         []string `json:"trustedProxyCidrs"`
+	ShutdownTimeout           string   `json:"shutdownTimeout"`
+	DatabaseBusyTimeout       string   `json:"databaseBusyTimeout"`
+	DevelopmentAllowLocalhost bool     `json:"developmentAllowLocalhost,omitempty"`
+	shutdownTimeout           time.Duration
+	busyTimeout               time.Duration
+	cursorHMACKey             [32]byte
 }
 
 func (c Config) BusyTimeout() time.Duration { return c.busyTimeout }
@@ -60,28 +61,11 @@ func (c *Config) validate() error {
 	if err != nil || portErr != nil || host == "" || host == "*" || port < 1 || port > 65535 {
 		return fmt.Errorf("listen must be an explicit host:port")
 	}
-	origin, err := url.Parse(c.PublicOrigin)
-	if err != nil || origin.Scheme != "https" || origin.Hostname() == "" || origin.User != nil || origin.RawQuery != "" || origin.Fragment != "" || origin.Path != "" || origin.RawPath != "" || origin.Opaque != "" {
-		return fmt.Errorf("publicOrigin must be one fixed HTTPS origin")
+	if _, err := transport.ParseCanonicalServerOriginV1(c.PublicOrigin, transport.CanonicalServerOriginOptions{AllowDevelopmentLocalhost: c.DevelopmentAllowLocalhost}); err != nil {
+		return fmt.Errorf("publicOrigin must be one canonical fixed HTTPS origin: %w", err)
 	}
+	origin, _ := url.Parse(c.PublicOrigin)
 	originHost := origin.Hostname()
-	if origin.Host != strings.ToLower(origin.Host) || strings.HasSuffix(originHost, ".") || strings.ContainsAny(originHost, "*[]%") || net.ParseIP(originHost) != nil {
-		return fmt.Errorf("wildcard publicOrigin is forbidden")
-	}
-	if origin.Port() == "443" {
-		return fmt.Errorf("publicOrigin must omit the default HTTPS port")
-	}
-	if portText := origin.Port(); portText != "" {
-		port, err := strconv.Atoi(portText)
-		if err != nil || port < 1 || port > 65535 {
-			return fmt.Errorf("publicOrigin port is invalid")
-		}
-	}
-	for _, char := range originHost {
-		if !(char == '.' || char == '-' || char >= 'a' && char <= 'z' || char >= '0' && char <= '9') {
-			return fmt.Errorf("publicOrigin host must be lowercase IDNA ASCII")
-		}
-	}
 	if c.RPID == "" || c.RPID != strings.ToLower(c.RPID) || strings.HasSuffix(c.RPID, ".") || strings.ContainsAny(c.RPID, "*/:") || !(originHost == c.RPID || strings.HasSuffix(originHost, "."+c.RPID)) {
 		return fmt.Errorf("rpId must be a fixed registrable suffix of publicOrigin")
 	}

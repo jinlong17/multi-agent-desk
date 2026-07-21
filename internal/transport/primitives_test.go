@@ -52,6 +52,9 @@ func TestIfMatchStrict(t *testing.T) {
 	if revision, err := ParseIfMatch(`"rev-42"`); err != nil || revision != 42 {
 		t.Fatalf("revision=%d err=%v", revision, err)
 	}
+	if revision, err := ParseIfMatch(`"rev-1"`); err != nil || revision != 1 {
+		t.Fatalf("minimum revision=%d err=%v", revision, err)
+	}
 	for _, invalid := range []string{"", "*", `W/"rev-1"`, `"rev-0"`, `"rev-01"`, `"rev--1"`, `"rev-9223372036854775808"`, `rev-1`} {
 		if _, err := ParseIfMatch(invalid); err == nil {
 			t.Fatalf("accepted invalid If-Match %q", invalid)
