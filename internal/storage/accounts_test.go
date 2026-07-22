@@ -253,6 +253,9 @@ func TestMigrationV6PreservesPopulatedFakeTuplesAndIsIdempotent(t *testing.T) {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		t.Fatal(err)
 	}
+	if err := protectDevicePrivateDirectory(dir); err != nil {
+		t.Fatal(err)
+	}
 	path := filepath.Join(dir, "device.db")
 	raw, err := sql.Open("sqlite", path)
 	if err != nil {
@@ -309,6 +312,9 @@ func TestMigrationV6PreservesPopulatedFakeTuplesAndIsIdempotent(t *testing.T) {
 		}
 	}
 	if err := raw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := protectDevicePrivateFile(path); err != nil {
 		t.Fatal(err)
 	}
 

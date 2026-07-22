@@ -152,7 +152,17 @@ func verifyDeviceWindowsPath(path string, wantDirectory bool) error {
 		return domain.NewError(domain.CodePermissionDenied, "private Windows DACL inheritance is enabled")
 	}
 	dacl, defaulted, err := descriptor.DACL()
-	if err != nil || dacl == nil || defaulted || dacl.AceCount != 2 {
+	if err != nil || defaulted {
+		return domain.NewError(domain.CodePermissionDenied, "private Windows DACL is unavailable")
+	}
+	if err := verifyDeviceWindowsDACL(dacl, ownerSID, systemSID); err != nil {
+		return err
+	}
+	return verifyDeviceWindowsPathKind(path, wantDirectory)
+}
+
+func verifyDeviceWindowsDACL(dacl *windows.ACL, ownerSID, systemSID *windows.SID) error {
+	if dacl == nil || ownerSID == nil || systemSID == nil || dacl.AceCount != 2 {
 		return domain.NewError(domain.CodePermissionDenied, "private Windows DACL does not contain exactly owner and SYSTEM")
 	}
 	seenOwner, seenSystem := false, false
@@ -174,7 +184,7 @@ func verifyDeviceWindowsPath(path string, wantDirectory bool) error {
 	if !seenOwner || !seenSystem {
 		return domain.NewError(domain.CodePermissionDenied, "private Windows DACL is missing owner or SYSTEM")
 	}
-	return verifyDeviceWindowsPathKind(path, wantDirectory)
+	return nil
 }
 
 func verifyDeviceWindowsPathKind(path string, wantDirectory bool) error {

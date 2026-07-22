@@ -159,12 +159,13 @@ func TestOpenConcurrentFirstCreationHasNoPermissionWindowFailure(t *testing.T) {
 	}
 	close(start)
 	successes := 0
+	var opened []*Store
 	var failures []error
 	for range 2 {
 		result := <-results
 		if result.store != nil {
 			successes++
-			_ = result.store.Close()
+			opened = append(opened, result.store)
 		}
 		if domain.CodeOf(result.err) == domain.CodePermissionDenied {
 			t.Fatalf("concurrent first Open observed permission transition: %v", result.err)
@@ -175,6 +176,14 @@ func TestOpenConcurrentFirstCreationHasNoPermissionWindowFailure(t *testing.T) {
 	}
 	if successes == 0 {
 		t.Fatalf("both concurrent first Open calls failed: %v", failures)
+	}
+	// Keep every successful connection alive until both Open calls finish. A
+	// Close removes SQLite WAL/SHM sidecars and is teardown, not part of the
+	// concurrent-open permission transition this regression exercises.
+	for _, store := range opened {
+		if err := store.Close(); err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 
@@ -246,6 +255,9 @@ func TestCodexMigrationPreservesLegacyFakeRows(t *testing.T) {
 	if err := os.Mkdir(deviceRoot, 0o700); err != nil {
 		t.Fatal(err)
 	}
+	if err := protectDevicePrivateDirectory(deviceRoot); err != nil {
+		t.Fatal(err)
+	}
 	path := filepath.Join(deviceRoot, "device.db")
 	raw, err := sql.Open("sqlite", "file:"+path)
 	if err != nil {
@@ -306,6 +318,9 @@ func TestCodexMigrationPreservesLegacyFakeRows(t *testing.T) {
 	if err := raw.Close(); err != nil {
 		t.Fatal(err)
 	}
+	if err := protectDevicePrivateFile(path); err != nil {
+		t.Fatal(err)
+	}
 	store, err := Open(ctx, path)
 	if err != nil {
 		t.Fatalf("open upgraded store: %v (cause: %v)", err, errors.Unwrap(err))
@@ -333,6 +348,9 @@ func TestAccountsUsageMigrationPreservesPhase2CodexRowsAndVaultLinks(t *testing.
 	ctx := context.Background()
 	root := filepath.Join(t.TempDir(), "device")
 	if err := os.Mkdir(root, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := protectDevicePrivateDirectory(root); err != nil {
 		t.Fatal(err)
 	}
 	path := filepath.Join(root, "device.db")
@@ -403,6 +421,9 @@ func TestAccountsUsageMigrationPreservesPhase2CodexRowsAndVaultLinks(t *testing.
 		t.Fatal(err)
 	}
 	if err := raw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := protectDevicePrivateFile(path); err != nil {
 		t.Fatal(err)
 	}
 	store, err := Open(ctx, path)
@@ -486,6 +507,9 @@ func TestSelectorMigrationPreservesVersionSixEnrollment(t *testing.T) {
 	if err := os.Mkdir(root, 0o700); err != nil {
 		t.Fatal(err)
 	}
+	if err := protectDevicePrivateDirectory(root); err != nil {
+		t.Fatal(err)
+	}
 	path := filepath.Join(root, "device.db")
 	raw, err := sql.Open("sqlite", "file:"+path)
 	if err != nil {
@@ -553,6 +577,9 @@ func TestSelectorMigrationPreservesVersionSixEnrollment(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := raw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := protectDevicePrivateFile(path); err != nil {
 		t.Fatal(err)
 	}
 	store, err := Open(ctx, path)

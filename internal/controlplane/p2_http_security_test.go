@@ -88,7 +88,7 @@ func jsonWithNestedNull(t *testing.T, value any, path ...string) string {
 
 func TestP2MutationSecurityRejectsBeforeSideEffects(t *testing.T) {
 	server, store := testServer(t)
-	now := time.Now().UTC()
+	now := time.Date(2030, 3, 1, 2, 3, 4, 123_456_000, time.UTC)
 	token, created, err := store.EnsureBootstrapToken(t.Context(), now)
 	if err != nil || !created || token == "" {
 		t.Fatalf("token created=%v err=%v", created, err)
@@ -102,7 +102,7 @@ func TestP2MutationSecurityRejectsBeforeSideEffects(t *testing.T) {
 	if err := store.db.QueryRow("SELECT count(*) FROM users").Scan(&before); err != nil {
 		t.Fatal(err)
 	}
-	for _, test := range []struct {
+	tests := []struct {
 		name    string
 		headers http.Header
 		body    string
@@ -111,11 +111,27 @@ func TestP2MutationSecurityRejectsBeforeSideEffects(t *testing.T) {
 		{"missing-origin", http.Header{"Content-Type": {"application/json"}, "Idempotency-Key": {"0123456789abcdef"}}, `{}`, http.StatusForbidden},
 		{"wrong-content", http.Header{"Origin": {"https://control.example.test"}, "Sec-Fetch-Site": {"same-origin"}, "Sec-Fetch-Mode": {"cors"}, "Sec-Fetch-Dest": {"empty"}, "Content-Type": {"text/plain"}, "Idempotency-Key": {"0123456789abcdef"}}, `{}`, http.StatusUnsupportedMediaType},
 		{"missing-token", p2MutationHeaders(), string(validBody), http.StatusUnauthorized},
-	} {
+	}
+	for _, fraction := range []string{"1234567", "12345678", "123456789"} {
+		hostile := strings.Replace(string(validBody), ".123456Z", "."+fraction+"Z", 1)
+		if hostile == string(validBody) {
+			t.Fatal("fixed bootstrap fixture did not contain its canonical microsecond timestamp")
+		}
+		tests = append(tests, struct {
+			name    string
+			headers http.Header
+			body    string
+			status  int
+		}{"over-precise-time-" + fraction, p2MutationHeaders(), hostile, http.StatusBadRequest})
+	}
+	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			response := request(t, server, http.MethodPost, "/v1/bootstrap/options", test.body, test.headers)
 			if response.Code != test.status || !strings.Contains(response.Header().Get("Content-Type"), "application/json") {
 				t.Fatalf("code=%d body=%s", response.Code, response.Body.String())
+			}
+			if test.status == http.StatusBadRequest && !strings.Contains(response.Body.String(), `"code":"invalid_argument"`) {
+				t.Fatalf("schema rejection body=%s", response.Body.String())
 			}
 		})
 	}

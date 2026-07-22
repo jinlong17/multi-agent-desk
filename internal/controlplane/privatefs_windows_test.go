@@ -145,8 +145,6 @@ func TestWindowsServerPrivateDACLNegativeMatrixAndReverseOrder(t *testing.T) {
 		{"wrong-mask", "(A;;FR;;;SY)(A;;FA;;;" + ownerText + ")"},
 		{"duplicate", "(A;;FA;;;" + ownerText + ")(A;;FA;;;" + ownerText + ")"},
 		{"deny", "(D;;FR;;;SY)(A;;FA;;;" + ownerText + ")"},
-		{"nonzero-flags", "(A;OI;FA;;;SY)(A;;FA;;;" + ownerText + ")"},
-		{"inherited-ace", "(A;ID;FA;;;SY)(A;;FA;;;" + ownerText + ")"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if err := setControlPlaneWindowsDACL(path, test.aces); err != nil {
@@ -165,6 +163,45 @@ func TestWindowsServerPrivateDACLNegativeMatrixAndReverseOrder(t *testing.T) {
 	}
 	if err := verifyPrivateFile(path); err != nil {
 		t.Fatalf("reverse-order exact DACL was rejected: %v", err)
+	}
+}
+
+func TestWindowsServerPrivateDACLRejectsRawNonzeroACEFlags(t *testing.T) {
+	owner, err := currentUserSID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	system, err := localSystemSID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		name string
+		aces string
+	}{
+		{"object-inherit", "(A;OI;FA;;;SY)(A;;FA;;;" + owner.String() + ")"},
+		{"inherited", "(A;ID;FA;;;SY)(A;;FA;;;" + owner.String() + ")"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			descriptor, err := windows.SecurityDescriptorFromString("D:P" + test.aces)
+			if err != nil {
+				t.Fatal(err)
+			}
+			dacl, _, err := descriptor.DACL()
+			if err != nil {
+				t.Fatal(err)
+			}
+			var first *windows.ACCESS_ALLOWED_ACE
+			if err := windows.GetAce(dacl, 0, &first); err != nil || first == nil {
+				t.Fatalf("read raw flag fixture: %v", err)
+			}
+			if first.Header.AceFlags == 0 {
+				t.Fatal("raw flag fixture was normalized before verification")
+			}
+			if err := verifyControlPlaneWindowsDACL(dacl, owner, system); err == nil {
+				t.Fatal("raw DACL with nonzero ACE flags was accepted")
+			}
+		})
 	}
 }
 

@@ -63,6 +63,19 @@ func setDeviceWindowsDACL(path, aces string) error {
 		descriptorOwner, nil, dacl, nil)
 }
 
+func deviceWindowsSecurityDescriptorText(path string) (string, error) {
+	descriptor, err := windows.GetNamedSecurityInfo(path, windows.SE_FILE_OBJECT,
+		windows.OWNER_SECURITY_INFORMATION|windows.DACL_SECURITY_INFORMATION)
+	if err != nil {
+		return "", err
+	}
+	text := descriptor.String()
+	if text == "" {
+		return "", windows.ERROR_INVALID_SECURITY_DESCR
+	}
+	return text, nil
+}
+
 func windowsDirectoryNames(t *testing.T, path string) []string {
 	t.Helper()
 	entries, err := os.ReadDir(path)
@@ -205,8 +218,6 @@ func TestWindowsPrivateDACLNegativeMatrixAndReverseOrder(t *testing.T) {
 		{"wrong-mask", "(A;;FR;;;SY)(A;;FA;;;" + ownerText + ")"},
 		{"duplicate", "(A;;FA;;;" + ownerText + ")(A;;FA;;;" + ownerText + ")"},
 		{"deny", "(D;;FR;;;SY)(A;;FA;;;" + ownerText + ")"},
-		{"nonzero-flags", "(A;OI;FA;;;SY)(A;;FA;;;" + ownerText + ")"},
-		{"inherited-ace", "(A;ID;FA;;;SY)(A;;FA;;;" + ownerText + ")"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if err := setDeviceWindowsDACL(path, test.aces); err != nil {
@@ -225,6 +236,45 @@ func TestWindowsPrivateDACLNegativeMatrixAndReverseOrder(t *testing.T) {
 	}
 	if err := verifyDevicePrivateFile(path); err != nil {
 		t.Fatalf("reverse-order exact DACL was rejected: %v", err)
+	}
+}
+
+func TestWindowsPrivateDACLRejectsRawNonzeroACEFlags(t *testing.T) {
+	owner, err := backupCurrentUserSID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	system, err := backupSystemSID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		name string
+		aces string
+	}{
+		{"object-inherit", "(A;OI;FA;;;SY)(A;;FA;;;" + owner.String() + ")"},
+		{"inherited", "(A;ID;FA;;;SY)(A;;FA;;;" + owner.String() + ")"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			descriptor, err := windows.SecurityDescriptorFromString("D:P" + test.aces)
+			if err != nil {
+				t.Fatal(err)
+			}
+			dacl, _, err := descriptor.DACL()
+			if err != nil {
+				t.Fatal(err)
+			}
+			var first *windows.ACCESS_ALLOWED_ACE
+			if err := windows.GetAce(dacl, 0, &first); err != nil || first == nil {
+				t.Fatalf("read raw flag fixture: %v", err)
+			}
+			if first.Header.AceFlags == 0 {
+				t.Fatal("raw flag fixture was normalized before verification")
+			}
+			if err := verifyDeviceWindowsDACL(dacl, owner, system); err == nil {
+				t.Fatal("raw DACL with nonzero ACE flags was accepted")
+			}
+		})
 	}
 }
 
@@ -431,11 +481,30 @@ func TestWindowsDeviceStoreRejectsUnprotectedPreexistingFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = protectDevicePrivateFile(path) })
+	before, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	beforeSecurity, err := deviceWindowsSecurityDescriptorText(path)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if reopened, err := Open(context.Background(), path); err == nil {
 		_ = reopened.Close()
 		t.Fatal("unprotected database DACL was accepted")
 	} else if domain.CodeOf(err) != domain.CodePermissionDenied {
 		t.Fatalf("code=%s err=%v", domain.CodeOf(err), err)
+	}
+	after, err := os.ReadFile(path)
+	if err != nil || !bytes.Equal(after, before) {
+		t.Fatalf("unsafe database content changed err=%v", err)
+	}
+	afterSecurity, err := deviceWindowsSecurityDescriptorText(path)
+	if err != nil || afterSecurity != beforeSecurity {
+		t.Fatalf("unsafe database DACL changed before=%q after=%q err=%v", beforeSecurity, afterSecurity, err)
+	}
+	if err := verifyDevicePrivateFile(path); domain.CodeOf(err) != domain.CodePermissionDenied {
+		t.Fatalf("unsafe database was repaired during rejection: code=%s err=%v", domain.CodeOf(err), err)
 	}
 }
 

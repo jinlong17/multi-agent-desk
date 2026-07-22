@@ -102,7 +102,17 @@ func verifyWindowsPath(path string, wantDirectory bool) error {
 		return fmt.Errorf("Windows path DACL inheritance is not protected")
 	}
 	dacl, defaulted, err := descriptor.DACL()
-	if err != nil || dacl == nil || defaulted || dacl.AceCount != 2 {
+	if err != nil || defaulted {
+		return fmt.Errorf("Windows path DACL is unavailable")
+	}
+	if err := verifyControlPlaneWindowsDACL(dacl, ownerSID, systemSID); err != nil {
+		return err
+	}
+	return verifyWindowsPathKind(path, wantDirectory)
+}
+
+func verifyControlPlaneWindowsDACL(dacl *windows.ACL, ownerSID, systemSID *windows.SID) error {
+	if dacl == nil || ownerSID == nil || systemSID == nil || dacl.AceCount != 2 {
 		return fmt.Errorf("Windows path DACL does not contain exactly current logon and LocalSystem")
 	}
 	seenOwner, seenSystem := false, false
@@ -127,7 +137,7 @@ func verifyWindowsPath(path string, wantDirectory bool) error {
 	if !seenOwner || !seenSystem {
 		return fmt.Errorf("Windows path DACL is missing current logon or LocalSystem")
 	}
-	return verifyWindowsPathKind(path, wantDirectory)
+	return nil
 }
 
 func verifyWindowsPathKind(path string, wantDirectory bool) error {

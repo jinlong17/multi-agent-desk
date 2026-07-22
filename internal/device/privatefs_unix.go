@@ -18,8 +18,8 @@ func createPrivateDirectory(path string) error {
 }
 
 // ProtectPrivateDirectory applies and verifies the platform-private directory
-// boundary. Unix uses owner-only mode bits; Windows supplies the current-logon
-// DACL in the platform implementation.
+// boundary. Unix uses owner-only mode bits; Windows supplies the exact current
+// user plus LocalSystem DACL in the platform implementation.
 func ProtectPrivateDirectory(path string) error {
 	if err := os.Chmod(path, 0o700); err != nil {
 		return domain.WrapError(domain.CodePermissionDenied, "private directory permissions could not be restricted", err)

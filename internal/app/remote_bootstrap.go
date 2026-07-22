@@ -71,7 +71,8 @@ func (s *RemoteBootstrapService) Prepare(ctx context.Context, input BootstrapPre
 	if !platform.Valid() {
 		return controlplanev1.BootstrapAnchorDescriptorV1{}, domain.NewError(domain.CodeUnsupportedPlatform, "bootstrap platform is unsupported")
 	}
-	opened, err := s.Vault.PrepareRemoteIdentity(ctx, input.ServerOrigin, vault.RemoteIdentityOptions{AllowDevelopmentLocalhost: input.AllowDevelopmentLocalhost}, s.Now().UTC())
+	at := s.Now().UTC().Truncate(time.Microsecond)
+	opened, err := s.Vault.PrepareRemoteIdentity(ctx, input.ServerOrigin, vault.RemoteIdentityOptions{AllowDevelopmentLocalhost: input.AllowDevelopmentLocalhost}, at)
 	if err != nil {
 		return controlplanev1.BootstrapAnchorDescriptorV1{}, err
 	}
