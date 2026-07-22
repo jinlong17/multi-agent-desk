@@ -78,11 +78,13 @@ the same-origin instance and is the only Web import point.
   bytes. Ed25519/X25519 public keys decode to exactly 32 bytes.
 - Mutations require `Idempotency-Key` (16..128 visible ASCII characters).
   Update/delete additionally require `If-Match: "rev-<positive integer>"`.
-- Idempotency scope is principal + API version + method + canonical path + key.
-  The server stores request digest and a replay policy/result for 24 hours. Same
-  key/different request returns `idempotency_key_reused`. Ordinary public
-  results replay exactly. P2 ceremony/session/one-time responses follow the
-  stricter v0.8 table below and never persist/replay a secret Set-Cookie, raw
+- Outside P2 auth/bootstrap, idempotency scope remains principal + API version
+  + method + canonical path + key. P2 auth/bootstrap instead uses the stricter
+  server-global normalized-key and canonical request-identity contract in the
+  v0.9 table below. The server stores the applicable request identity and replay
+  policy/result for 24 hours. Same key/different identity returns
+  `idempotency_key_reused`. Ordinary public results replay exactly. P2 ceremony/
+  session/one-time responses never persist/replay a secret Set-Cookie, raw
   CSRF, Recovery Code, WebAuthn challenge private state, or proof.
 - List `limit` defaults to 50 and is 1..100. `cursor` is an opaque Base64url
   endpoint/filter/sort-bound token. Unknown, cross-endpoint, or tampered cursors
@@ -1485,11 +1487,11 @@ The request cannot pass server-supplied binary paths, secretRefs, workspace
 paths, raw Provider settings, terminal input, Approval decisions, or capability
 snapshots.
 
-## Plan v0.8 normative contract replacements
+## Plan v0.9 normative contract replacements
 
 This section retains the v0.7 P3-P6 schemas and supersedes conflicting P2
 schemas/bounds above. P0/P1 remain independently verified; the complete OpenAPI
-and both generated languages must express the P2 v0.8 delta before P2
+and both generated languages must express the P2 v0.9 delta before P2
 verification, while every P3-P6 operation/schema remains unchanged.
 
 ### Canonical origin, cookie, and WebAuthn wire
@@ -1620,7 +1622,7 @@ authenticated with that passkey. Passkey deletion returns
 when currentSessionRevoked is true it clears the cookie and returns no
 `CurrentAuth`.
 
-### P2 v0.8 CSRF construction
+### P2 v0.9 CSRF construction
 
 `browser_sessions` stores exactly `csrf_generation INTEGER NOT NULL CHECK
 (csrf_generation>=1)` and `csrf_digest BLOB(32)` for CSRF material. It never
@@ -1645,65 +1647,137 @@ uses generation 1. Same-session rotation, if invoked, atomically increments the
 generation and state revision and writes the digest derived from the already
 authenticated raw cookie; callers cannot submit a replacement digest.
 
-### P2 v0.8 endpoint idempotency and replay
+### P2 v0.9 endpoint idempotency and replay
 
 The exact P2 endpoint matrix is:
 
-| Endpoint | Key | Durable replay class | First successful Set-Cookie / one-time output | Exact/concurrent/lost-response replay |
-|---|---|---|---|---|
-| `GET /bootstrap/status` | no | read | none | current public state |
-| `POST /bootstrap/options` | yes | restart-local ceremony | none | same public options in same boot; after restart `ceremony_restart_required` |
-| `POST /bootstrap/verify` | yes | commit-once secret-nonreplayable | secret session cookie + raw CSRF + ten Recovery Codes | `one_time_result_unavailable` + public bootstrap receipt; no Set-Cookie/codes; fresh Passkey login then rotate codes |
-| `GET /bootstrap/ceremonies/{id}` | no | public receipt/status read | none | current public challenge in same boot or committed receipt |
-| `GET /auth/current` | no | read/touch | raw reconstructed CSRF only | current auth or stable auth error; never Set-Cookie |
-| `POST /auth/passkeys/options` | yes | restart-local ceremony | none | same public options in same boot; after restart `ceremony_restart_required` |
-| `POST /auth/passkeys/verify` | yes | commit-once secret-nonreplayable | secret session cookie + raw CSRF | `one_time_result_unavailable`; no Set-Cookie; perform fresh Passkey login |
-| `POST /auth/passkeys/registration/options` | yes | session-bound restart-local ceremony | none | same public options while original session/boot live; otherwise `ceremony_restart_required` |
-| `POST /auth/passkeys/registration/verify` | yes | commit-once secret-nonreplayable | rotated secret session cookie + raw CSRF | `one_time_result_unavailable`; no Set-Cookie; perform fresh Passkey login |
-| `GET /auth/passkeys` | no | read/touch | none | current per-item list |
-| `DELETE /auth/passkeys/{id}` | yes | public replayable mutation | clear cookie only when current session was revoked | identical public delete result; repeat clear-cookie when recorded; never restore auth |
-| `POST /auth/uv/options` | yes | session-bound restart-local ceremony | none | same public options while original session/boot live; otherwise `ceremony_restart_required` |
-| `POST /auth/uv/verify` | yes | commit-once secret-nonreplayable | rotated secret session cookie + raw CSRF | `one_time_result_unavailable`; no Set-Cookie; perform fresh Passkey login |
-| `POST /auth/recovery/verify` | yes | commit-once secret-nonreplayable | restricted secret session cookie + raw CSRF | `one_time_result_unavailable`; no Set-Cookie; use another unconsumed code |
-| `POST /auth/recovery-codes/rotate` | yes | commit-once secret-nonreplayable | ten Recovery Codes | `one_time_result_unavailable`; no codes; with a live recent-UV session perform a new rotation |
-| `POST /auth/logout` | yes | public replayable mutation | clear cookie | identical public result + clear-cookie even though session is now revoked |
-| `GET /auth/sessions` | no | read/touch | none | current per-item list |
-| `DELETE /auth/sessions/{id}` | yes | public replayable mutation | clear cookie only for self-revoke | identical public revoke result and recorded clear-cookie action |
+| Endpoint | Key | Stored operation | Actor class | Durable replay class | First successful Set-Cookie / one-time output | Exact/concurrent/lost-response replay |
+|---|---|---|---|---|---|---|
+| `GET /bootstrap/status` | no | none | public | read | none | current public state |
+| `POST /bootstrap/options` | yes | `bootstrap_options` | `bootstrap_token` | restart-local ceremony | none | same public options in same boot; after restart `ceremony_restart_required` |
+| `POST /bootstrap/verify` | yes | `bootstrap_verify` | `bootstrap_token` | commit-once secret-nonreplayable | secret session cookie + raw CSRF + ten Recovery Codes | `one_time_result_unavailable` + public bootstrap receipt; no Set-Cookie/codes; fresh Passkey login then rotate codes |
+| `GET /bootstrap/ceremonies/{id}` | no | none | public | public receipt/status read | none | current public challenge in same boot or committed receipt |
+| `GET /auth/current` | no | none | `browser_session` | read/touch | raw reconstructed CSRF only | current auth or stable auth error; never Set-Cookie |
+| `POST /auth/passkeys/options` | yes | `passkey_login_options` | `preauth_browser` | restart-local ceremony | none | same public options in same boot; after restart `ceremony_restart_required` |
+| `POST /auth/passkeys/verify` | yes | `passkey_login_verify` | `preauth_browser` | commit-once secret-nonreplayable | secret session cookie + raw CSRF | `one_time_result_unavailable`; no Set-Cookie; perform fresh Passkey login |
+| `POST /auth/passkeys/registration/options` | yes | `passkey_registration_options` | `browser_session` | session-bound restart-local ceremony | none | same public options while original session/boot live; otherwise `ceremony_restart_required` |
+| `POST /auth/passkeys/registration/verify` | yes | `passkey_registration_verify` | `browser_session` | commit-once secret-nonreplayable | rotated secret session cookie + raw CSRF | `one_time_result_unavailable`; no Set-Cookie; perform fresh Passkey login |
+| `GET /auth/passkeys` | no | none | `browser_session` | read/touch | none | current per-item list |
+| `DELETE /auth/passkeys/{id}` | yes | `passkey_delete` | `browser_session` | public replayable mutation | clear cookie only when current session was revoked | identical public delete result; repeat clear-cookie when recorded; never restore auth |
+| `POST /auth/uv/options` | yes | `uv_options` | `browser_session` | session-bound restart-local ceremony | none | same public options while original session/boot live; otherwise `ceremony_restart_required` |
+| `POST /auth/uv/verify` | yes | `uv_verify` | `browser_session` | commit-once secret-nonreplayable | rotated secret session cookie + raw CSRF | `one_time_result_unavailable`; no Set-Cookie; perform fresh Passkey login |
+| `POST /auth/recovery/verify` | yes | `recovery_verify` | `preauth_browser` | commit-once secret-nonreplayable | restricted secret session cookie + raw CSRF | `one_time_result_unavailable`; no Set-Cookie; use another unconsumed code |
+| `POST /auth/recovery-codes/rotate` | yes | `recovery_codes_rotate` | `browser_session` | commit-once secret-nonreplayable | ten Recovery Codes | `one_time_result_unavailable`; no codes; with a live recent-UV session perform a new rotation |
+| `POST /auth/logout` | yes | `logout` | `browser_session` | public replayable mutation | clear cookie | identical public result + clear-cookie even though session is now revoked |
+| `GET /auth/sessions` | no | none | `browser_session` | read/touch | none | current per-item list |
+| `DELETE /auth/sessions/{id}` | yes | `session_delete` | `browser_session` | public replayable mutation | clear cookie only for self-revoke | identical public revoke result and recorded clear-cookie action |
 
-Every keyed P2 operation uses:
+P2 has one server-global key-uniqueness domain for the full 24-hour retention
+window. `NormalizedIdempotencyKeyV1` is produced before any lookup:
+
+1. Exactly one `Idempotency-Key` field is allowed. Repeated fields and any
+   comma-containing/coalesced field are `invalid_argument`.
+2. Strip only leading/trailing HTTP OWS bytes SP/HTAB. The remaining value must
+   be 16..128 bytes and every byte must be visible ASCII `0x21..0x7e` except
+   comma `0x2c`.
+3. The remaining bytes are the normalized key unchanged. Case and punctuation
+   are significant; there is no Unicode, percent, Base64, or case transform.
+
+OpenAPI defines a P2-only `P2IdempotencyKey` parameter with the comma-free
+visible-ASCII pattern `^[\x21-\x2b\x2d-\x7e]{16,128}$`; all thirteen rows above
+reference it. The historical shared parameter remains unchanged for P3-P6.
+Generated Go/TypeScript validation and the runtime client use the P2 rule.
+Transport OWS is not part of the OpenAPI string value.
+
+`CanonicalStrictJSONV1` is also exact. For a body-bearing mutation, the server
+first applies the endpoint's named strict schema: bounded UTF-8 JSON, duplicate
+member rejection, unknown-member rejection, required/type/range/format checks,
+finite numbers only, and canonical UUID/time/Base64url forms. It then serializes
+that validated JSON value to RFC 8785 JSON Canonicalization Scheme (JCS) bytes.
+For a bodyless mutation, the canonical bytes are exactly ASCII `{}`. Raw
+whitespace, member order, and equivalent JSON number spelling therefore do not
+create a different request identity; schema-invalid JSON never creates or
+looks up an idempotency row.
+
+The only P2 formulas are:
 
 ```text
-scopeDigest = SHA-256(frame(
-  "multidesk-auth-idempotency-scope-v1", "1", serverOrigin,
-  principalClass, principalDigestRaw, method, canonicalPath, idempotencyKey))
+keyDigest = SHA-256(frame(
+  "multidesk-auth-idempotency-key-v1", "1",
+  NormalizedIdempotencyKeyV1))
 
-requestDigest = SHA-256(frame(
-  "multidesk-auth-idempotency-request-v1", "1", method, canonicalPath,
-  contentSHA256Raw, canonicalIfMatchOrEmpty))
+bodyDigest = SHA-256(frame(
+  "multidesk-auth-idempotency-body-v1", "1",
+  CanonicalStrictJSONV1))
+
+requestIdentityDigest = SHA-256(frame(
+  "multidesk-auth-idempotency-request-identity-v1", "1",
+  serverOrigin, actorClass, actorIdentityRaw, operation, method,
+  canonicalPath, bodyDigest, canonicalIfMatchOrEmpty))
 ```
 
-`principalClass` is `bootstrap_token`, `preauth_browser`, or
-`browser_session`. Its digest is respectively the existing bootstrap-token
-digest, `SHA-256(frame("multidesk-preauth-browser-v1","1",serverOrigin))`,
-or the presented session-token digest. The last scope permits exact replay of
-logout/self-revoke after that session becomes revoked without restoring
-authority. Idempotency is evaluated only after structural security/rate-limit
-checks; product state and the operation row commit in one `BEGIN IMMEDIATE`
-transaction.
+`actorClass` is exactly `bootstrap_token`, `preauth_browser`, or
+`browser_session` as mapped in the endpoint table. `actorIdentityRaw` is,
+respectively, the existing 32-byte bootstrap-token digest,
+`SHA-256(frame("multidesk-preauth-browser-actor-v1","1",serverOrigin))`, or
+the presented 32-byte session-token digest. Actor identity occurs only in the
+`requestIdentityDigest` domain; it is absent from `keyDigest` and `bodyDigest`.
+`canonicalPath` is `/v1` plus the resolved table path, with each path UUID as
+lowercase canonical UUIDv7 and with no query, fragment, percent alias, or
+trailing slash. `canonicalIfMatchOrEmpty` is the exact normalized
+`"rev-<positive integer>"` value for the two DELETE routes and the empty byte
+string for every other P2 mutation.
+
+The one closed storage/OpenAPI discriminator is:
+
+```text
+AuthIdempotencyOperationV1 =
+  bootstrap_options | bootstrap_verify |
+  passkey_login_options | passkey_login_verify |
+  passkey_registration_options | passkey_registration_verify |
+  passkey_delete | uv_options | uv_verify | recovery_verify |
+  recovery_codes_rotate | logout | session_delete
+```
 
 The P2 migration adds strict `auth_idempotency_operations` columns:
-`scope_digest`, `request_digest`, UUIDv7 `operation_id`, closed `operation`,
+`key_digest BLOB(32) PRIMARY KEY`, `request_identity_digest BLOB(32)`,
+`actor_class`, `actor_identity_digest BLOB(32)`, `method`, `canonical_path`,
+`request_body_digest BLOB(32)`, `canonical_if_match`, UUIDv7 `operation_id`,
+closed `operation AuthIdempotencyOperationV1`,
 `state=in_progress|committed`, `server_boot_epoch`,
 `public_receipt_json` (<=16 KiB, no secrets),
-`cookie_action=none|clear|secret_issued`, `created_at`, `committed_at?`, and
-`expires_at`; the scope digest is primary key. Ceremony-begin rows additionally
-bind `ceremony_id` and their public options digest. The ceremony row and
-operation row commit together. A same-request same-boot replay returns the
-persisted public options only while the live ceremony exists. Restart deletes
-P2 ceremony rows, marks their unfinished/restart-local operations unusable,
-and returns `ceremony_restart_required`; a fresh Idempotency-Key creates a new
-ceremony. It never revives a response without its WebAuthn SessionData or
-bootstrap ephemeral private key.
+`cookie_action=none|clear|secret_issued`, `ceremony_id?`,
+`public_options_digest? BLOB(32)`, `created_at`, `committed_at?`, and
+`expires_at`. Length/CHECK constraints reject malformed digests, actor/method/
+operation values, and a nonempty If-Match outside `passkey_delete|session_delete`.
+The primary key is server-global across all thirteen operations until the row's
+fixed 24-hour expiry; replay never extends expiry. No normalized plaintext key
+is stored. `operation_id` is independently UNIQUE. The only cleanup index is
+`(expires_at,key_digest)`; the only ceremony lookup index is the partial UNIQUE
+`(ceremony_id) WHERE ceremony_id IS NOT NULL`. No actor/method/path/operation
+composite can bypass or weaken the `key_digest` primary key.
+
+After strict transport/schema/Origin/rate-limit processing and actor digest
+derivation, lookup is only by `keyDigest`. If no live row exists, full actor
+authorization precedes insertion. If a row exists, fixed-length digests are
+compared in constant time and stored scalar identity fields are compared
+exactly. Any difference in actor, operation, method, concrete canonical path,
+canonical body, or If-Match returns the same HTTP 409
+`idempotency_key_reused` before session touch, ceremony consume, audit success,
+or product mutation; the response does not identify the changed field. Only an
+exact request identity follows the endpoint's approved replay class.
+
+Ceremony-begin rows use the exact four `*_options` operation values. Their
+ceremony row, public options digest/body, and idempotency row commit together.
+Same-boot exact replay returns the byte-identical public options only while the
+live ceremony exists. Restart invalidates ceremony state but retains the
+idempotency row until its fixed expiry; exact replay returns
+`ceremony_restart_required`, while any identity mismatch still returns
+`idempotency_key_reused`. A fresh key creates a new ceremony. Cleanup may delete
+expired ceremony state earlier but never deletes/rekeys the live idempotency row
+or revives a response without WebAuthn SessionData/bootstrap ephemeral private
+material. Product state and a finish/public mutation row commit in the approved
+single transaction.
 
 After a commit-once secret response, only the transaction winner is allowed to
 emit raw secret output. The durable replay body is:
@@ -1711,9 +1785,7 @@ emit raw secret output. The durable replay body is:
 ```text
 AuthOperationReceiptV1 {
   operationId: UUIDv7
-  operation: bootstrap_verify | passkey_login_verify |
-             passkey_registration_verify | uv_verify | recovery_verify |
-             recovery_codes_rotate | logout | passkey_delete | session_delete
+  operation: AuthIdempotencyOperationV1
   state: committed
   committedAt: time
   resourceId?: UUIDv7
@@ -1725,18 +1797,24 @@ AuthOperationReceiptV1 {
 }
 ```
 
+The receipt deliberately reuses the complete thirteen-value
+`AuthIdempotencyOperationV1`. Ceremony-begin success/replay returns public
+options, not this receipt, but its stored operation and any bounded status/error
+projection use the same discriminator; no second finish-only enum exists.
+
 For a secret-nonreplayable operation, replay is HTTP 409
 `one_time_result_unavailable` with exactly
 `details.receipt: AuthOperationReceiptV1`; it has no secret Set-Cookie. An
 ordinary public replay returns the original success body and repeats only a
-recorded clear-cookie header. Same scope/different request is 409
-`idempotency_key_reused`. A bounded loser that observes `in_progress` returns
-409 `idempotency_in_progress` with `Retry-After: 1`; it never runs the mutation.
+recorded clear-cookie header. Same normalized key with any different request
+identity is 409 `idempotency_key_reused`. A bounded loser that observes
+`in_progress` returns 409 `idempotency_in_progress` with `Retry-After: 1`; it
+never runs the mutation.
 No failure, retry, restart, backup, or receipt/status API can return the original
 session token, raw CSRF, recovery plaintext, challenge, proof, or credential
 body.
 
-### P2 v0.8 Passkey and browser-session revision DTOs
+### P2 v0.9 Passkey and browser-session revision DTOs
 
 Passkey list has no collection revision:
 

@@ -226,7 +226,7 @@ failure matrix, race tests, and secret scan pass.
   need no CSRF. Missing/wrong Origin, fetch headers, content type, cookie, CSRF,
   and cross-class credential use fail before side effects.
 - `GET /auth/current` and successful normal auth/UV/recovery-transition responses
-  deliver the 32-byte no-store CSRF token reconstructed by the v0.8 HMAC
+  deliver the 32-byte no-store CSRF token reconstructed by the v0.9 HMAC
   contract; only its SHA-256 digest and generation are stored. Frontend
   memory-only storage/injection passes, and login, privilege/session change,
   recovery->normal, logout/expiry rotate or invalidate it.
@@ -644,7 +644,7 @@ Provider plaintext, or generic secret input.
   scan, migration/restart/concurrency/failure, documentation/link, and project
   structural gates against the final phase diff.
 
-## Plan v0.8 mandatory regression matrix
+## Plan v0.9 mandatory regression matrix
 
 These tests supersede conflicting pre-v0.6 expectations and are required in
 addition to the phase suites above.
@@ -662,7 +662,7 @@ addition to the phase suites above.
   Attempts against bootstrap/auth/enrollment/metadata/sync/command operations
   create no row, token, cookie, identity, audit success, or side effect.
 
-### P2 v0.8 identity, migration, and Passkey gates
+### P2 v0.9 identity, migration, and Passkey gates
 
 - Canonical-origin goldens cover IDNA/case/default port and reject HTTP,
   userinfo, path/query/fragment, wildcard, production IP, percent-host,
@@ -710,11 +710,59 @@ addition to the phase suites above.
   value unusable. Same-session generation rotation uses one CAS winner.
 - An endpoint-table regression enumerates every P2 route. All POST and DELETE
   routes require `Idempotency-Key`; GET routes reject mutation and do not create
-  idempotency state. Scope is exact method plus canonical path and the request
-  digest includes the canonical strict JSON body and authenticated actor class.
-  Same key/same request has one transactional winner; concurrent callers see
-  the committed public receipt or bounded `idempotency_in_progress`. Same key
-  with any different scope, actor, or body rejects with no side effect.
+  idempotency state. The thirteen keyed rows byte-match one closed operation
+  mapping: `bootstrap_options`, `bootstrap_verify`, `passkey_login_options`,
+  `passkey_login_verify`, `passkey_registration_options`,
+  `passkey_registration_verify`, `passkey_delete`, `uv_options`, `uv_verify`,
+  `recovery_verify`, `recovery_codes_rotate`, `logout`, `session_delete`.
+  Migration CHECK values, OpenAPI enum, generated Go/TypeScript enum, runtime
+  client operation coverage, endpoint table, `AuthOperationReceiptV1`, cleanup,
+  and store dispatch must expose exactly this ordered set with no omission,
+  alias, unknown, or pre-v0.9 value.
+- Actor-map fixtures bind `bootstrap_options|bootstrap_verify` to
+  `bootstrap_token`; `passkey_login_options`, `passkey_login_verify`, and
+  `recovery_verify` to `preauth_browser`; and the remaining eight operation
+  values to `browser_session`. Any endpoint/operation/actor mismatch is
+  `idempotency_key_reused` for an existing key and `permission_denied` or
+  `unauthenticated` for a new key, with no row/product side effect.
+- Key-normalization goldens accept exactly one header, strip only leading/
+  trailing SP/HTAB OWS, preserve case/punctuation, and require 16..128 visible-
+  ASCII bytes excluding comma. Repeated, comma/coalesced, short/long, whitespace-
+  only, control, non-ASCII, case-folded, percent-decoded, or Base64-transformed
+  variants reject. All thirteen endpoints compute the same
+  `SHA-256(frame("multidesk-auth-idempotency-key-v1","1",normalizedKey))`;
+  the migration has one server-global `key_digest BLOB(32) PRIMARY KEY`, stores
+  no plaintext key, and never frees or extends it before fixed 24-hour expiry.
+  Migration inspection also requires UNIQUE `operation_id`, cleanup index
+  `(expires_at,key_digest)`, partial UNIQUE non-null `ceremony_id`, and no
+  composite actor/method/path/operation key that permits global-key reuse.
+- `CanonicalStrictJSONV1` vectors first apply each named endpoint schema and
+  reject duplicate/unknown/missing/invalid members, invalid UTF-8, nonfinite or
+  out-of-schema numbers, and noncanonical UUID/time/Base64url. Valid values then
+  use RFC 8785 JCS bytes; bodyless DELETE/logout uses exact ASCII `{}`. Raw
+  whitespace/member order and equivalent permitted number spelling produce the
+  same body digest, while a semantic value change produces a different digest.
+  Invalid JSON creates or looks up no idempotency row.
+- Go/TypeScript/storage goldens byte-match all three exact v0.9 frames: key uses
+  `multidesk-auth-idempotency-key-v1`; body uses
+  `SHA-256(frame("multidesk-auth-idempotency-body-v1","1",
+  CanonicalStrictJSONV1))`; request identity uses
+  `SHA-256(frame("multidesk-auth-idempotency-request-identity-v1","1",
+  serverOrigin,actorClass,actorIdentityRaw,operation,method,canonicalPath,
+  bodyDigest,canonicalIfMatchOrEmpty))`. Actor identity appears only once, inside
+  `requestIdentityDigest`, with the endpoint-mapped class and exact bootstrap-
+  token/preauth-origin/session-token digest. Operation, method, resolved
+  concrete `/v1` canonical path, body digest, and exact DELETE `"rev-N"` or
+  empty If-Match are in that same frame and absent from `keyDigest`. Mutation
+  of any field changes only the request identity.
+- Same global key plus the exact request identity has one transactional winner;
+  concurrent callers receive the endpoint's committed replay or bounded
+  `idempotency_in_progress`. The same key with any different actor class/digest,
+  operation, method, concrete target path, canonical body, or If-Match returns
+  the same redacted `idempotency_key_reused` before touch, ceremony consume,
+  audit success, or product mutation. Fixed-length stored digest comparisons
+  are constant-time. Restart, revoked-session public replay, concurrent cross-
+  endpoint reuse, cleanup boundary, and exact expiry tests use the same formula.
 - Ceremony-begin replay may return only the same public options in the same
   process boot. After restart it returns `ceremony_restart_required`; a fresh
   key begins a new ceremony. Ceremony finish remains single-consume and never
@@ -763,7 +811,7 @@ addition to the phase suites above.
 - A checkpoint reconciliation scan against
   `fc2a38e9fb3802015c687f37c751bc3d807c7d78` fails until OpenAPI, generated
   Go/TypeScript, runtime client, server migration/store/services, and Web tests
-  all implement the v0.8 receipt/errors, canonical-origin/generation CSRF,
+  all implement the v0.9 receipt/errors, canonical-origin/generation CSRF,
   secret-nonreplay idempotency, per-item list DTOs, coalesced idle touch, and
   explicit revoke conflict flow. It also proves verified P0/P1 bytes and every
   unimplemented P3+ route remain outside the P2 write set.
@@ -931,7 +979,7 @@ addition to the phase suites above.
   ten seconds for local commits, and leaves a receipt that the matching restart
   proof path can resolve without duplicate execution.
 
-### P6 v0.8 Web/runtime gates
+### P6 v0.9 Web/runtime gates
 
 - Enrollment list tests cover state/kind/subject filters, stable cursor, exact
   `EnrollmentSummaryV1`, expiry, redaction, and unknown filter rejection.

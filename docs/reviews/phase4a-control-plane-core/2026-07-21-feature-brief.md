@@ -210,20 +210,19 @@ for Phase 4a.
   Ship receipt, and dashboard reconciliation are part of the operator-authorized
   completion sequence. Release/tag/deployment remains a Phase 6 gate.
 
-## Plan v0.8 contract amendment
+## Plan v0.9 contract amendment
 
-The P0 and P1 contracts remain independently verified. Plan v0.8 retains every
-v0.7 contract and architectural boundary, including the closed P3-P5 wire
-definitions, and revises only the P2 browser/authentication contract plus the
-Phase 4a browser acceptance matrix. P1 remains historically verified at exact
+The P0 and P1 contracts remain independently verified. Plan v0.9 retains every
+approved v0.8 boundary and every v0.7 P3-P5 wire definition, and revises only
+the exact P2 idempotency key/request/storage identity. P1 remains historically verified at exact
 implementation SHA `6bbad01f17db7a40f0dc43bc45a41738f302640b` and is not
 reopened; P2 owns the reviewed OpenAPI/generated-client delta required by this
 amendment. The safe P2 implementation checkpoint is exact SHA
 `fc2a38e9fb3802015c687f37c751bc3d807c7d78`; it is evidence, not a verified
-P2 result, and must be reconciled to v0.8 before returning to
+P2 result, and must be reconciled to v0.9 before returning to
 `READY_FOR_VERIFY`.
 
-The v0.8 amendment retains these additional exit requirements without expanding
+The v0.9 amendment retains these additional exit requirements without expanding
 the Phase 4a product boundary:
 
 1. P2 binds every remote identity to one immutable canonical HTTPS server
@@ -270,7 +269,7 @@ WebAuthn creation/request/credential shapes are fully enumerated with empty v1
 extension results. Profile conflict mutations/fields/digests are closed and
 distinguish omitted, null, and value. P4's migration is uniformly 0010.
 
-Plan v0.8 additionally freezes the following P2 decisions:
+Plan v0.9 freezes the following P2 decisions:
 
 1. **macOS-first support.** macOS arm64 is the stable v0.1 product platform.
    P2 real-browser acceptance is current Chrome and Safari on macOS arm64;
@@ -290,7 +289,17 @@ Plan v0.8 additionally freezes the following P2 decisions:
    Web retains it only in memory. Privilege change rotates the whole session;
    any same-session rotation increments the generation by CAS.
 3. **Executable idempotency.** Every P2 POST/DELETE mutation requires
-   `Idempotency-Key`; P2 GETs do not. Ceremony-begin operations replay the same
+   `Idempotency-Key`; P2 GETs do not. All thirteen mutations share one server-
+   global normalized-key digest for the fixed 24-hour retention window. Actor,
+   exact operation/method/concrete path, RFC 8785/JCS-canonical strict JSON body
+   (`{}` for bodyless mutations), and normalized If-Match occur once in the
+   request-identity digest, never in the key lookup digest. Same key with any
+   changed actor/scope/request returns `idempotency_key_reused` before side
+   effects. One closed operation enum maps all four begin values
+   (`bootstrap_options`, `passkey_login_options`,
+   `passkey_registration_options`, `uv_options`) and the nine finish/public
+   mutations identically in migration, receipt, OpenAPI/generated types,
+   cleanup, and tests. Ceremony-begin operations replay the same
    public options only within the same server boot, then return
    `ceremony_restart_required`. A mutation that creates a session or returns
    recovery plaintext atomically stores only a non-secret completion receipt;
@@ -321,7 +330,7 @@ stable and Linux/Claude release wording. Because that document is owned by
 `project-system`, this `control-plane` planning revision does not edit it. A
 separate project-system documentation action must reconcile only those support
 statements before Phase 6/release claims; it does not block P2 after independent
-v0.8 review.
+v0.9 review.
 
 ## Acceptance criteria
 
@@ -350,11 +359,15 @@ v0.8 review.
       canonical origin, session ID, and stored generation after restart while
       storing only its digest, and enforce the frozen pre-auth/authenticated/
       Device Origin/Fetch-Metadata/JSON/cookie/CSRF matrix.
-- [ ] Every P2 POST/DELETE operation enforces the exact v0.8 idempotency matrix:
-      ceremony replay is same-boot only; public mutations replay only nonsecret
-      receipts/clear-cookie actions; and only the first transaction winner may
-      receive a session cookie, raw CSRF, or Recovery Codes. Lost-response and
-      restart paths return stable public next actions without persisting secrets.
+- [ ] Every P2 POST/DELETE operation enforces the exact v0.9 idempotency matrix:
+      one normalized key digest is globally unique across all thirteen mutation
+      operation values for 24 hours; actor plus canonical method/path/JCS body/
+      If-Match form one request identity; any mismatch returns
+      `idempotency_key_reused` before side effects; ceremony replay is same-boot
+      only; public mutations replay only nonsecret receipts/clear-cookie actions;
+      and only the first transaction winner may receive a session cookie, raw
+      CSRF, or Recovery Codes. Lost-response and restart paths return stable
+      public next actions without persisting secrets.
 - [ ] Browser and Passkey lists expose item-authoritative revisions only;
       browser activity uses a separate coalesced `activityRevision`, never
       invalidates a state `If-Match`, and stale revoke forces Web refetch plus
@@ -487,4 +500,4 @@ v0.8 review.
 
 ## Handoff
 
-Next role: independent `feature-review v8` for plan v0.8.
+Next role: independent `feature-review v9` for plan v0.9.

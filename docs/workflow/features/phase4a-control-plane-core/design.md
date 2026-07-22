@@ -506,7 +506,7 @@ Normal browser sessions use a random 256-bit server-side token, store only its
 SHA-256 digest, rotate on authentication/privilege change, expire after 12
 hours absolute and 30 minutes idle, and use a `Secure`, `HttpOnly`,
 `SameSite=Strict`, `Path=/` cookie. The raw CSRF value is the 32-byte HMAC output
-defined by the normative P2 v0.8 construction below; the database stores only
+defined by the normative P2 v0.9 construction below; the database stores only
 its SHA-256 digest and monotonic generation. `GET /auth/current` and successful
 normal authentication responses return the raw CSRF value in
 `Cache-Control:no-store` JSON; the Web client holds it in memory only and sends
@@ -888,12 +888,12 @@ at-least-once transport with a durable idempotency/reconciliation boundary,
 never distributed exactly-once or a claim that ambiguous Provider effects are
 at-most-once.
 
-## Plan v0.8 decision-complete amendments
+## Plan v0.9 decision-complete amendments
 
 These rules retain the reviewed v0.7 P3-P6 contracts and replace conflicting
 P2 wording. They do not reopen independently verified P0 or P1. P1 remains
 verified at exact SHA `6bbad01f17db7a40f0dc43bc45a41738f302640b`;
-the P2 writer owns the v0.8 OpenAPI/generated-client/auth-storage delta before
+the P2 writer owns the v0.9 OpenAPI/generated-client/auth-storage delta before
 P2 can return to `READY_FOR_VERIFY`.
 
 ### P1 contract reconciliation boundary
@@ -1008,22 +1008,85 @@ CSRF allocation.
 ### P2 idempotency, cookies, and one-time results
 
 Every P2 POST/DELETE operation requires `Idempotency-Key`; P2 GET operations do
-not. The exact endpoint behavior is frozen in `api.md`. The server stores an
-`auth_idempotency_operations` row keyed by the domain-separated principal/
-operation/path/key scope and a canonical request digest. It records
-`in_progress|committed`, one UUIDv7 operation ID, server boot epoch, public
-non-secret receipt/status, cookie action `none|clear|secret_issued`, and 24-hour
-expiry. The row and product mutation/ceremony commit atomically. Same key with a
-different request is `idempotency_key_reused`; a concurrent in-progress loser
-waits only for the bounded DB/request deadline and otherwise receives
+not. The exact endpoint/actor/operation/replay mapping is frozen in `api.md`.
+All thirteen keyed P2 mutations share one server-global key uniqueness domain
+for the fixed 24-hour retention window; endpoint and actor are deliberately not
+part of the key lookup domain.
+
+`NormalizedIdempotencyKeyV1` requires exactly one header field, strips only
+leading/trailing HTTP SP/HTAB OWS, then requires 16..128 case-sensitive visible-
+ASCII bytes excluding comma. Repeated/comma-coalesced fields reject. The
+remaining bytes are unchanged. The only key formula is:
+
+```text
+keyDigest = SHA-256(frame(
+  "multidesk-auth-idempotency-key-v1", "1",
+  NormalizedIdempotencyKeyV1))
+```
+
+Body identity is `CanonicalStrictJSONV1`: validate bounded UTF-8 against the
+named strict endpoint schema first, rejecting duplicates, unknown/missing/
+invalid members, nonfinite numbers, and noncanonical typed strings; then encode
+the validated value as RFC 8785 JCS bytes. A bodyless mutation uses exact ASCII
+`{}`. The remaining formulas are exactly:
+
+```text
+bodyDigest = SHA-256(frame(
+  "multidesk-auth-idempotency-body-v1", "1",
+  CanonicalStrictJSONV1))
+
+requestIdentityDigest = SHA-256(frame(
+  "multidesk-auth-idempotency-request-identity-v1", "1",
+  serverOrigin, actorClass, actorIdentityRaw, operation, method,
+  canonicalPath, bodyDigest, canonicalIfMatchOrEmpty))
+```
+
+`actorClass|actorIdentityRaw` is exactly `bootstrap_token` + its stored 32-byte
+token digest, `preauth_browser` +
+`SHA-256(frame("multidesk-preauth-browser-actor-v1","1",serverOrigin))`, or
+`browser_session` + the presented 32-byte session-token digest. Actor identity
+appears only in `requestIdentityDigest`. `canonicalPath` is the resolved concrete
+`/v1/...` path with lowercase canonical UUIDv7 and no alias/query/trailing slash;
+If-Match is exact normalized `"rev-N"` only for Passkey/session DELETE and empty
+otherwise.
+
+One closed `AuthIdempotencyOperationV1` discriminator is used by migration,
+store, OpenAPI/generated types, endpoint table, receipt, cleanup, and tests:
+
+```text
+bootstrap_options | bootstrap_verify |
+passkey_login_options | passkey_login_verify |
+passkey_registration_options | passkey_registration_verify |
+passkey_delete | uv_options | uv_verify | recovery_verify |
+recovery_codes_rotate | logout | session_delete
+```
+
+`auth_idempotency_operations.key_digest BLOB(32) PRIMARY KEY` is the global
+unique lookup and plaintext keys are never stored. The row also owns the exact
+request-identity digest and its actor class/digest, method, concrete canonical
+path, canonical-body digest, canonical If-Match, operation, replay state,
+server boot epoch, public receipt/options digest, cookie action, timestamps, and
+fixed expiry. CHECK constraints close lengths/enums/method/If-Match shape.
+`operation_id` is independently UNIQUE; cleanup uses `(expires_at,key_digest)`
+and ceremony lookup uses partial UNIQUE `(ceremony_id) WHERE ceremony_id IS NOT
+NULL`. No composite scope key exists. After
+strict transport/schema/Origin/rate-limit checks and actor-digest derivation,
+lookup uses only `keyDigest`; fixed digests compare in constant time. Any live-
+row mismatch returns one redacted `idempotency_key_reused` before touch,
+ceremony consume, audit success, or product side effect. Exact identity alone
+uses the approved replay class. A concurrent in-progress loser waits only for
+the bounded DB/request deadline and otherwise receives
 `idempotency_in_progress` plus `Retry-After` without running the operation.
 
-Ceremony-begin operations persist and replay byte-identical public options only
-while their ceremony and `serverBootEpoch` are live. Because all P2 WebAuthn
-ceremonies and bootstrap X25519 private material are restart-local, restart
-invalidates them. Exact old-key replay then returns
-`ceremony_restart_required`; the client begins again with a fresh key. It never
-reconstructs a challenge from an idempotency response alone.
+The four ceremony-begin rows are exactly `bootstrap_options`,
+`passkey_login_options`, `passkey_registration_options`, and `uv_options`.
+Their public options/ceremony/idempotency state commits together and exact
+same-boot replay returns byte-identical options. Because WebAuthn SessionData
+and bootstrap X25519 private material are restart-local, restart invalidates
+the ceremony but retains the key row through its non-sliding 24-hour expiry.
+Exact replay becomes `ceremony_restart_required`; any identity mismatch remains
+`idempotency_key_reused`; only a fresh key begins again. Cleanup cannot free a
+live key early or reconstruct a challenge from public state.
 
 Session-issuing and recovery-plaintext operations are commit-once,
 secret-nonreplayable. The unique transaction winner may return a new secret
@@ -1042,7 +1105,7 @@ promises.
 Logout, Passkey delete, and browser-session delete store/replay their public
 result and may repeat the non-secret clear-cookie directive. Replay lookup for
 an operation that revoked its authenticating session is allowed only by the
-exact presented cookie-token digest + method/path/key/request digest; it never
+exact global key digest + request identity described above; it never
 restores authority. Public receipt replay is not authentication and exposes no
 credential, challenge, proof, token, CSRF, or recovery value.
 
@@ -1401,7 +1464,7 @@ table, exact envelope create/open/CAS API, pending-to-active bootstrap lifecycle
 and the prepare/import/prove/verify/activate Daemon + Web actor flow. Then
 implement atomic Daemon-anchor bootstrap, WebAuthn registration/login, one-shot
 server-side SessionData, local pre-user token rotate, exact recovery/Passkey/UV/
-session lifecycle, the v0.8 restart-safe CSRF and auth-idempotency receipt
+session lifecycle, the v0.9 restart-safe CSRF and auth-idempotency receipt
 contract, item-authoritative session revisions/coalesced idle touch, cookie/
 CSRF endpoint matrix, and auth/current DTO. Pure Web bootstrap fails; P2 cannot
 verify on a mock envelope assertion. P2 real-browser evidence is current Chrome
@@ -1464,11 +1527,11 @@ the scope and final exit do not change.
   remain readable by the introducing/newer binary.
 - P2 auth rollback first disables new bootstrap/auth mutations but leaves
   session validation, revocation, receipt/status reads, and clear-cookie replay
-  active. The v0.8 backup/restore unit is the whole server DB plus matching
+  active. The v0.9 backup/restore unit is the whole server DB plus matching
   binary/config; auth-idempotency, CSRF generation/digest, per-item state and
   activity revisions, recovery hashes, and receipts must come from the same
-  snapshot. A prior binary may be used only with its verified pre-v0.8 backup;
-  it may not reinterpret or delete v0.8 rows. Raw cookie/CSRF/recovery values
+  snapshot. A prior binary may be used only with its verified pre-P2 backup;
+  it may not reinterpret or delete P2 rows. Raw cookie/CSRF/recovery values
   cannot be recovered from backup by design; lost one-time responses follow the
   public receipt and fresh-login/rotation recovery paths above.
 - Sync disablement leaves local Device state authoritative and retains outbox
