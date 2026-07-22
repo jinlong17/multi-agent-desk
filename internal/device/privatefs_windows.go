@@ -53,6 +53,13 @@ func WritePrivateFileAtomic(path string, data []byte) error {
 	return writePrivateFileAtomic(path, data)
 }
 
+// ReplacePrivateFileAtomic replaces an existing private file through a
+// same-directory private temporary file. The destination must already satisfy
+// the exact current-user plus LocalSystem boundary.
+func ReplacePrivateFileAtomic(path string, data []byte) error {
+	return replacePrivateFileAtomic(path, data)
+}
+
 func verifyPrivateDirectory(path string) error {
 	return verifyDeviceDiskPath(path, true)
 }
@@ -90,8 +97,46 @@ func writePrivateFileAtomic(path string, data []byte) error {
 	if err := verifyPrivateFile(temporary); err != nil {
 		return err
 	}
-	if err := os.Rename(temporary, path); err != nil {
+	if err := moveDeviceDiskPrivateFile(temporary, path, false); err != nil {
 		return domain.WrapError(domain.CodeConflict, "private file could not be committed", err)
+	}
+	ok = true
+	return verifyPrivateFile(path)
+}
+
+func replacePrivateFileAtomic(path string, data []byte) error {
+	if err := verifyPrivateDirectory(filepath.Dir(path)); err != nil {
+		return err
+	}
+	if err := verifyPrivateFile(path); err != nil {
+		return err
+	}
+	temporary := path + ".replace"
+	file, err := createDeviceDiskPrivateFile(temporary)
+	if err != nil {
+		return err
+	}
+	ok := false
+	defer func() {
+		_ = file.Close()
+		if !ok {
+			_ = os.Remove(temporary)
+		}
+	}()
+	if _, err := file.Write(data); err != nil {
+		return domain.WrapError(domain.CodeConflict, "private replacement file could not be written", err)
+	}
+	if err := file.Sync(); err != nil {
+		return domain.WrapError(domain.CodeConflict, "private replacement file could not be synchronized", err)
+	}
+	if err := file.Close(); err != nil {
+		return domain.WrapError(domain.CodeConflict, "private replacement file could not be closed", err)
+	}
+	if err := verifyPrivateFile(temporary); err != nil {
+		return err
+	}
+	if err := moveDeviceDiskPrivateFile(temporary, path, true); err != nil {
+		return domain.WrapError(domain.CodeConflict, "private replacement file could not be committed", err)
 	}
 	ok = true
 	return verifyPrivateFile(path)
@@ -173,6 +218,25 @@ func createDeviceDiskPrivateFile(path string) (*os.File, error) {
 		return nil, err
 	}
 	return file, nil
+}
+
+func moveDeviceDiskPrivateFile(source, destination string, replace bool) error {
+	from, err := windows.UTF16PtrFromString(source)
+	if err != nil {
+		return domain.WrapError(domain.CodeConflict, "private source path is invalid", err)
+	}
+	to, err := windows.UTF16PtrFromString(destination)
+	if err != nil {
+		return domain.WrapError(domain.CodeConflict, "private destination path is invalid", err)
+	}
+	flags := uint32(windows.MOVEFILE_WRITE_THROUGH)
+	if replace {
+		flags |= windows.MOVEFILE_REPLACE_EXISTING
+	}
+	if err := windows.MoveFileEx(from, to, flags); err != nil {
+		return domain.WrapError(domain.CodeConflict, "private file move failed", err)
+	}
+	return nil
 }
 
 func protectDeviceDiskPath(path string, wantDirectory bool) error {

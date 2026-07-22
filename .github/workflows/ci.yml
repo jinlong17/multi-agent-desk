@@ -69,14 +69,22 @@ jobs:
           cache: true
       - name: Run Go test suite
         run: go test -count=1 ./...
-      - name: Windows private-storage acceptance
-        if: runner.os == 'Windows'
+      - name: Windows P2 private-storage acceptance
+        if: ${{ !cancelled() && runner.os == 'Windows' }}
+        shell: pwsh
         env:
           CGO_ENABLED: "0"
         run: |
           go version
           go env GOOS GOARCH CGO_ENABLED
-          go test -count=1 -v ./internal/controlplane ./internal/storage
+          go test -count=1 -v -skip '^(TestAuthBeginCancelUsesPrivateOwnerBoundEnrollment|TestVersionDiscoveryUsesAbsoluteExecutableAndBoundedProbe|TestConfiguredCodexBinaryCanonicalSchemaProbe|TestConfiguredCodexBinaryEmptyHomeHandshake)$' ./internal/app ./internal/controlplane ./internal/storage ./internal/device ./internal/providers/codex
+      - name: Windows P2 migration stress acceptance
+        if: ${{ !cancelled() && runner.os == 'Windows' }}
+        shell: pwsh
+        env:
+          CGO_ENABLED: "0"
+        run: |
+          go env GOOS GOARCH CGO_ENABLED
           go test -count=20 -run '^TestStoreConcurrentMigrationHasOneCompleteLedger$' -v ./internal/controlplane
       - name: Cache Cargo
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5

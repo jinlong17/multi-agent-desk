@@ -37,6 +37,13 @@ func WritePrivateFileAtomic(path string, data []byte) error {
 	return writePrivateFileAtomic(path, data)
 }
 
+// ReplacePrivateFileAtomic replaces an existing private file through a
+// same-directory private temporary file. The destination must already satisfy
+// the platform-private boundary.
+func ReplacePrivateFileAtomic(path string, data []byte) error {
+	return replacePrivateFileAtomic(path, data)
+}
+
 func verifyPrivateDirectory(path string) error {
 	info, err := os.Lstat(path)
 	if err != nil {
@@ -80,6 +87,44 @@ func writePrivateFileAtomic(path string, data []byte) error {
 	}
 	if err := os.Rename(temporary, path); err != nil {
 		return domain.WrapError(domain.CodeConflict, "private file could not be committed", err)
+	}
+	ok = true
+	return verifyPrivateFile(path)
+}
+
+func replacePrivateFileAtomic(path string, data []byte) error {
+	if err := verifyPrivateDirectory(filepath.Dir(path)); err != nil {
+		return err
+	}
+	if err := verifyPrivateFile(path); err != nil {
+		return err
+	}
+	temporary := path + ".replace"
+	file, err := os.OpenFile(temporary, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		return domain.WrapError(domain.CodeConflict, "private replacement file could not be created", err)
+	}
+	ok := false
+	defer func() {
+		_ = file.Close()
+		if !ok {
+			_ = os.Remove(temporary)
+		}
+	}()
+	if _, err := file.Write(data); err != nil {
+		return domain.WrapError(domain.CodeConflict, "private replacement file could not be written", err)
+	}
+	if err := file.Sync(); err != nil {
+		return domain.WrapError(domain.CodeConflict, "private replacement file could not be synchronized", err)
+	}
+	if err := file.Close(); err != nil {
+		return domain.WrapError(domain.CodeConflict, "private replacement file could not be closed", err)
+	}
+	if err := verifyPrivateFile(temporary); err != nil {
+		return err
+	}
+	if err := os.Rename(temporary, path); err != nil {
+		return domain.WrapError(domain.CodeConflict, "private replacement file could not be committed", err)
 	}
 	ok = true
 	return verifyPrivateFile(path)

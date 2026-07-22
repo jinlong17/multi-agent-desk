@@ -35,15 +35,61 @@ assert(/^        run: go test -count=1 \.\/\.\.\.$/mu.test(fullGoStep), "build m
 assert(!/^        if:/mu.test(fullGoStep), "full Go test suite must run on every matrix OS");
 const setupGoStep = block(buildJob, /^      - name: Setup Go\s*$/mu, /^      - name: /mu, "Setup Go step");
 assert(!/^        if:/mu.test(setupGoStep), "Go setup must run on every matrix OS");
-const windowsStorageStep = block(buildJob, /^      - name: Windows private-storage acceptance\s*$/mu, /^      - name: /mu, "Windows private-storage acceptance step");
+const windowsStepContract = (step, name, label) => {
+  assert((buildJob.match(new RegExp(`^      - name: ${name}$`, "gmu")) ?? []).length === 1, `${label} name must occur exactly once`);
+  assert(buildJob.indexOf(`      - name: ${name}`) > buildJob.indexOf("      - name: Run Go test suite"), `${label} must follow the full Go test suite`);
+  for (const [pattern, description] of [
+    [/^        if: \$\{\{ !cancelled\(\) && runner\.os == 'Windows' \}\}$/gmu, "condition"],
+    [/^        shell: pwsh$/gmu, "shell"],
+    [/^          CGO_ENABLED: "0"$/gmu, "CGO setting"],
+  ]) assert((step.match(pattern) ?? []).length === 1, `${label} ${description} must occur exactly once`);
+  assert((step.match(/^          go test /gmu) ?? []).length === 1, `${label} must contain exactly one go test command`);
+  assert(!/^        continue-on-error:/mu.test(step), `${label} must not continue on error`);
+};
+const windowsStorageStep = block(buildJob, /^      - name: Windows P2 private-storage acceptance\s*$/mu, /^      - name: /mu, "Windows P2 private-storage acceptance step");
+windowsStepContract(windowsStorageStep, "Windows P2 private-storage acceptance", "Windows P2 private-storage acceptance");
 for (const token of [
-  "if: runner.os == 'Windows'",
+  "if: ${{ !cancelled() && runner.os == 'Windows' }}",
+  "shell: pwsh",
   "CGO_ENABLED: \"0\"",
   "go version",
   "go env GOOS GOARCH CGO_ENABLED",
-  "go test -count=1 -v ./internal/controlplane ./internal/storage",
+  "go test -count=1 -v -skip '^(TestAuthBeginCancelUsesPrivateOwnerBoundEnrollment|TestVersionDiscoveryUsesAbsoluteExecutableAndBoundedProbe|TestConfiguredCodexBinaryCanonicalSchemaProbe|TestConfiguredCodexBinaryEmptyHomeHandshake)$' ./internal/app ./internal/controlplane ./internal/storage ./internal/device ./internal/providers/codex",
+]) assert(windowsStorageStep.includes(token), `Windows P2 private-storage acceptance missing: ${token}`);
+const exactWindowsStorageStep = [
+  "      - name: Windows P2 private-storage acceptance",
+  "        if: ${{ !cancelled() && runner.os == 'Windows' }}",
+  "        shell: pwsh",
+  "        env:",
+  "          CGO_ENABLED: \"0\"",
+  "        run: |",
+  "          go version",
+  "          go env GOOS GOARCH CGO_ENABLED",
+  "          go test -count=1 -v -skip '^(TestAuthBeginCancelUsesPrivateOwnerBoundEnrollment|TestVersionDiscoveryUsesAbsoluteExecutableAndBoundedProbe|TestConfiguredCodexBinaryCanonicalSchemaProbe|TestConfiguredCodexBinaryEmptyHomeHandshake)$' ./internal/app ./internal/controlplane ./internal/storage ./internal/device ./internal/providers/codex",
+  "",
+].join("\n");
+assert(windowsStorageStep === exactWindowsStorageStep, "Windows P2 private-storage acceptance command sequence must match exactly");
+const windowsMigrationStep = block(buildJob, /^      - name: Windows P2 migration stress acceptance\s*$/mu, /^      - name: /mu, "Windows P2 migration stress acceptance step");
+windowsStepContract(windowsMigrationStep, "Windows P2 migration stress acceptance", "Windows P2 migration stress acceptance");
+for (const token of [
+  "if: ${{ !cancelled() && runner.os == 'Windows' }}",
+  "shell: pwsh",
+  "CGO_ENABLED: \"0\"",
+  "go env GOOS GOARCH CGO_ENABLED",
   "go test -count=20 -run '^TestStoreConcurrentMigrationHasOneCompleteLedger$' -v ./internal/controlplane",
-]) assert(windowsStorageStep.includes(token), `Windows private-storage acceptance missing: ${token}`);
+]) assert(windowsMigrationStep.includes(token), `Windows P2 migration stress acceptance missing: ${token}`);
+const exactWindowsMigrationStep = [
+  "      - name: Windows P2 migration stress acceptance",
+  "        if: ${{ !cancelled() && runner.os == 'Windows' }}",
+  "        shell: pwsh",
+  "        env:",
+  "          CGO_ENABLED: \"0\"",
+  "        run: |",
+  "          go env GOOS GOARCH CGO_ENABLED",
+  "          go test -count=20 -run '^TestStoreConcurrentMigrationHasOneCompleteLedger$' -v ./internal/controlplane",
+  "",
+].join("\n");
+assert(windowsMigrationStep === exactWindowsMigrationStep, "Windows P2 migration stress acceptance command sequence must match exactly");
 for (const name of ["project-verify", "license-gate", "dco", "link-check"]) assert(all.includes(`name: ${name}`), `required job name missing: ${name}`);
 for (const name of required) {
   if (name.startsWith("build-")) continue;

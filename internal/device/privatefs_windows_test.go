@@ -85,6 +85,50 @@ func TestWindowsPrivateDiskFileHasExactPolicyBeforeFirstWrite(t *testing.T) {
 	}
 }
 
+func TestWindowsPrivateDiskMoveSeparatesCreateOnlyAndReplace(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "device-private")
+	if err := createPrivateDirectory(root); err != nil {
+		t.Fatal(err)
+	}
+	target := filepath.Join(root, "manifest.json")
+	if err := WritePrivateFileAtomic(target, []byte("before")); err != nil {
+		t.Fatal(err)
+	}
+	candidate := target + ".candidate"
+	file, err := createDeviceDiskPrivateFile(candidate)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = file.Close()
+		_ = os.Remove(candidate)
+	})
+	if _, err := file.Write([]byte("after")); err != nil {
+		t.Fatal(err)
+	}
+	if err := file.Sync(); err != nil {
+		t.Fatal(err)
+	}
+	if err := file.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := moveDeviceDiskPrivateFile(candidate, target, false); err == nil {
+		t.Fatal("create-only move replaced an existing destination")
+	}
+	if data, err := os.ReadFile(target); err != nil || string(data) != "before" {
+		t.Fatalf("create-only destination=%q err=%v", data, err)
+	}
+	if err := moveDeviceDiskPrivateFile(candidate, target, true); err != nil {
+		t.Fatal(err)
+	}
+	if data, err := os.ReadFile(target); err != nil || string(data) != "after" {
+		t.Fatalf("replacement destination=%q err=%v", data, err)
+	}
+	if err := VerifyPrivateFile(target); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestWindowsPrivateDiskPathRejectsExtraPrincipal(t *testing.T) {
 	root := filepath.Join(t.TempDir(), "device-private")
 	if err := createPrivateDirectory(root); err != nil {
