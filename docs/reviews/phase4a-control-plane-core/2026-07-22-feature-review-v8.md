@@ -158,4 +158,3 @@ and add schema/generation/migration tests for the complete enum.
   bound to the exact reviewed head and all ten checks are successful, including
   `project-verify`, Ubuntu/macOS/Windows builds and vectors, license, DCO, and
   link-check. This generated-fact refresh is not a P2 contract finding.
-
