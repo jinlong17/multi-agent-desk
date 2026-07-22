@@ -259,6 +259,58 @@ failure matrix, race tests, and secret scan pass.
 
 ### P2 acceptance
 
+The executable evidence order is fixed: `collect` the exact clean-SHA
+manifest/context, perform both manual browser journeys, run the independent
+machine `scan`, then `finalize` with a fresh scan of the same targets. Legacy
+journey booleans such as `databaseSecretScanPassed`, `logSecretScanPassed`, or
+`artifactSecretScanPassed` are unknown fields and can never establish `PASS`.
+
+All receipt JSON enters as raw bytes through a fatal UTF-8 decoder. Only JSON
+space, tab, CR, and LF are whitespace; malformed UTF-8 and NBSP outside a
+string reject. Parsed objects have a null prototype, duplicate keys reject, and
+`__proto__`, `constructor`, and `prototype` reject at every nesting depth.
+
+The manifest/context v2 binds implementation SHA, receipt-tool SHA, canonical
+manifest/context digests, isolated server/Device databases, runtime/transfer/
+log/evidence roots, and each server/Daemon writer plus its stdout/stderr FIFO
+reader. Canonical-real-path, containment, non-overlap, unique inode/link, and
+full post-scan inventory checks reject alias, symlink, hardlink, replacement,
+mutation, unknown files, unsupported filesystem objects, and cross-row reuse.
+Each writer FD 1/2 must be a distinct owner-only `0600` FIFO. Its sole reader
+must be `/bin/cat`, read that FIFO on FD 0, write FD 1/2 directly to one TTY,
+and share the FIFO holder inventory with only the declared writer. A
+regular-file sink on a declared process or declared log root, `tee`, diagnostic
+collector, or undeclared FIFO holder fails. PTY-master/Terminal/OS/operator
+capture remains outside this machine proof and is governed by the exact journey
+attestations below.
+
+All six target classes (`server_database`, `device_database`,
+`runtime_residue`, `logs`, `transfers`, `evidence`) receive full-tree stable
+reads and all six secret classes (bootstrap token, session cookie, CSRF,
+recovery code, WebAuthn ceremony, bootstrap proof) receive fixed detector-rule
+and synthetic-canary coverage. SQLite logical assertions, integrity/FK/schema
+ledgers, bootstrap/session/recovery/idempotency/receipt state, raw main/WAL/SHM/
+journal/backup scans, exact public transfer allowlists, and zero unexpected
+files are mandatory. The receipt retains only counts/inventory/rule digests,
+never secret values or their digests. The OS Passkey store, browser profiles,
+operator recovery store, and generalized long-term-private-key content claim
+remain excluded, while every declared root still receives marker/metadata
+scans. A finding or scan error requires fixing the source and restarting the
+complete affected row.
+
+The `scanEnvironment` integration matrix must pass one complete two-row scan
+with real logical SQLite assertions and nonempty coverage of all six target
+classes. It then injects one of the six detector canaries into each distinct
+target class and requires rejection after the process gate. Deterministic
+tests consume a frozen read-only observation containing only target evidence
+counts/digests and per-secret counts; each canary must increase both its own
+target `matchCount` and corresponding secret-class count, and the observation
+must contain no canary bytes. This proves detector execution independently of
+allowlist rejection. Negatives cover unreadable/non-private files, mutation and
+replacement during stable read, symbolic aliases, hard links, unexpected
+regular logs, an empty required evidence root, and mutation between first and
+second snapshots.
+
 End-to-end bootstrap + registration + login + recovery + replacement Passkey +
 delete + logout passes in current Chrome and Safari on macOS arm64 against the
 same HTTPS test origin only after the 0008/envelope/mapping/Daemon-actor gate
@@ -796,6 +848,14 @@ addition to the phase suites above.
   Safari evidence includes a real Touch ID-backed platform Passkey and cannot
   be substituted by WebKit emulation or protocol fixtures. A browser or OS
   upgrade invalidates that row and requires a new receipt.
+- P2 machine evidence binds each declared server/Daemon stream to one owner-only
+  FIFO, exactly one `/bin/cat` reader, one live TTY, no undeclared FIFO holder,
+  no declared-process regular-file sink, and no regular-file sink in the
+  declared log roots. It does not claim to detect PTY-master recording,
+  Terminal scrollback/application recording, OS screen capture, or other
+  operator-side capture. Each exact journey instead requires the explicit
+  `terminalRecordingUsed:false` and `terminalScrollbackCleared:true`
+  attestations; omission or inversion rejects the row.
 - Windows keeps cross-compile/build and native current-logon owner+SYSTEM DACL
   positive/negative gates; Ubuntu keeps repository compile/build gates. Neither
   platform needs real browser or Claude product acceptance in Phase 4a.

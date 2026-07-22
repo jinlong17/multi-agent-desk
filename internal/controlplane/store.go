@@ -146,7 +146,7 @@ func OpenStore(ctx context.Context, options StoreOptions) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	dsn := "file:" + options.Path + "?_pragma=busy_timeout(" + strconv.FormatInt(options.BusyTimeout.Milliseconds(), 10) + ")&_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)"
+	dsn := "file:" + options.Path + "?_pragma=busy_timeout(" + strconv.FormatInt(options.BusyTimeout.Milliseconds(), 10) + ")&_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)&_pragma=secure_delete(ON)"
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("open server database: %w", err)
@@ -525,7 +525,7 @@ func verifySQLiteBackup(ctx context.Context, path string) error {
 
 func (s *Store) verifyPragmas(ctx context.Context, busy time.Duration) error {
 	checks := []struct{ query, want string }{
-		{"PRAGMA journal_mode", "wal"}, {"PRAGMA foreign_keys", "1"}, {"PRAGMA busy_timeout", strconv.FormatInt(busy.Milliseconds(), 10)},
+		{"PRAGMA journal_mode", "wal"}, {"PRAGMA foreign_keys", "1"}, {"PRAGMA secure_delete", "1"}, {"PRAGMA busy_timeout", strconv.FormatInt(busy.Milliseconds(), 10)},
 	}
 	for _, check := range checks {
 		var got string

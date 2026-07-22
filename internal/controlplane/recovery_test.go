@@ -16,14 +16,14 @@ func TestRecoveryCodeGenerationParsingHashingAndRateLimit(t *testing.T) {
 	}
 	defer set.ZeroPlaintext()
 	if len(set.Plaintext) != 10 || len(set.Hashes) != 10 || set.GeneratedAt != now {
-		t.Fatalf("recovery set shape=%+v", set)
+		t.Fatalf("recovery set shape invalid: plaintext_count=%d hash_count=%d timestamp_match=%t", len(set.Plaintext), len(set.Hashes), set.GeneratedAt == now)
 	}
 	seenCodes := map[string]struct{}{}
 	seenSalts := map[string]struct{}{}
 	for index, code := range set.Plaintext {
 		canonical, err := ParseRecoveryCode(strings.ToLower(code))
 		if err != nil || canonical != code || !strings.HasPrefix(code, "MAD-RC1-") || len(code) != 47 {
-			t.Fatalf("code[%d]=%q canonical=%q err=%v", index, code, canonical, err)
+			t.Fatalf("recovery code shape invalid: index=%d length=%d canonical_match=%t prefix_match=%t err_present=%t", index, len(code), canonical == code, strings.HasPrefix(code, "MAD-RC1-"), err != nil)
 		}
 		if _, duplicate := seenCodes[code]; duplicate {
 			t.Fatal("recovery plaintext duplicated")
@@ -31,16 +31,16 @@ func TestRecoveryCodeGenerationParsingHashingAndRateLimit(t *testing.T) {
 		seenCodes[code] = struct{}{}
 		hash := set.Hashes[index]
 		if len(hash.Salt) != 16 || len(hash.Hash) != 32 || hash.Ordinal != index+1 {
-			t.Fatalf("hash[%d]=%+v", index, hash)
+			t.Fatalf("recovery hash shape invalid: index=%d salt_length=%d hash_length=%d ordinal_match=%t", index, len(hash.Salt), len(hash.Hash), hash.Ordinal == index+1)
 		}
 		if _, duplicate := seenSalts[string(hash.Salt)]; duplicate {
 			t.Fatal("recovery salt duplicated")
 		}
 		seenSalts[string(hash.Salt)] = struct{}{}
 	}
-	for _, hostile := range []string{" " + set.Plaintext[0], set.Plaintext[0] + " ", strings.Replace(set.Plaintext[0], "-", "_", 1), "MAD-RC1-1111-1111-1111-1111-1111-1111-1111-1111"} {
+	for index, hostile := range []string{" " + set.Plaintext[0], set.Plaintext[0] + " ", strings.Replace(set.Plaintext[0], "-", "_", 1), "MAD-RC1-1111-1111-1111-1111-1111-1111-1111-1111"} {
 		if _, err := ParseRecoveryCode(hostile); !errors.Is(err, ErrRecoveryInvalidOrRateLimited) {
-			t.Fatalf("hostile code accepted: %q err=%v", hostile, err)
+			t.Fatalf("hostile recovery code accepted: index=%d length=%d err_present=%t", index, len(hostile), err != nil)
 		}
 	}
 	candidate := RecoveryCandidate{ID: set.Hashes[0].ID, Salt: set.Hashes[0].Salt, Hash: set.Hashes[0].Hash, Status: "active"}

@@ -27,9 +27,10 @@ const (
 )
 
 type Pragmas struct {
-	JournalMode string
-	ForeignKeys bool
-	BusyTimeout time.Duration
+	JournalMode  string
+	ForeignKeys  bool
+	SecureDelete bool
+	BusyTimeout  time.Duration
 }
 
 // Store owns the single Device SQLite connection pool. MaxOpenConns is one so
@@ -260,11 +261,14 @@ func (s *Store) configure(ctx context.Context) error {
 	if _, err := s.db.ExecContext(ctx, "PRAGMA foreign_keys=ON"); err != nil {
 		return domain.WrapError(domain.CodeConflict, "database foreign-key configuration failed", err)
 	}
+	if _, err := s.db.ExecContext(ctx, "PRAGMA secure_delete=ON"); err != nil {
+		return domain.WrapError(domain.CodeConflict, "database secure-delete configuration failed", err)
+	}
 	pragmas, err := s.Pragmas(ctx)
 	if err != nil {
 		return err
 	}
-	if pragmas.JournalMode != "wal" || !pragmas.ForeignKeys || pragmas.BusyTimeout != DefaultBusyTimeout {
+	if pragmas.JournalMode != "wal" || !pragmas.ForeignKeys || !pragmas.SecureDelete || pragmas.BusyTimeout != DefaultBusyTimeout {
 		return domain.NewError(domain.CodeConflict, "database pragma verification failed")
 	}
 	return nil
@@ -486,6 +490,7 @@ func (s *Store) Path() string {
 func (s *Store) Pragmas(ctx context.Context) (Pragmas, error) {
 	var result Pragmas
 	var foreignKeys int
+	var secureDelete int
 	var busyMilliseconds int64
 	if err := s.db.QueryRowContext(ctx, "PRAGMA journal_mode").Scan(&result.JournalMode); err != nil {
 		return Pragmas{}, domain.WrapError(domain.CodeConflict, "database journal mode could not be read", err)
@@ -498,6 +503,10 @@ func (s *Store) Pragmas(ctx context.Context) (Pragmas, error) {
 		return Pragmas{}, domain.WrapError(domain.CodeConflict, "database busy timeout could not be read", err)
 	}
 	result.ForeignKeys = foreignKeys == 1
+	if err := s.db.QueryRowContext(ctx, "PRAGMA secure_delete").Scan(&secureDelete); err != nil {
+		return Pragmas{}, domain.WrapError(domain.CodeConflict, "database secure-delete mode could not be read", err)
+	}
+	result.SecureDelete = secureDelete == 1
 	result.BusyTimeout = time.Duration(busyMilliseconds) * time.Millisecond
 	return result, nil
 }

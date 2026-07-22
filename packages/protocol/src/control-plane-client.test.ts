@@ -135,7 +135,7 @@ test("Enrollment pre-auth sends exact GET and mutation headers with browser CSRF
     captured.push({ url: new URL(String(input)), init });
     return jsonResponse({ apiVersion: "v1", data: {}, meta: { requestId, nextCursor: null } });
   });
-  client.setCsrfToken("C".repeat(42));
+  client.setCsrfToken("C".repeat(43));
   await client.methods.getDeviceEnrollment({
     path: { enrollmentId: requestId },
     enrollment: enrollmentHeaders(true),
@@ -165,7 +165,7 @@ test("Enrollment pre-auth sends exact GET and mutation headers with browser CSRF
   assert.equal(captured[1]?.init?.credentials, "include");
   assert.equal(mutationHeaders.get("authorization"), `Enrollment ${requestId}`);
   assert.equal(mutationHeaders.get("x-mad-enrollment-signature"), "S".repeat(86));
-  assert.equal(mutationHeaders.get("x-csrf-token"), "C".repeat(42));
+  assert.equal(mutationHeaders.get("x-csrf-token"), "C".repeat(43));
   assert.equal(mutationHeaders.get("idempotency-key"), "0123456789abcdef");
 });
 
@@ -270,7 +270,7 @@ test("typed auth receipt and session-conflict details remain available to recove
   const client = createControlPlaneClient("https://control.test", async () => jsonResponse({
     apiVersion: "v1", error: { code: "one_time_result_unavailable", message: "lost", requestId, details: { receipt } },
   }, 409));
-  client.setCsrfToken("C".repeat(42));
+  client.setCsrfToken("C".repeat(43));
   await assert.rejects(
     client.methods.rotateRecoveryCodes({ idempotencyKey: "0123456789abcdef", body: {} }),
     (error: unknown) => error instanceof ControlPlaneError &&

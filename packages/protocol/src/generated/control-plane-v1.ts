@@ -4900,7 +4900,7 @@ export interface operations {
                      *         "authenticatedAt": "2030-03-01T00:00:00Z",
                      *         "expiresAt": "2030-03-01T00:00:00Z",
                      *         "idleExpiresAt": "2030-03-01T00:00:00Z",
-                     *         "csrfToken": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "csrfToken": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *         "capabilities": []
                      *       },
                      *       "meta": {
@@ -5206,7 +5206,7 @@ export interface operations {
                      *       "data": {
                      *         "ceremonyId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *         "publicKey": {
-                     *           "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "timeout": 60000,
                      *           "rpId": "x",
                      *           "allowCredentials": [
@@ -5543,7 +5543,7 @@ export interface operations {
                      *         "authenticatedAt": "2030-03-01T00:00:00Z",
                      *         "expiresAt": "2030-03-01T00:00:00Z",
                      *         "idleExpiresAt": "2030-03-01T00:00:00Z",
-                     *         "csrfToken": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "csrfToken": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *         "capabilities": []
                      *       },
                      *       "meta": {
@@ -5851,7 +5851,7 @@ export interface operations {
                      *       "data": {
                      *         "ceremonyId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *         "publicKey": {
-                     *           "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "rp": {
                      *             "id": "x",
                      *             "name": "x"
@@ -6210,7 +6210,7 @@ export interface operations {
                      *         "authenticatedAt": "2030-03-01T00:00:00Z",
                      *         "expiresAt": "2030-03-01T00:00:00Z",
                      *         "idleExpiresAt": "2030-03-01T00:00:00Z",
-                     *         "csrfToken": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "csrfToken": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *         "capabilities": []
                      *       },
                      *       "meta": {
@@ -6518,7 +6518,7 @@ export interface operations {
                      *       "data": {
                      *         "ceremonyId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *         "publicKey": {
-                     *           "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "timeout": 60000,
                      *           "rpId": "x",
                      *           "allowCredentials": [
@@ -6856,7 +6856,7 @@ export interface operations {
                      *         "authenticatedAt": "2030-03-01T00:00:00Z",
                      *         "expiresAt": "2030-03-01T00:00:00Z",
                      *         "idleExpiresAt": "2030-03-01T00:00:00Z",
-                     *         "csrfToken": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "csrfToken": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *         "capabilities": []
                      *       },
                      *       "meta": {
@@ -7172,7 +7172,7 @@ export interface operations {
                      *         "authenticatedAt": "2030-03-01T00:00:00Z",
                      *         "expiresAt": "2030-03-01T00:00:00Z",
                      *         "idleExpiresAt": "2030-03-01T00:00:00Z",
-                     *         "csrfToken": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "csrfToken": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *         "capabilities": []
                      *       },
                      *       "meta": {
@@ -9626,11 +9626,11 @@ export interface operations {
                  *         "platform": "darwin",
                  *         "architecture": "x",
                  *         "clientVersion": "x",
-                 *         "signingPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "exchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "signingKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "exchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "signingPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "exchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "signingKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "exchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *         "storageMode": "portable_vault_v1",
                  *         "keyEnvelopeAssertion": {
                  *           "formatVersion": 1,
@@ -9671,11 +9671,11 @@ export interface operations {
                      *           "platform": "darwin",
                      *           "architecture": "x",
                      *           "clientVersion": "x",
-                     *           "signingPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "exchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "signingKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "exchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "signingPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "exchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "signingKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "exchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "storageMode": "portable_vault_v1",
                      *           "keyEnvelopeAssertion": {
                      *             "formatVersion": 1,
@@ -9689,7 +9689,7 @@ export interface operations {
                      *         "passkeyCreationOptions": {
                      *           "ceremonyId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *           "publicKey": {
-                     *             "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *             "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *             "rp": {
                      *               "id": "x",
                      *               "name": "x"
@@ -9724,9 +9724,9 @@ export interface operations {
                      *             "extensions": {}
                      *           }
                      *         },
-                     *         "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *         "serverEphemeralExchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *         "storageAssertionDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "serverEphemeralExchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "storageAssertionDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *         "expiresAt": "2030-03-01T00:00:00Z"
                      *       },
                      *       "meta": {
@@ -10025,8 +10025,8 @@ export interface operations {
                  *         },
                  *         "clientExtensionResults": {}
                  *       },
-                 *       "signingProof": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *       "exchangeProof": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                 *       "signingProof": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *       "exchangeProof": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                  *     }
                  */
                 "application/json": components["schemas"]["BootstrapVerifyRequestV1"];
@@ -10055,7 +10055,7 @@ export interface operations {
                      *           "authenticatedAt": "2030-03-01T00:00:00Z",
                      *           "expiresAt": "2030-03-01T00:00:00Z",
                      *           "idleExpiresAt": "2030-03-01T00:00:00Z",
-                     *           "csrfToken": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "csrfToken": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "capabilities": []
                      *         },
                      *         "recoveryCodes": {
@@ -10081,12 +10081,12 @@ export interface operations {
                      *           "serverOrigin": "https://control.example.test",
                      *           "userId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *           "anchorDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                     *           "signingKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "exchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "signingKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "exchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "storageMode": "portable_vault_v1",
-                     *           "storageAssertionDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "signingProofDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "exchangeProofDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "storageAssertionDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "signingProofDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "exchangeProofDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "activatedAt": "2030-03-01T00:00:00Z"
                      *         }
                      *       },
@@ -10397,11 +10397,11 @@ export interface operations {
                      *           "platform": "darwin",
                      *           "architecture": "x",
                      *           "clientVersion": "x",
-                     *           "signingPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "exchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "signingKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "exchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "signingPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "exchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "signingKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "exchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "storageMode": "portable_vault_v1",
                      *           "keyEnvelopeAssertion": {
                      *             "formatVersion": 1,
@@ -10415,7 +10415,7 @@ export interface operations {
                      *         "passkeyCreationOptions": {
                      *           "ceremonyId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *           "publicKey": {
-                     *             "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *             "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *             "rp": {
                      *               "id": "x",
                      *               "name": "x"
@@ -10450,9 +10450,9 @@ export interface operations {
                      *             "extensions": {}
                      *           }
                      *         },
-                     *         "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *         "serverEphemeralExchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *         "storageAssertionDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "serverEphemeralExchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "storageAssertionDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *         "expiresAt": "2030-03-01T00:00:00Z"
                      *       },
                      *       "meta": {
@@ -11060,11 +11060,11 @@ export interface operations {
                      *         "platform": "x",
                      *         "architecture": "x",
                      *         "clientVersion": "x",
-                     *         "signingPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *         "exchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *         "signingKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *         "exchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *         "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "signingPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "exchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "signingKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "exchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *         "fingerprint": "AAAA-AAAA-AAAA-AAAA-AAAA-AAAA",
                      *         "storageMode": "portable_vault_v1",
                      *         "declaredCapabilities": [],
@@ -11676,13 +11676,13 @@ export interface operations {
                  *         "platform": "x",
                  *         "architecture": "x",
                  *         "clientVersion": "x",
-                 *         "signingPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "exchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "signingKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "exchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "signingPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "exchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "signingKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "exchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *         "storageMode": "portable_vault_v1",
-                 *         "storageAssertionDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                 *         "storageAssertionDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                  *       },
                  *       "requestedCapabilities": []
                  *     }
@@ -11714,24 +11714,24 @@ export interface operations {
                      *           "subjectDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *           "subjectKind": "daemon",
                      *           "subjectName": "x",
-                     *           "subjectSigningPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "subjectExchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectSigningPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectExchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "storageMode": "portable_vault_v1",
-                     *           "storageAssertionDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "storageAssertionDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "requestedCapabilities": [],
                      *           "challengeRevision": 1,
-                     *           "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "serverEphemeralKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "serverEphemeralKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "issuedAt": "2030-03-01T00:00:00Z",
                      *           "expiresAt": "2030-03-01T00:00:00Z"
                      *         },
-                     *         "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *         "fingerprint": "AAAA-AAAA-AAAA-AAAA-AAAA-AAAA",
-                     *         "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *         "serverEphemeralExchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "serverEphemeralExchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *         "expiresAt": "2030-03-01T00:00:00Z",
                      *         "state": "pending_proof",
                      *         "enrollmentRevision": 1
@@ -12059,17 +12059,17 @@ export interface operations {
                      *           "subjectDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *           "subjectKind": "daemon",
                      *           "subjectName": "x",
-                     *           "subjectSigningPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "subjectExchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectSigningPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectExchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "storageMode": "portable_vault_v1",
-                     *           "storageAssertionDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "storageAssertionDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "requestedCapabilities": [],
                      *           "challengeRevision": 1,
-                     *           "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "serverEphemeralKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "serverEphemeralKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "issuedAt": "2030-03-01T00:00:00Z",
                      *           "expiresAt": "2030-03-01T00:00:00Z"
                      *         }
@@ -12368,15 +12368,15 @@ export interface operations {
                  *         "purpose": "bootstrap",
                  *         "ceremonyId": "018f47a0-7b1c-7cc2-8000-000000000001",
                  *         "subjectDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                 *         "subjectSigningPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "subjectExchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "subjectSigningPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "subjectExchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *         "storageMode": "portable_vault_v1",
-                 *         "storageAssertionDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "serverEphemeralExchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "storageAssertionDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "serverEphemeralExchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *         "expiresAt": "2030-03-01T00:00:00Z",
-                 *         "signingProof": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "exchangeProof": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                 *         "signingProof": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "exchangeProof": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                  *       },
                  *       "expectedEnrollmentRevision": 1
                  *     }
@@ -12421,17 +12421,17 @@ export interface operations {
                      *           "subjectDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *           "subjectKind": "daemon",
                      *           "subjectName": "x",
-                     *           "subjectSigningPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "subjectExchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectSigningPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectExchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "storageMode": "portable_vault_v1",
-                     *           "storageAssertionDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "storageAssertionDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "requestedCapabilities": [],
                      *           "challengeRevision": 1,
-                     *           "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "serverEphemeralKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "serverEphemeralKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "issuedAt": "2030-03-01T00:00:00Z",
                      *           "expiresAt": "2030-03-01T00:00:00Z"
                      *         }
@@ -12723,7 +12723,7 @@ export interface operations {
                 /**
                  * @example {
                  *       "enrollmentId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                 *       "transcriptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *       "transcriptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *       "fingerprintConfirmed": true,
                  *       "attestation": {
                  *         "version": 1,
@@ -12731,13 +12731,13 @@ export interface operations {
                  *         "attestationId": "018f47a0-7b1c-7cc2-8000-000000000001",
                  *         "approverDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                  *         "subjectDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                 *         "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *         "capabilities": [],
                  *         "issuedAt": "2030-03-01T00:00:00Z",
                  *         "expiresAt": "2030-03-01T00:00:00Z"
                  *       },
-                 *       "attestationSignature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *       "attestationSignature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *       "receipt": {
                  *         "version": 1,
                  *         "type": "device_activation_receipt",
@@ -12745,21 +12745,21 @@ export interface operations {
                  *         "serverOrigin": "https://control.example.test",
                  *         "subjectDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                  *         "approverDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                 *         "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "approverSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "approverExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "transcriptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "attestationDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "approverSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "approverExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "transcriptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "attestationDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *         "capabilities": [],
                  *         "capabilityRevision": 1,
                  *         "approvedAt": "2030-03-01T00:00:00Z",
                  *         "expiresAt": "2030-03-01T00:00:00Z"
                  *       },
-                 *       "receiptSignature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *       "receiptSignature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *       "approverKeys": {
-                 *         "signingPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "exchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                 *         "signingPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "exchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                  *       },
                  *       "expectedEnrollmentRevision": 1
                  *     }
@@ -12804,17 +12804,17 @@ export interface operations {
                      *           "subjectDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *           "subjectKind": "daemon",
                      *           "subjectName": "x",
-                     *           "subjectSigningPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "subjectExchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectSigningPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectExchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "storageMode": "portable_vault_v1",
-                     *           "storageAssertionDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "storageAssertionDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "requestedCapabilities": [],
                      *           "challengeRevision": 1,
-                     *           "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "serverEphemeralKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "serverEphemeralKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "issuedAt": "2030-03-01T00:00:00Z",
                      *           "expiresAt": "2030-03-01T00:00:00Z"
                      *         }
@@ -13134,35 +13134,35 @@ export interface operations {
                      *             "subjectDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *             "subjectKind": "daemon",
                      *             "subjectName": "x",
-                     *             "subjectSigningPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *             "subjectExchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *             "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *             "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *             "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *             "subjectSigningPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *             "subjectExchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *             "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *             "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *             "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *             "storageMode": "portable_vault_v1",
-                     *             "storageAssertionDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *             "storageAssertionDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *             "requestedCapabilities": [],
                      *             "challengeRevision": 1,
-                     *             "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *             "serverEphemeralKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *             "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *             "serverEphemeralKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *             "issuedAt": "2030-03-01T00:00:00Z",
                      *             "expiresAt": "2030-03-01T00:00:00Z"
                      *           },
-                     *           "transcriptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "transcriptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "attestation": {
                      *             "version": 1,
                      *             "type": "device_attestation",
                      *             "attestationId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *             "approverDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *             "subjectDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                     *             "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *             "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *             "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *             "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *             "capabilities": [],
                      *             "issuedAt": "2030-03-01T00:00:00Z",
                      *             "expiresAt": "2030-03-01T00:00:00Z"
                      *           },
-                     *           "attestationDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "attestationSignature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "attestationDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "attestationSignature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "receipt": {
                      *             "version": 1,
                      *             "type": "device_activation_receipt",
@@ -13170,25 +13170,25 @@ export interface operations {
                      *             "serverOrigin": "https://control.example.test",
                      *             "subjectDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *             "approverDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                     *             "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *             "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *             "approverSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *             "approverExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *             "transcriptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *             "attestationDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *             "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *             "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *             "approverSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *             "approverExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *             "transcriptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *             "attestationDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *             "capabilities": [],
                      *             "capabilityRevision": 1,
                      *             "approvedAt": "2030-03-01T00:00:00Z",
                      *             "expiresAt": "2030-03-01T00:00:00Z"
                      *           },
-                     *           "receiptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "receiptSignature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "receiptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "receiptSignature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "approverKeys": {
-                     *             "signingPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *             "exchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                     *             "signingPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *             "exchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                      *           }
                      *         },
-                     *         "activationPackageDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                     *         "activationPackageDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                      *       },
                      *       "meta": {
                      *         "requestId": "018f47a0-7b1c-7cc2-8000-000000000001",
@@ -13487,15 +13487,15 @@ export interface operations {
                  *         "serverOrigin": "https://control.example.test",
                  *         "subjectDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                  *         "approverDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                 *         "transcriptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "attestationDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "receiptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "activationPackageDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "transcriptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "attestationDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "receiptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "activationPackageDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *         "challengeRevision": 1,
-                 *         "confirmedApproverPinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "confirmedApproverPinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *         "confirmedAt": "2030-03-01T00:00:00Z"
                  *       },
-                 *       "subjectActivationSignature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *       "subjectActivationSignature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *       "expectedEnrollmentRevision": 1
                  *     }
                  */
@@ -13526,11 +13526,11 @@ export interface operations {
                      *           "platform": "x",
                      *           "architecture": "x",
                      *           "clientVersion": "x",
-                     *           "signingPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "exchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "signingKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "exchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "signingPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "exchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "signingKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "exchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "fingerprint": "AAAA-AAAA-AAAA-AAAA-AAAA-AAAA",
                      *           "storageMode": "portable_vault_v1",
                      *           "declaredCapabilities": [],
@@ -13550,19 +13550,19 @@ export interface operations {
                      *           "serverOrigin": "https://control.example.test",
                      *           "subjectDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *           "approverDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                     *           "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "approverSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "approverExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "transcriptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "attestationDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "approverSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "approverExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "transcriptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "attestationDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "capabilities": [],
                      *           "capabilityRevision": 1,
                      *           "approvedAt": "2030-03-01T00:00:00Z",
                      *           "expiresAt": "2030-03-01T00:00:00Z"
                      *         },
-                     *         "receiptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *         "activationPackageDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "receiptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "activationPackageDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *         "activatedAt": "2030-03-01T00:00:00Z",
                      *         "enrollmentRevision": 1
                      *       },
@@ -13900,17 +13900,17 @@ export interface operations {
                      *           "subjectDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *           "subjectKind": "daemon",
                      *           "subjectName": "x",
-                     *           "subjectSigningPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "subjectExchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectSigningPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectExchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "storageMode": "portable_vault_v1",
-                     *           "storageAssertionDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "storageAssertionDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "requestedCapabilities": [],
                      *           "challengeRevision": 1,
-                     *           "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "serverEphemeralKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "serverEphemeralKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "issuedAt": "2030-03-01T00:00:00Z",
                      *           "expiresAt": "2030-03-01T00:00:00Z"
                      *         }
@@ -14238,17 +14238,17 @@ export interface operations {
                      *           "subjectDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *           "subjectKind": "daemon",
                      *           "subjectName": "x",
-                     *           "subjectSigningPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "subjectExchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectSigningPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectExchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "storageMode": "portable_vault_v1",
-                     *           "storageAssertionDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "storageAssertionDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "requestedCapabilities": [],
                      *           "challengeRevision": 1,
-                     *           "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "serverEphemeralKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "serverEphemeralKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "issuedAt": "2030-03-01T00:00:00Z",
                      *           "expiresAt": "2030-03-01T00:00:00Z"
                      *         }
@@ -14546,18 +14546,18 @@ export interface operations {
                  *         "attestationId": "018f47a0-7b1c-7cc2-8000-000000000001",
                  *         "approverDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                  *         "subjectDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                 *         "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "subjectSigningKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "subjectExchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *         "previousCapabilityRevision": 1,
                  *         "capabilityRevision": 2,
                  *         "capabilities": [],
                  *         "issuedAt": "2030-03-01T00:00:00Z",
                  *         "expiresAt": "2030-03-01T00:00:00Z"
                  *       },
-                 *       "attestationSignature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *       "attestationSignature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *       "approverKeys": {
-                 *         "signingPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "exchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                 *         "signingPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "exchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                  *       },
                  *       "userConfirmed": true
                  *     }
@@ -14586,11 +14586,11 @@ export interface operations {
                      *         "platform": "x",
                      *         "architecture": "x",
                      *         "clientVersion": "x",
-                     *         "signingPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *         "exchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *         "signingKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *         "exchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *         "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "signingPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "exchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "signingKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "exchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *         "fingerprint": "AAAA-AAAA-AAAA-AAAA-AAAA-AAAA",
                      *         "storageMode": "portable_vault_v1",
                      *         "declaredCapabilities": [],
@@ -14918,11 +14918,11 @@ export interface operations {
                      *         "platform": "x",
                      *         "architecture": "x",
                      *         "clientVersion": "x",
-                     *         "signingPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *         "exchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *         "signingKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *         "exchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *         "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "signingPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "exchangePublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "signingKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "exchangeKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "pinDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *         "fingerprint": "AAAA-AAAA-AAAA-AAAA-AAAA-AAAA",
                      *         "storageMode": "portable_vault_v1",
                      *         "declaredCapabilities": [],
@@ -15221,8 +15221,8 @@ export interface operations {
                  * @example {
                  *       "deviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                  *       "serverOrigin": "https://control.example.test",
-                 *       "signingKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *       "clientNonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                 *       "signingKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *       "clientNonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                  *     }
                  */
                 "application/json": components["schemas"]["DeviceAuthChallengeRequestV1"];
@@ -15249,14 +15249,14 @@ export interface operations {
                      *           "challengeId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *           "serverOrigin": "https://control.example.test",
                      *           "deviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                     *           "signingKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "clientNonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *           "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "signingKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "clientNonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "issuedAt": "2030-03-01T00:00:00Z",
                      *           "expiresAt": "2030-03-01T00:00:00Z"
                      *         },
-                     *         "serverSigningPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                     *         "challengeSignature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                     *         "serverSigningPublicKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "challengeSignature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                      *       },
                      *       "meta": {
                      *         "requestId": "018f47a0-7b1c-7cc2-8000-000000000001",
@@ -15548,14 +15548,14 @@ export interface operations {
                  *         "challengeId": "018f47a0-7b1c-7cc2-8000-000000000001",
                  *         "serverOrigin": "https://control.example.test",
                  *         "deviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                 *         "signingKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "clientNonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *         "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "signingKeyDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "clientNonce": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "challenge": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *         "issuedAt": "2030-03-01T00:00:00Z",
                  *         "expiresAt": "2030-03-01T00:00:00Z"
                  *       },
-                 *       "challengeSignature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *       "subjectSignature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                 *       "challengeSignature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *       "subjectSignature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                  *     }
                  */
                 "application/json": components["schemas"]["DeviceAuthExchangeRequestV1"];
@@ -15577,7 +15577,7 @@ export interface operations {
                      *       "apiVersion": "v1",
                      *       "data": {
                      *         "deviceSessionId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                     *         "deviceSessionToken": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "deviceSessionToken": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *         "deviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *         "issuedAt": "2030-03-01T00:00:00Z",
                      *         "expiresAt": "2030-03-01T00:00:00Z"
@@ -19869,7 +19869,7 @@ export interface operations {
                  *               "updatedAt": "2030-03-01T00:00:00Z"
                  *             }
                  *           },
-                 *           "baseDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *           "baseDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *           "fullNext": {
                  *             "schemaVersion": 1,
                  *             "resourceType": "account",
@@ -19884,10 +19884,10 @@ export interface operations {
                  *               "updatedAt": "2030-03-01T00:00:00Z"
                  *             }
                  *           },
-                 *           "nextDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *           "nextDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *           "patch": {
                  *             "operations": [],
-                 *             "patchDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                 *             "patchDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                  *           },
                  *           "observedAt": "2030-03-01T00:00:00Z"
                  *         }
@@ -20223,21 +20223,21 @@ export interface operations {
                      *           "snapshotId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *           "snapshotEpoch": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *           "targetDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                     *           "manifestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "manifestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "pageSize": 1,
                      *           "pageIndex": 0,
                      *           "pageCount": 1,
                      *           "resourceCount": 0,
-                     *           "priorPageDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "priorPageDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "resources": [],
                      *           "continuation": {
                      *             "kind": "next",
-                     *             "nextPageToken": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                     *             "nextPageToken": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                      *           },
                      *           "expiresAt": "2030-03-01T00:00:00Z",
                      *           "incrementalBaseCursor": "A"
                      *         },
-                     *         "pageDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                     *         "pageDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                      *       },
                      *       "meta": {
                      *         "requestId": "018f47a0-7b1c-7cc2-8000-000000000001",
@@ -20526,9 +20526,9 @@ export interface operations {
                  *       "snapshotId": "018f47a0-7b1c-7cc2-8000-000000000001",
                  *       "snapshotEpoch": "018f47a0-7b1c-7cc2-8000-000000000001",
                  *       "targetDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                 *       "manifestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *       "finalSnapshotDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                 *       "lastPageDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *       "manifestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *       "finalSnapshotDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *       "lastPageDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *       "pageCount": 1,
                  *       "resourceCount": 0,
                  *       "appliedBaseCursor": "A"
@@ -20553,7 +20553,7 @@ export interface operations {
                      *       "apiVersion": "v1",
                      *       "data": {
                      *         "snapshotId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                     *         "finalSnapshotDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "finalSnapshotDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *         "appliedBaseCursor": "A",
                      *         "committedAt": "2030-03-01T00:00:00Z"
                      *       },
@@ -22422,7 +22422,7 @@ export interface operations {
                      *         "targetDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *         "kind": "start",
                      *         "state": "queued",
-                     *         "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *         "currentAttempt": 0,
                      *         "expiresAt": "2030-03-01T00:00:00Z",
                      *         "createdAt": "2030-03-01T00:00:00Z",
@@ -22729,7 +22729,7 @@ export interface operations {
                      *         "targetDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *         "kind": "start",
                      *         "state": "queued",
-                     *         "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *         "currentAttempt": 0,
                      *         "expiresAt": "2030-03-01T00:00:00Z",
                      *         "createdAt": "2030-03-01T00:00:00Z",
@@ -23341,14 +23341,14 @@ export interface operations {
                      *           "targetDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *           "kind": "start",
                      *           "state": "queued",
-                     *           "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "currentAttempt": 0,
                      *           "expiresAt": "2030-03-01T00:00:00Z",
                      *           "createdAt": "2030-03-01T00:00:00Z",
                      *           "updatedAt": "2030-03-01T00:00:00Z",
                      *           "revision": 1
                      *         },
-                     *         "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *         "currentAttempt": 0,
                      *         "committedCursor": "A",
                      *         "commandRevision": 1
@@ -23641,11 +23641,11 @@ export interface operations {
                  * @example {
                  *       "targetDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                  *       "commandId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                 *       "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *       "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *       "deliveryRevision": 1,
                  *       "expectedNextAttempt": 1,
                  *       "expectedCommandRevision": 1,
-                 *       "derivedIdempotencyKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                 *       "derivedIdempotencyKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                  *     }
                  */
                 "application/json": components["schemas"]["SessionCommandClaimRequestV1"];
@@ -23668,7 +23668,7 @@ export interface operations {
                      *       "data": {
                      *         "targetDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *         "commandId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                     *         "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *         "deliveryRevision": 1,
                      *         "attempt": 1,
                      *         "claimExpiresAt": "2030-03-01T00:00:00Z",
@@ -23987,7 +23987,7 @@ export interface operations {
                  * @example {
                  *       "targetDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                  *       "commandId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                 *       "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *       "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *       "deliveryRevision": 1,
                  *       "attempt": 1,
                  *       "claimExpiresAt": "2030-03-01T00:00:00Z",
@@ -23997,7 +23997,7 @@ export interface operations {
                  *         "type": "daemon_command_receipt",
                  *         "commandId": "018f47a0-7b1c-7cc2-8000-000000000001",
                  *         "targetDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                 *         "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *         "deliveryRevision": 1,
                  *         "attempt": 1,
                  *         "claimExpiresAt": "2030-03-01T00:00:00Z",
@@ -24009,16 +24009,16 @@ export interface operations {
                  *           "localOperationId": "item_01",
                  *           "resultSessionId": "018f47a0-7b1c-7cc2-8000-000000000001",
                  *           "localSessionId": "item_01",
-                 *           "mappingDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                 *           "mappingDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                  *         },
                  *         "state": "reserved",
                  *         "createdAt": "2030-03-01T00:00:00Z",
                  *         "updatedAt": "2030-03-01T00:00:00Z"
                  *       },
-                 *       "receiptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *       "receiptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *       "expectedCommandRevision": 1,
                  *       "expectedCommittedCursor": "A",
-                 *       "derivedIdempotencyKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                 *       "derivedIdempotencyKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                  *     }
                  */
                 "application/json": components["schemas"]["SessionCommandAckRequestV1"];
@@ -24044,7 +24044,7 @@ export interface operations {
                      *           "targetDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *           "kind": "start",
                      *           "state": "queued",
-                     *           "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "currentAttempt": 0,
                      *           "expiresAt": "2030-03-01T00:00:00Z",
                      *           "createdAt": "2030-03-01T00:00:00Z",
@@ -24054,7 +24054,7 @@ export interface operations {
                      *         "deliveryRevision": 1,
                      *         "attempt": 1,
                      *         "receiptRevision": 1,
-                     *         "receiptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "receiptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *         "cursorCommit": {
                      *           "previousCommittedDeliveryRevision": 0,
                      *           "committedDeliveryRevision": 0,
@@ -24349,7 +24349,7 @@ export interface operations {
                  * @example {
                  *       "targetDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                  *       "commandId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                 *       "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *       "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *       "deliveryRevision": 1,
                  *       "attempt": 1,
                  *       "claimExpiresAt": "2030-03-01T00:00:00Z",
@@ -24359,7 +24359,7 @@ export interface operations {
                  *         "type": "daemon_command_receipt",
                  *         "commandId": "018f47a0-7b1c-7cc2-8000-000000000001",
                  *         "targetDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                 *         "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *         "deliveryRevision": 1,
                  *         "attempt": 1,
                  *         "claimExpiresAt": "2030-03-01T00:00:00Z",
@@ -24371,7 +24371,7 @@ export interface operations {
                  *           "localOperationId": "item_01",
                  *           "resultSessionId": "018f47a0-7b1c-7cc2-8000-000000000001",
                  *           "localSessionId": "item_01",
-                 *           "mappingDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                 *           "mappingDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                  *         },
                  *         "state": "local_committed",
                  *         "createdAt": "2030-03-01T00:00:00Z",
@@ -24381,11 +24381,11 @@ export interface operations {
                  *           "kind": "start",
                  *           "resultSessionId": "018f47a0-7b1c-7cc2-8000-000000000001",
                  *           "localSessionId": "item_01",
-                 *           "mappingDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *           "mappingDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *           "localSessionRevision": 1,
                  *           "outboxChangeId": "item_01",
                  *           "outboxServerSyncRevision": 1,
-                 *           "outboxDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                 *           "outboxDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                  *         },
                  *         "safeResult": {
                  *           "kind": "start",
@@ -24396,7 +24396,7 @@ export interface operations {
                  *         },
                  *         "committedAt": "2030-03-01T00:00:00Z"
                  *       },
-                 *       "receiptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *       "receiptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *       "outcome": {
                  *         "kind": "start",
                  *         "state": "succeeded",
@@ -24405,7 +24405,7 @@ export interface operations {
                  *         "sessionStatus": "starting"
                  *       },
                  *       "expectedCommandRevision": 1,
-                 *       "derivedIdempotencyKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                 *       "derivedIdempotencyKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                  *     }
                  */
                 "application/json": components["schemas"]["SessionCommandResultRequestV1"];
@@ -24431,7 +24431,7 @@ export interface operations {
                      *           "targetDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *           "kind": "start",
                      *           "state": "queued",
-                     *           "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "currentAttempt": 0,
                      *           "expiresAt": "2030-03-01T00:00:00Z",
                      *           "createdAt": "2030-03-01T00:00:00Z",
@@ -24441,7 +24441,7 @@ export interface operations {
                      *         "deliveryRevision": 1,
                      *         "attempt": 1,
                      *         "receiptRevision": 1,
-                     *         "receiptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "receiptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *         "acceptedCommandRevision": 1,
                      *         "outcome": {
                      *           "kind": "start",
@@ -24739,7 +24739,7 @@ export interface operations {
                  * @example {
                  *       "targetDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                  *       "commandId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                 *       "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *       "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *       "currentDeliveryRevision": 1,
                  *       "currentClaimAttempt": 1,
                  *       "currentClaimExpiresAt": "2030-03-01T00:00:00Z",
@@ -24751,7 +24751,7 @@ export interface operations {
                  *         "type": "daemon_command_receipt",
                  *         "commandId": "018f47a0-7b1c-7cc2-8000-000000000001",
                  *         "targetDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                 *         "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *         "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *         "deliveryRevision": 1,
                  *         "attempt": 1,
                  *         "claimExpiresAt": "2030-03-01T00:00:00Z",
@@ -24763,7 +24763,7 @@ export interface operations {
                  *           "localOperationId": "item_01",
                  *           "resultSessionId": "018f47a0-7b1c-7cc2-8000-000000000001",
                  *           "localSessionId": "item_01",
-                 *           "mappingDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                 *           "mappingDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                  *         },
                  *         "state": "local_committed",
                  *         "createdAt": "2030-03-01T00:00:00Z",
@@ -24773,11 +24773,11 @@ export interface operations {
                  *           "kind": "start",
                  *           "resultSessionId": "018f47a0-7b1c-7cc2-8000-000000000001",
                  *           "localSessionId": "item_01",
-                 *           "mappingDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *           "mappingDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *           "localSessionRevision": 1,
                  *           "outboxChangeId": "item_01",
                  *           "outboxServerSyncRevision": 1,
-                 *           "outboxDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                 *           "outboxDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                  *         },
                  *         "safeResult": {
                  *           "kind": "start",
@@ -24788,7 +24788,7 @@ export interface operations {
                  *         },
                  *         "committedAt": "2030-03-01T00:00:00Z"
                  *       },
-                 *       "receiptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                 *       "receiptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                  *       "outcome": {
                  *         "kind": "start",
                  *         "state": "succeeded",
@@ -24797,7 +24797,7 @@ export interface operations {
                  *         "sessionStatus": "starting"
                  *       },
                  *       "expectedCommandRevision": 1,
-                 *       "derivedIdempotencyKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                 *       "derivedIdempotencyKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                  *     }
                  */
                 "application/json": components["schemas"]["SessionCommandReconcileRequestV1"];
@@ -24823,7 +24823,7 @@ export interface operations {
                      *           "targetDeviceId": "018f47a0-7b1c-7cc2-8000-000000000001",
                      *           "kind": "start",
                      *           "state": "queued",
-                     *           "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *           "requestDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *           "currentAttempt": 0,
                      *           "expiresAt": "2030-03-01T00:00:00Z",
                      *           "createdAt": "2030-03-01T00:00:00Z",
@@ -24835,7 +24835,7 @@ export interface operations {
                      *         "receiptDeliveryRevision": 1,
                      *         "receiptAttempt": 1,
                      *         "receiptRevision": 1,
-                     *         "receiptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                     *         "receiptDigest": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                      *         "acceptedCommandRevision": 1,
                      *         "outcome": {
                      *           "kind": "start",

@@ -37,7 +37,7 @@ func TestPrepareP2MutationClearsRetainedBuffersOnValidationFailure(t *testing.T)
 		t.Fatalf("error=%v", err)
 	}
 	if prepared.CanonicalBody != nil || prepared.RawSession != nil || prepared.RawCSRF != nil || prepared.BootstrapToken != "" {
-		t.Fatalf("validation failure retained prepared buffers: %+v", prepared)
+		t.Fatalf("validation failure retained prepared buffers: canonical=%t session=%t csrf=%t bootstrap=%t", prepared.CanonicalBody != nil, prepared.RawSession != nil, prepared.RawCSRF != nil, prepared.BootstrapToken != "")
 	}
 }
 
@@ -59,7 +59,7 @@ func TestBootstrapEphemeralIsOneShotAndRequiredForOptionsReplay(t *testing.T) {
 	optionsHeaders.Set("Idempotency-Key", "bootstrap-ephemeral-options")
 	first := request(t, server, http.MethodPost, "/v1/bootstrap/options", string(optionsBody), optionsHeaders)
 	if first.Code != http.StatusOK {
-		t.Fatalf("options=%d %s", first.Code, first.Body.String())
+		t.Fatalf("bootstrap options failed: status=%d body_bytes=%d", first.Code, first.Body.Len())
 	}
 	var ceremonyID string
 	if err := store.db.QueryRow(`SELECT ceremony_id FROM auth_idempotency_operations WHERE operation='bootstrap_options'`).Scan(&ceremonyID); err != nil {
@@ -84,7 +84,7 @@ func TestBootstrapEphemeralIsOneShotAndRequiredForOptionsReplay(t *testing.T) {
 	verifyHeaders.Set("Idempotency-Key", "bootstrap-ephemeral-verify")
 	failed := request(t, server, http.MethodPost, "/v1/bootstrap/verify", string(verifyBody), verifyHeaders)
 	if failed.Code == http.StatusOK {
-		t.Fatalf("invalid bootstrap verification succeeded: %s", failed.Body.String())
+		t.Fatalf("invalid bootstrap verification succeeded: body_bytes=%d", failed.Body.Len())
 	}
 	if server.bootstrap.hasEphemeral(ceremonyID) {
 		t.Fatal("failed bootstrap verification retained one-shot private material")
@@ -92,7 +92,7 @@ func TestBootstrapEphemeralIsOneShotAndRequiredForOptionsReplay(t *testing.T) {
 
 	replay := request(t, server, http.MethodPost, "/v1/bootstrap/options", string(optionsBody), optionsHeaders)
 	if replay.Code != http.StatusConflict || !strings.Contains(replay.Body.String(), `"code":"ceremony_restart_required"`) {
-		t.Fatalf("options replay=%d %s", replay.Code, replay.Body.String())
+		t.Fatalf("bootstrap options replay invalid: status=%d body_bytes=%d restart_code=%t", replay.Code, replay.Body.Len(), strings.Contains(replay.Body.String(), `"code":"ceremony_restart_required"`))
 	}
 }
 
@@ -240,7 +240,7 @@ func TestBrowserWinnerTouchFailureOrdering(t *testing.T) {
 		headers.Set("If-Match", `"rev-1"`)
 		response := request(t, server, http.MethodDelete, "/v1/auth/passkeys/"+passkey.ID, `{}`, headers)
 		if response.Code == http.StatusOK || !strings.Contains(response.Body.String(), "recent user verification") {
-			t.Fatalf("response=%d %s", response.Code, response.Body.String())
+			t.Fatalf("unexpected response: status=%d body_bytes=%d", response.Code, response.Body.Len())
 		}
 		assertBrowserActivity(t, store, session.ID, 2, now)
 		assertNoAuthIdempotencyWinner(t, store)
@@ -259,7 +259,7 @@ func TestBrowserWinnerTouchFailureOrdering(t *testing.T) {
 		headers.Set("If-Match", `"rev-2"`)
 		response := request(t, server, http.MethodDelete, "/v1/auth/sessions/"+session.ID, `{}`, headers)
 		if response.Code != http.StatusPreconditionFailed || !strings.Contains(response.Body.String(), `"code":"session_revision_conflict"`) {
-			t.Fatalf("response=%d %s", response.Code, response.Body.String())
+			t.Fatalf("unexpected response: status=%d body_bytes=%d", response.Code, response.Body.Len())
 		}
 		assertBrowserActivity(t, store, session.ID, 2, now)
 		assertNoAuthIdempotencyWinner(t, store)
@@ -279,7 +279,7 @@ func TestBrowserWinnerTouchFailureOrdering(t *testing.T) {
 		server.Now = func() time.Time { return now }
 		response := request(t, server, http.MethodPost, "/v1/auth/uv/options", `{}`, browserP2Headers(recoverySession, "touch-recovery-permission"))
 		if response.Code != http.StatusForbidden || !strings.Contains(response.Body.String(), `"code":"permission_denied"`) {
-			t.Fatalf("response=%d %s", response.Code, response.Body.String())
+			t.Fatalf("unexpected response: status=%d body_bytes=%d", response.Code, response.Body.Len())
 		}
 		assertBrowserActivity(t, store, recoverySession.ID, 2, now)
 		assertNoAuthIdempotencyWinner(t, store)
@@ -294,7 +294,7 @@ func TestBrowserWinnerTouchFailureOrdering(t *testing.T) {
 		headers.Set("X-CSRF-Token", base64.RawURLEncoding.EncodeToString(bytes.Repeat([]byte{0x7f}, 32)))
 		response := request(t, server, http.MethodPost, "/v1/auth/uv/options", `{}`, headers)
 		if response.Code != http.StatusUnauthorized || !strings.Contains(response.Body.String(), `"code":"session_integrity_invalid"`) {
-			t.Fatalf("response=%d %s", response.Code, response.Body.String())
+			t.Fatalf("unexpected response: status=%d body_bytes=%d", response.Code, response.Body.Len())
 		}
 		assertBrowserActivity(t, store, session.ID, 1, session.LastSeenAt)
 		assertNoAuthIdempotencyWinner(t, store)
@@ -326,7 +326,7 @@ func TestBrowserWinnerTouchFailureOrdering(t *testing.T) {
 			}
 			response := request(t, server, http.MethodPost, "/v1/auth/uv/options", `{}`, headers)
 			if response.Code != http.StatusForbidden || !strings.Contains(response.Body.String(), `"code":"csrf_invalid"`) {
-				t.Fatalf("response=%d %s", response.Code, response.Body.String())
+				t.Fatalf("unexpected response: status=%d body_bytes=%d", response.Code, response.Body.Len())
 			}
 			assertBrowserActivity(t, store, session.ID, 1, session.LastSeenAt)
 			assertNoAuthIdempotencyWinner(t, store)
@@ -346,12 +346,12 @@ func TestBrowserWinnerTouchFailureOrdering(t *testing.T) {
 		headers := browserP2Headers(session, "touch-committed-key-mismatch")
 		first := request(t, server, http.MethodPost, "/v1/auth/uv/options", `{}`, headers)
 		if first.Code != http.StatusOK {
-			t.Fatalf("first=%d %s", first.Code, first.Body.String())
+			t.Fatalf("first UV options failed: status=%d body_bytes=%d", first.Code, first.Body.Len())
 		}
 		now = session.LastSeenAt.Add(5 * time.Minute)
 		mismatch := request(t, server, http.MethodPost, "/v1/auth/logout", `{}`, headers)
 		if mismatch.Code != http.StatusConflict || !strings.Contains(mismatch.Body.String(), `"code":"idempotency_key_reused"`) {
-			t.Fatalf("mismatch=%d %s", mismatch.Code, mismatch.Body.String())
+			t.Fatalf("idempotency mismatch response invalid: status=%d body_bytes=%d reuse_code=%t", mismatch.Code, mismatch.Body.Len(), strings.Contains(mismatch.Body.String(), `"code":"idempotency_key_reused"`))
 		}
 		assertBrowserActivity(t, store, session.ID, 1, session.LastSeenAt)
 	})
@@ -367,7 +367,7 @@ func TestBrowserBeginReplayRequiresLiveOriginalSessionAndCSRFGeneration(t *testi
 			headers := browserP2Headers(created, "browser-begin-replay-"+transition)
 			first := request(t, server, http.MethodPost, "/v1/auth/passkeys/registration/options", `{}`, headers)
 			if first.Code != http.StatusOK || !strings.Contains(first.Body.String(), `"ceremonyId"`) {
-				t.Fatalf("first=%d %s", first.Code, first.Body.String())
+				t.Fatalf("first bootstrap-options response invalid: status=%d body_bytes=%d ceremony_present=%t", first.Code, first.Body.Len(), strings.Contains(first.Body.String(), `"ceremonyId"`))
 			}
 
 			if transition == "revoked" {
@@ -389,11 +389,11 @@ func TestBrowserBeginReplayRequiresLiveOriginalSessionAndCSRFGeneration(t *testi
 			replay := request(t, server, http.MethodPost, "/v1/auth/passkeys/registration/options", `{}`, headers)
 			if transition == "revoked" {
 				if replay.Code != http.StatusConflict || replay.Header().Get("Retry-After") != "" || replay.Header().Get("Set-Cookie") != "" || !strings.Contains(replay.Body.String(), `"code":"ceremony_restart_required"`) {
-					t.Fatalf("replay=%d %s", replay.Code, replay.Body.String())
+					t.Fatalf("revoked replay invalid: status=%d body_bytes=%d restart_code=%t", replay.Code, replay.Body.Len(), strings.Contains(replay.Body.String(), `"code":"ceremony_restart_required"`))
 				}
 			} else {
 				if replay.Code != http.StatusUnauthorized || !strings.Contains(replay.Body.String(), `"code":"session_integrity_invalid"`) {
-					t.Fatalf("replay=%d %s", replay.Code, replay.Body.String())
+					t.Fatalf("rotated-CSRF replay invalid: status=%d body_bytes=%d integrity_code=%t", replay.Code, replay.Body.Len(), strings.Contains(replay.Body.String(), `"code":"session_integrity_invalid"`))
 				}
 				var revokedAt *string
 				var revision int64
@@ -419,7 +419,7 @@ func TestBrowserReplayCSRFIntegrityOrWrongSubmittedRawRevokes(t *testing.T) {
 			headers := browserP2Headers(created, "browser-replay-integrity-"+name)
 			first := request(t, server, http.MethodPost, "/v1/auth/passkeys/registration/options", `{}`, headers)
 			if first.Code != http.StatusOK {
-				t.Fatalf("first=%d %s", first.Code, first.Body.String())
+				t.Fatalf("first registration options failed: status=%d body_bytes=%d", first.Code, first.Body.Len())
 			}
 			if corruptStored {
 				if _, err := store.db.Exec(`UPDATE browser_sessions SET csrf_digest=? WHERE id=?`, bytes.Repeat([]byte{0x7f}, 32), created.ID); err != nil {
@@ -430,7 +430,7 @@ func TestBrowserReplayCSRFIntegrityOrWrongSubmittedRawRevokes(t *testing.T) {
 			}
 			replay := request(t, server, http.MethodPost, "/v1/auth/passkeys/registration/options", `{}`, headers)
 			if replay.Code != http.StatusUnauthorized || !strings.Contains(replay.Body.String(), `"code":"session_integrity_invalid"`) {
-				t.Fatalf("replay=%d %s", replay.Code, replay.Body.String())
+				t.Fatalf("CSRF-integrity replay invalid: status=%d body_bytes=%d integrity_code=%t", replay.Code, replay.Body.Len(), strings.Contains(replay.Body.String(), `"code":"session_integrity_invalid"`))
 			}
 			var revokedAt *string
 			var revision int64
@@ -481,7 +481,7 @@ func TestAuthCurrentIntegrityRevocationSurvivesCanceledContext(t *testing.T) {
 	req.Header = headers
 	server.http.Handler.ServeHTTP(recorder, req)
 	if recorder.Code != http.StatusUnauthorized || !strings.Contains(recorder.Body.String(), `"code":"session_integrity_invalid"`) {
-		t.Fatalf("current=%d %s", recorder.Code, recorder.Body.String())
+		t.Fatalf("current-auth integrity response invalid: status=%d body_bytes=%d integrity_code=%t", recorder.Code, recorder.Body.Len(), strings.Contains(recorder.Body.String(), `"code":"session_integrity_invalid"`))
 	}
 	var revokedAt *string
 	var revision int64
@@ -498,18 +498,18 @@ func TestRecoveryRotationReceiptHasNoCookieActionAndReplayNeverSetsCookie(t *tes
 	headers := browserP2Headers(created, "recovery-rotation-receipt")
 	first := request(t, server, http.MethodPost, "/v1/auth/recovery-codes/rotate", `{}`, headers)
 	if first.Code != http.StatusOK || first.Header().Get("Set-Cookie") != "" {
-		t.Fatalf("first=%d cookie=%q body=%s", first.Code, first.Header().Get("Set-Cookie"), first.Body.String())
+		t.Fatalf("first response invalid: status=%d cookie_present=%t body_bytes=%d", first.Code, first.Header().Get("Set-Cookie") != "", first.Body.Len())
 	}
 	var cookieAction, receipt string
 	if err := store.db.QueryRow(`SELECT cookie_action,public_receipt_json FROM auth_idempotency_operations WHERE operation='recovery_codes_rotate'`).Scan(&cookieAction, &receipt); err != nil {
 		t.Fatal(err)
 	}
 	if cookieAction != "none" || !strings.Contains(receipt, `"recoveryCodesOutcome":"issued_not_replayable"`) {
-		t.Fatalf("cookieAction=%q receipt=%s", cookieAction, receipt)
+		t.Fatalf("durable recovery receipt invalid: cookie_action=%q receipt_bytes=%d", cookieAction, len(receipt))
 	}
 	replay := request(t, server, http.MethodPost, "/v1/auth/recovery-codes/rotate", `{}`, headers)
 	if replay.Code != http.StatusConflict || replay.Header().Get("Set-Cookie") != "" || replay.Header().Get("Retry-After") != "" || !strings.Contains(replay.Body.String(), `"code":"one_time_result_unavailable"`) {
-		t.Fatalf("replay=%d cookie=%q body=%s", replay.Code, replay.Header().Get("Set-Cookie"), replay.Body.String())
+		t.Fatalf("replay response invalid: status=%d cookie_present=%t retry_present=%t body_bytes=%d", replay.Code, replay.Header().Get("Set-Cookie") != "", replay.Header().Get("Retry-After") != "", replay.Body.Len())
 	}
 }
 
@@ -539,7 +539,7 @@ func responseDataAndRequestID(t *testing.T, response *httptest.ResponseRecorder)
 		} `json:"meta"`
 	}
 	if err := json.Unmarshal(response.Body.Bytes(), &envelope); err != nil || len(envelope.Data) == 0 {
-		t.Fatalf("decode response envelope: %v body=%s", err, response.Body.String())
+		t.Fatalf("decode response envelope: err_present=%t body_bytes=%d", err != nil, response.Body.Len())
 	}
 	if envelope.Meta.RequestID != response.Header().Get("X-Request-ID") {
 		t.Fatalf("response meta requestId=%q header=%q", envelope.Meta.RequestID, response.Header().Get("X-Request-ID"))
@@ -624,7 +624,7 @@ func TestPublicAuthMutationReplayAllowsRevokedActorAndRepeatsDataAndCookieAction
 			}
 			first := request(t, value.server, value.method, value.path, `{}`, headers)
 			if first.Code != http.StatusOK {
-				t.Fatalf("first=%d %s", first.Code, first.Body.String())
+				t.Fatalf("first response invalid: status=%d body_bytes=%d", first.Code, first.Body.Len())
 			}
 			firstData, firstRequestID := responseDataAndRequestID(t, first)
 			firstCookie := first.Header().Get("Set-Cookie")
@@ -633,7 +633,7 @@ func TestPublicAuthMutationReplayAllowsRevokedActorAndRepeatsDataAndCookieAction
 					t.Fatal("clear-cookie action emitted no Set-Cookie")
 				}
 			} else if firstCookie != "" {
-				t.Fatalf("none cookie action emitted %q", firstCookie)
+				t.Fatalf("none cookie action emitted a cookie: bytes=%d", len(firstCookie))
 			}
 			var storedReceipt, storedCookieAction string
 			if err := value.store.db.QueryRow(`SELECT public_receipt_json,cookie_action FROM auth_idempotency_operations WHERE operation=?`, value.operation).Scan(&storedReceipt, &storedCookieAction); err != nil {
@@ -647,31 +647,31 @@ func TestPublicAuthMutationReplayAllowsRevokedActorAndRepeatsDataAndCookieAction
 				Result  json.RawMessage `json:"result"`
 			}
 			if err := json.Unmarshal([]byte(storedReceipt), &durable); err != nil || !bytes.Equal(durable.Result, firstData) {
-				t.Fatalf("durable public result=%s first data=%s err=%v", durable.Result, firstData, err)
+				t.Fatalf("durable public result mismatch: durable_bytes=%d first_bytes=%d err_present=%t", len(durable.Result), len(firstData), err != nil)
 			}
 			wantCookieOutcome := `"cookieOutcome":"none"`
 			if value.cookieAction == "clear" {
 				wantCookieOutcome = `"cookieOutcome":"cleared"`
 			}
 			if !bytes.Contains(durable.Receipt, []byte(wantCookieOutcome)) {
-				t.Fatalf("durable receipt=%s want %s", durable.Receipt, wantCookieOutcome)
+				t.Fatalf("durable receipt cookie outcome mismatch: receipt_bytes=%d", len(durable.Receipt))
 			}
 			if value.postFirst != nil {
 				value.postFirst()
 			}
 			replay := request(t, value.server, value.method, value.path, `{}`, headers)
 			if replay.Code != http.StatusOK {
-				t.Fatalf("replay=%d %s", replay.Code, replay.Body.String())
+				t.Fatalf("replay response invalid: status=%d body_bytes=%d", replay.Code, replay.Body.Len())
 			}
 			replayData, replayRequestID := responseDataAndRequestID(t, replay)
 			if !bytes.Equal(firstData, replayData) {
-				t.Fatalf("public replay data changed: first=%s replay=%s", firstData, replayData)
+				t.Fatalf("public replay data changed: first_bytes=%d replay_bytes=%d", len(firstData), len(replayData))
 			}
 			if firstRequestID == replayRequestID {
 				t.Fatalf("replay reused outer requestId %q", firstRequestID)
 			}
 			if replay.Header().Get("Set-Cookie") != firstCookie {
-				t.Fatalf("replay cookie=%q first=%q", replay.Header().Get("Set-Cookie"), firstCookie)
+				t.Fatalf("replay cookie mismatch: replay_bytes=%d first_bytes=%d", len(replay.Header().Get("Set-Cookie")), len(firstCookie))
 			}
 			var replayReceipt, replayCookieAction string
 			if err := value.store.db.QueryRow(`SELECT public_receipt_json,cookie_action FROM auth_idempotency_operations WHERE operation=?`, value.operation).Scan(&replayReceipt, &replayCookieAction); err != nil {
@@ -690,13 +690,13 @@ func TestSessionCookieRawContract(t *testing.T) {
 	server.setSessionCookie(issued, make([]byte, 32), time.Date(2030, 3, 1, 12, 0, 0, 0, time.UTC))
 	wantIssued := "__Host-mad_session=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA; Path=/; Expires=Fri, 01 Mar 2030 12:00:00 GMT; HttpOnly; Secure; SameSite=Strict"
 	if got := issued.Header().Get("Set-Cookie"); got != wantIssued || strings.Contains(strings.ToLower(got), "domain=") {
-		t.Fatalf("issued Set-Cookie=%q", got)
+		t.Fatalf("issued Set-Cookie invalid: bytes=%d domain_present=%t", len(got), strings.Contains(strings.ToLower(got), "domain="))
 	}
 	cleared := httptest.NewRecorder()
 	server.clearSessionCookie(cleared)
 	wantCleared := "__Host-mad_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; Max-Age=0; HttpOnly; Secure; SameSite=Strict"
 	if got := cleared.Header().Get("Set-Cookie"); got != wantCleared || strings.Contains(strings.ToLower(got), "domain=") {
-		t.Fatalf("cleared Set-Cookie=%q", got)
+		t.Fatalf("cleared Set-Cookie invalid: bytes=%d domain_present=%t", len(got), strings.Contains(strings.ToLower(got), "domain="))
 	}
 }
 
@@ -723,7 +723,7 @@ func TestP2RetryAfterIsOnlyEmittedForLiveInProgress(t *testing.T) {
 	}
 	inProgress := request(t, server, http.MethodPost, "/v1/auth/logout", `{}`, headers)
 	if inProgress.Code != http.StatusConflict || inProgress.Header().Get("Retry-After") != "1" || inProgress.Header().Get("Set-Cookie") != "" || !strings.Contains(inProgress.Body.String(), `"code":"idempotency_in_progress"`) {
-		t.Fatalf("in-progress=%d retry=%q cookie=%q body=%s", inProgress.Code, inProgress.Header().Get("Retry-After"), inProgress.Header().Get("Set-Cookie"), inProgress.Body.String())
+		t.Fatalf("in-progress response invalid: status=%d retry_present=%t cookie_present=%t body_bytes=%d", inProgress.Code, inProgress.Header().Get("Retry-After") != "", inProgress.Header().Get("Set-Cookie") != "", inProgress.Body.Len())
 	}
 
 	otherActor, err := NewBrowserSessionCreate(user.ID, "passkey", passkey.ID, server.config.PublicOrigin, actor.AuthenticatedAt)
@@ -736,6 +736,6 @@ func TestP2RetryAfterIsOnlyEmittedForLiveInProgress(t *testing.T) {
 	reusedHeaders := browserP2Headers(otherActor, "retry-after-in-progress")
 	keyReused := request(t, server, http.MethodPost, "/v1/auth/logout", `{}`, reusedHeaders)
 	if keyReused.Code != http.StatusConflict || keyReused.Header().Get("Retry-After") != "" || keyReused.Header().Get("Set-Cookie") != "" || !strings.Contains(keyReused.Body.String(), `"code":"idempotency_key_reused"`) {
-		t.Fatalf("key-reused=%d retry=%q cookie=%q body=%s", keyReused.Code, keyReused.Header().Get("Retry-After"), keyReused.Header().Get("Set-Cookie"), keyReused.Body.String())
+		t.Fatalf("key-reused response invalid: status=%d retry_present=%t cookie_present=%t body_bytes=%d", keyReused.Code, keyReused.Header().Get("Retry-After") != "", keyReused.Header().Get("Set-Cookie") != "", keyReused.Body.Len())
 	}
 }

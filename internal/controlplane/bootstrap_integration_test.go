@@ -247,14 +247,14 @@ func TestDaemonAnchoredBootstrapRestartFreshStartCommitAndActivate(t *testing.T)
 	defer zeroBytes(result.Session.RawToken)
 	defer zeroBytes(result.Session.RawCSRF)
 	if len(result.RecoveryCodes.Plaintext) != 10 || result.CurrentAuth.AuthenticationMethod != generatedapi.CurrentAuthAuthenticationMethodPasskey || result.Receipt.AnchorDeviceId != descriptor.Anchor.DeviceId {
-		t.Fatalf("bootstrap result drifted: auth=%+v receipt=%+v recovery=%d", result.CurrentAuth, result.Receipt, len(result.RecoveryCodes.Plaintext))
+		t.Fatalf("bootstrap result drifted: auth_method_match=%t anchor_match=%t recovery_count=%d", result.CurrentAuth.AuthenticationMethod == generatedapi.CurrentAuthAuthenticationMethodPasskey, result.Receipt.AnchorDeviceId == descriptor.Anchor.DeviceId, len(result.RecoveryCodes.Plaintext))
 	}
 	if _, err := serverStore.BrowserSessionByToken(ctx, result.Session.RawToken, now); err != nil {
 		t.Fatalf("bootstrap session was not committed: %v", err)
 	}
 	state, err := serverStore.BootstrapState(ctx, now)
 	if err != nil || !state.Initialized {
-		t.Fatalf("bootstrap state=%+v err=%v", state, err)
+		t.Fatalf("bootstrap state invalid: initialized=%t err_present=%t", state.Initialized, err != nil)
 	}
 	for table, want := range map[string]int{"users": 1, "passkeys": 1, "anchor_devices": 1, "recovery_batches": 1, "recovery_codes": 10, "bootstrap_receipts": 1} {
 		var count int
@@ -271,18 +271,18 @@ func TestDaemonAnchoredBootstrapRestartFreshStartCommitAndActivate(t *testing.T)
 		t.Fatal(err)
 	}
 	if activated.CeremonyId != challenge.CeremonyId {
-		t.Fatalf("activated receipt=%+v", activated)
+		t.Fatalf("activated receipt ceremony mismatch")
 	}
 	if _, err := remote.Activate(ctx, result.Receipt, result.Receipt); err != nil {
 		t.Fatalf("exact activation replay was not idempotent: %v", err)
 	}
 	active, err := localStore.ActiveRemoteDeviceIdentityForOrigin(ctx, descriptor.ServerOrigin)
 	if err != nil || active.ServerDeviceID != descriptor.Anchor.DeviceId || active.Lifecycle != storage.RemoteIdentityActive {
-		t.Fatalf("active remote identity=%+v err=%v", active, err)
+		t.Fatalf("active remote identity invalid: err_present=%t device_match=%t lifecycle_match=%t", err != nil, active.ServerDeviceID == descriptor.Anchor.DeviceId, active.Lifecycle == storage.RemoteIdentityActive)
 	}
 	mapping, err := localStore.ControlPlaneMapping(ctx, "device", active.ID)
 	if err != nil || mapping.ServerID != descriptor.Anchor.DeviceId {
-		t.Fatalf("active mapping=%+v err=%v", mapping, err)
+		t.Fatalf("active mapping invalid: err_present=%t server_id_match=%t", err != nil, mapping.ServerID == descriptor.Anchor.DeviceId)
 	}
 
 	restarted.auth.Now = func() time.Time { return now.Add(time.Second) }
@@ -347,7 +347,7 @@ func TestDaemonAnchoredBootstrapRestartFreshStartCommitAndActivate(t *testing.T)
 	defer zeroBytes(recoveryResult.Session.RawCSRF)
 	storedRecovery, err := serverStore.BrowserSessionByToken(ctx, recoveryResult.Session.RawToken, now.Add(4*time.Second))
 	if err != nil || recoveryResult.CurrentAuth.AuthenticationMethod != generatedapi.CurrentAuthAuthenticationMethodRecovery || len(recoveryResult.CurrentAuth.Capabilities) != 1 {
-		t.Fatalf("recovery session=%+v auth=%+v err=%v", storedRecovery, recoveryResult.CurrentAuth, err)
+		t.Fatalf("recovery session read failed: err_present=%t auth_method_match=%t capability_count=%d session_id_present=%t", err != nil, recoveryResult.CurrentAuth.AuthenticationMethod == generatedapi.CurrentAuthAuthenticationMethodRecovery, len(recoveryResult.CurrentAuth.Capabilities), storedRecovery.ID != "")
 	}
 
 	restarted.auth.Now = func() time.Time { return now.Add(5 * time.Second) }
@@ -381,11 +381,11 @@ func TestDaemonAnchoredBootstrapRestartFreshStartCommitAndActivate(t *testing.T)
 	}
 	deleted, err := serverStore.DeletePasskeyCAS(ctx, result.CurrentAuth.UserId, storedInitial.ID, replacementResult.Session.ID, storedInitial.CredentialRevision, now.Add(6*time.Second))
 	if err != nil || deleted.CurrentSessionRevoked || deleted.RevokedSessionCount != 0 {
-		t.Fatalf("old Passkey delete=%+v err=%v", deleted, err)
+		t.Fatalf("old Passkey delete invalid: err_present=%t current_revoked=%t revoked_count=%d", err != nil, deleted.CurrentSessionRevoked, deleted.RevokedSessionCount)
 	}
 	remaining, err := serverStore.ListPasskeys(ctx, result.CurrentAuth.UserId)
 	if err != nil || len(remaining) != 1 || remaining[0].Credential.ID == nil || base64.RawURLEncoding.EncodeToString(remaining[0].Credential.ID) != replacementCredential.Id {
-		t.Fatalf("remaining Passkeys=%+v err=%v", remaining, err)
+		t.Fatalf("remaining Passkeys invalid: err_present=%t count=%d credential_present=%t replacement_match=%t", err != nil, len(remaining), len(remaining) == 1 && remaining[0].Credential.ID != nil, len(remaining) == 1 && remaining[0].Credential.ID != nil && base64.RawURLEncoding.EncodeToString(remaining[0].Credential.ID) == replacementCredential.Id)
 	}
 }
 

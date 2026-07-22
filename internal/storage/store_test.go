@@ -97,7 +97,7 @@ func TestOpenConfiguresAndRestartsDeviceDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantPragmas := Pragmas{JournalMode: "wal", ForeignKeys: true, BusyTimeout: DefaultBusyTimeout}
+	wantPragmas := Pragmas{JournalMode: "wal", ForeignKeys: true, SecureDelete: true, BusyTimeout: DefaultBusyTimeout}
 	if pragmas != wantPragmas {
 		t.Fatalf("got %+v, want %+v", pragmas, wantPragmas)
 	}

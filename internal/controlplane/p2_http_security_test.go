@@ -128,10 +128,10 @@ func TestP2MutationSecurityRejectsBeforeSideEffects(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			response := request(t, server, http.MethodPost, "/v1/bootstrap/options", test.body, test.headers)
 			if response.Code != test.status || !strings.Contains(response.Header().Get("Content-Type"), "application/json") {
-				t.Fatalf("code=%d body=%s", response.Code, response.Body.String())
+				t.Fatalf("unexpected status=%d body_bytes=%d", response.Code, response.Body.Len())
 			}
 			if test.status == http.StatusBadRequest && !strings.Contains(response.Body.String(), `"code":"invalid_argument"`) {
-				t.Fatalf("schema rejection body=%s", response.Body.String())
+				t.Fatalf("schema rejection code missing: body_bytes=%d", response.Body.Len())
 			}
 		})
 	}
@@ -182,7 +182,7 @@ func TestP2NamedSchemaHostileBodiesRejectBeforeIdempotencyLookup(t *testing.T) {
 			headers.Set("Idempotency-Key", "hostile-schema-request-"+string(rune('a'+index)))
 			response := request(t, server, http.MethodPost, test.path, test.body, headers)
 			if response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), `"code":"invalid_argument"`) {
-				t.Fatalf("schema hostile code=%d body=%s", response.Code, response.Body.String())
+				t.Fatalf("schema hostile response invalid: status=%d body_bytes=%d", response.Code, response.Body.Len())
 			}
 			var count int
 			if err := server.store.db.QueryRow("SELECT count(*) FROM auth_idempotency_operations").Scan(&count); err != nil || count != 0 {
@@ -200,23 +200,23 @@ func TestP2ExactHeadersBodylessJSONAndStableErrors(t *testing.T) {
 	missingIdempotency.Del("Idempotency-Key")
 	response := request(t, server, http.MethodPost, "/v1/auth/passkeys/options", `{}`, missingIdempotency)
 	if response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), `"code":"idempotency_key_required"`) {
-		t.Fatalf("missing idempotency=%d %s", response.Code, response.Body.String())
+		t.Fatalf("missing idempotency response invalid: status=%d body_bytes=%d", response.Code, response.Body.Len())
 	}
 
 	duplicateOrigin := p2MutationHeaders()
 	duplicateOrigin["Origin"] = []string{"https://control.example.test", "https://control.example.test"}
 	response = request(t, server, http.MethodPost, "/v1/auth/passkeys/options", `{}`, duplicateOrigin)
 	if response.Code != http.StatusForbidden || !strings.Contains(response.Body.String(), `"code":"origin_mismatch"`) {
-		t.Fatalf("duplicate origin=%d %s", response.Code, response.Body.String())
+		t.Fatalf("duplicate origin response invalid: status=%d body_bytes=%d", response.Code, response.Body.Len())
 	}
 
 	response = request(t, server, http.MethodPost, "/v1/auth/passkeys/options", `{"unexpected":true}`, p2MutationHeaders())
 	if response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), `"code":"invalid_argument"`) {
-		t.Fatalf("bodyless mutation accepted=%d %s", response.Code, response.Body.String())
+		t.Fatalf("bodyless mutation response invalid: status=%d body_bytes=%d", response.Code, response.Body.Len())
 	}
 	response = request(t, server, http.MethodPost, "/v1/auth/passkeys/options", `{}`, p2MutationHeaders())
 	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"ceremonyId"`) {
-		t.Fatalf("empty JSON mutation=%d %s", response.Code, response.Body.String())
+		t.Fatalf("empty JSON mutation response invalid: status=%d body_bytes=%d", response.Code, response.Body.Len())
 	}
 
 	verifyHeaders := p2MutationHeaders()
@@ -232,27 +232,27 @@ func TestP2ExactHeadersBodylessJSONAndStableErrors(t *testing.T) {
 	}
 	response = request(t, server, http.MethodPost, "/v1/bootstrap/verify", string(verifyBody), verifyHeaders)
 	if response.Code != http.StatusUnauthorized || !strings.Contains(response.Body.String(), `"code":"bootstrap_unavailable"`) {
-		t.Fatalf("bootstrap verify without token=%d %s", response.Code, response.Body.String())
+		t.Fatalf("bootstrap verify response invalid: status=%d body_bytes=%d", response.Code, response.Body.Len())
 	}
 
 	readHeaders := p2ReadHeaders()
 	readHeaders.Set("Cookie", browserSessionCookieName+"="+base64.RawURLEncoding.EncodeToString(session.RawToken))
 	response = request(t, server, http.MethodGet, "/v1/auth/current", "", readHeaders)
 	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"csrfToken"`) {
-		t.Fatalf("same-origin auth read=%d %s", response.Code, response.Body.String())
+		t.Fatalf("same-origin auth read invalid: status=%d body_bytes=%d", response.Code, response.Body.Len())
 	}
 
 	missingFetch := http.Header{"Cookie": readHeaders.Values("Cookie")}
 	response = request(t, server, http.MethodGet, "/v1/auth/current", "", missingFetch)
 	if response.Code != http.StatusForbidden || !strings.Contains(response.Body.String(), `"code":"origin_mismatch"`) {
-		t.Fatalf("cross-origin auth read=%d %s", response.Code, response.Body.String())
+		t.Fatalf("cross-origin auth read invalid: status=%d body_bytes=%d", response.Code, response.Body.Len())
 	}
 
 	duplicateCookie := p2ReadHeaders()
 	duplicateCookie["Cookie"] = []string{readHeaders.Get("Cookie"), readHeaders.Get("Cookie")}
 	response = request(t, server, http.MethodGet, "/v1/auth/current", "", duplicateCookie)
 	if response.Code != http.StatusUnauthorized {
-		t.Fatalf("duplicate cookie=%d %s", response.Code, response.Body.String())
+		t.Fatalf("duplicate cookie response invalid: status=%d body_bytes=%d", response.Code, response.Body.Len())
 	}
 }
 
@@ -311,7 +311,7 @@ func TestP2DeleteCanonicalPathsRejectAliasesBeforeIdempotencyLookup(t *testing.T
 		headers.Set("X-CSRF-Token", csrf)
 		response := request(t, server, http.MethodDelete, target, `{}`, headers)
 		if response.Code < http.StatusBadRequest {
-			t.Fatalf("alias target=%q code=%d body=%s", target, response.Code, response.Body.String())
+			t.Fatalf("alias target response invalid: target_bytes=%d status=%d body_bytes=%d", len(target), response.Code, response.Body.Len())
 		}
 		var count int
 		if err := store.db.QueryRow("SELECT count(*) FROM auth_idempotency_operations").Scan(&count); err != nil || count != 0 {
@@ -347,7 +347,7 @@ func TestRecoverySessionCanOnlyReadCurrentAuthRegisterReplacementOrLogout(t *tes
 	readHeaders.Set("Cookie", cookie)
 	current := request(t, server, http.MethodGet, "/v1/auth/current", "", readHeaders)
 	if current.Code != http.StatusOK || !strings.Contains(current.Body.String(), `"authenticationMethod":"recovery"`) || !strings.Contains(current.Body.String(), `"capabilities":["mad.v1.passkey.manage"]`) {
-		t.Fatalf("recovery current=%d %s", current.Code, current.Body.String())
+		t.Fatalf("recovery current response invalid: status=%d body_bytes=%d", current.Code, current.Body.Len())
 	}
 
 	registrationHeaders := p2MutationHeaders()
@@ -355,7 +355,7 @@ func TestRecoverySessionCanOnlyReadCurrentAuthRegisterReplacementOrLogout(t *tes
 	registrationHeaders.Set("X-CSRF-Token", csrf)
 	registration := request(t, server, http.MethodPost, "/v1/auth/passkeys/registration/options", `{}`, registrationHeaders)
 	if registration.Code != http.StatusOK || !strings.Contains(registration.Body.String(), `"ceremonyId"`) {
-		t.Fatalf("replacement registration=%d %s", registration.Code, registration.Body.String())
+		t.Fatalf("replacement registration response invalid: status=%d body_bytes=%d", registration.Code, registration.Body.Len())
 	}
 
 	for index, test := range []struct {
@@ -386,7 +386,7 @@ func TestRecoverySessionCanOnlyReadCurrentAuthRegisterReplacementOrLogout(t *tes
 			}
 			response := request(t, server, test.method, test.path, test.body, headers)
 			if response.Code != http.StatusForbidden || !strings.Contains(response.Body.String(), `"code":"permission_denied"`) {
-				t.Fatalf("recovery scope=%d path=%s key=%s body=%s", response.Code, test.path, headers.Get("Idempotency-Key"), response.Body.String())
+				t.Fatalf("recovery scope response invalid: status=%d path_bytes=%d key_bytes=%d body_bytes=%d", response.Code, len(test.path), len(headers.Get("Idempotency-Key")), response.Body.Len())
 			}
 		})
 	}

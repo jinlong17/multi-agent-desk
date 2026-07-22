@@ -184,6 +184,32 @@ function validateContract() {
     if (!spec.components.schemas[name]) throw new Error(`missing v0.7 schema: ${name}`);
   }
 
+  const digestSchema = spec.components.schemas.Base64UrlDigestV1;
+  if (digestSchema?.["x-mad-decoded-bytes"] !== 32 || digestSchema.minLength !== 43 || digestSchema.maxLength !== 43) {
+    throw new Error("Base64UrlDigestV1 must encode exactly 32 bytes as 43 unpadded Base64url characters");
+  }
+  const validateFixedBase64url = (value, location) => {
+    if (!value || typeof value !== "object") return;
+    if (Number.isSafeInteger(value["x-mad-decoded-bytes"])) {
+      const decodedBytes = value["x-mad-decoded-bytes"];
+      const encodedLength = Math.ceil((decodedBytes * 8) / 6);
+      const allowedPatterns = new Set(["^[A-Za-z0-9_-]+$", `^[A-Za-z0-9_-]{${encodedLength}}$`]);
+      if (value.format !== "base64url" || !allowedPatterns.has(value.pattern) || value.minLength !== encodedLength || value.maxLength !== encodedLength) {
+        throw new Error(`${location}: fixed Base64url contract does not match ${decodedBytes} decoded bytes`);
+      }
+    }
+    for (const [key, child] of Object.entries(value)) validateFixedBase64url(child, `${location}/${key}`);
+  };
+  validateFixedBase64url(spec, "OpenAPI");
+  const scanTruncatedBase64Fixtures = (value, location) => {
+    if (typeof value === "string" && /^A+$/u.test(value) && (value.length === 42 || value.length === 85)) {
+      throw new Error(`${location}: truncated unpadded Base64url fixture remains`);
+    }
+    if (!value || typeof value !== "object") return;
+    for (const [key, child] of Object.entries(value)) scanTruncatedBase64Fixtures(child, `${location}/${key}`);
+  };
+  scanTruncatedBase64Fixtures(spec, "OpenAPI");
+
   // P2 owns this closed request-schema subset. Keep its fixed raw Base64url
   // spelling consistent with decoded byte counts without widening the check to
   // later-phase schemas that retain separately planned historical contracts.
@@ -195,6 +221,11 @@ function validateContract() {
     ["BootstrapAnchorV1", "pinDigest", 32],
     ["BootstrapVerifyRequestV1", "signingProof", 64],
     ["BootstrapVerifyRequestV1", "exchangeProof", 32],
+    ["BootstrapCommitReceiptV1", "signingKeyDigest", 32],
+    ["BootstrapCommitReceiptV1", "exchangeKeyDigest", 32],
+    ["BootstrapCommitReceiptV1", "storageAssertionDigest", 32],
+    ["BootstrapCommitReceiptV1", "signingProofDigest", 32],
+    ["BootstrapCommitReceiptV1", "exchangeProofDigest", 32],
   ];
   for (const [schemaName, propertyName, decodedBytes] of p2FixedBase64url) {
     const property = spec.components.schemas[schemaName]?.properties?.[propertyName];
@@ -406,7 +437,7 @@ function validateContract() {
       ? Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalize(value[key])]))
       : value;
   const p3P6Digest = createHash("sha256").update(JSON.stringify(canonicalize({ paths: nonP2Paths, components: reachable }))).digest("hex");
-  if (p3P6Digest !== "0e764d96983adbd087ac24c31459851ba498ec0397422f75a9fc5cab1b50c48b") {
+  if (p3P6Digest !== "8eb65ed3fcbbec590aa2c365f5297843bca8bbeaca899a37daf45b8b2ef64420") {
     throw new Error(`P3-P6 transitive contract drifted: ${p3P6Digest}`);
   }
 
