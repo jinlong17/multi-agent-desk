@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -29,14 +30,17 @@ const (
 )
 
 type webAuthnCeremony struct {
-	ID                 string
-	Kind               ceremonyKind
-	User               StoredUser
-	Session            webauthn.SessionData
-	BrowserSessionID   string
-	TokenDigest        [32]byte
-	ExpiresAt          time.Time
-	BootstrapChallenge *generatedapi.BootstrapAnchorChallengeV1
+	ID                           string
+	Kind                         ceremonyKind
+	User                         StoredUser
+	Session                      webauthn.SessionData
+	BrowserSessionID             string
+	BrowserSessionCSRFGeneration int64
+	TokenDigest                  [32]byte
+	ExpiresAt                    time.Time
+	BootstrapChallenge           *generatedapi.BootstrapAnchorChallengeV1
+	CreationOptions              *generatedapi.WebAuthnCreationOptionsV1
+	RequestOptions               *generatedapi.WebAuthnRequestOptionsV1
 }
 
 type WebAuthnService struct {
@@ -77,14 +81,17 @@ func NewWebAuthnService(config Config, store *Store) (*WebAuthnService, error) {
 
 func (s *WebAuthnService) now() time.Time {
 	if s.Now != nil {
-		return s.Now().UTC()
+		return normalizeServerTime(s.Now())
 	}
-	return time.Now().UTC()
+	return normalizeServerTime(time.Now())
 }
 
-func (s *WebAuthnService) BeginRegistration(ctx context.Context, kind ceremonyKind, user StoredUser, browserSessionID string) (generatedapi.WebAuthnCreationOptionsV1, *webAuthnCeremony, error) {
+func (s *WebAuthnService) BeginRegistration(ctx context.Context, kind ceremonyKind, user StoredUser, browserSessionID string, browserSessionCSRFGeneration int64) (generatedapi.WebAuthnCreationOptionsV1, *webAuthnCeremony, error) {
 	if ctx == nil || s == nil || s.Library == nil || s.Ceremonies == nil || (kind != ceremonyBootstrapRegistration && kind != ceremonyPasskeyRegistration) {
 		return generatedapi.WebAuthnCreationOptionsV1{}, nil, fmt.Errorf("registration service is invalid")
+	}
+	if (browserSessionID == "") != (browserSessionCSRFGeneration == 0) || browserSessionCSRFGeneration < 0 {
+		return generatedapi.WebAuthnCreationOptionsV1{}, nil, fmt.Errorf("registration browser session binding is invalid")
 	}
 	fixedParameters := []protocol.CredentialParameter{
 		{Type: protocol.PublicKeyCredentialType, Algorithm: webauthncose.AlgES256},
@@ -109,13 +116,27 @@ func (s *WebAuthnService) BeginRegistration(ctx context.Context, kind ceremonyKi
 	if err != nil {
 		return generatedapi.WebAuthnCreationOptionsV1{}, nil, err
 	}
-	ceremony := &webAuthnCeremony{ID: id, Kind: kind, User: user, Session: *session, BrowserSessionID: browserSessionID, ExpiresAt: now.Add(webAuthnCeremonyLifetime)}
+	ceremony := &webAuthnCeremony{ID: id, Kind: kind, User: user, Session: *session, BrowserSessionID: browserSessionID, BrowserSessionCSRFGeneration: browserSessionCSRFGeneration, ExpiresAt: now.Add(webAuthnCeremonyLifetime), CreationOptions: &options}
 	return options, ceremony, nil
 }
 
-func (s *WebAuthnService) BeginAssertion(ctx context.Context, kind ceremonyKind, user StoredUser, browserSessionID string) (generatedapi.WebAuthnRequestOptionsV1, error) {
+func (s *WebAuthnService) BeginAssertion(ctx context.Context, kind ceremonyKind, user StoredUser, browserSessionID string, browserSessionCSRFGeneration int64) (generatedapi.WebAuthnRequestOptionsV1, error) {
+	return s.beginAssertion(ctx, nil, kind, user, browserSessionID, browserSessionCSRFGeneration)
+}
+
+func (s *WebAuthnService) BeginAssertionTx(ctx context.Context, conn *sql.Conn, kind ceremonyKind, user StoredUser, browserSessionID string, browserSessionCSRFGeneration int64) (generatedapi.WebAuthnRequestOptionsV1, error) {
+	if conn == nil {
+		return generatedapi.WebAuthnRequestOptionsV1{}, fmt.Errorf("assertion transaction is required")
+	}
+	return s.beginAssertion(ctx, conn, kind, user, browserSessionID, browserSessionCSRFGeneration)
+}
+
+func (s *WebAuthnService) beginAssertion(ctx context.Context, conn *sql.Conn, kind ceremonyKind, user StoredUser, browserSessionID string, browserSessionCSRFGeneration int64) (generatedapi.WebAuthnRequestOptionsV1, error) {
 	if ctx == nil || s == nil || s.Library == nil || s.Ceremonies == nil || (kind != ceremonyPasskeyLogin && kind != ceremonyRecentUV) {
 		return generatedapi.WebAuthnRequestOptionsV1{}, fmt.Errorf("assertion service is invalid")
+	}
+	if (browserSessionID == "") != (browserSessionCSRFGeneration == 0) || browserSessionCSRFGeneration < 0 {
+		return generatedapi.WebAuthnRequestOptionsV1{}, fmt.Errorf("assertion browser session binding is invalid")
 	}
 	assertion, session, err := s.Library.BeginLogin(user, webauthn.WithUserVerification(protocol.VerificationRequired))
 	if err != nil {
@@ -131,8 +152,15 @@ func (s *WebAuthnService) BeginAssertion(ctx context.Context, kind ceremonyKind,
 	if err != nil {
 		return generatedapi.WebAuthnRequestOptionsV1{}, err
 	}
-	if err := s.Ceremonies.put(ctx, &webAuthnCeremony{ID: id, Kind: kind, User: user, Session: *session, BrowserSessionID: browserSessionID, ExpiresAt: now.Add(webAuthnCeremonyLifetime)}); err != nil {
-		return generatedapi.WebAuthnRequestOptionsV1{}, err
+	ceremony := &webAuthnCeremony{ID: id, Kind: kind, User: user, Session: *session, BrowserSessionID: browserSessionID, BrowserSessionCSRFGeneration: browserSessionCSRFGeneration, ExpiresAt: now.Add(webAuthnCeremonyLifetime), RequestOptions: &options}
+	var putErr error
+	if conn == nil {
+		putErr = s.Ceremonies.put(ctx, ceremony)
+	} else {
+		putErr = s.Ceremonies.putTx(ctx, conn, ceremony)
+	}
+	if putErr != nil {
+		return generatedapi.WebAuthnRequestOptionsV1{}, putErr
 	}
 	return options, nil
 }

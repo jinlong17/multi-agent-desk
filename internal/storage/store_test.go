@@ -140,15 +140,53 @@ func TestOpenConfiguresAndRestartsDeviceDatabase(t *testing.T) {
 	}
 }
 
-func TestOpenRejectsBroadDirectoryPermissions(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Windows file modes do not encode the Device root ACL")
+func TestOpenConcurrentFirstCreationHasNoPermissionWindowFailure(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "device-root", "device.db")
+	start := make(chan struct{})
+	results := make(chan struct {
+		store *Store
+		err   error
+	}, 2)
+	for range 2 {
+		go func() {
+			<-start
+			store, err := Open(context.Background(), path)
+			results <- struct {
+				store *Store
+				err   error
+			}{store: store, err: err}
+		}()
 	}
+	close(start)
+	successes := 0
+	var failures []error
+	for range 2 {
+		result := <-results
+		if result.store != nil {
+			successes++
+			_ = result.store.Close()
+		}
+		if domain.CodeOf(result.err) == domain.CodePermissionDenied {
+			t.Fatalf("concurrent first Open observed permission transition: %v", result.err)
+		}
+		if result.err != nil {
+			failures = append(failures, result.err)
+		}
+	}
+	if successes == 0 {
+		t.Fatalf("both concurrent first Open calls failed: %v", failures)
+	}
+}
+
+func TestOpenRejectsBroadDirectoryPermissions(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "broad")
-	if err := os.Mkdir(dir, 0o755); err != nil {
+	if err := os.Mkdir(dir, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chmod(dir, 0o755); err != nil {
+	if err := protectDevicePrivateDirectory(dir); err != nil {
+		t.Fatal(err)
+	}
+	if err := makeExistingDeviceDirectoryUnsafeForTest(dir); err != nil {
 		t.Fatal(err)
 	}
 	_, err := Open(context.Background(), filepath.Join(dir, "device.db"))

@@ -5,9 +5,11 @@ import {
   ControlPlaneError,
   createControlPlaneClient,
   operationDefinitions,
+  stableErrorCodeValues,
   type ControlPlaneCallShape,
   type EnrollmentRequestHeaders,
 } from "./control-plane-client.js";
+import type { components } from "./generated/control-plane-v1.js";
 
 const requestId = "018f47a0-7b1c-7cc2-8000-000000000001";
 
@@ -31,6 +33,70 @@ test("operation map is exhaustive and has no arbitrary path escape hatch", () =>
   const client = createControlPlaneClient("https://control.test");
   assert.deepEqual(Object.keys(client.methods).sort(), Object.keys(operationDefinitions).sort());
   assert.equal("request" in client, false);
+});
+
+test("P2 auth operation map is the exact closed 13-operation discriminator", () => {
+  assert.deepEqual(
+    Object.entries(operationDefinitions)
+      .filter(([, definition]) => definition.authOperation !== undefined)
+      .map(([id, definition]) => [id, definition.authOperation]),
+    [
+      ["createPasskeyAuthenticationOptions", "passkey_login_options"],
+      ["verifyPasskeyAuthentication", "passkey_login_verify"],
+      ["createPasskeyRegistrationOptions", "passkey_registration_options"],
+      ["verifyPasskeyRegistration", "passkey_registration_verify"],
+      ["createUvOptions", "uv_options"],
+      ["verifyUv", "uv_verify"],
+      ["verifyRecoveryCode", "recovery_verify"],
+      ["rotateRecoveryCodes", "recovery_codes_rotate"],
+      ["logout", "logout"],
+      ["deletePasskey", "passkey_delete"],
+      ["deleteBrowserSession", "session_delete"],
+      ["createBootstrapOptions", "bootstrap_options"],
+      ["verifyBootstrap", "bootstrap_verify"],
+    ],
+  );
+});
+
+test("P2 client rejects missing comma-coalesced OWS and non-ASCII keys before fetch", async () => {
+  Object.defineProperty(globalThis, "location", { value: new URL("https://control.test/app"), configurable: true });
+  let calls = 0;
+  const client = createControlPlaneClient("https://control.test", async () => {
+    calls++;
+    return jsonResponse({});
+  });
+  const unsafeOptions = client.methods.createPasskeyAuthenticationOptions as unknown as (input: Record<string, unknown>) => Promise<unknown>;
+  for (const key of [undefined, "short", "0123456789abcde,", " 0123456789abcdef", "0123456789abcdef\t", "0123456789abcde£"]) {
+    await assert.rejects(unsafeOptions({
+      ...(key === undefined ? {} : { idempotencyKey: key }),
+      body: {},
+    }), /normalized P2 Idempotency-Key/);
+  }
+  assert.equal(calls, 0);
+});
+
+test("P2 If-Match is required only for the two DELETE operations and is canonical", async () => {
+  Object.defineProperty(globalThis, "location", { value: new URL("https://control.test/app"), configurable: true });
+  let calls = 0;
+  let capturedHeaders = new Headers();
+  const client = createControlPlaneClient("https://control.test", async (_input, init) => {
+    calls++;
+    capturedHeaders = new Headers(init?.headers);
+    return jsonResponse({ apiVersion: "v1", data: {}, meta: { requestId, nextCursor: null } });
+  });
+  client.setCsrfToken("csrf-token");
+  const unsafeDelete = client.methods.deletePasskey as unknown as (input: Record<string, unknown>) => Promise<unknown>;
+  const unsafeLogout = client.methods.logout as unknown as (input: Record<string, unknown>) => Promise<unknown>;
+  const deletion = { path: { passkeyId: requestId }, idempotencyKey: "delete-passkey-request", body: {} };
+
+  await assert.rejects(unsafeDelete(deletion), /If-Match is required/);
+  await assert.rejects(unsafeDelete({ ...deletion, ifMatch: `"rev-01"` }), /exact positive revision tag/);
+  await assert.rejects(unsafeLogout({ idempotencyKey: "logout-request-key", ifMatch: `"rev-1"`, body: {} }), /If-Match is forbidden/);
+  assert.equal(calls, 0);
+
+  await client.methods.deletePasskey({ ...deletion, ifMatch: `"rev-1"` });
+  assert.equal(calls, 1);
+  assert.equal(capturedHeaders.get("if-match"), `"rev-1"`);
 });
 
 test("same-origin JSON request includes credentials, CSRF, idempotency and body", async () => {
@@ -155,7 +221,7 @@ test("cross-origin configuration and missing CSRF fail before fetch", async () =
   assert.throws(() => createControlPlaneClient("http://control.test"), /same-origin|forbidden/);
   let called = false;
   const client = createControlPlaneClient("https://control.test", async () => { called = true; return jsonResponse({}); });
-  await assert.rejects(client.methods.logout({ idempotencyKey: "0123456789abcdef" }), /CSRF token/);
+  await assert.rejects(client.methods.logout({ idempotencyKey: "0123456789abcdef", body: {} }), /CSRF token/);
   const unsafePathCall = client.methods.getProfile as unknown as (input: Record<string, unknown>) => Promise<unknown>;
   await assert.rejects(unsafePathCall({}), /missing path parameter/);
   assert.equal(called, false);
@@ -184,6 +250,34 @@ test("stable and unknown JSON errors map safely; non-JSON never succeeds", async
   await assert.rejects(html.methods.getHealth(), (error: unknown) => error instanceof ControlPlaneError && error.code === "unknown_error");
 });
 
+test("runtime stable error registry is exhaustive against the generated OpenAPI union", async () => {
+  for (const code of ["idempotency_in_progress", "ceremony_restart_required", "session_integrity_invalid", "session_revision_conflict"] as const) {
+    assert.ok(stableErrorCodeValues.includes(code));
+    const client = createControlPlaneClient("https://control.test", async () => jsonResponse({
+      apiVersion: "v1", error: { code, message: code, requestId, details: [] },
+    }, 409));
+    await assert.rejects(client.methods.getHealth(), (error: unknown) => error instanceof ControlPlaneError && error.code === code);
+  }
+});
+
+test("typed auth receipt and session-conflict details remain available to recovery UI", async () => {
+  Object.defineProperty(globalThis, "location", { value: new URL("https://control.test/app"), configurable: true });
+  const receipt = {
+    operationId: requestId, operation: "recovery_codes_rotate", state: "committed",
+    committedAt: "2030-03-01T00:00:00Z", cookieOutcome: "none",
+    csrfOutcome: "none", recoveryCodesOutcome: "issued_not_replayable", nextAction: "rotate_recovery_codes",
+  };
+  const client = createControlPlaneClient("https://control.test", async () => jsonResponse({
+    apiVersion: "v1", error: { code: "one_time_result_unavailable", message: "lost", requestId, details: { receipt } },
+  }, 409));
+  client.setCsrfToken("C".repeat(42));
+  await assert.rejects(
+    client.methods.rotateRecoveryCodes({ idempotencyKey: "0123456789abcdef", body: {} }),
+    (error: unknown) => error instanceof ControlPlaneError &&
+      (error.details as { receipt?: { nextAction?: string } }).receipt?.nextAction === "rotate_recovery_codes",
+  );
+});
+
 if (false) {
   const typed = createControlPlaneClient("https://control.test");
   // @ts-expect-error query names are generated per operation; no arbitrary query escape hatch exists.
@@ -196,6 +290,38 @@ if (false) {
   void typed.methods.getProfile();
   // @ts-expect-error generated required path cannot be omitted from a supplied input.
   void typed.methods.getProfile({});
+  // @ts-expect-error P2 Passkey DELETE requires an exact If-Match input.
+  void typed.methods.deletePasskey({ path: { passkeyId: requestId }, idempotencyKey: "delete-passkey-request", body: {} });
+  // @ts-expect-error non-DELETE P2 mutations forbid If-Match.
+  void typed.methods.logout({ idempotencyKey: "logout-request-key", ifMatch: `"rev-1"`, body: {} });
+  // @ts-expect-error every P2 keyed method requires an input (including exact-{} methods).
+  void typed.methods.logout();
+  // @ts-expect-error P2 key is required for bootstrap options.
+  void typed.methods.createBootstrapOptions({ body: {} as components["schemas"]["BootstrapOptionsRequestV1"] });
+  // @ts-expect-error P2 key is required for bootstrap verify.
+  void typed.methods.verifyBootstrap({ body: {} as components["schemas"]["BootstrapVerifyRequestV1"] });
+  // @ts-expect-error P2 key is required for Passkey login options.
+  void typed.methods.createPasskeyAuthenticationOptions({ body: {} });
+  // @ts-expect-error P2 key is required for Passkey login verify.
+  void typed.methods.verifyPasskeyAuthentication({ body: {} as components["schemas"]["WebAuthnAssertionVerifyRequestV1"] });
+  // @ts-expect-error P2 key is required for Passkey registration options.
+  void typed.methods.createPasskeyRegistrationOptions({ body: {} });
+  // @ts-expect-error P2 key is required for Passkey registration verify.
+  void typed.methods.verifyPasskeyRegistration({ body: {} as components["schemas"]["WebAuthnRegistrationVerifyRequestV1"] });
+  // @ts-expect-error P2 key is required for UV options.
+  void typed.methods.createUvOptions({ body: {} });
+  // @ts-expect-error P2 key is required for UV verify.
+  void typed.methods.verifyUv({ body: {} as components["schemas"]["WebAuthnAssertionVerifyRequestV1"] });
+  // @ts-expect-error P2 key is required for recovery verify.
+  void typed.methods.verifyRecoveryCode({ body: {} as components["schemas"]["RecoveryVerifyRequestV1"] });
+  // @ts-expect-error P2 key is required for recovery rotation.
+  void typed.methods.rotateRecoveryCodes({ body: {} });
+  // @ts-expect-error P2 key is required for logout.
+  void typed.methods.logout({ body: {} });
+  // @ts-expect-error P2 key is required for Passkey delete.
+  void typed.methods.deletePasskey({ path: { passkeyId: requestId }, ifMatch: `"rev-1"`, body: {} });
+  // @ts-expect-error P2 key is required for session delete.
+  void typed.methods.deleteBrowserSession({ path: { sessionId: requestId }, ifMatch: `"rev-1"`, body: {} });
   // @ts-expect-error Enrollment operations require the distinct Enrollment authorization input.
   void typed.methods.getDeviceEnrollment({ path: { enrollmentId: requestId } });
   // Enrollment authorization cannot collide with Device authorization.

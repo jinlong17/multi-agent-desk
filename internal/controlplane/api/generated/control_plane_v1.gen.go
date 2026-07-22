@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	transport "github.com/jinlong17/multi-agent-desk/internal/transport"
 	"github.com/oapi-codegen/runtime"
 )
 
@@ -846,6 +847,156 @@ func (e AuthCapabilityV1) Valid() bool {
 	}
 }
 
+// Defines values for AuthIdempotencyOperationV1.
+const (
+	BootstrapOptions           AuthIdempotencyOperationV1 = "bootstrap_options"
+	BootstrapVerify            AuthIdempotencyOperationV1 = "bootstrap_verify"
+	Logout                     AuthIdempotencyOperationV1 = "logout"
+	PasskeyDelete              AuthIdempotencyOperationV1 = "passkey_delete"
+	PasskeyLoginOptions        AuthIdempotencyOperationV1 = "passkey_login_options"
+	PasskeyLoginVerify         AuthIdempotencyOperationV1 = "passkey_login_verify"
+	PasskeyRegistrationOptions AuthIdempotencyOperationV1 = "passkey_registration_options"
+	PasskeyRegistrationVerify  AuthIdempotencyOperationV1 = "passkey_registration_verify"
+	RecoveryCodesRotate        AuthIdempotencyOperationV1 = "recovery_codes_rotate"
+	RecoveryVerify             AuthIdempotencyOperationV1 = "recovery_verify"
+	SessionDelete              AuthIdempotencyOperationV1 = "session_delete"
+	UvOptions                  AuthIdempotencyOperationV1 = "uv_options"
+	UvVerify                   AuthIdempotencyOperationV1 = "uv_verify"
+)
+
+// Valid indicates whether the value is a known member of the AuthIdempotencyOperationV1 enum.
+func (e AuthIdempotencyOperationV1) Valid() bool {
+	switch e {
+	case BootstrapOptions:
+		return true
+	case BootstrapVerify:
+		return true
+	case Logout:
+		return true
+	case PasskeyDelete:
+		return true
+	case PasskeyLoginOptions:
+		return true
+	case PasskeyLoginVerify:
+		return true
+	case PasskeyRegistrationOptions:
+		return true
+	case PasskeyRegistrationVerify:
+		return true
+	case RecoveryCodesRotate:
+		return true
+	case RecoveryVerify:
+		return true
+	case SessionDelete:
+		return true
+	case UvOptions:
+		return true
+	case UvVerify:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AuthOperationReceiptV1CookieOutcome.
+const (
+	AuthOperationReceiptV1CookieOutcomeCleared             AuthOperationReceiptV1CookieOutcome = "cleared"
+	AuthOperationReceiptV1CookieOutcomeIssuedNotReplayable AuthOperationReceiptV1CookieOutcome = "issued_not_replayable"
+	AuthOperationReceiptV1CookieOutcomeNone                AuthOperationReceiptV1CookieOutcome = "none"
+)
+
+// Valid indicates whether the value is a known member of the AuthOperationReceiptV1CookieOutcome enum.
+func (e AuthOperationReceiptV1CookieOutcome) Valid() bool {
+	switch e {
+	case AuthOperationReceiptV1CookieOutcomeCleared:
+		return true
+	case AuthOperationReceiptV1CookieOutcomeIssuedNotReplayable:
+		return true
+	case AuthOperationReceiptV1CookieOutcomeNone:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AuthOperationReceiptV1CsrfOutcome.
+const (
+	AuthOperationReceiptV1CsrfOutcomeIssuedNotReplayable AuthOperationReceiptV1CsrfOutcome = "issued_not_replayable"
+	AuthOperationReceiptV1CsrfOutcomeNone                AuthOperationReceiptV1CsrfOutcome = "none"
+)
+
+// Valid indicates whether the value is a known member of the AuthOperationReceiptV1CsrfOutcome enum.
+func (e AuthOperationReceiptV1CsrfOutcome) Valid() bool {
+	switch e {
+	case AuthOperationReceiptV1CsrfOutcomeIssuedNotReplayable:
+		return true
+	case AuthOperationReceiptV1CsrfOutcomeNone:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AuthOperationReceiptV1NextAction.
+const (
+	AuthOperationReceiptV1NextActionFreshPasskeyLogin      AuthOperationReceiptV1NextAction = "fresh_passkey_login"
+	AuthOperationReceiptV1NextActionGetAuthCurrent         AuthOperationReceiptV1NextAction = "get_auth_current"
+	AuthOperationReceiptV1NextActionNone                   AuthOperationReceiptV1NextAction = "none"
+	AuthOperationReceiptV1NextActionRotateRecoveryCodes    AuthOperationReceiptV1NextAction = "rotate_recovery_codes"
+	AuthOperationReceiptV1NextActionUseAnotherRecoveryCode AuthOperationReceiptV1NextAction = "use_another_recovery_code"
+)
+
+// Valid indicates whether the value is a known member of the AuthOperationReceiptV1NextAction enum.
+func (e AuthOperationReceiptV1NextAction) Valid() bool {
+	switch e {
+	case AuthOperationReceiptV1NextActionFreshPasskeyLogin:
+		return true
+	case AuthOperationReceiptV1NextActionGetAuthCurrent:
+		return true
+	case AuthOperationReceiptV1NextActionNone:
+		return true
+	case AuthOperationReceiptV1NextActionRotateRecoveryCodes:
+		return true
+	case AuthOperationReceiptV1NextActionUseAnotherRecoveryCode:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AuthOperationReceiptV1RecoveryCodesOutcome.
+const (
+	AuthOperationReceiptV1RecoveryCodesOutcomeIssuedNotReplayable AuthOperationReceiptV1RecoveryCodesOutcome = "issued_not_replayable"
+	AuthOperationReceiptV1RecoveryCodesOutcomeNone                AuthOperationReceiptV1RecoveryCodesOutcome = "none"
+)
+
+// Valid indicates whether the value is a known member of the AuthOperationReceiptV1RecoveryCodesOutcome enum.
+func (e AuthOperationReceiptV1RecoveryCodesOutcome) Valid() bool {
+	switch e {
+	case AuthOperationReceiptV1RecoveryCodesOutcomeIssuedNotReplayable:
+		return true
+	case AuthOperationReceiptV1RecoveryCodesOutcomeNone:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AuthOperationReceiptV1State.
+const (
+	Committed AuthOperationReceiptV1State = "committed"
+)
+
+// Valid indicates whether the value is a known member of the AuthOperationReceiptV1State enum.
+func (e AuthOperationReceiptV1State) Valid() bool {
+	switch e {
+	case Committed:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BootstrapAnchorChallengeV1Version.
 const (
 	BootstrapAnchorChallengeV1VersionN1 BootstrapAnchorChallengeV1Version = 1
@@ -1107,6 +1258,21 @@ const (
 func (e BrowserSessionListEnvelopeV1ApiVersion) Valid() bool {
 	switch e {
 	case BrowserSessionListEnvelopeV1ApiVersionV1:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BrowserSessionRevokeEnvelopeV1ApiVersion.
+const (
+	BrowserSessionRevokeEnvelopeV1ApiVersionV1 BrowserSessionRevokeEnvelopeV1ApiVersion = "v1"
+)
+
+// Valid indicates whether the value is a known member of the BrowserSessionRevokeEnvelopeV1ApiVersion enum.
+func (e BrowserSessionRevokeEnvelopeV1ApiVersion) Valid() bool {
+	switch e {
+	case BrowserSessionRevokeEnvelopeV1ApiVersionV1:
 		return true
 	default:
 		return false
@@ -3561,6 +3727,360 @@ func (e OverviewFreshnessV1State) Valid() bool {
 	case OverviewFreshnessV1StateStale:
 		return true
 	case OverviewFreshnessV1StateUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for P2OneTimeResultUnavailableApiErrorV1Code.
+const (
+	P2OneTimeResultUnavailableApiErrorV1CodeOneTimeResultUnavailable P2OneTimeResultUnavailableApiErrorV1Code = "one_time_result_unavailable"
+)
+
+// Valid indicates whether the value is a known member of the P2OneTimeResultUnavailableApiErrorV1Code enum.
+func (e P2OneTimeResultUnavailableApiErrorV1Code) Valid() bool {
+	switch e {
+	case P2OneTimeResultUnavailableApiErrorV1CodeOneTimeResultUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for P2OneTimeResultUnavailableErrorEnvelopeV1ApiVersion.
+const (
+	P2OneTimeResultUnavailableErrorEnvelopeV1ApiVersionV1 P2OneTimeResultUnavailableErrorEnvelopeV1ApiVersion = "v1"
+)
+
+// Valid indicates whether the value is a known member of the P2OneTimeResultUnavailableErrorEnvelopeV1ApiVersion enum.
+func (e P2OneTimeResultUnavailableErrorEnvelopeV1ApiVersion) Valid() bool {
+	switch e {
+	case P2OneTimeResultUnavailableErrorEnvelopeV1ApiVersionV1:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for P2SessionRevisionConflictApiErrorV1Code.
+const (
+	SessionRevisionConflict P2SessionRevisionConflictApiErrorV1Code = "session_revision_conflict"
+)
+
+// Valid indicates whether the value is a known member of the P2SessionRevisionConflictApiErrorV1Code enum.
+func (e P2SessionRevisionConflictApiErrorV1Code) Valid() bool {
+	switch e {
+	case SessionRevisionConflict:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for P2SessionRevisionConflictErrorEnvelopeV1ApiVersion.
+const (
+	P2SessionRevisionConflictErrorEnvelopeV1ApiVersionV1 P2SessionRevisionConflictErrorEnvelopeV1ApiVersion = "v1"
+)
+
+// Valid indicates whether the value is a known member of the P2SessionRevisionConflictErrorEnvelopeV1ApiVersion enum.
+func (e P2SessionRevisionConflictErrorEnvelopeV1ApiVersion) Valid() bool {
+	switch e {
+	case P2SessionRevisionConflictErrorEnvelopeV1ApiVersionV1:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for P2StandardApiErrorV1Code.
+const (
+	P2StandardApiErrorV1CodeActivationReceiptInvalid        P2StandardApiErrorV1Code = "activation_receipt_invalid"
+	P2StandardApiErrorV1CodeApproverNotPinned               P2StandardApiErrorV1Code = "approver_not_pinned"
+	P2StandardApiErrorV1CodeAttestationExpired              P2StandardApiErrorV1Code = "attestation_expired"
+	P2StandardApiErrorV1CodeAttestationInvalid              P2StandardApiErrorV1Code = "attestation_invalid"
+	P2StandardApiErrorV1CodeAttestationReplayed             P2StandardApiErrorV1Code = "attestation_replayed"
+	P2StandardApiErrorV1CodeBootstrapAnchorRequired         P2StandardApiErrorV1Code = "bootstrap_anchor_required"
+	P2StandardApiErrorV1CodeBootstrapExpired                P2StandardApiErrorV1Code = "bootstrap_expired"
+	P2StandardApiErrorV1CodeBootstrapReplayed               P2StandardApiErrorV1Code = "bootstrap_replayed"
+	P2StandardApiErrorV1CodeBootstrapUnavailable            P2StandardApiErrorV1Code = "bootstrap_unavailable"
+	P2StandardApiErrorV1CodeCapabilityDenied                P2StandardApiErrorV1Code = "capability_denied"
+	P2StandardApiErrorV1CodeCapabilityNotRecognized         P2StandardApiErrorV1Code = "capability_not_recognized"
+	P2StandardApiErrorV1CodeCapabilityRevisionConflict      P2StandardApiErrorV1Code = "capability_revision_conflict"
+	P2StandardApiErrorV1CodeCeremonyRestartRequired         P2StandardApiErrorV1Code = "ceremony_restart_required"
+	P2StandardApiErrorV1CodeClockSkew                       P2StandardApiErrorV1Code = "clock_skew"
+	P2StandardApiErrorV1CodeCommandAttemptStale             P2StandardApiErrorV1Code = "command_attempt_stale"
+	P2StandardApiErrorV1CodeCommandClaimed                  P2StandardApiErrorV1Code = "command_claimed"
+	P2StandardApiErrorV1CodeCommandDigestMismatch           P2StandardApiErrorV1Code = "command_digest_mismatch"
+	P2StandardApiErrorV1CodeCommandExecutionAmbiguous       P2StandardApiErrorV1Code = "command_execution_ambiguous"
+	P2StandardApiErrorV1CodeCommandExpired                  P2StandardApiErrorV1Code = "command_expired"
+	P2StandardApiErrorV1CodeCommandReceiptInconsistent      P2StandardApiErrorV1Code = "command_receipt_inconsistent"
+	P2StandardApiErrorV1CodeCommandReconciliationRequired   P2StandardApiErrorV1Code = "command_reconciliation_required"
+	P2StandardApiErrorV1CodeCommandStateConflict            P2StandardApiErrorV1Code = "command_state_conflict"
+	P2StandardApiErrorV1CodeConflict                        P2StandardApiErrorV1Code = "conflict"
+	P2StandardApiErrorV1CodeCrossServerIdentityRebind       P2StandardApiErrorV1Code = "cross_server_identity_rebind"
+	P2StandardApiErrorV1CodeCrossTypeSignatureReplay        P2StandardApiErrorV1Code = "cross_type_signature_replay"
+	P2StandardApiErrorV1CodeCsrfInvalid                     P2StandardApiErrorV1Code = "csrf_invalid"
+	P2StandardApiErrorV1CodeDaemonShuttingDown              P2StandardApiErrorV1Code = "daemon_shutting_down"
+	P2StandardApiErrorV1CodeDaemonUnavailable               P2StandardApiErrorV1Code = "daemon_unavailable"
+	P2StandardApiErrorV1CodeDeliveryAttemptsExhausted       P2StandardApiErrorV1Code = "delivery_attempts_exhausted"
+	P2StandardApiErrorV1CodeDeviceKeyChanged                P2StandardApiErrorV1Code = "device_key_changed"
+	P2StandardApiErrorV1CodeDeviceKeyEnvelopeConflict       P2StandardApiErrorV1Code = "device_key_envelope_conflict"
+	P2StandardApiErrorV1CodeDeviceKeyEnvelopeCorrupt        P2StandardApiErrorV1Code = "device_key_envelope_corrupt"
+	P2StandardApiErrorV1CodeDeviceNotEnrolled               P2StandardApiErrorV1Code = "device_not_enrolled"
+	P2StandardApiErrorV1CodeDeviceRevoked                   P2StandardApiErrorV1Code = "device_revoked"
+	P2StandardApiErrorV1CodeEnrollmentCancelled             P2StandardApiErrorV1Code = "enrollment_cancelled"
+	P2StandardApiErrorV1CodeEnrollmentPreauthInvalid        P2StandardApiErrorV1Code = "enrollment_preauth_invalid"
+	P2StandardApiErrorV1CodeForbiddenMetadataField          P2StandardApiErrorV1Code = "forbidden_metadata_field"
+	P2StandardApiErrorV1CodeIdempotencyInProgress           P2StandardApiErrorV1Code = "idempotency_in_progress"
+	P2StandardApiErrorV1CodeIdempotencyKeyRequired          P2StandardApiErrorV1Code = "idempotency_key_required"
+	P2StandardApiErrorV1CodeIdempotencyKeyReused            P2StandardApiErrorV1Code = "idempotency_key_reused"
+	P2StandardApiErrorV1CodeIfMatchRequired                 P2StandardApiErrorV1Code = "if_match_required"
+	P2StandardApiErrorV1CodeInvalidArgument                 P2StandardApiErrorV1Code = "invalid_argument"
+	P2StandardApiErrorV1CodeInvalidCursor                   P2StandardApiErrorV1Code = "invalid_cursor"
+	P2StandardApiErrorV1CodeKeyDigestMismatch               P2StandardApiErrorV1Code = "key_digest_mismatch"
+	P2StandardApiErrorV1CodeLastPasskeyRequired             P2StandardApiErrorV1Code = "last_passkey_required"
+	P2StandardApiErrorV1CodeMappingQuarantined              P2StandardApiErrorV1Code = "mapping_quarantined"
+	P2StandardApiErrorV1CodeNotFound                        P2StandardApiErrorV1Code = "not_found"
+	P2StandardApiErrorV1CodeOriginMismatch                  P2StandardApiErrorV1Code = "origin_mismatch"
+	P2StandardApiErrorV1CodePasskeyCounterRegressed         P2StandardApiErrorV1Code = "passkey_counter_regressed"
+	P2StandardApiErrorV1CodePermissionDenied                P2StandardApiErrorV1Code = "permission_denied"
+	P2StandardApiErrorV1CodePhase4bControllerRequired       P2StandardApiErrorV1Code = "phase4b_controller_required"
+	P2StandardApiErrorV1CodePinMismatch                     P2StandardApiErrorV1Code = "pin_mismatch"
+	P2StandardApiErrorV1CodeProjectionReadOnly              P2StandardApiErrorV1Code = "projection_read_only"
+	P2StandardApiErrorV1CodeProviderControlUnsupported      P2StandardApiErrorV1Code = "provider_control_unsupported"
+	P2StandardApiErrorV1CodeProviderKillUnsupported         P2StandardApiErrorV1Code = "provider_kill_unsupported"
+	P2StandardApiErrorV1CodeProviderResumeUnsupported       P2StandardApiErrorV1Code = "provider_resume_unsupported"
+	P2StandardApiErrorV1CodeProviderSessionStartUnsupported P2StandardApiErrorV1Code = "provider_session_start_unsupported"
+	P2StandardApiErrorV1CodeProviderStopUnsupported         P2StandardApiErrorV1Code = "provider_stop_unsupported"
+	P2StandardApiErrorV1CodeRateLimited                     P2StandardApiErrorV1Code = "rate_limited"
+	P2StandardApiErrorV1CodeRecentUvRequired                P2StandardApiErrorV1Code = "recent_uv_required"
+	P2StandardApiErrorV1CodeRecoveryBatchReplaced           P2StandardApiErrorV1Code = "recovery_batch_replaced"
+	P2StandardApiErrorV1CodeRecoveryConsumed                P2StandardApiErrorV1Code = "recovery_consumed"
+	P2StandardApiErrorV1CodeRecoveryInvalidOrRateLimited    P2StandardApiErrorV1Code = "recovery_invalid_or_rate_limited"
+	P2StandardApiErrorV1CodeRequestReplayed                 P2StandardApiErrorV1Code = "request_replayed"
+	P2StandardApiErrorV1CodeRequestTooLarge                 P2StandardApiErrorV1Code = "request_too_large"
+	P2StandardApiErrorV1CodeResourceExhausted               P2StandardApiErrorV1Code = "resource_exhausted"
+	P2StandardApiErrorV1CodeRpIdMismatch                    P2StandardApiErrorV1Code = "rp_id_mismatch"
+	P2StandardApiErrorV1CodeSchemaIncompatible              P2StandardApiErrorV1Code = "schema_incompatible"
+	P2StandardApiErrorV1CodeSessionExpired                  P2StandardApiErrorV1Code = "session_expired"
+	P2StandardApiErrorV1CodeSessionIntegrityInvalid         P2StandardApiErrorV1Code = "session_integrity_invalid"
+	P2StandardApiErrorV1CodeSignatureInvalid                P2StandardApiErrorV1Code = "signature_invalid"
+	P2StandardApiErrorV1CodeSnapshotCommitConflict          P2StandardApiErrorV1Code = "snapshot_commit_conflict"
+	P2StandardApiErrorV1CodeSnapshotExpired                 P2StandardApiErrorV1Code = "snapshot_expired"
+	P2StandardApiErrorV1CodeSnapshotInProgress              P2StandardApiErrorV1Code = "snapshot_in_progress"
+	P2StandardApiErrorV1CodeSnapshotPageInvalid             P2StandardApiErrorV1Code = "snapshot_page_invalid"
+	P2StandardApiErrorV1CodeSnapshotPageTooLarge            P2StandardApiErrorV1Code = "snapshot_page_too_large"
+	P2StandardApiErrorV1CodeSnapshotRequired                P2StandardApiErrorV1Code = "snapshot_required"
+	P2StandardApiErrorV1CodeStaleResurrection               P2StandardApiErrorV1Code = "stale_resurrection"
+	P2StandardApiErrorV1CodeSyncBaseDigestMismatch          P2StandardApiErrorV1Code = "sync_base_digest_mismatch"
+	P2StandardApiErrorV1CodeSyncConflict                    P2StandardApiErrorV1Code = "sync_conflict"
+	P2StandardApiErrorV1CodeSyncHistoryMissing              P2StandardApiErrorV1Code = "sync_history_missing"
+	P2StandardApiErrorV1CodeSyncNextDigestMismatch          P2StandardApiErrorV1Code = "sync_next_digest_mismatch"
+	P2StandardApiErrorV1CodeSyncPatchMismatch               P2StandardApiErrorV1Code = "sync_patch_mismatch"
+	P2StandardApiErrorV1CodeSyncPatchTooLarge               P2StandardApiErrorV1Code = "sync_patch_too_large"
+	P2StandardApiErrorV1CodeUnauthenticated                 P2StandardApiErrorV1Code = "unauthenticated"
+	P2StandardApiErrorV1CodeUnsupportedApiVersion           P2StandardApiErrorV1Code = "unsupported_api_version"
+	P2StandardApiErrorV1CodeWebauthnChallengeExpired        P2StandardApiErrorV1Code = "webauthn_challenge_expired"
+	P2StandardApiErrorV1CodeWebauthnChallengeReplayed       P2StandardApiErrorV1Code = "webauthn_challenge_replayed"
+	P2StandardApiErrorV1CodeWebauthnVerificationFailed      P2StandardApiErrorV1Code = "webauthn_verification_failed"
+)
+
+// Valid indicates whether the value is a known member of the P2StandardApiErrorV1Code enum.
+func (e P2StandardApiErrorV1Code) Valid() bool {
+	switch e {
+	case P2StandardApiErrorV1CodeActivationReceiptInvalid:
+		return true
+	case P2StandardApiErrorV1CodeApproverNotPinned:
+		return true
+	case P2StandardApiErrorV1CodeAttestationExpired:
+		return true
+	case P2StandardApiErrorV1CodeAttestationInvalid:
+		return true
+	case P2StandardApiErrorV1CodeAttestationReplayed:
+		return true
+	case P2StandardApiErrorV1CodeBootstrapAnchorRequired:
+		return true
+	case P2StandardApiErrorV1CodeBootstrapExpired:
+		return true
+	case P2StandardApiErrorV1CodeBootstrapReplayed:
+		return true
+	case P2StandardApiErrorV1CodeBootstrapUnavailable:
+		return true
+	case P2StandardApiErrorV1CodeCapabilityDenied:
+		return true
+	case P2StandardApiErrorV1CodeCapabilityNotRecognized:
+		return true
+	case P2StandardApiErrorV1CodeCapabilityRevisionConflict:
+		return true
+	case P2StandardApiErrorV1CodeCeremonyRestartRequired:
+		return true
+	case P2StandardApiErrorV1CodeClockSkew:
+		return true
+	case P2StandardApiErrorV1CodeCommandAttemptStale:
+		return true
+	case P2StandardApiErrorV1CodeCommandClaimed:
+		return true
+	case P2StandardApiErrorV1CodeCommandDigestMismatch:
+		return true
+	case P2StandardApiErrorV1CodeCommandExecutionAmbiguous:
+		return true
+	case P2StandardApiErrorV1CodeCommandExpired:
+		return true
+	case P2StandardApiErrorV1CodeCommandReceiptInconsistent:
+		return true
+	case P2StandardApiErrorV1CodeCommandReconciliationRequired:
+		return true
+	case P2StandardApiErrorV1CodeCommandStateConflict:
+		return true
+	case P2StandardApiErrorV1CodeConflict:
+		return true
+	case P2StandardApiErrorV1CodeCrossServerIdentityRebind:
+		return true
+	case P2StandardApiErrorV1CodeCrossTypeSignatureReplay:
+		return true
+	case P2StandardApiErrorV1CodeCsrfInvalid:
+		return true
+	case P2StandardApiErrorV1CodeDaemonShuttingDown:
+		return true
+	case P2StandardApiErrorV1CodeDaemonUnavailable:
+		return true
+	case P2StandardApiErrorV1CodeDeliveryAttemptsExhausted:
+		return true
+	case P2StandardApiErrorV1CodeDeviceKeyChanged:
+		return true
+	case P2StandardApiErrorV1CodeDeviceKeyEnvelopeConflict:
+		return true
+	case P2StandardApiErrorV1CodeDeviceKeyEnvelopeCorrupt:
+		return true
+	case P2StandardApiErrorV1CodeDeviceNotEnrolled:
+		return true
+	case P2StandardApiErrorV1CodeDeviceRevoked:
+		return true
+	case P2StandardApiErrorV1CodeEnrollmentCancelled:
+		return true
+	case P2StandardApiErrorV1CodeEnrollmentPreauthInvalid:
+		return true
+	case P2StandardApiErrorV1CodeForbiddenMetadataField:
+		return true
+	case P2StandardApiErrorV1CodeIdempotencyInProgress:
+		return true
+	case P2StandardApiErrorV1CodeIdempotencyKeyRequired:
+		return true
+	case P2StandardApiErrorV1CodeIdempotencyKeyReused:
+		return true
+	case P2StandardApiErrorV1CodeIfMatchRequired:
+		return true
+	case P2StandardApiErrorV1CodeInvalidArgument:
+		return true
+	case P2StandardApiErrorV1CodeInvalidCursor:
+		return true
+	case P2StandardApiErrorV1CodeKeyDigestMismatch:
+		return true
+	case P2StandardApiErrorV1CodeLastPasskeyRequired:
+		return true
+	case P2StandardApiErrorV1CodeMappingQuarantined:
+		return true
+	case P2StandardApiErrorV1CodeNotFound:
+		return true
+	case P2StandardApiErrorV1CodeOriginMismatch:
+		return true
+	case P2StandardApiErrorV1CodePasskeyCounterRegressed:
+		return true
+	case P2StandardApiErrorV1CodePermissionDenied:
+		return true
+	case P2StandardApiErrorV1CodePhase4bControllerRequired:
+		return true
+	case P2StandardApiErrorV1CodePinMismatch:
+		return true
+	case P2StandardApiErrorV1CodeProjectionReadOnly:
+		return true
+	case P2StandardApiErrorV1CodeProviderControlUnsupported:
+		return true
+	case P2StandardApiErrorV1CodeProviderKillUnsupported:
+		return true
+	case P2StandardApiErrorV1CodeProviderResumeUnsupported:
+		return true
+	case P2StandardApiErrorV1CodeProviderSessionStartUnsupported:
+		return true
+	case P2StandardApiErrorV1CodeProviderStopUnsupported:
+		return true
+	case P2StandardApiErrorV1CodeRateLimited:
+		return true
+	case P2StandardApiErrorV1CodeRecentUvRequired:
+		return true
+	case P2StandardApiErrorV1CodeRecoveryBatchReplaced:
+		return true
+	case P2StandardApiErrorV1CodeRecoveryConsumed:
+		return true
+	case P2StandardApiErrorV1CodeRecoveryInvalidOrRateLimited:
+		return true
+	case P2StandardApiErrorV1CodeRequestReplayed:
+		return true
+	case P2StandardApiErrorV1CodeRequestTooLarge:
+		return true
+	case P2StandardApiErrorV1CodeResourceExhausted:
+		return true
+	case P2StandardApiErrorV1CodeRpIdMismatch:
+		return true
+	case P2StandardApiErrorV1CodeSchemaIncompatible:
+		return true
+	case P2StandardApiErrorV1CodeSessionExpired:
+		return true
+	case P2StandardApiErrorV1CodeSessionIntegrityInvalid:
+		return true
+	case P2StandardApiErrorV1CodeSignatureInvalid:
+		return true
+	case P2StandardApiErrorV1CodeSnapshotCommitConflict:
+		return true
+	case P2StandardApiErrorV1CodeSnapshotExpired:
+		return true
+	case P2StandardApiErrorV1CodeSnapshotInProgress:
+		return true
+	case P2StandardApiErrorV1CodeSnapshotPageInvalid:
+		return true
+	case P2StandardApiErrorV1CodeSnapshotPageTooLarge:
+		return true
+	case P2StandardApiErrorV1CodeSnapshotRequired:
+		return true
+	case P2StandardApiErrorV1CodeStaleResurrection:
+		return true
+	case P2StandardApiErrorV1CodeSyncBaseDigestMismatch:
+		return true
+	case P2StandardApiErrorV1CodeSyncConflict:
+		return true
+	case P2StandardApiErrorV1CodeSyncHistoryMissing:
+		return true
+	case P2StandardApiErrorV1CodeSyncNextDigestMismatch:
+		return true
+	case P2StandardApiErrorV1CodeSyncPatchMismatch:
+		return true
+	case P2StandardApiErrorV1CodeSyncPatchTooLarge:
+		return true
+	case P2StandardApiErrorV1CodeUnauthenticated:
+		return true
+	case P2StandardApiErrorV1CodeUnsupportedApiVersion:
+		return true
+	case P2StandardApiErrorV1CodeWebauthnChallengeExpired:
+		return true
+	case P2StandardApiErrorV1CodeWebauthnChallengeReplayed:
+		return true
+	case P2StandardApiErrorV1CodeWebauthnVerificationFailed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for P2StandardErrorEnvelopeV1ApiVersion.
+const (
+	P2StandardErrorEnvelopeV1ApiVersionV1 P2StandardErrorEnvelopeV1ApiVersion = "v1"
+)
+
+// Valid indicates whether the value is a known member of the P2StandardErrorEnvelopeV1ApiVersion enum.
+func (e P2StandardErrorEnvelopeV1ApiVersion) Valid() bool {
+	switch e {
+	case P2StandardErrorEnvelopeV1ApiVersionV1:
 		return true
 	default:
 		return false
@@ -6781,6 +7301,42 @@ type AuditEventV1Decision string
 // AuthCapabilityV1 defines model for AuthCapabilityV1.
 type AuthCapabilityV1 string
 
+// AuthIdempotencyOperationV1 defines model for AuthIdempotencyOperationV1.
+type AuthIdempotencyOperationV1 string
+
+// AuthOperationReceiptV1 defines model for AuthOperationReceiptV1.
+type AuthOperationReceiptV1 struct {
+	CommittedAt          time.Time                                  `json:"committedAt"`
+	CookieOutcome        AuthOperationReceiptV1CookieOutcome        `json:"cookieOutcome"`
+	CsrfOutcome          AuthOperationReceiptV1CsrfOutcome          `json:"csrfOutcome"`
+	NextAction           AuthOperationReceiptV1NextAction           `json:"nextAction"`
+	Operation            AuthIdempotencyOperationV1                 `json:"operation"`
+	OperationId          string                                     `json:"operationId"`
+	RecoveryCodesOutcome AuthOperationReceiptV1RecoveryCodesOutcome `json:"recoveryCodesOutcome"`
+	ResourceId           *string                                    `json:"resourceId,omitempty"`
+	State                AuthOperationReceiptV1State                `json:"state"`
+}
+
+// AuthOperationReceiptV1CookieOutcome defines model for AuthOperationReceiptV1.CookieOutcome.
+type AuthOperationReceiptV1CookieOutcome string
+
+// AuthOperationReceiptV1CsrfOutcome defines model for AuthOperationReceiptV1.CsrfOutcome.
+type AuthOperationReceiptV1CsrfOutcome string
+
+// AuthOperationReceiptV1NextAction defines model for AuthOperationReceiptV1.NextAction.
+type AuthOperationReceiptV1NextAction string
+
+// AuthOperationReceiptV1RecoveryCodesOutcome defines model for AuthOperationReceiptV1.RecoveryCodesOutcome.
+type AuthOperationReceiptV1RecoveryCodesOutcome string
+
+// AuthOperationReceiptV1State defines model for AuthOperationReceiptV1.State.
+type AuthOperationReceiptV1State string
+
+// AuthReceiptErrorDetailsV1 defines model for AuthReceiptErrorDetailsV1.
+type AuthReceiptErrorDetailsV1 struct {
+	Receipt AuthOperationReceiptV1 `json:"receipt"`
+}
+
 // Base64UrlDigestV1 defines model for Base64UrlDigestV1.
 type Base64UrlDigestV1 = string
 
@@ -6812,20 +7368,20 @@ type BootstrapAnchorDescriptorV1Version int
 
 // BootstrapAnchorV1 defines model for BootstrapAnchorV1.
 type BootstrapAnchorV1 struct {
-	Architecture         string                          `json:"architecture"`
-	Capabilities         DeviceCapabilityListV1          `json:"capabilities"`
-	ClientVersion        string                          `json:"clientVersion"`
-	DeviceId             string                          `json:"deviceId"`
-	ExchangeKeyDigest    string                          `json:"exchangeKeyDigest"`
-	ExchangePublicKey    string                          `json:"exchangePublicKey"`
-	KeyEnvelopeAssertion BootstrapKeyEnvelopeAssertionV1 `json:"keyEnvelopeAssertion"`
-	Kind                 BootstrapAnchorV1Kind           `json:"kind"`
-	Name                 string                          `json:"name"`
-	PinDigest            string                          `json:"pinDigest"`
-	Platform             BootstrapAnchorV1Platform       `json:"platform"`
-	SigningKeyDigest     string                          `json:"signingKeyDigest"`
-	SigningPublicKey     string                          `json:"signingPublicKey"`
-	StorageMode          BootstrapAnchorV1StorageMode    `json:"storageMode"`
+	Architecture         string                            `json:"architecture"`
+	Capabilities         P2BootstrapDeviceCapabilityListV1 `json:"capabilities"`
+	ClientVersion        string                            `json:"clientVersion"`
+	DeviceId             string                            `json:"deviceId"`
+	ExchangeKeyDigest    string                            `json:"exchangeKeyDigest"`
+	ExchangePublicKey    string                            `json:"exchangePublicKey"`
+	KeyEnvelopeAssertion BootstrapKeyEnvelopeAssertionV1   `json:"keyEnvelopeAssertion"`
+	Kind                 BootstrapAnchorV1Kind             `json:"kind"`
+	Name                 string                            `json:"name"`
+	PinDigest            string                            `json:"pinDigest"`
+	Platform             BootstrapAnchorV1Platform         `json:"platform"`
+	SigningKeyDigest     string                            `json:"signingKeyDigest"`
+	SigningPublicKey     string                            `json:"signingPublicKey"`
+	StorageMode          BootstrapAnchorV1StorageMode      `json:"storageMode"`
 }
 
 // BootstrapAnchorV1Kind defines model for BootstrapAnchorV1.Kind.
@@ -6968,18 +7524,38 @@ type BrowserSessionListEnvelopeV1ApiVersion string
 
 // BrowserSessionListResultV1 defines model for BrowserSessionListResultV1.
 type BrowserSessionListResultV1 struct {
-	Revision int                `json:"revision"`
 	Sessions []BrowserSessionV1 `json:"sessions"`
+}
+
+// BrowserSessionRevokeEnvelopeV1 defines model for BrowserSessionRevokeEnvelopeV1.
+type BrowserSessionRevokeEnvelopeV1 struct {
+	ApiVersion BrowserSessionRevokeEnvelopeV1ApiVersion `json:"apiVersion"`
+	Data       BrowserSessionRevokeResultV1             `json:"data"`
+	Meta       ResponseMeta                             `json:"meta"`
+}
+
+// BrowserSessionRevokeEnvelopeV1ApiVersion defines model for BrowserSessionRevokeEnvelopeV1.ApiVersion.
+type BrowserSessionRevokeEnvelopeV1ApiVersion string
+
+// BrowserSessionRevokeResultV1 defines model for BrowserSessionRevokeResultV1.
+type BrowserSessionRevokeResultV1 struct {
+	CurrentSessionRevoked bool      `json:"currentSessionRevoked"`
+	Revision              int       `json:"revision"`
+	RevokedAt             time.Time `json:"revokedAt"`
+	SessionId             string    `json:"sessionId"`
 }
 
 // BrowserSessionV1 defines model for BrowserSessionV1.
 type BrowserSessionV1 struct {
+	ActivityRevision     int                                  `json:"activityRevision"`
 	AuthenticationMethod BrowserSessionV1AuthenticationMethod `json:"authenticationMethod"`
 	CreatedAt            time.Time                            `json:"createdAt"`
 	Current              bool                                 `json:"current"`
 	ExpiresAt            time.Time                            `json:"expiresAt"`
 	Id                   string                               `json:"id"`
+	IdleExpiresAt        time.Time                            `json:"idleExpiresAt"`
 	LastSeenAt           time.Time                            `json:"lastSeenAt"`
+	Revision             int                                  `json:"revision"`
 }
 
 // BrowserSessionV1AuthenticationMethod defines model for BrowserSessionV1.AuthenticationMethod.
@@ -8315,6 +8891,82 @@ type OverviewV1 struct {
 	RecentUsage    []UsageProjectionV1   `json:"recentUsage"`
 }
 
+// P2ApiErrorV1 defines model for P2ApiErrorV1.
+type P2ApiErrorV1 struct {
+	union json.RawMessage
+}
+
+// P2BootstrapDeviceCapabilityListV1 defines model for P2BootstrapDeviceCapabilityListV1.
+type P2BootstrapDeviceCapabilityListV1 = []DeviceCapabilityV1
+
+// P2EmptyObjectRequestV1 defines model for P2EmptyObjectRequestV1.
+type P2EmptyObjectRequestV1 = transport.EmptyJSONObjectV1
+
+// P2OneTimeResultUnavailableApiErrorV1 defines model for P2OneTimeResultUnavailableApiErrorV1.
+type P2OneTimeResultUnavailableApiErrorV1 struct {
+	Code      P2OneTimeResultUnavailableApiErrorV1Code `json:"code"`
+	Details   AuthReceiptErrorDetailsV1                `json:"details"`
+	Message   string                                   `json:"message"`
+	RequestId string                                   `json:"requestId"`
+}
+
+// P2OneTimeResultUnavailableApiErrorV1Code defines model for P2OneTimeResultUnavailableApiErrorV1.Code.
+type P2OneTimeResultUnavailableApiErrorV1Code string
+
+// P2OneTimeResultUnavailableErrorEnvelopeV1 defines model for P2OneTimeResultUnavailableErrorEnvelopeV1.
+type P2OneTimeResultUnavailableErrorEnvelopeV1 struct {
+	ApiVersion P2OneTimeResultUnavailableErrorEnvelopeV1ApiVersion `json:"apiVersion"`
+	Error      P2OneTimeResultUnavailableApiErrorV1                `json:"error"`
+}
+
+// P2OneTimeResultUnavailableErrorEnvelopeV1ApiVersion defines model for P2OneTimeResultUnavailableErrorEnvelopeV1.ApiVersion.
+type P2OneTimeResultUnavailableErrorEnvelopeV1ApiVersion string
+
+// P2SecretConflictErrorEnvelopeV1 defines model for P2SecretConflictErrorEnvelopeV1.
+type P2SecretConflictErrorEnvelopeV1 struct {
+	union json.RawMessage
+}
+
+// P2SessionRevisionConflictApiErrorV1 defines model for P2SessionRevisionConflictApiErrorV1.
+type P2SessionRevisionConflictApiErrorV1 struct {
+	Code      P2SessionRevisionConflictApiErrorV1Code `json:"code"`
+	Details   SessionRevisionConflictDetailsV1        `json:"details"`
+	Message   string                                  `json:"message"`
+	RequestId string                                  `json:"requestId"`
+}
+
+// P2SessionRevisionConflictApiErrorV1Code defines model for P2SessionRevisionConflictApiErrorV1.Code.
+type P2SessionRevisionConflictApiErrorV1Code string
+
+// P2SessionRevisionConflictErrorEnvelopeV1 defines model for P2SessionRevisionConflictErrorEnvelopeV1.
+type P2SessionRevisionConflictErrorEnvelopeV1 struct {
+	ApiVersion P2SessionRevisionConflictErrorEnvelopeV1ApiVersion `json:"apiVersion"`
+	Error      P2SessionRevisionConflictApiErrorV1                `json:"error"`
+}
+
+// P2SessionRevisionConflictErrorEnvelopeV1ApiVersion defines model for P2SessionRevisionConflictErrorEnvelopeV1.ApiVersion.
+type P2SessionRevisionConflictErrorEnvelopeV1ApiVersion string
+
+// P2StandardApiErrorV1 defines model for P2StandardApiErrorV1.
+type P2StandardApiErrorV1 struct {
+	Code      P2StandardApiErrorV1Code `json:"code"`
+	Details   []ErrorDetail            `json:"details"`
+	Message   string                   `json:"message"`
+	RequestId string                   `json:"requestId"`
+}
+
+// P2StandardApiErrorV1Code defines model for P2StandardApiErrorV1.Code.
+type P2StandardApiErrorV1Code string
+
+// P2StandardErrorEnvelopeV1 defines model for P2StandardErrorEnvelopeV1.
+type P2StandardErrorEnvelopeV1 struct {
+	ApiVersion P2StandardErrorEnvelopeV1ApiVersion `json:"apiVersion"`
+	Error      P2StandardApiErrorV1                `json:"error"`
+}
+
+// P2StandardErrorEnvelopeV1ApiVersion defines model for P2StandardErrorEnvelopeV1.ApiVersion.
+type P2StandardErrorEnvelopeV1ApiVersion string
+
 // PasskeyDeleteEnvelopeV1 defines model for PasskeyDeleteEnvelopeV1.
 type PasskeyDeleteEnvelopeV1 struct {
 	ApiVersion PasskeyDeleteEnvelopeV1ApiVersion `json:"apiVersion"`
@@ -8345,7 +8997,6 @@ type PasskeyListEnvelopeV1ApiVersion string
 // PasskeyListResultV1 defines model for PasskeyListResultV1.
 type PasskeyListResultV1 struct {
 	Passkeys []PasskeyV1 `json:"passkeys"`
-	Revision int         `json:"revision"`
 }
 
 // PasskeyV1 defines model for PasskeyV1.
@@ -9142,6 +9793,13 @@ type SessionProjectionV1Provider string
 
 // SessionProjectionV1Status defines model for SessionProjectionV1.Status.
 type SessionProjectionV1Status string
+
+// SessionRevisionConflictDetailsV1 defines model for SessionRevisionConflictDetailsV1.
+type SessionRevisionConflictDetailsV1 struct {
+	CurrentRevision  int    `json:"currentRevision"`
+	ExpectedRevision int    `json:"expectedRevision"`
+	SessionId        string `json:"sessionId"`
+}
 
 // SessionSyncValueV1 defines model for SessionSyncValueV1.
 type SessionSyncValueV1 struct {
@@ -10122,6 +10780,9 @@ type IfMatch = string
 // Limit defines model for Limit.
 type Limit = int
 
+// P2IdempotencyKey defines model for P2IdempotencyKey.
+type P2IdempotencyKey = string
+
 // RequestContentSHA256 defines model for RequestContentSHA256.
 type RequestContentSHA256 = string
 
@@ -10148,77 +10809,77 @@ type ListAuditEventsParams struct {
 
 // LogoutParams defines parameters for Logout.
 type LogoutParams struct {
-	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
-	XCSRFToken     Csrf           `json:"X-CSRF-Token"`
+	IdempotencyKey P2IdempotencyKey `json:"Idempotency-Key"`
+	XCSRFToken     Csrf             `json:"X-CSRF-Token"`
 }
 
 // CreatePasskeyAuthenticationOptionsParams defines parameters for CreatePasskeyAuthenticationOptions.
 type CreatePasskeyAuthenticationOptionsParams struct {
-	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+	IdempotencyKey P2IdempotencyKey `json:"Idempotency-Key"`
 }
 
 // CreatePasskeyRegistrationOptionsParams defines parameters for CreatePasskeyRegistrationOptions.
 type CreatePasskeyRegistrationOptionsParams struct {
-	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
-	XCSRFToken     Csrf           `json:"X-CSRF-Token"`
+	IdempotencyKey P2IdempotencyKey `json:"Idempotency-Key"`
+	XCSRFToken     Csrf             `json:"X-CSRF-Token"`
 }
 
 // VerifyPasskeyRegistrationParams defines parameters for VerifyPasskeyRegistration.
 type VerifyPasskeyRegistrationParams struct {
-	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
-	XCSRFToken     Csrf           `json:"X-CSRF-Token"`
+	IdempotencyKey P2IdempotencyKey `json:"Idempotency-Key"`
+	XCSRFToken     Csrf             `json:"X-CSRF-Token"`
 }
 
 // VerifyPasskeyAuthenticationParams defines parameters for VerifyPasskeyAuthentication.
 type VerifyPasskeyAuthenticationParams struct {
-	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+	IdempotencyKey P2IdempotencyKey `json:"Idempotency-Key"`
 }
 
 // DeletePasskeyParams defines parameters for DeletePasskey.
 type DeletePasskeyParams struct {
-	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
-	XCSRFToken     Csrf           `json:"X-CSRF-Token"`
-	IfMatch        IfMatch        `json:"If-Match"`
+	IdempotencyKey P2IdempotencyKey `json:"Idempotency-Key"`
+	XCSRFToken     Csrf             `json:"X-CSRF-Token"`
+	IfMatch        IfMatch          `json:"If-Match"`
 }
 
 // RotateRecoveryCodesParams defines parameters for RotateRecoveryCodes.
 type RotateRecoveryCodesParams struct {
-	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
-	XCSRFToken     Csrf           `json:"X-CSRF-Token"`
+	IdempotencyKey P2IdempotencyKey `json:"Idempotency-Key"`
+	XCSRFToken     Csrf             `json:"X-CSRF-Token"`
 }
 
 // VerifyRecoveryCodeParams defines parameters for VerifyRecoveryCode.
 type VerifyRecoveryCodeParams struct {
-	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+	IdempotencyKey P2IdempotencyKey `json:"Idempotency-Key"`
 }
 
 // DeleteBrowserSessionParams defines parameters for DeleteBrowserSession.
 type DeleteBrowserSessionParams struct {
-	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
-	XCSRFToken     Csrf           `json:"X-CSRF-Token"`
-	IfMatch        IfMatch        `json:"If-Match"`
+	IdempotencyKey P2IdempotencyKey `json:"Idempotency-Key"`
+	XCSRFToken     Csrf             `json:"X-CSRF-Token"`
+	IfMatch        IfMatch          `json:"If-Match"`
 }
 
 // CreateUvOptionsParams defines parameters for CreateUvOptions.
 type CreateUvOptionsParams struct {
-	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
-	XCSRFToken     Csrf           `json:"X-CSRF-Token"`
+	IdempotencyKey P2IdempotencyKey `json:"Idempotency-Key"`
+	XCSRFToken     Csrf             `json:"X-CSRF-Token"`
 }
 
 // VerifyUvParams defines parameters for VerifyUv.
 type VerifyUvParams struct {
-	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
-	XCSRFToken     Csrf           `json:"X-CSRF-Token"`
+	IdempotencyKey P2IdempotencyKey `json:"Idempotency-Key"`
+	XCSRFToken     Csrf             `json:"X-CSRF-Token"`
 }
 
 // CreateBootstrapOptionsParams defines parameters for CreateBootstrapOptions.
 type CreateBootstrapOptionsParams struct {
-	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+	IdempotencyKey P2IdempotencyKey `json:"Idempotency-Key"`
 }
 
 // VerifyBootstrapParams defines parameters for VerifyBootstrap.
 type VerifyBootstrapParams struct {
-	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+	IdempotencyKey P2IdempotencyKey `json:"Idempotency-Key"`
 }
 
 // ListCredentialStatusesParams defines parameters for ListCredentialStatuses.
@@ -10461,14 +11122,35 @@ type ListWorkspacesParams struct {
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
 }
 
+// LogoutJSONRequestBody defines body for Logout for application/json ContentType.
+type LogoutJSONRequestBody = P2EmptyObjectRequestV1
+
+// CreatePasskeyAuthenticationOptionsJSONRequestBody defines body for CreatePasskeyAuthenticationOptions for application/json ContentType.
+type CreatePasskeyAuthenticationOptionsJSONRequestBody = P2EmptyObjectRequestV1
+
+// CreatePasskeyRegistrationOptionsJSONRequestBody defines body for CreatePasskeyRegistrationOptions for application/json ContentType.
+type CreatePasskeyRegistrationOptionsJSONRequestBody = P2EmptyObjectRequestV1
+
 // VerifyPasskeyRegistrationJSONRequestBody defines body for VerifyPasskeyRegistration for application/json ContentType.
 type VerifyPasskeyRegistrationJSONRequestBody = WebAuthnRegistrationVerifyRequestV1
 
 // VerifyPasskeyAuthenticationJSONRequestBody defines body for VerifyPasskeyAuthentication for application/json ContentType.
 type VerifyPasskeyAuthenticationJSONRequestBody = WebAuthnAssertionVerifyRequestV1
 
+// DeletePasskeyJSONRequestBody defines body for DeletePasskey for application/json ContentType.
+type DeletePasskeyJSONRequestBody = P2EmptyObjectRequestV1
+
+// RotateRecoveryCodesJSONRequestBody defines body for RotateRecoveryCodes for application/json ContentType.
+type RotateRecoveryCodesJSONRequestBody = P2EmptyObjectRequestV1
+
 // VerifyRecoveryCodeJSONRequestBody defines body for VerifyRecoveryCode for application/json ContentType.
 type VerifyRecoveryCodeJSONRequestBody = RecoveryVerifyRequestV1
+
+// DeleteBrowserSessionJSONRequestBody defines body for DeleteBrowserSession for application/json ContentType.
+type DeleteBrowserSessionJSONRequestBody = P2EmptyObjectRequestV1
+
+// CreateUvOptionsJSONRequestBody defines body for CreateUvOptions for application/json ContentType.
+type CreateUvOptionsJSONRequestBody = P2EmptyObjectRequestV1
 
 // VerifyUvJSONRequestBody defines body for VerifyUv for application/json ContentType.
 type VerifyUvJSONRequestBody = WebAuthnAssertionVerifyRequestV1
@@ -11567,6 +12249,156 @@ func (t KindProofV1) MarshalJSON() ([]byte, error) {
 }
 
 func (t *KindProofV1) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsP2StandardApiErrorV1 returns the union data inside the P2ApiErrorV1 as a P2StandardApiErrorV1
+func (t P2ApiErrorV1) AsP2StandardApiErrorV1() (P2StandardApiErrorV1, error) {
+	var body P2StandardApiErrorV1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromP2StandardApiErrorV1 overwrites any union data inside the P2ApiErrorV1 as the provided P2StandardApiErrorV1
+func (t *P2ApiErrorV1) FromP2StandardApiErrorV1(v P2StandardApiErrorV1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeP2StandardApiErrorV1 performs a merge with any union data inside the P2ApiErrorV1, using the provided P2StandardApiErrorV1
+func (t *P2ApiErrorV1) MergeP2StandardApiErrorV1(v P2StandardApiErrorV1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsP2OneTimeResultUnavailableApiErrorV1 returns the union data inside the P2ApiErrorV1 as a P2OneTimeResultUnavailableApiErrorV1
+func (t P2ApiErrorV1) AsP2OneTimeResultUnavailableApiErrorV1() (P2OneTimeResultUnavailableApiErrorV1, error) {
+	var body P2OneTimeResultUnavailableApiErrorV1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromP2OneTimeResultUnavailableApiErrorV1 overwrites any union data inside the P2ApiErrorV1 as the provided P2OneTimeResultUnavailableApiErrorV1
+func (t *P2ApiErrorV1) FromP2OneTimeResultUnavailableApiErrorV1(v P2OneTimeResultUnavailableApiErrorV1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeP2OneTimeResultUnavailableApiErrorV1 performs a merge with any union data inside the P2ApiErrorV1, using the provided P2OneTimeResultUnavailableApiErrorV1
+func (t *P2ApiErrorV1) MergeP2OneTimeResultUnavailableApiErrorV1(v P2OneTimeResultUnavailableApiErrorV1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsP2SessionRevisionConflictApiErrorV1 returns the union data inside the P2ApiErrorV1 as a P2SessionRevisionConflictApiErrorV1
+func (t P2ApiErrorV1) AsP2SessionRevisionConflictApiErrorV1() (P2SessionRevisionConflictApiErrorV1, error) {
+	var body P2SessionRevisionConflictApiErrorV1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromP2SessionRevisionConflictApiErrorV1 overwrites any union data inside the P2ApiErrorV1 as the provided P2SessionRevisionConflictApiErrorV1
+func (t *P2ApiErrorV1) FromP2SessionRevisionConflictApiErrorV1(v P2SessionRevisionConflictApiErrorV1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeP2SessionRevisionConflictApiErrorV1 performs a merge with any union data inside the P2ApiErrorV1, using the provided P2SessionRevisionConflictApiErrorV1
+func (t *P2ApiErrorV1) MergeP2SessionRevisionConflictApiErrorV1(v P2SessionRevisionConflictApiErrorV1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t P2ApiErrorV1) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *P2ApiErrorV1) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsP2StandardErrorEnvelopeV1 returns the union data inside the P2SecretConflictErrorEnvelopeV1 as a P2StandardErrorEnvelopeV1
+func (t P2SecretConflictErrorEnvelopeV1) AsP2StandardErrorEnvelopeV1() (P2StandardErrorEnvelopeV1, error) {
+	var body P2StandardErrorEnvelopeV1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromP2StandardErrorEnvelopeV1 overwrites any union data inside the P2SecretConflictErrorEnvelopeV1 as the provided P2StandardErrorEnvelopeV1
+func (t *P2SecretConflictErrorEnvelopeV1) FromP2StandardErrorEnvelopeV1(v P2StandardErrorEnvelopeV1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeP2StandardErrorEnvelopeV1 performs a merge with any union data inside the P2SecretConflictErrorEnvelopeV1, using the provided P2StandardErrorEnvelopeV1
+func (t *P2SecretConflictErrorEnvelopeV1) MergeP2StandardErrorEnvelopeV1(v P2StandardErrorEnvelopeV1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsP2OneTimeResultUnavailableErrorEnvelopeV1 returns the union data inside the P2SecretConflictErrorEnvelopeV1 as a P2OneTimeResultUnavailableErrorEnvelopeV1
+func (t P2SecretConflictErrorEnvelopeV1) AsP2OneTimeResultUnavailableErrorEnvelopeV1() (P2OneTimeResultUnavailableErrorEnvelopeV1, error) {
+	var body P2OneTimeResultUnavailableErrorEnvelopeV1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromP2OneTimeResultUnavailableErrorEnvelopeV1 overwrites any union data inside the P2SecretConflictErrorEnvelopeV1 as the provided P2OneTimeResultUnavailableErrorEnvelopeV1
+func (t *P2SecretConflictErrorEnvelopeV1) FromP2OneTimeResultUnavailableErrorEnvelopeV1(v P2OneTimeResultUnavailableErrorEnvelopeV1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeP2OneTimeResultUnavailableErrorEnvelopeV1 performs a merge with any union data inside the P2SecretConflictErrorEnvelopeV1, using the provided P2OneTimeResultUnavailableErrorEnvelopeV1
+func (t *P2SecretConflictErrorEnvelopeV1) MergeP2OneTimeResultUnavailableErrorEnvelopeV1(v P2OneTimeResultUnavailableErrorEnvelopeV1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t P2SecretConflictErrorEnvelopeV1) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *P2SecretConflictErrorEnvelopeV1) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -12689,17 +13521,32 @@ type ClientInterface interface {
 	// GetCurrentAuth performs a GET /v1/auth/current (the `GetCurrentAuth` operationId) request.
 	GetCurrentAuth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// LogoutWithBody performs a POST /v1/auth/logout (the `Logout` operationId) request,
+	// with any type of body and a specified content type.
+	LogoutWithBody(ctx context.Context, params *LogoutParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// Logout performs a POST /v1/auth/logout (the `Logout` operationId) request.
-	Logout(ctx context.Context, params *LogoutParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Takes a body of the `application/json` content type.
+	Logout(ctx context.Context, params *LogoutParams, body LogoutJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListPasskeys performs a GET /v1/auth/passkeys (the `ListPasskeys` operationId) request.
 	ListPasskeys(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// CreatePasskeyAuthenticationOptionsWithBody performs a POST /v1/auth/passkeys/options (the `CreatePasskeyAuthenticationOptions` operationId) request,
+	// with any type of body and a specified content type.
+	CreatePasskeyAuthenticationOptionsWithBody(ctx context.Context, params *CreatePasskeyAuthenticationOptionsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// CreatePasskeyAuthenticationOptions performs a POST /v1/auth/passkeys/options (the `CreatePasskeyAuthenticationOptions` operationId) request.
-	CreatePasskeyAuthenticationOptions(ctx context.Context, params *CreatePasskeyAuthenticationOptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Takes a body of the `application/json` content type.
+	CreatePasskeyAuthenticationOptions(ctx context.Context, params *CreatePasskeyAuthenticationOptionsParams, body CreatePasskeyAuthenticationOptionsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreatePasskeyRegistrationOptionsWithBody performs a POST /v1/auth/passkeys/registration/options (the `CreatePasskeyRegistrationOptions` operationId) request,
+	// with any type of body and a specified content type.
+	CreatePasskeyRegistrationOptionsWithBody(ctx context.Context, params *CreatePasskeyRegistrationOptionsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreatePasskeyRegistrationOptions performs a POST /v1/auth/passkeys/registration/options (the `CreatePasskeyRegistrationOptions` operationId) request.
-	CreatePasskeyRegistrationOptions(ctx context.Context, params *CreatePasskeyRegistrationOptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Takes a body of the `application/json` content type.
+	CreatePasskeyRegistrationOptions(ctx context.Context, params *CreatePasskeyRegistrationOptionsParams, body CreatePasskeyRegistrationOptionsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// VerifyPasskeyRegistrationWithBody performs a POST /v1/auth/passkeys/registration/verify (the `VerifyPasskeyRegistration` operationId) request,
 	// with any type of body and a specified content type.
@@ -12717,11 +13564,21 @@ type ClientInterface interface {
 	// Takes a body of the `application/json` content type.
 	VerifyPasskeyAuthentication(ctx context.Context, params *VerifyPasskeyAuthenticationParams, body VerifyPasskeyAuthenticationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeletePasskeyWithBody performs a DELETE /v1/auth/passkeys/{passkeyId} (the `DeletePasskey` operationId) request,
+	// with any type of body and a specified content type.
+	DeletePasskeyWithBody(ctx context.Context, passkeyId string, params *DeletePasskeyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// DeletePasskey performs a DELETE /v1/auth/passkeys/{passkeyId} (the `DeletePasskey` operationId) request.
-	DeletePasskey(ctx context.Context, passkeyId string, params *DeletePasskeyParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Takes a body of the `application/json` content type.
+	DeletePasskey(ctx context.Context, passkeyId string, params *DeletePasskeyParams, body DeletePasskeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RotateRecoveryCodesWithBody performs a POST /v1/auth/recovery-codes/rotate (the `RotateRecoveryCodes` operationId) request,
+	// with any type of body and a specified content type.
+	RotateRecoveryCodesWithBody(ctx context.Context, params *RotateRecoveryCodesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RotateRecoveryCodes performs a POST /v1/auth/recovery-codes/rotate (the `RotateRecoveryCodes` operationId) request.
-	RotateRecoveryCodes(ctx context.Context, params *RotateRecoveryCodesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Takes a body of the `application/json` content type.
+	RotateRecoveryCodes(ctx context.Context, params *RotateRecoveryCodesParams, body RotateRecoveryCodesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// VerifyRecoveryCodeWithBody performs a POST /v1/auth/recovery/verify (the `VerifyRecoveryCode` operationId) request,
 	// with any type of body and a specified content type.
@@ -12734,11 +13591,21 @@ type ClientInterface interface {
 	// ListBrowserSessions performs a GET /v1/auth/sessions (the `ListBrowserSessions` operationId) request.
 	ListBrowserSessions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeleteBrowserSessionWithBody performs a DELETE /v1/auth/sessions/{sessionId} (the `DeleteBrowserSession` operationId) request,
+	// with any type of body and a specified content type.
+	DeleteBrowserSessionWithBody(ctx context.Context, sessionId string, params *DeleteBrowserSessionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// DeleteBrowserSession performs a DELETE /v1/auth/sessions/{sessionId} (the `DeleteBrowserSession` operationId) request.
-	DeleteBrowserSession(ctx context.Context, sessionId string, params *DeleteBrowserSessionParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Takes a body of the `application/json` content type.
+	DeleteBrowserSession(ctx context.Context, sessionId string, params *DeleteBrowserSessionParams, body DeleteBrowserSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateUvOptionsWithBody performs a POST /v1/auth/uv/options (the `CreateUvOptions` operationId) request,
+	// with any type of body and a specified content type.
+	CreateUvOptionsWithBody(ctx context.Context, params *CreateUvOptionsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateUvOptions performs a POST /v1/auth/uv/options (the `CreateUvOptions` operationId) request.
-	CreateUvOptions(ctx context.Context, params *CreateUvOptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Takes a body of the `application/json` content type.
+	CreateUvOptions(ctx context.Context, params *CreateUvOptionsParams, body CreateUvOptionsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// VerifyUvWithBody performs a POST /v1/auth/uv/verify (the `VerifyUv` operationId) request,
 	// with any type of body and a specified content type.
@@ -13055,9 +13922,24 @@ func (c *Client) GetCurrentAuth(ctx context.Context, reqEditors ...RequestEditor
 	return c.Client.Do(req)
 }
 
+// LogoutWithBody performs a POST /v1/auth/logout (the `Logout` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) LogoutWithBody(ctx context.Context, params *LogoutParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewLogoutRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // Logout performs a POST /v1/auth/logout (the `Logout` operationId) request.
-func (c *Client) Logout(ctx context.Context, params *LogoutParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewLogoutRequest(c.Server, params)
+// Takes a body of the `application/json` content type.
+func (c *Client) Logout(ctx context.Context, params *LogoutParams, body LogoutJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewLogoutRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -13081,9 +13963,38 @@ func (c *Client) ListPasskeys(ctx context.Context, reqEditors ...RequestEditorFn
 	return c.Client.Do(req)
 }
 
+// CreatePasskeyAuthenticationOptionsWithBody performs a POST /v1/auth/passkeys/options (the `CreatePasskeyAuthenticationOptions` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) CreatePasskeyAuthenticationOptionsWithBody(ctx context.Context, params *CreatePasskeyAuthenticationOptionsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreatePasskeyAuthenticationOptionsRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // CreatePasskeyAuthenticationOptions performs a POST /v1/auth/passkeys/options (the `CreatePasskeyAuthenticationOptions` operationId) request.
-func (c *Client) CreatePasskeyAuthenticationOptions(ctx context.Context, params *CreatePasskeyAuthenticationOptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreatePasskeyAuthenticationOptionsRequest(c.Server, params)
+// Takes a body of the `application/json` content type.
+func (c *Client) CreatePasskeyAuthenticationOptions(ctx context.Context, params *CreatePasskeyAuthenticationOptionsParams, body CreatePasskeyAuthenticationOptionsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreatePasskeyAuthenticationOptionsRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreatePasskeyRegistrationOptionsWithBody performs a POST /v1/auth/passkeys/registration/options (the `CreatePasskeyRegistrationOptions` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) CreatePasskeyRegistrationOptionsWithBody(ctx context.Context, params *CreatePasskeyRegistrationOptionsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreatePasskeyRegistrationOptionsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -13095,8 +14006,9 @@ func (c *Client) CreatePasskeyAuthenticationOptions(ctx context.Context, params 
 }
 
 // CreatePasskeyRegistrationOptions performs a POST /v1/auth/passkeys/registration/options (the `CreatePasskeyRegistrationOptions` operationId) request.
-func (c *Client) CreatePasskeyRegistrationOptions(ctx context.Context, params *CreatePasskeyRegistrationOptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreatePasskeyRegistrationOptionsRequest(c.Server, params)
+// Takes a body of the `application/json` content type.
+func (c *Client) CreatePasskeyRegistrationOptions(ctx context.Context, params *CreatePasskeyRegistrationOptionsParams, body CreatePasskeyRegistrationOptionsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreatePasskeyRegistrationOptionsRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -13163,9 +14075,38 @@ func (c *Client) VerifyPasskeyAuthentication(ctx context.Context, params *Verify
 	return c.Client.Do(req)
 }
 
+// DeletePasskeyWithBody performs a DELETE /v1/auth/passkeys/{passkeyId} (the `DeletePasskey` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) DeletePasskeyWithBody(ctx context.Context, passkeyId string, params *DeletePasskeyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeletePasskeyRequestWithBody(c.Server, passkeyId, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // DeletePasskey performs a DELETE /v1/auth/passkeys/{passkeyId} (the `DeletePasskey` operationId) request.
-func (c *Client) DeletePasskey(ctx context.Context, passkeyId string, params *DeletePasskeyParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeletePasskeyRequest(c.Server, passkeyId, params)
+// Takes a body of the `application/json` content type.
+func (c *Client) DeletePasskey(ctx context.Context, passkeyId string, params *DeletePasskeyParams, body DeletePasskeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeletePasskeyRequest(c.Server, passkeyId, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RotateRecoveryCodesWithBody performs a POST /v1/auth/recovery-codes/rotate (the `RotateRecoveryCodes` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) RotateRecoveryCodesWithBody(ctx context.Context, params *RotateRecoveryCodesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRotateRecoveryCodesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -13177,8 +14118,9 @@ func (c *Client) DeletePasskey(ctx context.Context, passkeyId string, params *De
 }
 
 // RotateRecoveryCodes performs a POST /v1/auth/recovery-codes/rotate (the `RotateRecoveryCodes` operationId) request.
-func (c *Client) RotateRecoveryCodes(ctx context.Context, params *RotateRecoveryCodesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRotateRecoveryCodesRequest(c.Server, params)
+// Takes a body of the `application/json` content type.
+func (c *Client) RotateRecoveryCodes(ctx context.Context, params *RotateRecoveryCodesParams, body RotateRecoveryCodesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRotateRecoveryCodesRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -13230,9 +14172,38 @@ func (c *Client) ListBrowserSessions(ctx context.Context, reqEditors ...RequestE
 	return c.Client.Do(req)
 }
 
+// DeleteBrowserSessionWithBody performs a DELETE /v1/auth/sessions/{sessionId} (the `DeleteBrowserSession` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) DeleteBrowserSessionWithBody(ctx context.Context, sessionId string, params *DeleteBrowserSessionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteBrowserSessionRequestWithBody(c.Server, sessionId, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // DeleteBrowserSession performs a DELETE /v1/auth/sessions/{sessionId} (the `DeleteBrowserSession` operationId) request.
-func (c *Client) DeleteBrowserSession(ctx context.Context, sessionId string, params *DeleteBrowserSessionParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteBrowserSessionRequest(c.Server, sessionId, params)
+// Takes a body of the `application/json` content type.
+func (c *Client) DeleteBrowserSession(ctx context.Context, sessionId string, params *DeleteBrowserSessionParams, body DeleteBrowserSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteBrowserSessionRequest(c.Server, sessionId, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateUvOptionsWithBody performs a POST /v1/auth/uv/options (the `CreateUvOptions` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) CreateUvOptionsWithBody(ctx context.Context, params *CreateUvOptionsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateUvOptionsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -13244,8 +14215,9 @@ func (c *Client) DeleteBrowserSession(ctx context.Context, sessionId string, par
 }
 
 // CreateUvOptions performs a POST /v1/auth/uv/options (the `CreateUvOptions` operationId) request.
-func (c *Client) CreateUvOptions(ctx context.Context, params *CreateUvOptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateUvOptionsRequest(c.Server, params)
+// Takes a body of the `application/json` content type.
+func (c *Client) CreateUvOptions(ctx context.Context, params *CreateUvOptionsParams, body CreateUvOptionsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateUvOptionsRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -14431,8 +15403,19 @@ func NewGetCurrentAuthRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewLogoutRequest constructs an http.Request for the Logout method
-func NewLogoutRequest(server string, params *LogoutParams) (*http.Request, error) {
+// NewLogoutRequest calls the generic Logout builder with application/json body
+func NewLogoutRequest(server string, params *LogoutParams, body LogoutJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewLogoutRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewLogoutRequestWithBody constructs an http.Request for the Logout method, with any body, and a specified content type
+func NewLogoutRequestWithBody(server string, params *LogoutParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -14450,10 +15433,12 @@ func NewLogoutRequest(server string, params *LogoutParams) (*http.Request, error
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	if params != nil {
 
@@ -14507,8 +15492,19 @@ func NewListPasskeysRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewCreatePasskeyAuthenticationOptionsRequest constructs an http.Request for the CreatePasskeyAuthenticationOptions method
-func NewCreatePasskeyAuthenticationOptionsRequest(server string, params *CreatePasskeyAuthenticationOptionsParams) (*http.Request, error) {
+// NewCreatePasskeyAuthenticationOptionsRequest calls the generic CreatePasskeyAuthenticationOptions builder with application/json body
+func NewCreatePasskeyAuthenticationOptionsRequest(server string, params *CreatePasskeyAuthenticationOptionsParams, body CreatePasskeyAuthenticationOptionsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreatePasskeyAuthenticationOptionsRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewCreatePasskeyAuthenticationOptionsRequestWithBody constructs an http.Request for the CreatePasskeyAuthenticationOptions method, with any body, and a specified content type
+func NewCreatePasskeyAuthenticationOptionsRequestWithBody(server string, params *CreatePasskeyAuthenticationOptionsParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -14526,10 +15522,12 @@ func NewCreatePasskeyAuthenticationOptionsRequest(server string, params *CreateP
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	if params != nil {
 
@@ -14547,8 +15545,19 @@ func NewCreatePasskeyAuthenticationOptionsRequest(server string, params *CreateP
 	return req, nil
 }
 
-// NewCreatePasskeyRegistrationOptionsRequest constructs an http.Request for the CreatePasskeyRegistrationOptions method
-func NewCreatePasskeyRegistrationOptionsRequest(server string, params *CreatePasskeyRegistrationOptionsParams) (*http.Request, error) {
+// NewCreatePasskeyRegistrationOptionsRequest calls the generic CreatePasskeyRegistrationOptions builder with application/json body
+func NewCreatePasskeyRegistrationOptionsRequest(server string, params *CreatePasskeyRegistrationOptionsParams, body CreatePasskeyRegistrationOptionsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreatePasskeyRegistrationOptionsRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewCreatePasskeyRegistrationOptionsRequestWithBody constructs an http.Request for the CreatePasskeyRegistrationOptions method, with any body, and a specified content type
+func NewCreatePasskeyRegistrationOptionsRequestWithBody(server string, params *CreatePasskeyRegistrationOptionsParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -14566,10 +15575,12 @@ func NewCreatePasskeyRegistrationOptionsRequest(server string, params *CreatePas
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	if params != nil {
 
@@ -14711,8 +15722,19 @@ func NewVerifyPasskeyAuthenticationRequestWithBody(server string, params *Verify
 	return req, nil
 }
 
-// NewDeletePasskeyRequest constructs an http.Request for the DeletePasskey method
-func NewDeletePasskeyRequest(server string, passkeyId string, params *DeletePasskeyParams) (*http.Request, error) {
+// NewDeletePasskeyRequest calls the generic DeletePasskey builder with application/json body
+func NewDeletePasskeyRequest(server string, passkeyId string, params *DeletePasskeyParams, body DeletePasskeyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewDeletePasskeyRequestWithBody(server, passkeyId, params, "application/json", bodyReader)
+}
+
+// NewDeletePasskeyRequestWithBody constructs an http.Request for the DeletePasskey method, with any body, and a specified content type
+func NewDeletePasskeyRequestWithBody(server string, passkeyId string, params *DeletePasskeyParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -14737,10 +15759,12 @@ func NewDeletePasskeyRequest(server string, passkeyId string, params *DeletePass
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	if params != nil {
 
@@ -14776,8 +15800,19 @@ func NewDeletePasskeyRequest(server string, passkeyId string, params *DeletePass
 	return req, nil
 }
 
-// NewRotateRecoveryCodesRequest constructs an http.Request for the RotateRecoveryCodes method
-func NewRotateRecoveryCodesRequest(server string, params *RotateRecoveryCodesParams) (*http.Request, error) {
+// NewRotateRecoveryCodesRequest calls the generic RotateRecoveryCodes builder with application/json body
+func NewRotateRecoveryCodesRequest(server string, params *RotateRecoveryCodesParams, body RotateRecoveryCodesJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRotateRecoveryCodesRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewRotateRecoveryCodesRequestWithBody constructs an http.Request for the RotateRecoveryCodes method, with any body, and a specified content type
+func NewRotateRecoveryCodesRequestWithBody(server string, params *RotateRecoveryCodesParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -14795,10 +15830,12 @@ func NewRotateRecoveryCodesRequest(server string, params *RotateRecoveryCodesPar
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	if params != nil {
 
@@ -14905,8 +15942,19 @@ func NewListBrowserSessionsRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewDeleteBrowserSessionRequest constructs an http.Request for the DeleteBrowserSession method
-func NewDeleteBrowserSessionRequest(server string, sessionId string, params *DeleteBrowserSessionParams) (*http.Request, error) {
+// NewDeleteBrowserSessionRequest calls the generic DeleteBrowserSession builder with application/json body
+func NewDeleteBrowserSessionRequest(server string, sessionId string, params *DeleteBrowserSessionParams, body DeleteBrowserSessionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewDeleteBrowserSessionRequestWithBody(server, sessionId, params, "application/json", bodyReader)
+}
+
+// NewDeleteBrowserSessionRequestWithBody constructs an http.Request for the DeleteBrowserSession method, with any body, and a specified content type
+func NewDeleteBrowserSessionRequestWithBody(server string, sessionId string, params *DeleteBrowserSessionParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -14931,10 +15979,12 @@ func NewDeleteBrowserSessionRequest(server string, sessionId string, params *Del
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	if params != nil {
 
@@ -14970,8 +16020,19 @@ func NewDeleteBrowserSessionRequest(server string, sessionId string, params *Del
 	return req, nil
 }
 
-// NewCreateUvOptionsRequest constructs an http.Request for the CreateUvOptions method
-func NewCreateUvOptionsRequest(server string, params *CreateUvOptionsParams) (*http.Request, error) {
+// NewCreateUvOptionsRequest calls the generic CreateUvOptions builder with application/json body
+func NewCreateUvOptionsRequest(server string, params *CreateUvOptionsParams, body CreateUvOptionsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateUvOptionsRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewCreateUvOptionsRequestWithBody constructs an http.Request for the CreateUvOptions method, with any body, and a specified content type
+func NewCreateUvOptionsRequestWithBody(server string, params *CreateUvOptionsParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -14989,10 +16050,12 @@ func NewCreateUvOptionsRequest(server string, params *CreateUvOptionsParams) (*h
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	if params != nil {
 
@@ -18043,25 +19106,40 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	GetCurrentAuthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetCurrentAuthResponse, error)
 
-	// LogoutWithResponse performs a POST /v1/auth/logout (the `Logout` operationId) request.
+	// LogoutWithBodyWithResponse performs a POST /v1/auth/logout (the `Logout` operationId) request,
+	// with any type of body and a specified content type.
 	//
 	// Returns a wrapper object for the known response body format(s).
-	LogoutWithResponse(ctx context.Context, params *LogoutParams, reqEditors ...RequestEditorFn) (*LogoutResponse, error)
+	LogoutWithBodyWithResponse(ctx context.Context, params *LogoutParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*LogoutResponse, error)
+
+	// LogoutWithResponse performs a POST /v1/auth/logout (the `Logout` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	LogoutWithResponse(ctx context.Context, params *LogoutParams, body LogoutJSONRequestBody, reqEditors ...RequestEditorFn) (*LogoutResponse, error)
 
 	// ListPasskeysWithResponse performs a GET /v1/auth/passkeys (the `ListPasskeys` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	ListPasskeysWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListPasskeysResponse, error)
 
-	// CreatePasskeyAuthenticationOptionsWithResponse performs a POST /v1/auth/passkeys/options (the `CreatePasskeyAuthenticationOptions` operationId) request.
+	// CreatePasskeyAuthenticationOptionsWithBodyWithResponse performs a POST /v1/auth/passkeys/options (the `CreatePasskeyAuthenticationOptions` operationId) request,
+	// with any type of body and a specified content type.
 	//
 	// Returns a wrapper object for the known response body format(s).
-	CreatePasskeyAuthenticationOptionsWithResponse(ctx context.Context, params *CreatePasskeyAuthenticationOptionsParams, reqEditors ...RequestEditorFn) (*CreatePasskeyAuthenticationOptionsResponse, error)
+	CreatePasskeyAuthenticationOptionsWithBodyWithResponse(ctx context.Context, params *CreatePasskeyAuthenticationOptionsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePasskeyAuthenticationOptionsResponse, error)
+
+	// CreatePasskeyAuthenticationOptionsWithResponse performs a POST /v1/auth/passkeys/options (the `CreatePasskeyAuthenticationOptions` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	CreatePasskeyAuthenticationOptionsWithResponse(ctx context.Context, params *CreatePasskeyAuthenticationOptionsParams, body CreatePasskeyAuthenticationOptionsJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePasskeyAuthenticationOptionsResponse, error)
+
+	// CreatePasskeyRegistrationOptionsWithBodyWithResponse performs a POST /v1/auth/passkeys/registration/options (the `CreatePasskeyRegistrationOptions` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	CreatePasskeyRegistrationOptionsWithBodyWithResponse(ctx context.Context, params *CreatePasskeyRegistrationOptionsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePasskeyRegistrationOptionsResponse, error)
 
 	// CreatePasskeyRegistrationOptionsWithResponse performs a POST /v1/auth/passkeys/registration/options (the `CreatePasskeyRegistrationOptions` operationId) request.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	CreatePasskeyRegistrationOptionsWithResponse(ctx context.Context, params *CreatePasskeyRegistrationOptionsParams, reqEditors ...RequestEditorFn) (*CreatePasskeyRegistrationOptionsResponse, error)
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	CreatePasskeyRegistrationOptionsWithResponse(ctx context.Context, params *CreatePasskeyRegistrationOptionsParams, body CreatePasskeyRegistrationOptionsJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePasskeyRegistrationOptionsResponse, error)
 
 	// VerifyPasskeyRegistrationWithBodyWithResponse performs a POST /v1/auth/passkeys/registration/verify (the `VerifyPasskeyRegistration` operationId) request,
 	// with any type of body and a specified content type.
@@ -18083,15 +19161,25 @@ type ClientWithResponsesInterface interface {
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	VerifyPasskeyAuthenticationWithResponse(ctx context.Context, params *VerifyPasskeyAuthenticationParams, body VerifyPasskeyAuthenticationJSONRequestBody, reqEditors ...RequestEditorFn) (*VerifyPasskeyAuthenticationResponse, error)
 
-	// DeletePasskeyWithResponse performs a DELETE /v1/auth/passkeys/{passkeyId} (the `DeletePasskey` operationId) request.
+	// DeletePasskeyWithBodyWithResponse performs a DELETE /v1/auth/passkeys/{passkeyId} (the `DeletePasskey` operationId) request,
+	// with any type of body and a specified content type.
 	//
 	// Returns a wrapper object for the known response body format(s).
-	DeletePasskeyWithResponse(ctx context.Context, passkeyId string, params *DeletePasskeyParams, reqEditors ...RequestEditorFn) (*DeletePasskeyResponse, error)
+	DeletePasskeyWithBodyWithResponse(ctx context.Context, passkeyId string, params *DeletePasskeyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeletePasskeyResponse, error)
+
+	// DeletePasskeyWithResponse performs a DELETE /v1/auth/passkeys/{passkeyId} (the `DeletePasskey` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	DeletePasskeyWithResponse(ctx context.Context, passkeyId string, params *DeletePasskeyParams, body DeletePasskeyJSONRequestBody, reqEditors ...RequestEditorFn) (*DeletePasskeyResponse, error)
+
+	// RotateRecoveryCodesWithBodyWithResponse performs a POST /v1/auth/recovery-codes/rotate (the `RotateRecoveryCodes` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	RotateRecoveryCodesWithBodyWithResponse(ctx context.Context, params *RotateRecoveryCodesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RotateRecoveryCodesResponse, error)
 
 	// RotateRecoveryCodesWithResponse performs a POST /v1/auth/recovery-codes/rotate (the `RotateRecoveryCodes` operationId) request.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	RotateRecoveryCodesWithResponse(ctx context.Context, params *RotateRecoveryCodesParams, reqEditors ...RequestEditorFn) (*RotateRecoveryCodesResponse, error)
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	RotateRecoveryCodesWithResponse(ctx context.Context, params *RotateRecoveryCodesParams, body RotateRecoveryCodesJSONRequestBody, reqEditors ...RequestEditorFn) (*RotateRecoveryCodesResponse, error)
 
 	// VerifyRecoveryCodeWithBodyWithResponse performs a POST /v1/auth/recovery/verify (the `VerifyRecoveryCode` operationId) request,
 	// with any type of body and a specified content type.
@@ -18108,15 +19196,25 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	ListBrowserSessionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListBrowserSessionsResponse, error)
 
-	// DeleteBrowserSessionWithResponse performs a DELETE /v1/auth/sessions/{sessionId} (the `DeleteBrowserSession` operationId) request.
+	// DeleteBrowserSessionWithBodyWithResponse performs a DELETE /v1/auth/sessions/{sessionId} (the `DeleteBrowserSession` operationId) request,
+	// with any type of body and a specified content type.
 	//
 	// Returns a wrapper object for the known response body format(s).
-	DeleteBrowserSessionWithResponse(ctx context.Context, sessionId string, params *DeleteBrowserSessionParams, reqEditors ...RequestEditorFn) (*DeleteBrowserSessionResponse, error)
+	DeleteBrowserSessionWithBodyWithResponse(ctx context.Context, sessionId string, params *DeleteBrowserSessionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteBrowserSessionResponse, error)
+
+	// DeleteBrowserSessionWithResponse performs a DELETE /v1/auth/sessions/{sessionId} (the `DeleteBrowserSession` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	DeleteBrowserSessionWithResponse(ctx context.Context, sessionId string, params *DeleteBrowserSessionParams, body DeleteBrowserSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteBrowserSessionResponse, error)
+
+	// CreateUvOptionsWithBodyWithResponse performs a POST /v1/auth/uv/options (the `CreateUvOptions` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	CreateUvOptionsWithBodyWithResponse(ctx context.Context, params *CreateUvOptionsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateUvOptionsResponse, error)
 
 	// CreateUvOptionsWithResponse performs a POST /v1/auth/uv/options (the `CreateUvOptions` operationId) request.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	CreateUvOptionsWithResponse(ctx context.Context, params *CreateUvOptionsParams, reqEditors ...RequestEditorFn) (*CreateUvOptionsResponse, error)
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	CreateUvOptionsWithResponse(ctx context.Context, params *CreateUvOptionsParams, body CreateUvOptionsJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateUvOptionsResponse, error)
 
 	// VerifyUvWithBodyWithResponse performs a POST /v1/auth/uv/verify (the `VerifyUv` operationId) request,
 	// with any type of body and a specified content type.
@@ -18911,31 +20009,31 @@ type GetCurrentAuthResponse struct {
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *CurrentAuthEnvelope
 	// JSON400 the response for an HTTP 400 `application/json` response
-	JSON400 *ErrorEnvelope
+	JSON400 *P2StandardErrorEnvelopeV1
 	// JSON401 the response for an HTTP 401 `application/json` response
-	JSON401 *ErrorEnvelope
+	JSON401 *P2StandardErrorEnvelopeV1
 	// JSON403 the response for an HTTP 403 `application/json` response
-	JSON403 *ErrorEnvelope
+	JSON403 *P2StandardErrorEnvelopeV1
 	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *ErrorEnvelope
+	JSON404 *P2StandardErrorEnvelopeV1
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *ErrorEnvelope
+	JSON409 *P2StandardErrorEnvelopeV1
 	// JSON412 the response for an HTTP 412 `application/json` response
-	JSON412 *ErrorEnvelope
+	JSON412 *P2StandardErrorEnvelopeV1
 	// JSON413 the response for an HTTP 413 `application/json` response
-	JSON413 *ErrorEnvelope
+	JSON413 *P2StandardErrorEnvelopeV1
 	// JSON415 the response for an HTTP 415 `application/json` response
-	JSON415 *ErrorEnvelope
+	JSON415 *P2StandardErrorEnvelopeV1
 	// JSON422 the response for an HTTP 422 `application/json` response
-	JSON422 *ErrorEnvelope
+	JSON422 *P2StandardErrorEnvelopeV1
 	// JSON429 the response for an HTTP 429 `application/json` response
-	JSON429 *ErrorEnvelope
+	JSON429 *P2StandardErrorEnvelopeV1
 	// JSON431 the response for an HTTP 431 `application/json` response
-	JSON431 *ErrorEnvelope
+	JSON431 *P2StandardErrorEnvelopeV1
 	// JSON500 the response for an HTTP 500 `application/json` response
-	JSON500 *ErrorEnvelope
+	JSON500 *P2StandardErrorEnvelopeV1
 	// JSON503 the response for an HTTP 503 `application/json` response
-	JSON503 *ErrorEnvelope
+	JSON503 *P2StandardErrorEnvelopeV1
 	// Headers200 the parsed response headers for an HTTP 200 response
 	Headers200 *GetCurrentAuthResponse200Headers
 }
@@ -18946,67 +20044,67 @@ func (r GetCurrentAuthResponse) GetJSON200() *CurrentAuthEnvelope {
 }
 
 // GetJSON400 returns the response for an HTTP 400 `application/json` response
-func (r GetCurrentAuthResponse) GetJSON400() *ErrorEnvelope {
+func (r GetCurrentAuthResponse) GetJSON400() *P2StandardErrorEnvelopeV1 {
 	return r.JSON400
 }
 
 // GetJSON401 returns the response for an HTTP 401 `application/json` response
-func (r GetCurrentAuthResponse) GetJSON401() *ErrorEnvelope {
+func (r GetCurrentAuthResponse) GetJSON401() *P2StandardErrorEnvelopeV1 {
 	return r.JSON401
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
-func (r GetCurrentAuthResponse) GetJSON403() *ErrorEnvelope {
+func (r GetCurrentAuthResponse) GetJSON403() *P2StandardErrorEnvelopeV1 {
 	return r.JSON403
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r GetCurrentAuthResponse) GetJSON404() *ErrorEnvelope {
+func (r GetCurrentAuthResponse) GetJSON404() *P2StandardErrorEnvelopeV1 {
 	return r.JSON404
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r GetCurrentAuthResponse) GetJSON409() *ErrorEnvelope {
+func (r GetCurrentAuthResponse) GetJSON409() *P2StandardErrorEnvelopeV1 {
 	return r.JSON409
 }
 
 // GetJSON412 returns the response for an HTTP 412 `application/json` response
-func (r GetCurrentAuthResponse) GetJSON412() *ErrorEnvelope {
+func (r GetCurrentAuthResponse) GetJSON412() *P2StandardErrorEnvelopeV1 {
 	return r.JSON412
 }
 
 // GetJSON413 returns the response for an HTTP 413 `application/json` response
-func (r GetCurrentAuthResponse) GetJSON413() *ErrorEnvelope {
+func (r GetCurrentAuthResponse) GetJSON413() *P2StandardErrorEnvelopeV1 {
 	return r.JSON413
 }
 
 // GetJSON415 returns the response for an HTTP 415 `application/json` response
-func (r GetCurrentAuthResponse) GetJSON415() *ErrorEnvelope {
+func (r GetCurrentAuthResponse) GetJSON415() *P2StandardErrorEnvelopeV1 {
 	return r.JSON415
 }
 
 // GetJSON422 returns the response for an HTTP 422 `application/json` response
-func (r GetCurrentAuthResponse) GetJSON422() *ErrorEnvelope {
+func (r GetCurrentAuthResponse) GetJSON422() *P2StandardErrorEnvelopeV1 {
 	return r.JSON422
 }
 
 // GetJSON429 returns the response for an HTTP 429 `application/json` response
-func (r GetCurrentAuthResponse) GetJSON429() *ErrorEnvelope {
+func (r GetCurrentAuthResponse) GetJSON429() *P2StandardErrorEnvelopeV1 {
 	return r.JSON429
 }
 
 // GetJSON431 returns the response for an HTTP 431 `application/json` response
-func (r GetCurrentAuthResponse) GetJSON431() *ErrorEnvelope {
+func (r GetCurrentAuthResponse) GetJSON431() *P2StandardErrorEnvelopeV1 {
 	return r.JSON431
 }
 
 // GetJSON500 returns the response for an HTTP 500 `application/json` response
-func (r GetCurrentAuthResponse) GetJSON500() *ErrorEnvelope {
+func (r GetCurrentAuthResponse) GetJSON500() *P2StandardErrorEnvelopeV1 {
 	return r.JSON500
 }
 
 // GetJSON503 returns the response for an HTTP 503 `application/json` response
-func (r GetCurrentAuthResponse) GetJSON503() *ErrorEnvelope {
+func (r GetCurrentAuthResponse) GetJSON503() *P2StandardErrorEnvelopeV1 {
 	return r.JSON503
 }
 
@@ -19042,7 +20140,13 @@ func (r GetCurrentAuthResponse) ContentType() string {
 // LogoutResponse200Headers the declared response headers of an HTTP 200 response for Logout
 type LogoutResponse200Headers struct {
 	CacheControl *string
+	SetCookie    *string
 	XRequestID   *string
+}
+
+// LogoutResponse409Headers the declared response headers of an HTTP 409 response for Logout
+type LogoutResponse409Headers struct {
+	RetryAfter *string
 }
 
 type LogoutResponse struct {
@@ -19051,33 +20155,35 @@ type LogoutResponse struct {
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *OperationStatusEnvelope
 	// JSON400 the response for an HTTP 400 `application/json` response
-	JSON400 *ErrorEnvelope
+	JSON400 *P2StandardErrorEnvelopeV1
 	// JSON401 the response for an HTTP 401 `application/json` response
-	JSON401 *ErrorEnvelope
+	JSON401 *P2StandardErrorEnvelopeV1
 	// JSON403 the response for an HTTP 403 `application/json` response
-	JSON403 *ErrorEnvelope
+	JSON403 *P2StandardErrorEnvelopeV1
 	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *ErrorEnvelope
+	JSON404 *P2StandardErrorEnvelopeV1
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *ErrorEnvelope
+	JSON409 *P2StandardErrorEnvelopeV1
 	// JSON412 the response for an HTTP 412 `application/json` response
-	JSON412 *ErrorEnvelope
+	JSON412 *P2StandardErrorEnvelopeV1
 	// JSON413 the response for an HTTP 413 `application/json` response
-	JSON413 *ErrorEnvelope
+	JSON413 *P2StandardErrorEnvelopeV1
 	// JSON415 the response for an HTTP 415 `application/json` response
-	JSON415 *ErrorEnvelope
+	JSON415 *P2StandardErrorEnvelopeV1
 	// JSON422 the response for an HTTP 422 `application/json` response
-	JSON422 *ErrorEnvelope
+	JSON422 *P2StandardErrorEnvelopeV1
 	// JSON429 the response for an HTTP 429 `application/json` response
-	JSON429 *ErrorEnvelope
+	JSON429 *P2StandardErrorEnvelopeV1
 	// JSON431 the response for an HTTP 431 `application/json` response
-	JSON431 *ErrorEnvelope
+	JSON431 *P2StandardErrorEnvelopeV1
 	// JSON500 the response for an HTTP 500 `application/json` response
-	JSON500 *ErrorEnvelope
+	JSON500 *P2StandardErrorEnvelopeV1
 	// JSON503 the response for an HTTP 503 `application/json` response
-	JSON503 *ErrorEnvelope
+	JSON503 *P2StandardErrorEnvelopeV1
 	// Headers200 the parsed response headers for an HTTP 200 response
 	Headers200 *LogoutResponse200Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *LogoutResponse409Headers
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
@@ -19086,67 +20192,67 @@ func (r LogoutResponse) GetJSON200() *OperationStatusEnvelope {
 }
 
 // GetJSON400 returns the response for an HTTP 400 `application/json` response
-func (r LogoutResponse) GetJSON400() *ErrorEnvelope {
+func (r LogoutResponse) GetJSON400() *P2StandardErrorEnvelopeV1 {
 	return r.JSON400
 }
 
 // GetJSON401 returns the response for an HTTP 401 `application/json` response
-func (r LogoutResponse) GetJSON401() *ErrorEnvelope {
+func (r LogoutResponse) GetJSON401() *P2StandardErrorEnvelopeV1 {
 	return r.JSON401
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
-func (r LogoutResponse) GetJSON403() *ErrorEnvelope {
+func (r LogoutResponse) GetJSON403() *P2StandardErrorEnvelopeV1 {
 	return r.JSON403
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r LogoutResponse) GetJSON404() *ErrorEnvelope {
+func (r LogoutResponse) GetJSON404() *P2StandardErrorEnvelopeV1 {
 	return r.JSON404
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r LogoutResponse) GetJSON409() *ErrorEnvelope {
+func (r LogoutResponse) GetJSON409() *P2StandardErrorEnvelopeV1 {
 	return r.JSON409
 }
 
 // GetJSON412 returns the response for an HTTP 412 `application/json` response
-func (r LogoutResponse) GetJSON412() *ErrorEnvelope {
+func (r LogoutResponse) GetJSON412() *P2StandardErrorEnvelopeV1 {
 	return r.JSON412
 }
 
 // GetJSON413 returns the response for an HTTP 413 `application/json` response
-func (r LogoutResponse) GetJSON413() *ErrorEnvelope {
+func (r LogoutResponse) GetJSON413() *P2StandardErrorEnvelopeV1 {
 	return r.JSON413
 }
 
 // GetJSON415 returns the response for an HTTP 415 `application/json` response
-func (r LogoutResponse) GetJSON415() *ErrorEnvelope {
+func (r LogoutResponse) GetJSON415() *P2StandardErrorEnvelopeV1 {
 	return r.JSON415
 }
 
 // GetJSON422 returns the response for an HTTP 422 `application/json` response
-func (r LogoutResponse) GetJSON422() *ErrorEnvelope {
+func (r LogoutResponse) GetJSON422() *P2StandardErrorEnvelopeV1 {
 	return r.JSON422
 }
 
 // GetJSON429 returns the response for an HTTP 429 `application/json` response
-func (r LogoutResponse) GetJSON429() *ErrorEnvelope {
+func (r LogoutResponse) GetJSON429() *P2StandardErrorEnvelopeV1 {
 	return r.JSON429
 }
 
 // GetJSON431 returns the response for an HTTP 431 `application/json` response
-func (r LogoutResponse) GetJSON431() *ErrorEnvelope {
+func (r LogoutResponse) GetJSON431() *P2StandardErrorEnvelopeV1 {
 	return r.JSON431
 }
 
 // GetJSON500 returns the response for an HTTP 500 `application/json` response
-func (r LogoutResponse) GetJSON500() *ErrorEnvelope {
+func (r LogoutResponse) GetJSON500() *P2StandardErrorEnvelopeV1 {
 	return r.JSON500
 }
 
 // GetJSON503 returns the response for an HTTP 503 `application/json` response
-func (r LogoutResponse) GetJSON503() *ErrorEnvelope {
+func (r LogoutResponse) GetJSON503() *P2StandardErrorEnvelopeV1 {
 	return r.JSON503
 }
 
@@ -19191,31 +20297,31 @@ type ListPasskeysResponse struct {
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *PasskeyListEnvelopeV1
 	// JSON400 the response for an HTTP 400 `application/json` response
-	JSON400 *ErrorEnvelope
+	JSON400 *P2StandardErrorEnvelopeV1
 	// JSON401 the response for an HTTP 401 `application/json` response
-	JSON401 *ErrorEnvelope
+	JSON401 *P2StandardErrorEnvelopeV1
 	// JSON403 the response for an HTTP 403 `application/json` response
-	JSON403 *ErrorEnvelope
+	JSON403 *P2StandardErrorEnvelopeV1
 	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *ErrorEnvelope
+	JSON404 *P2StandardErrorEnvelopeV1
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *ErrorEnvelope
+	JSON409 *P2StandardErrorEnvelopeV1
 	// JSON412 the response for an HTTP 412 `application/json` response
-	JSON412 *ErrorEnvelope
+	JSON412 *P2StandardErrorEnvelopeV1
 	// JSON413 the response for an HTTP 413 `application/json` response
-	JSON413 *ErrorEnvelope
+	JSON413 *P2StandardErrorEnvelopeV1
 	// JSON415 the response for an HTTP 415 `application/json` response
-	JSON415 *ErrorEnvelope
+	JSON415 *P2StandardErrorEnvelopeV1
 	// JSON422 the response for an HTTP 422 `application/json` response
-	JSON422 *ErrorEnvelope
+	JSON422 *P2StandardErrorEnvelopeV1
 	// JSON429 the response for an HTTP 429 `application/json` response
-	JSON429 *ErrorEnvelope
+	JSON429 *P2StandardErrorEnvelopeV1
 	// JSON431 the response for an HTTP 431 `application/json` response
-	JSON431 *ErrorEnvelope
+	JSON431 *P2StandardErrorEnvelopeV1
 	// JSON500 the response for an HTTP 500 `application/json` response
-	JSON500 *ErrorEnvelope
+	JSON500 *P2StandardErrorEnvelopeV1
 	// JSON503 the response for an HTTP 503 `application/json` response
-	JSON503 *ErrorEnvelope
+	JSON503 *P2StandardErrorEnvelopeV1
 	// Headers200 the parsed response headers for an HTTP 200 response
 	Headers200 *ListPasskeysResponse200Headers
 }
@@ -19226,67 +20332,67 @@ func (r ListPasskeysResponse) GetJSON200() *PasskeyListEnvelopeV1 {
 }
 
 // GetJSON400 returns the response for an HTTP 400 `application/json` response
-func (r ListPasskeysResponse) GetJSON400() *ErrorEnvelope {
+func (r ListPasskeysResponse) GetJSON400() *P2StandardErrorEnvelopeV1 {
 	return r.JSON400
 }
 
 // GetJSON401 returns the response for an HTTP 401 `application/json` response
-func (r ListPasskeysResponse) GetJSON401() *ErrorEnvelope {
+func (r ListPasskeysResponse) GetJSON401() *P2StandardErrorEnvelopeV1 {
 	return r.JSON401
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
-func (r ListPasskeysResponse) GetJSON403() *ErrorEnvelope {
+func (r ListPasskeysResponse) GetJSON403() *P2StandardErrorEnvelopeV1 {
 	return r.JSON403
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r ListPasskeysResponse) GetJSON404() *ErrorEnvelope {
+func (r ListPasskeysResponse) GetJSON404() *P2StandardErrorEnvelopeV1 {
 	return r.JSON404
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r ListPasskeysResponse) GetJSON409() *ErrorEnvelope {
+func (r ListPasskeysResponse) GetJSON409() *P2StandardErrorEnvelopeV1 {
 	return r.JSON409
 }
 
 // GetJSON412 returns the response for an HTTP 412 `application/json` response
-func (r ListPasskeysResponse) GetJSON412() *ErrorEnvelope {
+func (r ListPasskeysResponse) GetJSON412() *P2StandardErrorEnvelopeV1 {
 	return r.JSON412
 }
 
 // GetJSON413 returns the response for an HTTP 413 `application/json` response
-func (r ListPasskeysResponse) GetJSON413() *ErrorEnvelope {
+func (r ListPasskeysResponse) GetJSON413() *P2StandardErrorEnvelopeV1 {
 	return r.JSON413
 }
 
 // GetJSON415 returns the response for an HTTP 415 `application/json` response
-func (r ListPasskeysResponse) GetJSON415() *ErrorEnvelope {
+func (r ListPasskeysResponse) GetJSON415() *P2StandardErrorEnvelopeV1 {
 	return r.JSON415
 }
 
 // GetJSON422 returns the response for an HTTP 422 `application/json` response
-func (r ListPasskeysResponse) GetJSON422() *ErrorEnvelope {
+func (r ListPasskeysResponse) GetJSON422() *P2StandardErrorEnvelopeV1 {
 	return r.JSON422
 }
 
 // GetJSON429 returns the response for an HTTP 429 `application/json` response
-func (r ListPasskeysResponse) GetJSON429() *ErrorEnvelope {
+func (r ListPasskeysResponse) GetJSON429() *P2StandardErrorEnvelopeV1 {
 	return r.JSON429
 }
 
 // GetJSON431 returns the response for an HTTP 431 `application/json` response
-func (r ListPasskeysResponse) GetJSON431() *ErrorEnvelope {
+func (r ListPasskeysResponse) GetJSON431() *P2StandardErrorEnvelopeV1 {
 	return r.JSON431
 }
 
 // GetJSON500 returns the response for an HTTP 500 `application/json` response
-func (r ListPasskeysResponse) GetJSON500() *ErrorEnvelope {
+func (r ListPasskeysResponse) GetJSON500() *P2StandardErrorEnvelopeV1 {
 	return r.JSON500
 }
 
 // GetJSON503 returns the response for an HTTP 503 `application/json` response
-func (r ListPasskeysResponse) GetJSON503() *ErrorEnvelope {
+func (r ListPasskeysResponse) GetJSON503() *P2StandardErrorEnvelopeV1 {
 	return r.JSON503
 }
 
@@ -19325,39 +20431,46 @@ type CreatePasskeyAuthenticationOptionsResponse200Headers struct {
 	XRequestID   *string
 }
 
+// CreatePasskeyAuthenticationOptionsResponse409Headers the declared response headers of an HTTP 409 response for CreatePasskeyAuthenticationOptions
+type CreatePasskeyAuthenticationOptionsResponse409Headers struct {
+	RetryAfter *string
+}
+
 type CreatePasskeyAuthenticationOptionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *WebAuthnRequestOptionsEnvelopeV1
 	// JSON400 the response for an HTTP 400 `application/json` response
-	JSON400 *ErrorEnvelope
+	JSON400 *P2StandardErrorEnvelopeV1
 	// JSON401 the response for an HTTP 401 `application/json` response
-	JSON401 *ErrorEnvelope
+	JSON401 *P2StandardErrorEnvelopeV1
 	// JSON403 the response for an HTTP 403 `application/json` response
-	JSON403 *ErrorEnvelope
+	JSON403 *P2StandardErrorEnvelopeV1
 	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *ErrorEnvelope
+	JSON404 *P2StandardErrorEnvelopeV1
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *ErrorEnvelope
+	JSON409 *P2StandardErrorEnvelopeV1
 	// JSON412 the response for an HTTP 412 `application/json` response
-	JSON412 *ErrorEnvelope
+	JSON412 *P2StandardErrorEnvelopeV1
 	// JSON413 the response for an HTTP 413 `application/json` response
-	JSON413 *ErrorEnvelope
+	JSON413 *P2StandardErrorEnvelopeV1
 	// JSON415 the response for an HTTP 415 `application/json` response
-	JSON415 *ErrorEnvelope
+	JSON415 *P2StandardErrorEnvelopeV1
 	// JSON422 the response for an HTTP 422 `application/json` response
-	JSON422 *ErrorEnvelope
+	JSON422 *P2StandardErrorEnvelopeV1
 	// JSON429 the response for an HTTP 429 `application/json` response
-	JSON429 *ErrorEnvelope
+	JSON429 *P2StandardErrorEnvelopeV1
 	// JSON431 the response for an HTTP 431 `application/json` response
-	JSON431 *ErrorEnvelope
+	JSON431 *P2StandardErrorEnvelopeV1
 	// JSON500 the response for an HTTP 500 `application/json` response
-	JSON500 *ErrorEnvelope
+	JSON500 *P2StandardErrorEnvelopeV1
 	// JSON503 the response for an HTTP 503 `application/json` response
-	JSON503 *ErrorEnvelope
+	JSON503 *P2StandardErrorEnvelopeV1
 	// Headers200 the parsed response headers for an HTTP 200 response
 	Headers200 *CreatePasskeyAuthenticationOptionsResponse200Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *CreatePasskeyAuthenticationOptionsResponse409Headers
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
@@ -19366,67 +20479,67 @@ func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON200() *WebAuthnReques
 }
 
 // GetJSON400 returns the response for an HTTP 400 `application/json` response
-func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON400() *ErrorEnvelope {
+func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON400() *P2StandardErrorEnvelopeV1 {
 	return r.JSON400
 }
 
 // GetJSON401 returns the response for an HTTP 401 `application/json` response
-func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON401() *ErrorEnvelope {
+func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON401() *P2StandardErrorEnvelopeV1 {
 	return r.JSON401
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
-func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON403() *ErrorEnvelope {
+func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON403() *P2StandardErrorEnvelopeV1 {
 	return r.JSON403
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON404() *ErrorEnvelope {
+func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON404() *P2StandardErrorEnvelopeV1 {
 	return r.JSON404
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON409() *ErrorEnvelope {
+func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON409() *P2StandardErrorEnvelopeV1 {
 	return r.JSON409
 }
 
 // GetJSON412 returns the response for an HTTP 412 `application/json` response
-func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON412() *ErrorEnvelope {
+func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON412() *P2StandardErrorEnvelopeV1 {
 	return r.JSON412
 }
 
 // GetJSON413 returns the response for an HTTP 413 `application/json` response
-func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON413() *ErrorEnvelope {
+func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON413() *P2StandardErrorEnvelopeV1 {
 	return r.JSON413
 }
 
 // GetJSON415 returns the response for an HTTP 415 `application/json` response
-func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON415() *ErrorEnvelope {
+func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON415() *P2StandardErrorEnvelopeV1 {
 	return r.JSON415
 }
 
 // GetJSON422 returns the response for an HTTP 422 `application/json` response
-func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON422() *ErrorEnvelope {
+func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON422() *P2StandardErrorEnvelopeV1 {
 	return r.JSON422
 }
 
 // GetJSON429 returns the response for an HTTP 429 `application/json` response
-func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON429() *ErrorEnvelope {
+func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON429() *P2StandardErrorEnvelopeV1 {
 	return r.JSON429
 }
 
 // GetJSON431 returns the response for an HTTP 431 `application/json` response
-func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON431() *ErrorEnvelope {
+func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON431() *P2StandardErrorEnvelopeV1 {
 	return r.JSON431
 }
 
 // GetJSON500 returns the response for an HTTP 500 `application/json` response
-func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON500() *ErrorEnvelope {
+func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON500() *P2StandardErrorEnvelopeV1 {
 	return r.JSON500
 }
 
 // GetJSON503 returns the response for an HTTP 503 `application/json` response
-func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON503() *ErrorEnvelope {
+func (r CreatePasskeyAuthenticationOptionsResponse) GetJSON503() *P2StandardErrorEnvelopeV1 {
 	return r.JSON503
 }
 
@@ -19465,39 +20578,46 @@ type CreatePasskeyRegistrationOptionsResponse200Headers struct {
 	XRequestID   *string
 }
 
+// CreatePasskeyRegistrationOptionsResponse409Headers the declared response headers of an HTTP 409 response for CreatePasskeyRegistrationOptions
+type CreatePasskeyRegistrationOptionsResponse409Headers struct {
+	RetryAfter *string
+}
+
 type CreatePasskeyRegistrationOptionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *WebAuthnCreationOptionsEnvelopeV1
 	// JSON400 the response for an HTTP 400 `application/json` response
-	JSON400 *ErrorEnvelope
+	JSON400 *P2StandardErrorEnvelopeV1
 	// JSON401 the response for an HTTP 401 `application/json` response
-	JSON401 *ErrorEnvelope
+	JSON401 *P2StandardErrorEnvelopeV1
 	// JSON403 the response for an HTTP 403 `application/json` response
-	JSON403 *ErrorEnvelope
+	JSON403 *P2StandardErrorEnvelopeV1
 	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *ErrorEnvelope
+	JSON404 *P2StandardErrorEnvelopeV1
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *ErrorEnvelope
+	JSON409 *P2StandardErrorEnvelopeV1
 	// JSON412 the response for an HTTP 412 `application/json` response
-	JSON412 *ErrorEnvelope
+	JSON412 *P2StandardErrorEnvelopeV1
 	// JSON413 the response for an HTTP 413 `application/json` response
-	JSON413 *ErrorEnvelope
+	JSON413 *P2StandardErrorEnvelopeV1
 	// JSON415 the response for an HTTP 415 `application/json` response
-	JSON415 *ErrorEnvelope
+	JSON415 *P2StandardErrorEnvelopeV1
 	// JSON422 the response for an HTTP 422 `application/json` response
-	JSON422 *ErrorEnvelope
+	JSON422 *P2StandardErrorEnvelopeV1
 	// JSON429 the response for an HTTP 429 `application/json` response
-	JSON429 *ErrorEnvelope
+	JSON429 *P2StandardErrorEnvelopeV1
 	// JSON431 the response for an HTTP 431 `application/json` response
-	JSON431 *ErrorEnvelope
+	JSON431 *P2StandardErrorEnvelopeV1
 	// JSON500 the response for an HTTP 500 `application/json` response
-	JSON500 *ErrorEnvelope
+	JSON500 *P2StandardErrorEnvelopeV1
 	// JSON503 the response for an HTTP 503 `application/json` response
-	JSON503 *ErrorEnvelope
+	JSON503 *P2StandardErrorEnvelopeV1
 	// Headers200 the parsed response headers for an HTTP 200 response
 	Headers200 *CreatePasskeyRegistrationOptionsResponse200Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *CreatePasskeyRegistrationOptionsResponse409Headers
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
@@ -19506,67 +20626,67 @@ func (r CreatePasskeyRegistrationOptionsResponse) GetJSON200() *WebAuthnCreation
 }
 
 // GetJSON400 returns the response for an HTTP 400 `application/json` response
-func (r CreatePasskeyRegistrationOptionsResponse) GetJSON400() *ErrorEnvelope {
+func (r CreatePasskeyRegistrationOptionsResponse) GetJSON400() *P2StandardErrorEnvelopeV1 {
 	return r.JSON400
 }
 
 // GetJSON401 returns the response for an HTTP 401 `application/json` response
-func (r CreatePasskeyRegistrationOptionsResponse) GetJSON401() *ErrorEnvelope {
+func (r CreatePasskeyRegistrationOptionsResponse) GetJSON401() *P2StandardErrorEnvelopeV1 {
 	return r.JSON401
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
-func (r CreatePasskeyRegistrationOptionsResponse) GetJSON403() *ErrorEnvelope {
+func (r CreatePasskeyRegistrationOptionsResponse) GetJSON403() *P2StandardErrorEnvelopeV1 {
 	return r.JSON403
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r CreatePasskeyRegistrationOptionsResponse) GetJSON404() *ErrorEnvelope {
+func (r CreatePasskeyRegistrationOptionsResponse) GetJSON404() *P2StandardErrorEnvelopeV1 {
 	return r.JSON404
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r CreatePasskeyRegistrationOptionsResponse) GetJSON409() *ErrorEnvelope {
+func (r CreatePasskeyRegistrationOptionsResponse) GetJSON409() *P2StandardErrorEnvelopeV1 {
 	return r.JSON409
 }
 
 // GetJSON412 returns the response for an HTTP 412 `application/json` response
-func (r CreatePasskeyRegistrationOptionsResponse) GetJSON412() *ErrorEnvelope {
+func (r CreatePasskeyRegistrationOptionsResponse) GetJSON412() *P2StandardErrorEnvelopeV1 {
 	return r.JSON412
 }
 
 // GetJSON413 returns the response for an HTTP 413 `application/json` response
-func (r CreatePasskeyRegistrationOptionsResponse) GetJSON413() *ErrorEnvelope {
+func (r CreatePasskeyRegistrationOptionsResponse) GetJSON413() *P2StandardErrorEnvelopeV1 {
 	return r.JSON413
 }
 
 // GetJSON415 returns the response for an HTTP 415 `application/json` response
-func (r CreatePasskeyRegistrationOptionsResponse) GetJSON415() *ErrorEnvelope {
+func (r CreatePasskeyRegistrationOptionsResponse) GetJSON415() *P2StandardErrorEnvelopeV1 {
 	return r.JSON415
 }
 
 // GetJSON422 returns the response for an HTTP 422 `application/json` response
-func (r CreatePasskeyRegistrationOptionsResponse) GetJSON422() *ErrorEnvelope {
+func (r CreatePasskeyRegistrationOptionsResponse) GetJSON422() *P2StandardErrorEnvelopeV1 {
 	return r.JSON422
 }
 
 // GetJSON429 returns the response for an HTTP 429 `application/json` response
-func (r CreatePasskeyRegistrationOptionsResponse) GetJSON429() *ErrorEnvelope {
+func (r CreatePasskeyRegistrationOptionsResponse) GetJSON429() *P2StandardErrorEnvelopeV1 {
 	return r.JSON429
 }
 
 // GetJSON431 returns the response for an HTTP 431 `application/json` response
-func (r CreatePasskeyRegistrationOptionsResponse) GetJSON431() *ErrorEnvelope {
+func (r CreatePasskeyRegistrationOptionsResponse) GetJSON431() *P2StandardErrorEnvelopeV1 {
 	return r.JSON431
 }
 
 // GetJSON500 returns the response for an HTTP 500 `application/json` response
-func (r CreatePasskeyRegistrationOptionsResponse) GetJSON500() *ErrorEnvelope {
+func (r CreatePasskeyRegistrationOptionsResponse) GetJSON500() *P2StandardErrorEnvelopeV1 {
 	return r.JSON500
 }
 
 // GetJSON503 returns the response for an HTTP 503 `application/json` response
-func (r CreatePasskeyRegistrationOptionsResponse) GetJSON503() *ErrorEnvelope {
+func (r CreatePasskeyRegistrationOptionsResponse) GetJSON503() *P2StandardErrorEnvelopeV1 {
 	return r.JSON503
 }
 
@@ -19602,7 +20722,13 @@ func (r CreatePasskeyRegistrationOptionsResponse) ContentType() string {
 // VerifyPasskeyRegistrationResponse200Headers the declared response headers of an HTTP 200 response for VerifyPasskeyRegistration
 type VerifyPasskeyRegistrationResponse200Headers struct {
 	CacheControl *string
+	SetCookie    *string
 	XRequestID   *string
+}
+
+// VerifyPasskeyRegistrationResponse409Headers the declared response headers of an HTTP 409 response for VerifyPasskeyRegistration
+type VerifyPasskeyRegistrationResponse409Headers struct {
+	RetryAfter *string
 }
 
 type VerifyPasskeyRegistrationResponse struct {
@@ -19611,33 +20737,35 @@ type VerifyPasskeyRegistrationResponse struct {
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *CurrentAuthEnvelope
 	// JSON400 the response for an HTTP 400 `application/json` response
-	JSON400 *ErrorEnvelope
+	JSON400 *P2StandardErrorEnvelopeV1
 	// JSON401 the response for an HTTP 401 `application/json` response
-	JSON401 *ErrorEnvelope
+	JSON401 *P2StandardErrorEnvelopeV1
 	// JSON403 the response for an HTTP 403 `application/json` response
-	JSON403 *ErrorEnvelope
+	JSON403 *P2StandardErrorEnvelopeV1
 	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *ErrorEnvelope
+	JSON404 *P2StandardErrorEnvelopeV1
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *ErrorEnvelope
+	JSON409 *P2SecretConflictErrorEnvelopeV1
 	// JSON412 the response for an HTTP 412 `application/json` response
-	JSON412 *ErrorEnvelope
+	JSON412 *P2StandardErrorEnvelopeV1
 	// JSON413 the response for an HTTP 413 `application/json` response
-	JSON413 *ErrorEnvelope
+	JSON413 *P2StandardErrorEnvelopeV1
 	// JSON415 the response for an HTTP 415 `application/json` response
-	JSON415 *ErrorEnvelope
+	JSON415 *P2StandardErrorEnvelopeV1
 	// JSON422 the response for an HTTP 422 `application/json` response
-	JSON422 *ErrorEnvelope
+	JSON422 *P2StandardErrorEnvelopeV1
 	// JSON429 the response for an HTTP 429 `application/json` response
-	JSON429 *ErrorEnvelope
+	JSON429 *P2StandardErrorEnvelopeV1
 	// JSON431 the response for an HTTP 431 `application/json` response
-	JSON431 *ErrorEnvelope
+	JSON431 *P2StandardErrorEnvelopeV1
 	// JSON500 the response for an HTTP 500 `application/json` response
-	JSON500 *ErrorEnvelope
+	JSON500 *P2StandardErrorEnvelopeV1
 	// JSON503 the response for an HTTP 503 `application/json` response
-	JSON503 *ErrorEnvelope
+	JSON503 *P2StandardErrorEnvelopeV1
 	// Headers200 the parsed response headers for an HTTP 200 response
 	Headers200 *VerifyPasskeyRegistrationResponse200Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *VerifyPasskeyRegistrationResponse409Headers
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
@@ -19646,67 +20774,67 @@ func (r VerifyPasskeyRegistrationResponse) GetJSON200() *CurrentAuthEnvelope {
 }
 
 // GetJSON400 returns the response for an HTTP 400 `application/json` response
-func (r VerifyPasskeyRegistrationResponse) GetJSON400() *ErrorEnvelope {
+func (r VerifyPasskeyRegistrationResponse) GetJSON400() *P2StandardErrorEnvelopeV1 {
 	return r.JSON400
 }
 
 // GetJSON401 returns the response for an HTTP 401 `application/json` response
-func (r VerifyPasskeyRegistrationResponse) GetJSON401() *ErrorEnvelope {
+func (r VerifyPasskeyRegistrationResponse) GetJSON401() *P2StandardErrorEnvelopeV1 {
 	return r.JSON401
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
-func (r VerifyPasskeyRegistrationResponse) GetJSON403() *ErrorEnvelope {
+func (r VerifyPasskeyRegistrationResponse) GetJSON403() *P2StandardErrorEnvelopeV1 {
 	return r.JSON403
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r VerifyPasskeyRegistrationResponse) GetJSON404() *ErrorEnvelope {
+func (r VerifyPasskeyRegistrationResponse) GetJSON404() *P2StandardErrorEnvelopeV1 {
 	return r.JSON404
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r VerifyPasskeyRegistrationResponse) GetJSON409() *ErrorEnvelope {
+func (r VerifyPasskeyRegistrationResponse) GetJSON409() *P2SecretConflictErrorEnvelopeV1 {
 	return r.JSON409
 }
 
 // GetJSON412 returns the response for an HTTP 412 `application/json` response
-func (r VerifyPasskeyRegistrationResponse) GetJSON412() *ErrorEnvelope {
+func (r VerifyPasskeyRegistrationResponse) GetJSON412() *P2StandardErrorEnvelopeV1 {
 	return r.JSON412
 }
 
 // GetJSON413 returns the response for an HTTP 413 `application/json` response
-func (r VerifyPasskeyRegistrationResponse) GetJSON413() *ErrorEnvelope {
+func (r VerifyPasskeyRegistrationResponse) GetJSON413() *P2StandardErrorEnvelopeV1 {
 	return r.JSON413
 }
 
 // GetJSON415 returns the response for an HTTP 415 `application/json` response
-func (r VerifyPasskeyRegistrationResponse) GetJSON415() *ErrorEnvelope {
+func (r VerifyPasskeyRegistrationResponse) GetJSON415() *P2StandardErrorEnvelopeV1 {
 	return r.JSON415
 }
 
 // GetJSON422 returns the response for an HTTP 422 `application/json` response
-func (r VerifyPasskeyRegistrationResponse) GetJSON422() *ErrorEnvelope {
+func (r VerifyPasskeyRegistrationResponse) GetJSON422() *P2StandardErrorEnvelopeV1 {
 	return r.JSON422
 }
 
 // GetJSON429 returns the response for an HTTP 429 `application/json` response
-func (r VerifyPasskeyRegistrationResponse) GetJSON429() *ErrorEnvelope {
+func (r VerifyPasskeyRegistrationResponse) GetJSON429() *P2StandardErrorEnvelopeV1 {
 	return r.JSON429
 }
 
 // GetJSON431 returns the response for an HTTP 431 `application/json` response
-func (r VerifyPasskeyRegistrationResponse) GetJSON431() *ErrorEnvelope {
+func (r VerifyPasskeyRegistrationResponse) GetJSON431() *P2StandardErrorEnvelopeV1 {
 	return r.JSON431
 }
 
 // GetJSON500 returns the response for an HTTP 500 `application/json` response
-func (r VerifyPasskeyRegistrationResponse) GetJSON500() *ErrorEnvelope {
+func (r VerifyPasskeyRegistrationResponse) GetJSON500() *P2StandardErrorEnvelopeV1 {
 	return r.JSON500
 }
 
 // GetJSON503 returns the response for an HTTP 503 `application/json` response
-func (r VerifyPasskeyRegistrationResponse) GetJSON503() *ErrorEnvelope {
+func (r VerifyPasskeyRegistrationResponse) GetJSON503() *P2StandardErrorEnvelopeV1 {
 	return r.JSON503
 }
 
@@ -19742,7 +20870,13 @@ func (r VerifyPasskeyRegistrationResponse) ContentType() string {
 // VerifyPasskeyAuthenticationResponse200Headers the declared response headers of an HTTP 200 response for VerifyPasskeyAuthentication
 type VerifyPasskeyAuthenticationResponse200Headers struct {
 	CacheControl *string
+	SetCookie    *string
 	XRequestID   *string
+}
+
+// VerifyPasskeyAuthenticationResponse409Headers the declared response headers of an HTTP 409 response for VerifyPasskeyAuthentication
+type VerifyPasskeyAuthenticationResponse409Headers struct {
+	RetryAfter *string
 }
 
 type VerifyPasskeyAuthenticationResponse struct {
@@ -19751,33 +20885,35 @@ type VerifyPasskeyAuthenticationResponse struct {
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *CurrentAuthEnvelope
 	// JSON400 the response for an HTTP 400 `application/json` response
-	JSON400 *ErrorEnvelope
+	JSON400 *P2StandardErrorEnvelopeV1
 	// JSON401 the response for an HTTP 401 `application/json` response
-	JSON401 *ErrorEnvelope
+	JSON401 *P2StandardErrorEnvelopeV1
 	// JSON403 the response for an HTTP 403 `application/json` response
-	JSON403 *ErrorEnvelope
+	JSON403 *P2StandardErrorEnvelopeV1
 	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *ErrorEnvelope
+	JSON404 *P2StandardErrorEnvelopeV1
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *ErrorEnvelope
+	JSON409 *P2SecretConflictErrorEnvelopeV1
 	// JSON412 the response for an HTTP 412 `application/json` response
-	JSON412 *ErrorEnvelope
+	JSON412 *P2StandardErrorEnvelopeV1
 	// JSON413 the response for an HTTP 413 `application/json` response
-	JSON413 *ErrorEnvelope
+	JSON413 *P2StandardErrorEnvelopeV1
 	// JSON415 the response for an HTTP 415 `application/json` response
-	JSON415 *ErrorEnvelope
+	JSON415 *P2StandardErrorEnvelopeV1
 	// JSON422 the response for an HTTP 422 `application/json` response
-	JSON422 *ErrorEnvelope
+	JSON422 *P2StandardErrorEnvelopeV1
 	// JSON429 the response for an HTTP 429 `application/json` response
-	JSON429 *ErrorEnvelope
+	JSON429 *P2StandardErrorEnvelopeV1
 	// JSON431 the response for an HTTP 431 `application/json` response
-	JSON431 *ErrorEnvelope
+	JSON431 *P2StandardErrorEnvelopeV1
 	// JSON500 the response for an HTTP 500 `application/json` response
-	JSON500 *ErrorEnvelope
+	JSON500 *P2StandardErrorEnvelopeV1
 	// JSON503 the response for an HTTP 503 `application/json` response
-	JSON503 *ErrorEnvelope
+	JSON503 *P2StandardErrorEnvelopeV1
 	// Headers200 the parsed response headers for an HTTP 200 response
 	Headers200 *VerifyPasskeyAuthenticationResponse200Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *VerifyPasskeyAuthenticationResponse409Headers
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
@@ -19786,67 +20922,67 @@ func (r VerifyPasskeyAuthenticationResponse) GetJSON200() *CurrentAuthEnvelope {
 }
 
 // GetJSON400 returns the response for an HTTP 400 `application/json` response
-func (r VerifyPasskeyAuthenticationResponse) GetJSON400() *ErrorEnvelope {
+func (r VerifyPasskeyAuthenticationResponse) GetJSON400() *P2StandardErrorEnvelopeV1 {
 	return r.JSON400
 }
 
 // GetJSON401 returns the response for an HTTP 401 `application/json` response
-func (r VerifyPasskeyAuthenticationResponse) GetJSON401() *ErrorEnvelope {
+func (r VerifyPasskeyAuthenticationResponse) GetJSON401() *P2StandardErrorEnvelopeV1 {
 	return r.JSON401
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
-func (r VerifyPasskeyAuthenticationResponse) GetJSON403() *ErrorEnvelope {
+func (r VerifyPasskeyAuthenticationResponse) GetJSON403() *P2StandardErrorEnvelopeV1 {
 	return r.JSON403
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r VerifyPasskeyAuthenticationResponse) GetJSON404() *ErrorEnvelope {
+func (r VerifyPasskeyAuthenticationResponse) GetJSON404() *P2StandardErrorEnvelopeV1 {
 	return r.JSON404
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r VerifyPasskeyAuthenticationResponse) GetJSON409() *ErrorEnvelope {
+func (r VerifyPasskeyAuthenticationResponse) GetJSON409() *P2SecretConflictErrorEnvelopeV1 {
 	return r.JSON409
 }
 
 // GetJSON412 returns the response for an HTTP 412 `application/json` response
-func (r VerifyPasskeyAuthenticationResponse) GetJSON412() *ErrorEnvelope {
+func (r VerifyPasskeyAuthenticationResponse) GetJSON412() *P2StandardErrorEnvelopeV1 {
 	return r.JSON412
 }
 
 // GetJSON413 returns the response for an HTTP 413 `application/json` response
-func (r VerifyPasskeyAuthenticationResponse) GetJSON413() *ErrorEnvelope {
+func (r VerifyPasskeyAuthenticationResponse) GetJSON413() *P2StandardErrorEnvelopeV1 {
 	return r.JSON413
 }
 
 // GetJSON415 returns the response for an HTTP 415 `application/json` response
-func (r VerifyPasskeyAuthenticationResponse) GetJSON415() *ErrorEnvelope {
+func (r VerifyPasskeyAuthenticationResponse) GetJSON415() *P2StandardErrorEnvelopeV1 {
 	return r.JSON415
 }
 
 // GetJSON422 returns the response for an HTTP 422 `application/json` response
-func (r VerifyPasskeyAuthenticationResponse) GetJSON422() *ErrorEnvelope {
+func (r VerifyPasskeyAuthenticationResponse) GetJSON422() *P2StandardErrorEnvelopeV1 {
 	return r.JSON422
 }
 
 // GetJSON429 returns the response for an HTTP 429 `application/json` response
-func (r VerifyPasskeyAuthenticationResponse) GetJSON429() *ErrorEnvelope {
+func (r VerifyPasskeyAuthenticationResponse) GetJSON429() *P2StandardErrorEnvelopeV1 {
 	return r.JSON429
 }
 
 // GetJSON431 returns the response for an HTTP 431 `application/json` response
-func (r VerifyPasskeyAuthenticationResponse) GetJSON431() *ErrorEnvelope {
+func (r VerifyPasskeyAuthenticationResponse) GetJSON431() *P2StandardErrorEnvelopeV1 {
 	return r.JSON431
 }
 
 // GetJSON500 returns the response for an HTTP 500 `application/json` response
-func (r VerifyPasskeyAuthenticationResponse) GetJSON500() *ErrorEnvelope {
+func (r VerifyPasskeyAuthenticationResponse) GetJSON500() *P2StandardErrorEnvelopeV1 {
 	return r.JSON500
 }
 
 // GetJSON503 returns the response for an HTTP 503 `application/json` response
-func (r VerifyPasskeyAuthenticationResponse) GetJSON503() *ErrorEnvelope {
+func (r VerifyPasskeyAuthenticationResponse) GetJSON503() *P2StandardErrorEnvelopeV1 {
 	return r.JSON503
 }
 
@@ -19882,7 +21018,13 @@ func (r VerifyPasskeyAuthenticationResponse) ContentType() string {
 // DeletePasskeyResponse200Headers the declared response headers of an HTTP 200 response for DeletePasskey
 type DeletePasskeyResponse200Headers struct {
 	CacheControl *string
+	SetCookie    *string
 	XRequestID   *string
+}
+
+// DeletePasskeyResponse409Headers the declared response headers of an HTTP 409 response for DeletePasskey
+type DeletePasskeyResponse409Headers struct {
+	RetryAfter *string
 }
 
 type DeletePasskeyResponse struct {
@@ -19891,33 +21033,35 @@ type DeletePasskeyResponse struct {
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *PasskeyDeleteEnvelopeV1
 	// JSON400 the response for an HTTP 400 `application/json` response
-	JSON400 *ErrorEnvelope
+	JSON400 *P2StandardErrorEnvelopeV1
 	// JSON401 the response for an HTTP 401 `application/json` response
-	JSON401 *ErrorEnvelope
+	JSON401 *P2StandardErrorEnvelopeV1
 	// JSON403 the response for an HTTP 403 `application/json` response
-	JSON403 *ErrorEnvelope
+	JSON403 *P2StandardErrorEnvelopeV1
 	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *ErrorEnvelope
+	JSON404 *P2StandardErrorEnvelopeV1
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *ErrorEnvelope
+	JSON409 *P2StandardErrorEnvelopeV1
 	// JSON412 the response for an HTTP 412 `application/json` response
-	JSON412 *ErrorEnvelope
+	JSON412 *P2StandardErrorEnvelopeV1
 	// JSON413 the response for an HTTP 413 `application/json` response
-	JSON413 *ErrorEnvelope
+	JSON413 *P2StandardErrorEnvelopeV1
 	// JSON415 the response for an HTTP 415 `application/json` response
-	JSON415 *ErrorEnvelope
+	JSON415 *P2StandardErrorEnvelopeV1
 	// JSON422 the response for an HTTP 422 `application/json` response
-	JSON422 *ErrorEnvelope
+	JSON422 *P2StandardErrorEnvelopeV1
 	// JSON429 the response for an HTTP 429 `application/json` response
-	JSON429 *ErrorEnvelope
+	JSON429 *P2StandardErrorEnvelopeV1
 	// JSON431 the response for an HTTP 431 `application/json` response
-	JSON431 *ErrorEnvelope
+	JSON431 *P2StandardErrorEnvelopeV1
 	// JSON500 the response for an HTTP 500 `application/json` response
-	JSON500 *ErrorEnvelope
+	JSON500 *P2StandardErrorEnvelopeV1
 	// JSON503 the response for an HTTP 503 `application/json` response
-	JSON503 *ErrorEnvelope
+	JSON503 *P2StandardErrorEnvelopeV1
 	// Headers200 the parsed response headers for an HTTP 200 response
 	Headers200 *DeletePasskeyResponse200Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *DeletePasskeyResponse409Headers
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
@@ -19926,67 +21070,67 @@ func (r DeletePasskeyResponse) GetJSON200() *PasskeyDeleteEnvelopeV1 {
 }
 
 // GetJSON400 returns the response for an HTTP 400 `application/json` response
-func (r DeletePasskeyResponse) GetJSON400() *ErrorEnvelope {
+func (r DeletePasskeyResponse) GetJSON400() *P2StandardErrorEnvelopeV1 {
 	return r.JSON400
 }
 
 // GetJSON401 returns the response for an HTTP 401 `application/json` response
-func (r DeletePasskeyResponse) GetJSON401() *ErrorEnvelope {
+func (r DeletePasskeyResponse) GetJSON401() *P2StandardErrorEnvelopeV1 {
 	return r.JSON401
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
-func (r DeletePasskeyResponse) GetJSON403() *ErrorEnvelope {
+func (r DeletePasskeyResponse) GetJSON403() *P2StandardErrorEnvelopeV1 {
 	return r.JSON403
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r DeletePasskeyResponse) GetJSON404() *ErrorEnvelope {
+func (r DeletePasskeyResponse) GetJSON404() *P2StandardErrorEnvelopeV1 {
 	return r.JSON404
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r DeletePasskeyResponse) GetJSON409() *ErrorEnvelope {
+func (r DeletePasskeyResponse) GetJSON409() *P2StandardErrorEnvelopeV1 {
 	return r.JSON409
 }
 
 // GetJSON412 returns the response for an HTTP 412 `application/json` response
-func (r DeletePasskeyResponse) GetJSON412() *ErrorEnvelope {
+func (r DeletePasskeyResponse) GetJSON412() *P2StandardErrorEnvelopeV1 {
 	return r.JSON412
 }
 
 // GetJSON413 returns the response for an HTTP 413 `application/json` response
-func (r DeletePasskeyResponse) GetJSON413() *ErrorEnvelope {
+func (r DeletePasskeyResponse) GetJSON413() *P2StandardErrorEnvelopeV1 {
 	return r.JSON413
 }
 
 // GetJSON415 returns the response for an HTTP 415 `application/json` response
-func (r DeletePasskeyResponse) GetJSON415() *ErrorEnvelope {
+func (r DeletePasskeyResponse) GetJSON415() *P2StandardErrorEnvelopeV1 {
 	return r.JSON415
 }
 
 // GetJSON422 returns the response for an HTTP 422 `application/json` response
-func (r DeletePasskeyResponse) GetJSON422() *ErrorEnvelope {
+func (r DeletePasskeyResponse) GetJSON422() *P2StandardErrorEnvelopeV1 {
 	return r.JSON422
 }
 
 // GetJSON429 returns the response for an HTTP 429 `application/json` response
-func (r DeletePasskeyResponse) GetJSON429() *ErrorEnvelope {
+func (r DeletePasskeyResponse) GetJSON429() *P2StandardErrorEnvelopeV1 {
 	return r.JSON429
 }
 
 // GetJSON431 returns the response for an HTTP 431 `application/json` response
-func (r DeletePasskeyResponse) GetJSON431() *ErrorEnvelope {
+func (r DeletePasskeyResponse) GetJSON431() *P2StandardErrorEnvelopeV1 {
 	return r.JSON431
 }
 
 // GetJSON500 returns the response for an HTTP 500 `application/json` response
-func (r DeletePasskeyResponse) GetJSON500() *ErrorEnvelope {
+func (r DeletePasskeyResponse) GetJSON500() *P2StandardErrorEnvelopeV1 {
 	return r.JSON500
 }
 
 // GetJSON503 returns the response for an HTTP 503 `application/json` response
-func (r DeletePasskeyResponse) GetJSON503() *ErrorEnvelope {
+func (r DeletePasskeyResponse) GetJSON503() *P2StandardErrorEnvelopeV1 {
 	return r.JSON503
 }
 
@@ -20025,39 +21169,46 @@ type RotateRecoveryCodesResponse200Headers struct {
 	XRequestID   *string
 }
 
+// RotateRecoveryCodesResponse409Headers the declared response headers of an HTTP 409 response for RotateRecoveryCodes
+type RotateRecoveryCodesResponse409Headers struct {
+	RetryAfter *string
+}
+
 type RotateRecoveryCodesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *RecoveryCodesEnvelopeV1
 	// JSON400 the response for an HTTP 400 `application/json` response
-	JSON400 *ErrorEnvelope
+	JSON400 *P2StandardErrorEnvelopeV1
 	// JSON401 the response for an HTTP 401 `application/json` response
-	JSON401 *ErrorEnvelope
+	JSON401 *P2StandardErrorEnvelopeV1
 	// JSON403 the response for an HTTP 403 `application/json` response
-	JSON403 *ErrorEnvelope
+	JSON403 *P2StandardErrorEnvelopeV1
 	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *ErrorEnvelope
+	JSON404 *P2StandardErrorEnvelopeV1
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *ErrorEnvelope
+	JSON409 *P2SecretConflictErrorEnvelopeV1
 	// JSON412 the response for an HTTP 412 `application/json` response
-	JSON412 *ErrorEnvelope
+	JSON412 *P2StandardErrorEnvelopeV1
 	// JSON413 the response for an HTTP 413 `application/json` response
-	JSON413 *ErrorEnvelope
+	JSON413 *P2StandardErrorEnvelopeV1
 	// JSON415 the response for an HTTP 415 `application/json` response
-	JSON415 *ErrorEnvelope
+	JSON415 *P2StandardErrorEnvelopeV1
 	// JSON422 the response for an HTTP 422 `application/json` response
-	JSON422 *ErrorEnvelope
+	JSON422 *P2StandardErrorEnvelopeV1
 	// JSON429 the response for an HTTP 429 `application/json` response
-	JSON429 *ErrorEnvelope
+	JSON429 *P2StandardErrorEnvelopeV1
 	// JSON431 the response for an HTTP 431 `application/json` response
-	JSON431 *ErrorEnvelope
+	JSON431 *P2StandardErrorEnvelopeV1
 	// JSON500 the response for an HTTP 500 `application/json` response
-	JSON500 *ErrorEnvelope
+	JSON500 *P2StandardErrorEnvelopeV1
 	// JSON503 the response for an HTTP 503 `application/json` response
-	JSON503 *ErrorEnvelope
+	JSON503 *P2StandardErrorEnvelopeV1
 	// Headers200 the parsed response headers for an HTTP 200 response
 	Headers200 *RotateRecoveryCodesResponse200Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *RotateRecoveryCodesResponse409Headers
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
@@ -20066,67 +21217,67 @@ func (r RotateRecoveryCodesResponse) GetJSON200() *RecoveryCodesEnvelopeV1 {
 }
 
 // GetJSON400 returns the response for an HTTP 400 `application/json` response
-func (r RotateRecoveryCodesResponse) GetJSON400() *ErrorEnvelope {
+func (r RotateRecoveryCodesResponse) GetJSON400() *P2StandardErrorEnvelopeV1 {
 	return r.JSON400
 }
 
 // GetJSON401 returns the response for an HTTP 401 `application/json` response
-func (r RotateRecoveryCodesResponse) GetJSON401() *ErrorEnvelope {
+func (r RotateRecoveryCodesResponse) GetJSON401() *P2StandardErrorEnvelopeV1 {
 	return r.JSON401
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
-func (r RotateRecoveryCodesResponse) GetJSON403() *ErrorEnvelope {
+func (r RotateRecoveryCodesResponse) GetJSON403() *P2StandardErrorEnvelopeV1 {
 	return r.JSON403
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r RotateRecoveryCodesResponse) GetJSON404() *ErrorEnvelope {
+func (r RotateRecoveryCodesResponse) GetJSON404() *P2StandardErrorEnvelopeV1 {
 	return r.JSON404
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r RotateRecoveryCodesResponse) GetJSON409() *ErrorEnvelope {
+func (r RotateRecoveryCodesResponse) GetJSON409() *P2SecretConflictErrorEnvelopeV1 {
 	return r.JSON409
 }
 
 // GetJSON412 returns the response for an HTTP 412 `application/json` response
-func (r RotateRecoveryCodesResponse) GetJSON412() *ErrorEnvelope {
+func (r RotateRecoveryCodesResponse) GetJSON412() *P2StandardErrorEnvelopeV1 {
 	return r.JSON412
 }
 
 // GetJSON413 returns the response for an HTTP 413 `application/json` response
-func (r RotateRecoveryCodesResponse) GetJSON413() *ErrorEnvelope {
+func (r RotateRecoveryCodesResponse) GetJSON413() *P2StandardErrorEnvelopeV1 {
 	return r.JSON413
 }
 
 // GetJSON415 returns the response for an HTTP 415 `application/json` response
-func (r RotateRecoveryCodesResponse) GetJSON415() *ErrorEnvelope {
+func (r RotateRecoveryCodesResponse) GetJSON415() *P2StandardErrorEnvelopeV1 {
 	return r.JSON415
 }
 
 // GetJSON422 returns the response for an HTTP 422 `application/json` response
-func (r RotateRecoveryCodesResponse) GetJSON422() *ErrorEnvelope {
+func (r RotateRecoveryCodesResponse) GetJSON422() *P2StandardErrorEnvelopeV1 {
 	return r.JSON422
 }
 
 // GetJSON429 returns the response for an HTTP 429 `application/json` response
-func (r RotateRecoveryCodesResponse) GetJSON429() *ErrorEnvelope {
+func (r RotateRecoveryCodesResponse) GetJSON429() *P2StandardErrorEnvelopeV1 {
 	return r.JSON429
 }
 
 // GetJSON431 returns the response for an HTTP 431 `application/json` response
-func (r RotateRecoveryCodesResponse) GetJSON431() *ErrorEnvelope {
+func (r RotateRecoveryCodesResponse) GetJSON431() *P2StandardErrorEnvelopeV1 {
 	return r.JSON431
 }
 
 // GetJSON500 returns the response for an HTTP 500 `application/json` response
-func (r RotateRecoveryCodesResponse) GetJSON500() *ErrorEnvelope {
+func (r RotateRecoveryCodesResponse) GetJSON500() *P2StandardErrorEnvelopeV1 {
 	return r.JSON500
 }
 
 // GetJSON503 returns the response for an HTTP 503 `application/json` response
-func (r RotateRecoveryCodesResponse) GetJSON503() *ErrorEnvelope {
+func (r RotateRecoveryCodesResponse) GetJSON503() *P2StandardErrorEnvelopeV1 {
 	return r.JSON503
 }
 
@@ -20162,7 +21313,13 @@ func (r RotateRecoveryCodesResponse) ContentType() string {
 // VerifyRecoveryCodeResponse200Headers the declared response headers of an HTTP 200 response for VerifyRecoveryCode
 type VerifyRecoveryCodeResponse200Headers struct {
 	CacheControl *string
+	SetCookie    *string
 	XRequestID   *string
+}
+
+// VerifyRecoveryCodeResponse409Headers the declared response headers of an HTTP 409 response for VerifyRecoveryCode
+type VerifyRecoveryCodeResponse409Headers struct {
+	RetryAfter *string
 }
 
 type VerifyRecoveryCodeResponse struct {
@@ -20171,33 +21328,35 @@ type VerifyRecoveryCodeResponse struct {
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *CurrentAuthEnvelope
 	// JSON400 the response for an HTTP 400 `application/json` response
-	JSON400 *ErrorEnvelope
+	JSON400 *P2StandardErrorEnvelopeV1
 	// JSON401 the response for an HTTP 401 `application/json` response
-	JSON401 *ErrorEnvelope
+	JSON401 *P2StandardErrorEnvelopeV1
 	// JSON403 the response for an HTTP 403 `application/json` response
-	JSON403 *ErrorEnvelope
+	JSON403 *P2StandardErrorEnvelopeV1
 	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *ErrorEnvelope
+	JSON404 *P2StandardErrorEnvelopeV1
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *ErrorEnvelope
+	JSON409 *P2SecretConflictErrorEnvelopeV1
 	// JSON412 the response for an HTTP 412 `application/json` response
-	JSON412 *ErrorEnvelope
+	JSON412 *P2StandardErrorEnvelopeV1
 	// JSON413 the response for an HTTP 413 `application/json` response
-	JSON413 *ErrorEnvelope
+	JSON413 *P2StandardErrorEnvelopeV1
 	// JSON415 the response for an HTTP 415 `application/json` response
-	JSON415 *ErrorEnvelope
+	JSON415 *P2StandardErrorEnvelopeV1
 	// JSON422 the response for an HTTP 422 `application/json` response
-	JSON422 *ErrorEnvelope
+	JSON422 *P2StandardErrorEnvelopeV1
 	// JSON429 the response for an HTTP 429 `application/json` response
-	JSON429 *ErrorEnvelope
+	JSON429 *P2StandardErrorEnvelopeV1
 	// JSON431 the response for an HTTP 431 `application/json` response
-	JSON431 *ErrorEnvelope
+	JSON431 *P2StandardErrorEnvelopeV1
 	// JSON500 the response for an HTTP 500 `application/json` response
-	JSON500 *ErrorEnvelope
+	JSON500 *P2StandardErrorEnvelopeV1
 	// JSON503 the response for an HTTP 503 `application/json` response
-	JSON503 *ErrorEnvelope
+	JSON503 *P2StandardErrorEnvelopeV1
 	// Headers200 the parsed response headers for an HTTP 200 response
 	Headers200 *VerifyRecoveryCodeResponse200Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *VerifyRecoveryCodeResponse409Headers
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
@@ -20206,67 +21365,67 @@ func (r VerifyRecoveryCodeResponse) GetJSON200() *CurrentAuthEnvelope {
 }
 
 // GetJSON400 returns the response for an HTTP 400 `application/json` response
-func (r VerifyRecoveryCodeResponse) GetJSON400() *ErrorEnvelope {
+func (r VerifyRecoveryCodeResponse) GetJSON400() *P2StandardErrorEnvelopeV1 {
 	return r.JSON400
 }
 
 // GetJSON401 returns the response for an HTTP 401 `application/json` response
-func (r VerifyRecoveryCodeResponse) GetJSON401() *ErrorEnvelope {
+func (r VerifyRecoveryCodeResponse) GetJSON401() *P2StandardErrorEnvelopeV1 {
 	return r.JSON401
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
-func (r VerifyRecoveryCodeResponse) GetJSON403() *ErrorEnvelope {
+func (r VerifyRecoveryCodeResponse) GetJSON403() *P2StandardErrorEnvelopeV1 {
 	return r.JSON403
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r VerifyRecoveryCodeResponse) GetJSON404() *ErrorEnvelope {
+func (r VerifyRecoveryCodeResponse) GetJSON404() *P2StandardErrorEnvelopeV1 {
 	return r.JSON404
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r VerifyRecoveryCodeResponse) GetJSON409() *ErrorEnvelope {
+func (r VerifyRecoveryCodeResponse) GetJSON409() *P2SecretConflictErrorEnvelopeV1 {
 	return r.JSON409
 }
 
 // GetJSON412 returns the response for an HTTP 412 `application/json` response
-func (r VerifyRecoveryCodeResponse) GetJSON412() *ErrorEnvelope {
+func (r VerifyRecoveryCodeResponse) GetJSON412() *P2StandardErrorEnvelopeV1 {
 	return r.JSON412
 }
 
 // GetJSON413 returns the response for an HTTP 413 `application/json` response
-func (r VerifyRecoveryCodeResponse) GetJSON413() *ErrorEnvelope {
+func (r VerifyRecoveryCodeResponse) GetJSON413() *P2StandardErrorEnvelopeV1 {
 	return r.JSON413
 }
 
 // GetJSON415 returns the response for an HTTP 415 `application/json` response
-func (r VerifyRecoveryCodeResponse) GetJSON415() *ErrorEnvelope {
+func (r VerifyRecoveryCodeResponse) GetJSON415() *P2StandardErrorEnvelopeV1 {
 	return r.JSON415
 }
 
 // GetJSON422 returns the response for an HTTP 422 `application/json` response
-func (r VerifyRecoveryCodeResponse) GetJSON422() *ErrorEnvelope {
+func (r VerifyRecoveryCodeResponse) GetJSON422() *P2StandardErrorEnvelopeV1 {
 	return r.JSON422
 }
 
 // GetJSON429 returns the response for an HTTP 429 `application/json` response
-func (r VerifyRecoveryCodeResponse) GetJSON429() *ErrorEnvelope {
+func (r VerifyRecoveryCodeResponse) GetJSON429() *P2StandardErrorEnvelopeV1 {
 	return r.JSON429
 }
 
 // GetJSON431 returns the response for an HTTP 431 `application/json` response
-func (r VerifyRecoveryCodeResponse) GetJSON431() *ErrorEnvelope {
+func (r VerifyRecoveryCodeResponse) GetJSON431() *P2StandardErrorEnvelopeV1 {
 	return r.JSON431
 }
 
 // GetJSON500 returns the response for an HTTP 500 `application/json` response
-func (r VerifyRecoveryCodeResponse) GetJSON500() *ErrorEnvelope {
+func (r VerifyRecoveryCodeResponse) GetJSON500() *P2StandardErrorEnvelopeV1 {
 	return r.JSON500
 }
 
 // GetJSON503 returns the response for an HTTP 503 `application/json` response
-func (r VerifyRecoveryCodeResponse) GetJSON503() *ErrorEnvelope {
+func (r VerifyRecoveryCodeResponse) GetJSON503() *P2StandardErrorEnvelopeV1 {
 	return r.JSON503
 }
 
@@ -20311,31 +21470,31 @@ type ListBrowserSessionsResponse struct {
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *BrowserSessionListEnvelopeV1
 	// JSON400 the response for an HTTP 400 `application/json` response
-	JSON400 *ErrorEnvelope
+	JSON400 *P2StandardErrorEnvelopeV1
 	// JSON401 the response for an HTTP 401 `application/json` response
-	JSON401 *ErrorEnvelope
+	JSON401 *P2StandardErrorEnvelopeV1
 	// JSON403 the response for an HTTP 403 `application/json` response
-	JSON403 *ErrorEnvelope
+	JSON403 *P2StandardErrorEnvelopeV1
 	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *ErrorEnvelope
+	JSON404 *P2StandardErrorEnvelopeV1
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *ErrorEnvelope
+	JSON409 *P2StandardErrorEnvelopeV1
 	// JSON412 the response for an HTTP 412 `application/json` response
-	JSON412 *ErrorEnvelope
+	JSON412 *P2StandardErrorEnvelopeV1
 	// JSON413 the response for an HTTP 413 `application/json` response
-	JSON413 *ErrorEnvelope
+	JSON413 *P2StandardErrorEnvelopeV1
 	// JSON415 the response for an HTTP 415 `application/json` response
-	JSON415 *ErrorEnvelope
+	JSON415 *P2StandardErrorEnvelopeV1
 	// JSON422 the response for an HTTP 422 `application/json` response
-	JSON422 *ErrorEnvelope
+	JSON422 *P2StandardErrorEnvelopeV1
 	// JSON429 the response for an HTTP 429 `application/json` response
-	JSON429 *ErrorEnvelope
+	JSON429 *P2StandardErrorEnvelopeV1
 	// JSON431 the response for an HTTP 431 `application/json` response
-	JSON431 *ErrorEnvelope
+	JSON431 *P2StandardErrorEnvelopeV1
 	// JSON500 the response for an HTTP 500 `application/json` response
-	JSON500 *ErrorEnvelope
+	JSON500 *P2StandardErrorEnvelopeV1
 	// JSON503 the response for an HTTP 503 `application/json` response
-	JSON503 *ErrorEnvelope
+	JSON503 *P2StandardErrorEnvelopeV1
 	// Headers200 the parsed response headers for an HTTP 200 response
 	Headers200 *ListBrowserSessionsResponse200Headers
 }
@@ -20346,67 +21505,67 @@ func (r ListBrowserSessionsResponse) GetJSON200() *BrowserSessionListEnvelopeV1 
 }
 
 // GetJSON400 returns the response for an HTTP 400 `application/json` response
-func (r ListBrowserSessionsResponse) GetJSON400() *ErrorEnvelope {
+func (r ListBrowserSessionsResponse) GetJSON400() *P2StandardErrorEnvelopeV1 {
 	return r.JSON400
 }
 
 // GetJSON401 returns the response for an HTTP 401 `application/json` response
-func (r ListBrowserSessionsResponse) GetJSON401() *ErrorEnvelope {
+func (r ListBrowserSessionsResponse) GetJSON401() *P2StandardErrorEnvelopeV1 {
 	return r.JSON401
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
-func (r ListBrowserSessionsResponse) GetJSON403() *ErrorEnvelope {
+func (r ListBrowserSessionsResponse) GetJSON403() *P2StandardErrorEnvelopeV1 {
 	return r.JSON403
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r ListBrowserSessionsResponse) GetJSON404() *ErrorEnvelope {
+func (r ListBrowserSessionsResponse) GetJSON404() *P2StandardErrorEnvelopeV1 {
 	return r.JSON404
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r ListBrowserSessionsResponse) GetJSON409() *ErrorEnvelope {
+func (r ListBrowserSessionsResponse) GetJSON409() *P2StandardErrorEnvelopeV1 {
 	return r.JSON409
 }
 
 // GetJSON412 returns the response for an HTTP 412 `application/json` response
-func (r ListBrowserSessionsResponse) GetJSON412() *ErrorEnvelope {
+func (r ListBrowserSessionsResponse) GetJSON412() *P2StandardErrorEnvelopeV1 {
 	return r.JSON412
 }
 
 // GetJSON413 returns the response for an HTTP 413 `application/json` response
-func (r ListBrowserSessionsResponse) GetJSON413() *ErrorEnvelope {
+func (r ListBrowserSessionsResponse) GetJSON413() *P2StandardErrorEnvelopeV1 {
 	return r.JSON413
 }
 
 // GetJSON415 returns the response for an HTTP 415 `application/json` response
-func (r ListBrowserSessionsResponse) GetJSON415() *ErrorEnvelope {
+func (r ListBrowserSessionsResponse) GetJSON415() *P2StandardErrorEnvelopeV1 {
 	return r.JSON415
 }
 
 // GetJSON422 returns the response for an HTTP 422 `application/json` response
-func (r ListBrowserSessionsResponse) GetJSON422() *ErrorEnvelope {
+func (r ListBrowserSessionsResponse) GetJSON422() *P2StandardErrorEnvelopeV1 {
 	return r.JSON422
 }
 
 // GetJSON429 returns the response for an HTTP 429 `application/json` response
-func (r ListBrowserSessionsResponse) GetJSON429() *ErrorEnvelope {
+func (r ListBrowserSessionsResponse) GetJSON429() *P2StandardErrorEnvelopeV1 {
 	return r.JSON429
 }
 
 // GetJSON431 returns the response for an HTTP 431 `application/json` response
-func (r ListBrowserSessionsResponse) GetJSON431() *ErrorEnvelope {
+func (r ListBrowserSessionsResponse) GetJSON431() *P2StandardErrorEnvelopeV1 {
 	return r.JSON431
 }
 
 // GetJSON500 returns the response for an HTTP 500 `application/json` response
-func (r ListBrowserSessionsResponse) GetJSON500() *ErrorEnvelope {
+func (r ListBrowserSessionsResponse) GetJSON500() *P2StandardErrorEnvelopeV1 {
 	return r.JSON500
 }
 
 // GetJSON503 returns the response for an HTTP 503 `application/json` response
-func (r ListBrowserSessionsResponse) GetJSON503() *ErrorEnvelope {
+func (r ListBrowserSessionsResponse) GetJSON503() *P2StandardErrorEnvelopeV1 {
 	return r.JSON503
 }
 
@@ -20442,111 +21601,119 @@ func (r ListBrowserSessionsResponse) ContentType() string {
 // DeleteBrowserSessionResponse200Headers the declared response headers of an HTTP 200 response for DeleteBrowserSession
 type DeleteBrowserSessionResponse200Headers struct {
 	CacheControl *string
+	SetCookie    *string
 	XRequestID   *string
+}
+
+// DeleteBrowserSessionResponse409Headers the declared response headers of an HTTP 409 response for DeleteBrowserSession
+type DeleteBrowserSessionResponse409Headers struct {
+	RetryAfter *string
 }
 
 type DeleteBrowserSessionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *OperationStatusEnvelope
+	JSON200 *BrowserSessionRevokeEnvelopeV1
 	// JSON400 the response for an HTTP 400 `application/json` response
-	JSON400 *ErrorEnvelope
+	JSON400 *P2StandardErrorEnvelopeV1
 	// JSON401 the response for an HTTP 401 `application/json` response
-	JSON401 *ErrorEnvelope
+	JSON401 *P2StandardErrorEnvelopeV1
 	// JSON403 the response for an HTTP 403 `application/json` response
-	JSON403 *ErrorEnvelope
+	JSON403 *P2StandardErrorEnvelopeV1
 	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *ErrorEnvelope
+	JSON404 *P2StandardErrorEnvelopeV1
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *ErrorEnvelope
+	JSON409 *P2StandardErrorEnvelopeV1
 	// JSON412 the response for an HTTP 412 `application/json` response
-	JSON412 *ErrorEnvelope
+	JSON412 *P2SessionRevisionConflictErrorEnvelopeV1
 	// JSON413 the response for an HTTP 413 `application/json` response
-	JSON413 *ErrorEnvelope
+	JSON413 *P2StandardErrorEnvelopeV1
 	// JSON415 the response for an HTTP 415 `application/json` response
-	JSON415 *ErrorEnvelope
+	JSON415 *P2StandardErrorEnvelopeV1
 	// JSON422 the response for an HTTP 422 `application/json` response
-	JSON422 *ErrorEnvelope
+	JSON422 *P2StandardErrorEnvelopeV1
 	// JSON429 the response for an HTTP 429 `application/json` response
-	JSON429 *ErrorEnvelope
+	JSON429 *P2StandardErrorEnvelopeV1
 	// JSON431 the response for an HTTP 431 `application/json` response
-	JSON431 *ErrorEnvelope
+	JSON431 *P2StandardErrorEnvelopeV1
 	// JSON500 the response for an HTTP 500 `application/json` response
-	JSON500 *ErrorEnvelope
+	JSON500 *P2StandardErrorEnvelopeV1
 	// JSON503 the response for an HTTP 503 `application/json` response
-	JSON503 *ErrorEnvelope
+	JSON503 *P2StandardErrorEnvelopeV1
 	// Headers200 the parsed response headers for an HTTP 200 response
 	Headers200 *DeleteBrowserSessionResponse200Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *DeleteBrowserSessionResponse409Headers
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r DeleteBrowserSessionResponse) GetJSON200() *OperationStatusEnvelope {
+func (r DeleteBrowserSessionResponse) GetJSON200() *BrowserSessionRevokeEnvelopeV1 {
 	return r.JSON200
 }
 
 // GetJSON400 returns the response for an HTTP 400 `application/json` response
-func (r DeleteBrowserSessionResponse) GetJSON400() *ErrorEnvelope {
+func (r DeleteBrowserSessionResponse) GetJSON400() *P2StandardErrorEnvelopeV1 {
 	return r.JSON400
 }
 
 // GetJSON401 returns the response for an HTTP 401 `application/json` response
-func (r DeleteBrowserSessionResponse) GetJSON401() *ErrorEnvelope {
+func (r DeleteBrowserSessionResponse) GetJSON401() *P2StandardErrorEnvelopeV1 {
 	return r.JSON401
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
-func (r DeleteBrowserSessionResponse) GetJSON403() *ErrorEnvelope {
+func (r DeleteBrowserSessionResponse) GetJSON403() *P2StandardErrorEnvelopeV1 {
 	return r.JSON403
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r DeleteBrowserSessionResponse) GetJSON404() *ErrorEnvelope {
+func (r DeleteBrowserSessionResponse) GetJSON404() *P2StandardErrorEnvelopeV1 {
 	return r.JSON404
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r DeleteBrowserSessionResponse) GetJSON409() *ErrorEnvelope {
+func (r DeleteBrowserSessionResponse) GetJSON409() *P2StandardErrorEnvelopeV1 {
 	return r.JSON409
 }
 
 // GetJSON412 returns the response for an HTTP 412 `application/json` response
-func (r DeleteBrowserSessionResponse) GetJSON412() *ErrorEnvelope {
+func (r DeleteBrowserSessionResponse) GetJSON412() *P2SessionRevisionConflictErrorEnvelopeV1 {
 	return r.JSON412
 }
 
 // GetJSON413 returns the response for an HTTP 413 `application/json` response
-func (r DeleteBrowserSessionResponse) GetJSON413() *ErrorEnvelope {
+func (r DeleteBrowserSessionResponse) GetJSON413() *P2StandardErrorEnvelopeV1 {
 	return r.JSON413
 }
 
 // GetJSON415 returns the response for an HTTP 415 `application/json` response
-func (r DeleteBrowserSessionResponse) GetJSON415() *ErrorEnvelope {
+func (r DeleteBrowserSessionResponse) GetJSON415() *P2StandardErrorEnvelopeV1 {
 	return r.JSON415
 }
 
 // GetJSON422 returns the response for an HTTP 422 `application/json` response
-func (r DeleteBrowserSessionResponse) GetJSON422() *ErrorEnvelope {
+func (r DeleteBrowserSessionResponse) GetJSON422() *P2StandardErrorEnvelopeV1 {
 	return r.JSON422
 }
 
 // GetJSON429 returns the response for an HTTP 429 `application/json` response
-func (r DeleteBrowserSessionResponse) GetJSON429() *ErrorEnvelope {
+func (r DeleteBrowserSessionResponse) GetJSON429() *P2StandardErrorEnvelopeV1 {
 	return r.JSON429
 }
 
 // GetJSON431 returns the response for an HTTP 431 `application/json` response
-func (r DeleteBrowserSessionResponse) GetJSON431() *ErrorEnvelope {
+func (r DeleteBrowserSessionResponse) GetJSON431() *P2StandardErrorEnvelopeV1 {
 	return r.JSON431
 }
 
 // GetJSON500 returns the response for an HTTP 500 `application/json` response
-func (r DeleteBrowserSessionResponse) GetJSON500() *ErrorEnvelope {
+func (r DeleteBrowserSessionResponse) GetJSON500() *P2StandardErrorEnvelopeV1 {
 	return r.JSON500
 }
 
 // GetJSON503 returns the response for an HTTP 503 `application/json` response
-func (r DeleteBrowserSessionResponse) GetJSON503() *ErrorEnvelope {
+func (r DeleteBrowserSessionResponse) GetJSON503() *P2StandardErrorEnvelopeV1 {
 	return r.JSON503
 }
 
@@ -20585,39 +21752,46 @@ type CreateUvOptionsResponse200Headers struct {
 	XRequestID   *string
 }
 
+// CreateUvOptionsResponse409Headers the declared response headers of an HTTP 409 response for CreateUvOptions
+type CreateUvOptionsResponse409Headers struct {
+	RetryAfter *string
+}
+
 type CreateUvOptionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *WebAuthnRequestOptionsEnvelopeV1
 	// JSON400 the response for an HTTP 400 `application/json` response
-	JSON400 *ErrorEnvelope
+	JSON400 *P2StandardErrorEnvelopeV1
 	// JSON401 the response for an HTTP 401 `application/json` response
-	JSON401 *ErrorEnvelope
+	JSON401 *P2StandardErrorEnvelopeV1
 	// JSON403 the response for an HTTP 403 `application/json` response
-	JSON403 *ErrorEnvelope
+	JSON403 *P2StandardErrorEnvelopeV1
 	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *ErrorEnvelope
+	JSON404 *P2StandardErrorEnvelopeV1
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *ErrorEnvelope
+	JSON409 *P2StandardErrorEnvelopeV1
 	// JSON412 the response for an HTTP 412 `application/json` response
-	JSON412 *ErrorEnvelope
+	JSON412 *P2StandardErrorEnvelopeV1
 	// JSON413 the response for an HTTP 413 `application/json` response
-	JSON413 *ErrorEnvelope
+	JSON413 *P2StandardErrorEnvelopeV1
 	// JSON415 the response for an HTTP 415 `application/json` response
-	JSON415 *ErrorEnvelope
+	JSON415 *P2StandardErrorEnvelopeV1
 	// JSON422 the response for an HTTP 422 `application/json` response
-	JSON422 *ErrorEnvelope
+	JSON422 *P2StandardErrorEnvelopeV1
 	// JSON429 the response for an HTTP 429 `application/json` response
-	JSON429 *ErrorEnvelope
+	JSON429 *P2StandardErrorEnvelopeV1
 	// JSON431 the response for an HTTP 431 `application/json` response
-	JSON431 *ErrorEnvelope
+	JSON431 *P2StandardErrorEnvelopeV1
 	// JSON500 the response for an HTTP 500 `application/json` response
-	JSON500 *ErrorEnvelope
+	JSON500 *P2StandardErrorEnvelopeV1
 	// JSON503 the response for an HTTP 503 `application/json` response
-	JSON503 *ErrorEnvelope
+	JSON503 *P2StandardErrorEnvelopeV1
 	// Headers200 the parsed response headers for an HTTP 200 response
 	Headers200 *CreateUvOptionsResponse200Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *CreateUvOptionsResponse409Headers
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
@@ -20626,67 +21800,67 @@ func (r CreateUvOptionsResponse) GetJSON200() *WebAuthnRequestOptionsEnvelopeV1 
 }
 
 // GetJSON400 returns the response for an HTTP 400 `application/json` response
-func (r CreateUvOptionsResponse) GetJSON400() *ErrorEnvelope {
+func (r CreateUvOptionsResponse) GetJSON400() *P2StandardErrorEnvelopeV1 {
 	return r.JSON400
 }
 
 // GetJSON401 returns the response for an HTTP 401 `application/json` response
-func (r CreateUvOptionsResponse) GetJSON401() *ErrorEnvelope {
+func (r CreateUvOptionsResponse) GetJSON401() *P2StandardErrorEnvelopeV1 {
 	return r.JSON401
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
-func (r CreateUvOptionsResponse) GetJSON403() *ErrorEnvelope {
+func (r CreateUvOptionsResponse) GetJSON403() *P2StandardErrorEnvelopeV1 {
 	return r.JSON403
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r CreateUvOptionsResponse) GetJSON404() *ErrorEnvelope {
+func (r CreateUvOptionsResponse) GetJSON404() *P2StandardErrorEnvelopeV1 {
 	return r.JSON404
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r CreateUvOptionsResponse) GetJSON409() *ErrorEnvelope {
+func (r CreateUvOptionsResponse) GetJSON409() *P2StandardErrorEnvelopeV1 {
 	return r.JSON409
 }
 
 // GetJSON412 returns the response for an HTTP 412 `application/json` response
-func (r CreateUvOptionsResponse) GetJSON412() *ErrorEnvelope {
+func (r CreateUvOptionsResponse) GetJSON412() *P2StandardErrorEnvelopeV1 {
 	return r.JSON412
 }
 
 // GetJSON413 returns the response for an HTTP 413 `application/json` response
-func (r CreateUvOptionsResponse) GetJSON413() *ErrorEnvelope {
+func (r CreateUvOptionsResponse) GetJSON413() *P2StandardErrorEnvelopeV1 {
 	return r.JSON413
 }
 
 // GetJSON415 returns the response for an HTTP 415 `application/json` response
-func (r CreateUvOptionsResponse) GetJSON415() *ErrorEnvelope {
+func (r CreateUvOptionsResponse) GetJSON415() *P2StandardErrorEnvelopeV1 {
 	return r.JSON415
 }
 
 // GetJSON422 returns the response for an HTTP 422 `application/json` response
-func (r CreateUvOptionsResponse) GetJSON422() *ErrorEnvelope {
+func (r CreateUvOptionsResponse) GetJSON422() *P2StandardErrorEnvelopeV1 {
 	return r.JSON422
 }
 
 // GetJSON429 returns the response for an HTTP 429 `application/json` response
-func (r CreateUvOptionsResponse) GetJSON429() *ErrorEnvelope {
+func (r CreateUvOptionsResponse) GetJSON429() *P2StandardErrorEnvelopeV1 {
 	return r.JSON429
 }
 
 // GetJSON431 returns the response for an HTTP 431 `application/json` response
-func (r CreateUvOptionsResponse) GetJSON431() *ErrorEnvelope {
+func (r CreateUvOptionsResponse) GetJSON431() *P2StandardErrorEnvelopeV1 {
 	return r.JSON431
 }
 
 // GetJSON500 returns the response for an HTTP 500 `application/json` response
-func (r CreateUvOptionsResponse) GetJSON500() *ErrorEnvelope {
+func (r CreateUvOptionsResponse) GetJSON500() *P2StandardErrorEnvelopeV1 {
 	return r.JSON500
 }
 
 // GetJSON503 returns the response for an HTTP 503 `application/json` response
-func (r CreateUvOptionsResponse) GetJSON503() *ErrorEnvelope {
+func (r CreateUvOptionsResponse) GetJSON503() *P2StandardErrorEnvelopeV1 {
 	return r.JSON503
 }
 
@@ -20722,7 +21896,13 @@ func (r CreateUvOptionsResponse) ContentType() string {
 // VerifyUvResponse200Headers the declared response headers of an HTTP 200 response for VerifyUv
 type VerifyUvResponse200Headers struct {
 	CacheControl *string
+	SetCookie    *string
 	XRequestID   *string
+}
+
+// VerifyUvResponse409Headers the declared response headers of an HTTP 409 response for VerifyUv
+type VerifyUvResponse409Headers struct {
+	RetryAfter *string
 }
 
 type VerifyUvResponse struct {
@@ -20731,33 +21911,35 @@ type VerifyUvResponse struct {
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *CurrentAuthEnvelope
 	// JSON400 the response for an HTTP 400 `application/json` response
-	JSON400 *ErrorEnvelope
+	JSON400 *P2StandardErrorEnvelopeV1
 	// JSON401 the response for an HTTP 401 `application/json` response
-	JSON401 *ErrorEnvelope
+	JSON401 *P2StandardErrorEnvelopeV1
 	// JSON403 the response for an HTTP 403 `application/json` response
-	JSON403 *ErrorEnvelope
+	JSON403 *P2StandardErrorEnvelopeV1
 	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *ErrorEnvelope
+	JSON404 *P2StandardErrorEnvelopeV1
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *ErrorEnvelope
+	JSON409 *P2SecretConflictErrorEnvelopeV1
 	// JSON412 the response for an HTTP 412 `application/json` response
-	JSON412 *ErrorEnvelope
+	JSON412 *P2StandardErrorEnvelopeV1
 	// JSON413 the response for an HTTP 413 `application/json` response
-	JSON413 *ErrorEnvelope
+	JSON413 *P2StandardErrorEnvelopeV1
 	// JSON415 the response for an HTTP 415 `application/json` response
-	JSON415 *ErrorEnvelope
+	JSON415 *P2StandardErrorEnvelopeV1
 	// JSON422 the response for an HTTP 422 `application/json` response
-	JSON422 *ErrorEnvelope
+	JSON422 *P2StandardErrorEnvelopeV1
 	// JSON429 the response for an HTTP 429 `application/json` response
-	JSON429 *ErrorEnvelope
+	JSON429 *P2StandardErrorEnvelopeV1
 	// JSON431 the response for an HTTP 431 `application/json` response
-	JSON431 *ErrorEnvelope
+	JSON431 *P2StandardErrorEnvelopeV1
 	// JSON500 the response for an HTTP 500 `application/json` response
-	JSON500 *ErrorEnvelope
+	JSON500 *P2StandardErrorEnvelopeV1
 	// JSON503 the response for an HTTP 503 `application/json` response
-	JSON503 *ErrorEnvelope
+	JSON503 *P2StandardErrorEnvelopeV1
 	// Headers200 the parsed response headers for an HTTP 200 response
 	Headers200 *VerifyUvResponse200Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *VerifyUvResponse409Headers
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
@@ -20766,67 +21948,67 @@ func (r VerifyUvResponse) GetJSON200() *CurrentAuthEnvelope {
 }
 
 // GetJSON400 returns the response for an HTTP 400 `application/json` response
-func (r VerifyUvResponse) GetJSON400() *ErrorEnvelope {
+func (r VerifyUvResponse) GetJSON400() *P2StandardErrorEnvelopeV1 {
 	return r.JSON400
 }
 
 // GetJSON401 returns the response for an HTTP 401 `application/json` response
-func (r VerifyUvResponse) GetJSON401() *ErrorEnvelope {
+func (r VerifyUvResponse) GetJSON401() *P2StandardErrorEnvelopeV1 {
 	return r.JSON401
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
-func (r VerifyUvResponse) GetJSON403() *ErrorEnvelope {
+func (r VerifyUvResponse) GetJSON403() *P2StandardErrorEnvelopeV1 {
 	return r.JSON403
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r VerifyUvResponse) GetJSON404() *ErrorEnvelope {
+func (r VerifyUvResponse) GetJSON404() *P2StandardErrorEnvelopeV1 {
 	return r.JSON404
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r VerifyUvResponse) GetJSON409() *ErrorEnvelope {
+func (r VerifyUvResponse) GetJSON409() *P2SecretConflictErrorEnvelopeV1 {
 	return r.JSON409
 }
 
 // GetJSON412 returns the response for an HTTP 412 `application/json` response
-func (r VerifyUvResponse) GetJSON412() *ErrorEnvelope {
+func (r VerifyUvResponse) GetJSON412() *P2StandardErrorEnvelopeV1 {
 	return r.JSON412
 }
 
 // GetJSON413 returns the response for an HTTP 413 `application/json` response
-func (r VerifyUvResponse) GetJSON413() *ErrorEnvelope {
+func (r VerifyUvResponse) GetJSON413() *P2StandardErrorEnvelopeV1 {
 	return r.JSON413
 }
 
 // GetJSON415 returns the response for an HTTP 415 `application/json` response
-func (r VerifyUvResponse) GetJSON415() *ErrorEnvelope {
+func (r VerifyUvResponse) GetJSON415() *P2StandardErrorEnvelopeV1 {
 	return r.JSON415
 }
 
 // GetJSON422 returns the response for an HTTP 422 `application/json` response
-func (r VerifyUvResponse) GetJSON422() *ErrorEnvelope {
+func (r VerifyUvResponse) GetJSON422() *P2StandardErrorEnvelopeV1 {
 	return r.JSON422
 }
 
 // GetJSON429 returns the response for an HTTP 429 `application/json` response
-func (r VerifyUvResponse) GetJSON429() *ErrorEnvelope {
+func (r VerifyUvResponse) GetJSON429() *P2StandardErrorEnvelopeV1 {
 	return r.JSON429
 }
 
 // GetJSON431 returns the response for an HTTP 431 `application/json` response
-func (r VerifyUvResponse) GetJSON431() *ErrorEnvelope {
+func (r VerifyUvResponse) GetJSON431() *P2StandardErrorEnvelopeV1 {
 	return r.JSON431
 }
 
 // GetJSON500 returns the response for an HTTP 500 `application/json` response
-func (r VerifyUvResponse) GetJSON500() *ErrorEnvelope {
+func (r VerifyUvResponse) GetJSON500() *P2StandardErrorEnvelopeV1 {
 	return r.JSON500
 }
 
 // GetJSON503 returns the response for an HTTP 503 `application/json` response
-func (r VerifyUvResponse) GetJSON503() *ErrorEnvelope {
+func (r VerifyUvResponse) GetJSON503() *P2StandardErrorEnvelopeV1 {
 	return r.JSON503
 }
 
@@ -20871,31 +22053,31 @@ type GetBootstrapCeremonyResponse struct {
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *BootstrapCeremonyEnvelopeV1
 	// JSON400 the response for an HTTP 400 `application/json` response
-	JSON400 *ErrorEnvelope
+	JSON400 *P2StandardErrorEnvelopeV1
 	// JSON401 the response for an HTTP 401 `application/json` response
-	JSON401 *ErrorEnvelope
+	JSON401 *P2StandardErrorEnvelopeV1
 	// JSON403 the response for an HTTP 403 `application/json` response
-	JSON403 *ErrorEnvelope
+	JSON403 *P2StandardErrorEnvelopeV1
 	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *ErrorEnvelope
+	JSON404 *P2StandardErrorEnvelopeV1
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *ErrorEnvelope
+	JSON409 *P2StandardErrorEnvelopeV1
 	// JSON412 the response for an HTTP 412 `application/json` response
-	JSON412 *ErrorEnvelope
+	JSON412 *P2StandardErrorEnvelopeV1
 	// JSON413 the response for an HTTP 413 `application/json` response
-	JSON413 *ErrorEnvelope
+	JSON413 *P2StandardErrorEnvelopeV1
 	// JSON415 the response for an HTTP 415 `application/json` response
-	JSON415 *ErrorEnvelope
+	JSON415 *P2StandardErrorEnvelopeV1
 	// JSON422 the response for an HTTP 422 `application/json` response
-	JSON422 *ErrorEnvelope
+	JSON422 *P2StandardErrorEnvelopeV1
 	// JSON429 the response for an HTTP 429 `application/json` response
-	JSON429 *ErrorEnvelope
+	JSON429 *P2StandardErrorEnvelopeV1
 	// JSON431 the response for an HTTP 431 `application/json` response
-	JSON431 *ErrorEnvelope
+	JSON431 *P2StandardErrorEnvelopeV1
 	// JSON500 the response for an HTTP 500 `application/json` response
-	JSON500 *ErrorEnvelope
+	JSON500 *P2StandardErrorEnvelopeV1
 	// JSON503 the response for an HTTP 503 `application/json` response
-	JSON503 *ErrorEnvelope
+	JSON503 *P2StandardErrorEnvelopeV1
 	// Headers200 the parsed response headers for an HTTP 200 response
 	Headers200 *GetBootstrapCeremonyResponse200Headers
 }
@@ -20906,67 +22088,67 @@ func (r GetBootstrapCeremonyResponse) GetJSON200() *BootstrapCeremonyEnvelopeV1 
 }
 
 // GetJSON400 returns the response for an HTTP 400 `application/json` response
-func (r GetBootstrapCeremonyResponse) GetJSON400() *ErrorEnvelope {
+func (r GetBootstrapCeremonyResponse) GetJSON400() *P2StandardErrorEnvelopeV1 {
 	return r.JSON400
 }
 
 // GetJSON401 returns the response for an HTTP 401 `application/json` response
-func (r GetBootstrapCeremonyResponse) GetJSON401() *ErrorEnvelope {
+func (r GetBootstrapCeremonyResponse) GetJSON401() *P2StandardErrorEnvelopeV1 {
 	return r.JSON401
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
-func (r GetBootstrapCeremonyResponse) GetJSON403() *ErrorEnvelope {
+func (r GetBootstrapCeremonyResponse) GetJSON403() *P2StandardErrorEnvelopeV1 {
 	return r.JSON403
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r GetBootstrapCeremonyResponse) GetJSON404() *ErrorEnvelope {
+func (r GetBootstrapCeremonyResponse) GetJSON404() *P2StandardErrorEnvelopeV1 {
 	return r.JSON404
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r GetBootstrapCeremonyResponse) GetJSON409() *ErrorEnvelope {
+func (r GetBootstrapCeremonyResponse) GetJSON409() *P2StandardErrorEnvelopeV1 {
 	return r.JSON409
 }
 
 // GetJSON412 returns the response for an HTTP 412 `application/json` response
-func (r GetBootstrapCeremonyResponse) GetJSON412() *ErrorEnvelope {
+func (r GetBootstrapCeremonyResponse) GetJSON412() *P2StandardErrorEnvelopeV1 {
 	return r.JSON412
 }
 
 // GetJSON413 returns the response for an HTTP 413 `application/json` response
-func (r GetBootstrapCeremonyResponse) GetJSON413() *ErrorEnvelope {
+func (r GetBootstrapCeremonyResponse) GetJSON413() *P2StandardErrorEnvelopeV1 {
 	return r.JSON413
 }
 
 // GetJSON415 returns the response for an HTTP 415 `application/json` response
-func (r GetBootstrapCeremonyResponse) GetJSON415() *ErrorEnvelope {
+func (r GetBootstrapCeremonyResponse) GetJSON415() *P2StandardErrorEnvelopeV1 {
 	return r.JSON415
 }
 
 // GetJSON422 returns the response for an HTTP 422 `application/json` response
-func (r GetBootstrapCeremonyResponse) GetJSON422() *ErrorEnvelope {
+func (r GetBootstrapCeremonyResponse) GetJSON422() *P2StandardErrorEnvelopeV1 {
 	return r.JSON422
 }
 
 // GetJSON429 returns the response for an HTTP 429 `application/json` response
-func (r GetBootstrapCeremonyResponse) GetJSON429() *ErrorEnvelope {
+func (r GetBootstrapCeremonyResponse) GetJSON429() *P2StandardErrorEnvelopeV1 {
 	return r.JSON429
 }
 
 // GetJSON431 returns the response for an HTTP 431 `application/json` response
-func (r GetBootstrapCeremonyResponse) GetJSON431() *ErrorEnvelope {
+func (r GetBootstrapCeremonyResponse) GetJSON431() *P2StandardErrorEnvelopeV1 {
 	return r.JSON431
 }
 
 // GetJSON500 returns the response for an HTTP 500 `application/json` response
-func (r GetBootstrapCeremonyResponse) GetJSON500() *ErrorEnvelope {
+func (r GetBootstrapCeremonyResponse) GetJSON500() *P2StandardErrorEnvelopeV1 {
 	return r.JSON500
 }
 
 // GetJSON503 returns the response for an HTTP 503 `application/json` response
-func (r GetBootstrapCeremonyResponse) GetJSON503() *ErrorEnvelope {
+func (r GetBootstrapCeremonyResponse) GetJSON503() *P2StandardErrorEnvelopeV1 {
 	return r.JSON503
 }
 
@@ -21005,39 +22187,46 @@ type CreateBootstrapOptionsResponse200Headers struct {
 	XRequestID   *string
 }
 
+// CreateBootstrapOptionsResponse409Headers the declared response headers of an HTTP 409 response for CreateBootstrapOptions
+type CreateBootstrapOptionsResponse409Headers struct {
+	RetryAfter *string
+}
+
 type CreateBootstrapOptionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *BootstrapChallengeEnvelopeV1
 	// JSON400 the response for an HTTP 400 `application/json` response
-	JSON400 *ErrorEnvelope
+	JSON400 *P2StandardErrorEnvelopeV1
 	// JSON401 the response for an HTTP 401 `application/json` response
-	JSON401 *ErrorEnvelope
+	JSON401 *P2StandardErrorEnvelopeV1
 	// JSON403 the response for an HTTP 403 `application/json` response
-	JSON403 *ErrorEnvelope
+	JSON403 *P2StandardErrorEnvelopeV1
 	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *ErrorEnvelope
+	JSON404 *P2StandardErrorEnvelopeV1
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *ErrorEnvelope
+	JSON409 *P2StandardErrorEnvelopeV1
 	// JSON412 the response for an HTTP 412 `application/json` response
-	JSON412 *ErrorEnvelope
+	JSON412 *P2StandardErrorEnvelopeV1
 	// JSON413 the response for an HTTP 413 `application/json` response
-	JSON413 *ErrorEnvelope
+	JSON413 *P2StandardErrorEnvelopeV1
 	// JSON415 the response for an HTTP 415 `application/json` response
-	JSON415 *ErrorEnvelope
+	JSON415 *P2StandardErrorEnvelopeV1
 	// JSON422 the response for an HTTP 422 `application/json` response
-	JSON422 *ErrorEnvelope
+	JSON422 *P2StandardErrorEnvelopeV1
 	// JSON429 the response for an HTTP 429 `application/json` response
-	JSON429 *ErrorEnvelope
+	JSON429 *P2StandardErrorEnvelopeV1
 	// JSON431 the response for an HTTP 431 `application/json` response
-	JSON431 *ErrorEnvelope
+	JSON431 *P2StandardErrorEnvelopeV1
 	// JSON500 the response for an HTTP 500 `application/json` response
-	JSON500 *ErrorEnvelope
+	JSON500 *P2StandardErrorEnvelopeV1
 	// JSON503 the response for an HTTP 503 `application/json` response
-	JSON503 *ErrorEnvelope
+	JSON503 *P2StandardErrorEnvelopeV1
 	// Headers200 the parsed response headers for an HTTP 200 response
 	Headers200 *CreateBootstrapOptionsResponse200Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *CreateBootstrapOptionsResponse409Headers
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
@@ -21046,67 +22235,67 @@ func (r CreateBootstrapOptionsResponse) GetJSON200() *BootstrapChallengeEnvelope
 }
 
 // GetJSON400 returns the response for an HTTP 400 `application/json` response
-func (r CreateBootstrapOptionsResponse) GetJSON400() *ErrorEnvelope {
+func (r CreateBootstrapOptionsResponse) GetJSON400() *P2StandardErrorEnvelopeV1 {
 	return r.JSON400
 }
 
 // GetJSON401 returns the response for an HTTP 401 `application/json` response
-func (r CreateBootstrapOptionsResponse) GetJSON401() *ErrorEnvelope {
+func (r CreateBootstrapOptionsResponse) GetJSON401() *P2StandardErrorEnvelopeV1 {
 	return r.JSON401
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
-func (r CreateBootstrapOptionsResponse) GetJSON403() *ErrorEnvelope {
+func (r CreateBootstrapOptionsResponse) GetJSON403() *P2StandardErrorEnvelopeV1 {
 	return r.JSON403
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r CreateBootstrapOptionsResponse) GetJSON404() *ErrorEnvelope {
+func (r CreateBootstrapOptionsResponse) GetJSON404() *P2StandardErrorEnvelopeV1 {
 	return r.JSON404
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r CreateBootstrapOptionsResponse) GetJSON409() *ErrorEnvelope {
+func (r CreateBootstrapOptionsResponse) GetJSON409() *P2StandardErrorEnvelopeV1 {
 	return r.JSON409
 }
 
 // GetJSON412 returns the response for an HTTP 412 `application/json` response
-func (r CreateBootstrapOptionsResponse) GetJSON412() *ErrorEnvelope {
+func (r CreateBootstrapOptionsResponse) GetJSON412() *P2StandardErrorEnvelopeV1 {
 	return r.JSON412
 }
 
 // GetJSON413 returns the response for an HTTP 413 `application/json` response
-func (r CreateBootstrapOptionsResponse) GetJSON413() *ErrorEnvelope {
+func (r CreateBootstrapOptionsResponse) GetJSON413() *P2StandardErrorEnvelopeV1 {
 	return r.JSON413
 }
 
 // GetJSON415 returns the response for an HTTP 415 `application/json` response
-func (r CreateBootstrapOptionsResponse) GetJSON415() *ErrorEnvelope {
+func (r CreateBootstrapOptionsResponse) GetJSON415() *P2StandardErrorEnvelopeV1 {
 	return r.JSON415
 }
 
 // GetJSON422 returns the response for an HTTP 422 `application/json` response
-func (r CreateBootstrapOptionsResponse) GetJSON422() *ErrorEnvelope {
+func (r CreateBootstrapOptionsResponse) GetJSON422() *P2StandardErrorEnvelopeV1 {
 	return r.JSON422
 }
 
 // GetJSON429 returns the response for an HTTP 429 `application/json` response
-func (r CreateBootstrapOptionsResponse) GetJSON429() *ErrorEnvelope {
+func (r CreateBootstrapOptionsResponse) GetJSON429() *P2StandardErrorEnvelopeV1 {
 	return r.JSON429
 }
 
 // GetJSON431 returns the response for an HTTP 431 `application/json` response
-func (r CreateBootstrapOptionsResponse) GetJSON431() *ErrorEnvelope {
+func (r CreateBootstrapOptionsResponse) GetJSON431() *P2StandardErrorEnvelopeV1 {
 	return r.JSON431
 }
 
 // GetJSON500 returns the response for an HTTP 500 `application/json` response
-func (r CreateBootstrapOptionsResponse) GetJSON500() *ErrorEnvelope {
+func (r CreateBootstrapOptionsResponse) GetJSON500() *P2StandardErrorEnvelopeV1 {
 	return r.JSON500
 }
 
 // GetJSON503 returns the response for an HTTP 503 `application/json` response
-func (r CreateBootstrapOptionsResponse) GetJSON503() *ErrorEnvelope {
+func (r CreateBootstrapOptionsResponse) GetJSON503() *P2StandardErrorEnvelopeV1 {
 	return r.JSON503
 }
 
@@ -21151,31 +22340,31 @@ type GetBootstrapStatusResponse struct {
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *BootstrapStatusEnvelopeV1
 	// JSON400 the response for an HTTP 400 `application/json` response
-	JSON400 *ErrorEnvelope
+	JSON400 *P2StandardErrorEnvelopeV1
 	// JSON401 the response for an HTTP 401 `application/json` response
-	JSON401 *ErrorEnvelope
+	JSON401 *P2StandardErrorEnvelopeV1
 	// JSON403 the response for an HTTP 403 `application/json` response
-	JSON403 *ErrorEnvelope
+	JSON403 *P2StandardErrorEnvelopeV1
 	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *ErrorEnvelope
+	JSON404 *P2StandardErrorEnvelopeV1
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *ErrorEnvelope
+	JSON409 *P2StandardErrorEnvelopeV1
 	// JSON412 the response for an HTTP 412 `application/json` response
-	JSON412 *ErrorEnvelope
+	JSON412 *P2StandardErrorEnvelopeV1
 	// JSON413 the response for an HTTP 413 `application/json` response
-	JSON413 *ErrorEnvelope
+	JSON413 *P2StandardErrorEnvelopeV1
 	// JSON415 the response for an HTTP 415 `application/json` response
-	JSON415 *ErrorEnvelope
+	JSON415 *P2StandardErrorEnvelopeV1
 	// JSON422 the response for an HTTP 422 `application/json` response
-	JSON422 *ErrorEnvelope
+	JSON422 *P2StandardErrorEnvelopeV1
 	// JSON429 the response for an HTTP 429 `application/json` response
-	JSON429 *ErrorEnvelope
+	JSON429 *P2StandardErrorEnvelopeV1
 	// JSON431 the response for an HTTP 431 `application/json` response
-	JSON431 *ErrorEnvelope
+	JSON431 *P2StandardErrorEnvelopeV1
 	// JSON500 the response for an HTTP 500 `application/json` response
-	JSON500 *ErrorEnvelope
+	JSON500 *P2StandardErrorEnvelopeV1
 	// JSON503 the response for an HTTP 503 `application/json` response
-	JSON503 *ErrorEnvelope
+	JSON503 *P2StandardErrorEnvelopeV1
 	// Headers200 the parsed response headers for an HTTP 200 response
 	Headers200 *GetBootstrapStatusResponse200Headers
 }
@@ -21186,67 +22375,67 @@ func (r GetBootstrapStatusResponse) GetJSON200() *BootstrapStatusEnvelopeV1 {
 }
 
 // GetJSON400 returns the response for an HTTP 400 `application/json` response
-func (r GetBootstrapStatusResponse) GetJSON400() *ErrorEnvelope {
+func (r GetBootstrapStatusResponse) GetJSON400() *P2StandardErrorEnvelopeV1 {
 	return r.JSON400
 }
 
 // GetJSON401 returns the response for an HTTP 401 `application/json` response
-func (r GetBootstrapStatusResponse) GetJSON401() *ErrorEnvelope {
+func (r GetBootstrapStatusResponse) GetJSON401() *P2StandardErrorEnvelopeV1 {
 	return r.JSON401
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
-func (r GetBootstrapStatusResponse) GetJSON403() *ErrorEnvelope {
+func (r GetBootstrapStatusResponse) GetJSON403() *P2StandardErrorEnvelopeV1 {
 	return r.JSON403
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r GetBootstrapStatusResponse) GetJSON404() *ErrorEnvelope {
+func (r GetBootstrapStatusResponse) GetJSON404() *P2StandardErrorEnvelopeV1 {
 	return r.JSON404
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r GetBootstrapStatusResponse) GetJSON409() *ErrorEnvelope {
+func (r GetBootstrapStatusResponse) GetJSON409() *P2StandardErrorEnvelopeV1 {
 	return r.JSON409
 }
 
 // GetJSON412 returns the response for an HTTP 412 `application/json` response
-func (r GetBootstrapStatusResponse) GetJSON412() *ErrorEnvelope {
+func (r GetBootstrapStatusResponse) GetJSON412() *P2StandardErrorEnvelopeV1 {
 	return r.JSON412
 }
 
 // GetJSON413 returns the response for an HTTP 413 `application/json` response
-func (r GetBootstrapStatusResponse) GetJSON413() *ErrorEnvelope {
+func (r GetBootstrapStatusResponse) GetJSON413() *P2StandardErrorEnvelopeV1 {
 	return r.JSON413
 }
 
 // GetJSON415 returns the response for an HTTP 415 `application/json` response
-func (r GetBootstrapStatusResponse) GetJSON415() *ErrorEnvelope {
+func (r GetBootstrapStatusResponse) GetJSON415() *P2StandardErrorEnvelopeV1 {
 	return r.JSON415
 }
 
 // GetJSON422 returns the response for an HTTP 422 `application/json` response
-func (r GetBootstrapStatusResponse) GetJSON422() *ErrorEnvelope {
+func (r GetBootstrapStatusResponse) GetJSON422() *P2StandardErrorEnvelopeV1 {
 	return r.JSON422
 }
 
 // GetJSON429 returns the response for an HTTP 429 `application/json` response
-func (r GetBootstrapStatusResponse) GetJSON429() *ErrorEnvelope {
+func (r GetBootstrapStatusResponse) GetJSON429() *P2StandardErrorEnvelopeV1 {
 	return r.JSON429
 }
 
 // GetJSON431 returns the response for an HTTP 431 `application/json` response
-func (r GetBootstrapStatusResponse) GetJSON431() *ErrorEnvelope {
+func (r GetBootstrapStatusResponse) GetJSON431() *P2StandardErrorEnvelopeV1 {
 	return r.JSON431
 }
 
 // GetJSON500 returns the response for an HTTP 500 `application/json` response
-func (r GetBootstrapStatusResponse) GetJSON500() *ErrorEnvelope {
+func (r GetBootstrapStatusResponse) GetJSON500() *P2StandardErrorEnvelopeV1 {
 	return r.JSON500
 }
 
 // GetJSON503 returns the response for an HTTP 503 `application/json` response
-func (r GetBootstrapStatusResponse) GetJSON503() *ErrorEnvelope {
+func (r GetBootstrapStatusResponse) GetJSON503() *P2StandardErrorEnvelopeV1 {
 	return r.JSON503
 }
 
@@ -21282,7 +22471,13 @@ func (r GetBootstrapStatusResponse) ContentType() string {
 // VerifyBootstrapResponse200Headers the declared response headers of an HTTP 200 response for VerifyBootstrap
 type VerifyBootstrapResponse200Headers struct {
 	CacheControl *string
+	SetCookie    *string
 	XRequestID   *string
+}
+
+// VerifyBootstrapResponse409Headers the declared response headers of an HTTP 409 response for VerifyBootstrap
+type VerifyBootstrapResponse409Headers struct {
+	RetryAfter *string
 }
 
 type VerifyBootstrapResponse struct {
@@ -21291,33 +22486,35 @@ type VerifyBootstrapResponse struct {
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *BootstrapResultEnvelopeV1
 	// JSON400 the response for an HTTP 400 `application/json` response
-	JSON400 *ErrorEnvelope
+	JSON400 *P2StandardErrorEnvelopeV1
 	// JSON401 the response for an HTTP 401 `application/json` response
-	JSON401 *ErrorEnvelope
+	JSON401 *P2StandardErrorEnvelopeV1
 	// JSON403 the response for an HTTP 403 `application/json` response
-	JSON403 *ErrorEnvelope
+	JSON403 *P2StandardErrorEnvelopeV1
 	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *ErrorEnvelope
+	JSON404 *P2StandardErrorEnvelopeV1
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *ErrorEnvelope
+	JSON409 *P2SecretConflictErrorEnvelopeV1
 	// JSON412 the response for an HTTP 412 `application/json` response
-	JSON412 *ErrorEnvelope
+	JSON412 *P2StandardErrorEnvelopeV1
 	// JSON413 the response for an HTTP 413 `application/json` response
-	JSON413 *ErrorEnvelope
+	JSON413 *P2StandardErrorEnvelopeV1
 	// JSON415 the response for an HTTP 415 `application/json` response
-	JSON415 *ErrorEnvelope
+	JSON415 *P2StandardErrorEnvelopeV1
 	// JSON422 the response for an HTTP 422 `application/json` response
-	JSON422 *ErrorEnvelope
+	JSON422 *P2StandardErrorEnvelopeV1
 	// JSON429 the response for an HTTP 429 `application/json` response
-	JSON429 *ErrorEnvelope
+	JSON429 *P2StandardErrorEnvelopeV1
 	// JSON431 the response for an HTTP 431 `application/json` response
-	JSON431 *ErrorEnvelope
+	JSON431 *P2StandardErrorEnvelopeV1
 	// JSON500 the response for an HTTP 500 `application/json` response
-	JSON500 *ErrorEnvelope
+	JSON500 *P2StandardErrorEnvelopeV1
 	// JSON503 the response for an HTTP 503 `application/json` response
-	JSON503 *ErrorEnvelope
+	JSON503 *P2StandardErrorEnvelopeV1
 	// Headers200 the parsed response headers for an HTTP 200 response
 	Headers200 *VerifyBootstrapResponse200Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *VerifyBootstrapResponse409Headers
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
@@ -21326,67 +22523,67 @@ func (r VerifyBootstrapResponse) GetJSON200() *BootstrapResultEnvelopeV1 {
 }
 
 // GetJSON400 returns the response for an HTTP 400 `application/json` response
-func (r VerifyBootstrapResponse) GetJSON400() *ErrorEnvelope {
+func (r VerifyBootstrapResponse) GetJSON400() *P2StandardErrorEnvelopeV1 {
 	return r.JSON400
 }
 
 // GetJSON401 returns the response for an HTTP 401 `application/json` response
-func (r VerifyBootstrapResponse) GetJSON401() *ErrorEnvelope {
+func (r VerifyBootstrapResponse) GetJSON401() *P2StandardErrorEnvelopeV1 {
 	return r.JSON401
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
-func (r VerifyBootstrapResponse) GetJSON403() *ErrorEnvelope {
+func (r VerifyBootstrapResponse) GetJSON403() *P2StandardErrorEnvelopeV1 {
 	return r.JSON403
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r VerifyBootstrapResponse) GetJSON404() *ErrorEnvelope {
+func (r VerifyBootstrapResponse) GetJSON404() *P2StandardErrorEnvelopeV1 {
 	return r.JSON404
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r VerifyBootstrapResponse) GetJSON409() *ErrorEnvelope {
+func (r VerifyBootstrapResponse) GetJSON409() *P2SecretConflictErrorEnvelopeV1 {
 	return r.JSON409
 }
 
 // GetJSON412 returns the response for an HTTP 412 `application/json` response
-func (r VerifyBootstrapResponse) GetJSON412() *ErrorEnvelope {
+func (r VerifyBootstrapResponse) GetJSON412() *P2StandardErrorEnvelopeV1 {
 	return r.JSON412
 }
 
 // GetJSON413 returns the response for an HTTP 413 `application/json` response
-func (r VerifyBootstrapResponse) GetJSON413() *ErrorEnvelope {
+func (r VerifyBootstrapResponse) GetJSON413() *P2StandardErrorEnvelopeV1 {
 	return r.JSON413
 }
 
 // GetJSON415 returns the response for an HTTP 415 `application/json` response
-func (r VerifyBootstrapResponse) GetJSON415() *ErrorEnvelope {
+func (r VerifyBootstrapResponse) GetJSON415() *P2StandardErrorEnvelopeV1 {
 	return r.JSON415
 }
 
 // GetJSON422 returns the response for an HTTP 422 `application/json` response
-func (r VerifyBootstrapResponse) GetJSON422() *ErrorEnvelope {
+func (r VerifyBootstrapResponse) GetJSON422() *P2StandardErrorEnvelopeV1 {
 	return r.JSON422
 }
 
 // GetJSON429 returns the response for an HTTP 429 `application/json` response
-func (r VerifyBootstrapResponse) GetJSON429() *ErrorEnvelope {
+func (r VerifyBootstrapResponse) GetJSON429() *P2StandardErrorEnvelopeV1 {
 	return r.JSON429
 }
 
 // GetJSON431 returns the response for an HTTP 431 `application/json` response
-func (r VerifyBootstrapResponse) GetJSON431() *ErrorEnvelope {
+func (r VerifyBootstrapResponse) GetJSON431() *P2StandardErrorEnvelopeV1 {
 	return r.JSON431
 }
 
 // GetJSON500 returns the response for an HTTP 500 `application/json` response
-func (r VerifyBootstrapResponse) GetJSON500() *ErrorEnvelope {
+func (r VerifyBootstrapResponse) GetJSON500() *P2StandardErrorEnvelopeV1 {
 	return r.JSON500
 }
 
 // GetJSON503 returns the response for an HTTP 503 `application/json` response
-func (r VerifyBootstrapResponse) GetJSON503() *ErrorEnvelope {
+func (r VerifyBootstrapResponse) GetJSON503() *P2StandardErrorEnvelopeV1 {
 	return r.JSON503
 }
 
@@ -27623,11 +28820,22 @@ func (c *ClientWithResponses) GetCurrentAuthWithResponse(ctx context.Context, re
 	return ParseGetCurrentAuthResponse(rsp)
 }
 
-// LogoutWithResponse performs a POST /v1/auth/logout (the `Logout` operationId) request.
+// LogoutWithBodyWithResponse performs a POST /v1/auth/logout (the `Logout` operationId) request,
+// with any type of body and a specified content type.
 //
 // Returns a wrapper object for the known response body format(s).
-func (c *ClientWithResponses) LogoutWithResponse(ctx context.Context, params *LogoutParams, reqEditors ...RequestEditorFn) (*LogoutResponse, error) {
-	rsp, err := c.Logout(ctx, params, reqEditors...)
+func (c *ClientWithResponses) LogoutWithBodyWithResponse(ctx context.Context, params *LogoutParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*LogoutResponse, error) {
+	rsp, err := c.LogoutWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseLogoutResponse(rsp)
+}
+
+// LogoutWithResponse performs a POST /v1/auth/logout (the `Logout` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) LogoutWithResponse(ctx context.Context, params *LogoutParams, body LogoutJSONRequestBody, reqEditors ...RequestEditorFn) (*LogoutResponse, error) {
+	rsp, err := c.Logout(ctx, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -27645,22 +28853,44 @@ func (c *ClientWithResponses) ListPasskeysWithResponse(ctx context.Context, reqE
 	return ParseListPasskeysResponse(rsp)
 }
 
-// CreatePasskeyAuthenticationOptionsWithResponse performs a POST /v1/auth/passkeys/options (the `CreatePasskeyAuthenticationOptions` operationId) request.
+// CreatePasskeyAuthenticationOptionsWithBodyWithResponse performs a POST /v1/auth/passkeys/options (the `CreatePasskeyAuthenticationOptions` operationId) request,
+// with any type of body and a specified content type.
 //
 // Returns a wrapper object for the known response body format(s).
-func (c *ClientWithResponses) CreatePasskeyAuthenticationOptionsWithResponse(ctx context.Context, params *CreatePasskeyAuthenticationOptionsParams, reqEditors ...RequestEditorFn) (*CreatePasskeyAuthenticationOptionsResponse, error) {
-	rsp, err := c.CreatePasskeyAuthenticationOptions(ctx, params, reqEditors...)
+func (c *ClientWithResponses) CreatePasskeyAuthenticationOptionsWithBodyWithResponse(ctx context.Context, params *CreatePasskeyAuthenticationOptionsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePasskeyAuthenticationOptionsResponse, error) {
+	rsp, err := c.CreatePasskeyAuthenticationOptionsWithBody(ctx, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreatePasskeyAuthenticationOptionsResponse(rsp)
 }
 
-// CreatePasskeyRegistrationOptionsWithResponse performs a POST /v1/auth/passkeys/registration/options (the `CreatePasskeyRegistrationOptions` operationId) request.
+// CreatePasskeyAuthenticationOptionsWithResponse performs a POST /v1/auth/passkeys/options (the `CreatePasskeyAuthenticationOptions` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CreatePasskeyAuthenticationOptionsWithResponse(ctx context.Context, params *CreatePasskeyAuthenticationOptionsParams, body CreatePasskeyAuthenticationOptionsJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePasskeyAuthenticationOptionsResponse, error) {
+	rsp, err := c.CreatePasskeyAuthenticationOptions(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreatePasskeyAuthenticationOptionsResponse(rsp)
+}
+
+// CreatePasskeyRegistrationOptionsWithBodyWithResponse performs a POST /v1/auth/passkeys/registration/options (the `CreatePasskeyRegistrationOptions` operationId) request,
+// with any type of body and a specified content type.
 //
 // Returns a wrapper object for the known response body format(s).
-func (c *ClientWithResponses) CreatePasskeyRegistrationOptionsWithResponse(ctx context.Context, params *CreatePasskeyRegistrationOptionsParams, reqEditors ...RequestEditorFn) (*CreatePasskeyRegistrationOptionsResponse, error) {
-	rsp, err := c.CreatePasskeyRegistrationOptions(ctx, params, reqEditors...)
+func (c *ClientWithResponses) CreatePasskeyRegistrationOptionsWithBodyWithResponse(ctx context.Context, params *CreatePasskeyRegistrationOptionsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePasskeyRegistrationOptionsResponse, error) {
+	rsp, err := c.CreatePasskeyRegistrationOptionsWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreatePasskeyRegistrationOptionsResponse(rsp)
+}
+
+// CreatePasskeyRegistrationOptionsWithResponse performs a POST /v1/auth/passkeys/registration/options (the `CreatePasskeyRegistrationOptions` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CreatePasskeyRegistrationOptionsWithResponse(ctx context.Context, params *CreatePasskeyRegistrationOptionsParams, body CreatePasskeyRegistrationOptionsJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePasskeyRegistrationOptionsResponse, error) {
+	rsp, err := c.CreatePasskeyRegistrationOptions(ctx, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -27711,22 +28941,44 @@ func (c *ClientWithResponses) VerifyPasskeyAuthenticationWithResponse(ctx contex
 	return ParseVerifyPasskeyAuthenticationResponse(rsp)
 }
 
-// DeletePasskeyWithResponse performs a DELETE /v1/auth/passkeys/{passkeyId} (the `DeletePasskey` operationId) request.
+// DeletePasskeyWithBodyWithResponse performs a DELETE /v1/auth/passkeys/{passkeyId} (the `DeletePasskey` operationId) request,
+// with any type of body and a specified content type.
 //
 // Returns a wrapper object for the known response body format(s).
-func (c *ClientWithResponses) DeletePasskeyWithResponse(ctx context.Context, passkeyId string, params *DeletePasskeyParams, reqEditors ...RequestEditorFn) (*DeletePasskeyResponse, error) {
-	rsp, err := c.DeletePasskey(ctx, passkeyId, params, reqEditors...)
+func (c *ClientWithResponses) DeletePasskeyWithBodyWithResponse(ctx context.Context, passkeyId string, params *DeletePasskeyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeletePasskeyResponse, error) {
+	rsp, err := c.DeletePasskeyWithBody(ctx, passkeyId, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseDeletePasskeyResponse(rsp)
 }
 
-// RotateRecoveryCodesWithResponse performs a POST /v1/auth/recovery-codes/rotate (the `RotateRecoveryCodes` operationId) request.
+// DeletePasskeyWithResponse performs a DELETE /v1/auth/passkeys/{passkeyId} (the `DeletePasskey` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DeletePasskeyWithResponse(ctx context.Context, passkeyId string, params *DeletePasskeyParams, body DeletePasskeyJSONRequestBody, reqEditors ...RequestEditorFn) (*DeletePasskeyResponse, error) {
+	rsp, err := c.DeletePasskey(ctx, passkeyId, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeletePasskeyResponse(rsp)
+}
+
+// RotateRecoveryCodesWithBodyWithResponse performs a POST /v1/auth/recovery-codes/rotate (the `RotateRecoveryCodes` operationId) request,
+// with any type of body and a specified content type.
 //
 // Returns a wrapper object for the known response body format(s).
-func (c *ClientWithResponses) RotateRecoveryCodesWithResponse(ctx context.Context, params *RotateRecoveryCodesParams, reqEditors ...RequestEditorFn) (*RotateRecoveryCodesResponse, error) {
-	rsp, err := c.RotateRecoveryCodes(ctx, params, reqEditors...)
+func (c *ClientWithResponses) RotateRecoveryCodesWithBodyWithResponse(ctx context.Context, params *RotateRecoveryCodesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RotateRecoveryCodesResponse, error) {
+	rsp, err := c.RotateRecoveryCodesWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRotateRecoveryCodesResponse(rsp)
+}
+
+// RotateRecoveryCodesWithResponse performs a POST /v1/auth/recovery-codes/rotate (the `RotateRecoveryCodes` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) RotateRecoveryCodesWithResponse(ctx context.Context, params *RotateRecoveryCodesParams, body RotateRecoveryCodesJSONRequestBody, reqEditors ...RequestEditorFn) (*RotateRecoveryCodesResponse, error) {
+	rsp, err := c.RotateRecoveryCodes(ctx, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -27766,22 +29018,44 @@ func (c *ClientWithResponses) ListBrowserSessionsWithResponse(ctx context.Contex
 	return ParseListBrowserSessionsResponse(rsp)
 }
 
-// DeleteBrowserSessionWithResponse performs a DELETE /v1/auth/sessions/{sessionId} (the `DeleteBrowserSession` operationId) request.
+// DeleteBrowserSessionWithBodyWithResponse performs a DELETE /v1/auth/sessions/{sessionId} (the `DeleteBrowserSession` operationId) request,
+// with any type of body and a specified content type.
 //
 // Returns a wrapper object for the known response body format(s).
-func (c *ClientWithResponses) DeleteBrowserSessionWithResponse(ctx context.Context, sessionId string, params *DeleteBrowserSessionParams, reqEditors ...RequestEditorFn) (*DeleteBrowserSessionResponse, error) {
-	rsp, err := c.DeleteBrowserSession(ctx, sessionId, params, reqEditors...)
+func (c *ClientWithResponses) DeleteBrowserSessionWithBodyWithResponse(ctx context.Context, sessionId string, params *DeleteBrowserSessionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteBrowserSessionResponse, error) {
+	rsp, err := c.DeleteBrowserSessionWithBody(ctx, sessionId, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseDeleteBrowserSessionResponse(rsp)
 }
 
-// CreateUvOptionsWithResponse performs a POST /v1/auth/uv/options (the `CreateUvOptions` operationId) request.
+// DeleteBrowserSessionWithResponse performs a DELETE /v1/auth/sessions/{sessionId} (the `DeleteBrowserSession` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DeleteBrowserSessionWithResponse(ctx context.Context, sessionId string, params *DeleteBrowserSessionParams, body DeleteBrowserSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteBrowserSessionResponse, error) {
+	rsp, err := c.DeleteBrowserSession(ctx, sessionId, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteBrowserSessionResponse(rsp)
+}
+
+// CreateUvOptionsWithBodyWithResponse performs a POST /v1/auth/uv/options (the `CreateUvOptions` operationId) request,
+// with any type of body and a specified content type.
 //
 // Returns a wrapper object for the known response body format(s).
-func (c *ClientWithResponses) CreateUvOptionsWithResponse(ctx context.Context, params *CreateUvOptionsParams, reqEditors ...RequestEditorFn) (*CreateUvOptionsResponse, error) {
-	rsp, err := c.CreateUvOptions(ctx, params, reqEditors...)
+func (c *ClientWithResponses) CreateUvOptionsWithBodyWithResponse(ctx context.Context, params *CreateUvOptionsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateUvOptionsResponse, error) {
+	rsp, err := c.CreateUvOptionsWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateUvOptionsResponse(rsp)
+}
+
+// CreateUvOptionsWithResponse performs a POST /v1/auth/uv/options (the `CreateUvOptions` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CreateUvOptionsWithResponse(ctx context.Context, params *CreateUvOptionsParams, body CreateUvOptionsJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateUvOptionsResponse, error) {
+	rsp, err := c.CreateUvOptions(ctx, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -29013,91 +30287,91 @@ func ParseGetCurrentAuthResponse(rsp *http.Response) (*GetCurrentAuthResponse, e
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON412 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON413 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON415 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON422 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON429 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 431:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON431 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON500 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -29150,91 +30424,91 @@ func ParseLogoutResponse(rsp *http.Response) (*LogoutResponse, error) {
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON412 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON413 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON415 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON422 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON429 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 431:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON431 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON500 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -29252,6 +30526,13 @@ func ParseLogoutResponse(rsp *http.Response) (*LogoutResponse, error) {
 			}
 			headers.CacheControl = &value
 		}
+		if values := rsp.Header.Values("Set-Cookie"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Set-Cookie", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.SetCookie = &value
+		}
 		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: "uuidv7"}); err != nil {
@@ -29260,6 +30541,16 @@ func ParseLogoutResponse(rsp *http.Response) (*LogoutResponse, error) {
 			headers.XRequestID = &value
 		}
 		response.Headers200 = &headers
+	case rsp.StatusCode == 409:
+		var headers LogoutResponse409Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers409 = &headers
 	}
 
 	return response, nil
@@ -29287,91 +30578,91 @@ func ParseListPasskeysResponse(rsp *http.Response) (*ListPasskeysResponse, error
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON412 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON413 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON415 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON422 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON429 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 431:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON431 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON500 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -29424,91 +30715,91 @@ func ParseCreatePasskeyAuthenticationOptionsResponse(rsp *http.Response) (*Creat
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON412 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON413 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON415 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON422 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON429 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 431:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON431 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON500 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -29534,6 +30825,16 @@ func ParseCreatePasskeyAuthenticationOptionsResponse(rsp *http.Response) (*Creat
 			headers.XRequestID = &value
 		}
 		response.Headers200 = &headers
+	case rsp.StatusCode == 409:
+		var headers CreatePasskeyAuthenticationOptionsResponse409Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers409 = &headers
 	}
 
 	return response, nil
@@ -29561,91 +30862,91 @@ func ParseCreatePasskeyRegistrationOptionsResponse(rsp *http.Response) (*CreateP
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON412 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON413 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON415 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON422 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON429 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 431:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON431 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON500 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -29671,6 +30972,16 @@ func ParseCreatePasskeyRegistrationOptionsResponse(rsp *http.Response) (*CreateP
 			headers.XRequestID = &value
 		}
 		response.Headers200 = &headers
+	case rsp.StatusCode == 409:
+		var headers CreatePasskeyRegistrationOptionsResponse409Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers409 = &headers
 	}
 
 	return response, nil
@@ -29698,91 +31009,91 @@ func ParseVerifyPasskeyRegistrationResponse(rsp *http.Response) (*VerifyPasskeyR
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest ErrorEnvelope
+		var dest P2SecretConflictErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON412 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON413 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON415 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON422 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON429 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 431:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON431 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON500 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -29800,6 +31111,13 @@ func ParseVerifyPasskeyRegistrationResponse(rsp *http.Response) (*VerifyPasskeyR
 			}
 			headers.CacheControl = &value
 		}
+		if values := rsp.Header.Values("Set-Cookie"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Set-Cookie", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.SetCookie = &value
+		}
 		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: "uuidv7"}); err != nil {
@@ -29808,6 +31126,16 @@ func ParseVerifyPasskeyRegistrationResponse(rsp *http.Response) (*VerifyPasskeyR
 			headers.XRequestID = &value
 		}
 		response.Headers200 = &headers
+	case rsp.StatusCode == 409:
+		var headers VerifyPasskeyRegistrationResponse409Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers409 = &headers
 	}
 
 	return response, nil
@@ -29835,91 +31163,91 @@ func ParseVerifyPasskeyAuthenticationResponse(rsp *http.Response) (*VerifyPasske
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest ErrorEnvelope
+		var dest P2SecretConflictErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON412 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON413 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON415 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON422 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON429 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 431:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON431 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON500 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -29937,6 +31265,13 @@ func ParseVerifyPasskeyAuthenticationResponse(rsp *http.Response) (*VerifyPasske
 			}
 			headers.CacheControl = &value
 		}
+		if values := rsp.Header.Values("Set-Cookie"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Set-Cookie", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.SetCookie = &value
+		}
 		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: "uuidv7"}); err != nil {
@@ -29945,6 +31280,16 @@ func ParseVerifyPasskeyAuthenticationResponse(rsp *http.Response) (*VerifyPasske
 			headers.XRequestID = &value
 		}
 		response.Headers200 = &headers
+	case rsp.StatusCode == 409:
+		var headers VerifyPasskeyAuthenticationResponse409Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers409 = &headers
 	}
 
 	return response, nil
@@ -29972,91 +31317,91 @@ func ParseDeletePasskeyResponse(rsp *http.Response) (*DeletePasskeyResponse, err
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON412 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON413 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON415 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON422 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON429 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 431:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON431 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON500 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -30074,6 +31419,13 @@ func ParseDeletePasskeyResponse(rsp *http.Response) (*DeletePasskeyResponse, err
 			}
 			headers.CacheControl = &value
 		}
+		if values := rsp.Header.Values("Set-Cookie"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Set-Cookie", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.SetCookie = &value
+		}
 		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: "uuidv7"}); err != nil {
@@ -30082,6 +31434,16 @@ func ParseDeletePasskeyResponse(rsp *http.Response) (*DeletePasskeyResponse, err
 			headers.XRequestID = &value
 		}
 		response.Headers200 = &headers
+	case rsp.StatusCode == 409:
+		var headers DeletePasskeyResponse409Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers409 = &headers
 	}
 
 	return response, nil
@@ -30109,91 +31471,91 @@ func ParseRotateRecoveryCodesResponse(rsp *http.Response) (*RotateRecoveryCodesR
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest ErrorEnvelope
+		var dest P2SecretConflictErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON412 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON413 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON415 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON422 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON429 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 431:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON431 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON500 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -30219,6 +31581,16 @@ func ParseRotateRecoveryCodesResponse(rsp *http.Response) (*RotateRecoveryCodesR
 			headers.XRequestID = &value
 		}
 		response.Headers200 = &headers
+	case rsp.StatusCode == 409:
+		var headers RotateRecoveryCodesResponse409Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers409 = &headers
 	}
 
 	return response, nil
@@ -30246,91 +31618,91 @@ func ParseVerifyRecoveryCodeResponse(rsp *http.Response) (*VerifyRecoveryCodeRes
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest ErrorEnvelope
+		var dest P2SecretConflictErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON412 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON413 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON415 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON422 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON429 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 431:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON431 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON500 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -30348,6 +31720,13 @@ func ParseVerifyRecoveryCodeResponse(rsp *http.Response) (*VerifyRecoveryCodeRes
 			}
 			headers.CacheControl = &value
 		}
+		if values := rsp.Header.Values("Set-Cookie"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Set-Cookie", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.SetCookie = &value
+		}
 		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: "uuidv7"}); err != nil {
@@ -30356,6 +31735,16 @@ func ParseVerifyRecoveryCodeResponse(rsp *http.Response) (*VerifyRecoveryCodeRes
 			headers.XRequestID = &value
 		}
 		response.Headers200 = &headers
+	case rsp.StatusCode == 409:
+		var headers VerifyRecoveryCodeResponse409Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers409 = &headers
 	}
 
 	return response, nil
@@ -30383,91 +31772,91 @@ func ParseListBrowserSessionsResponse(rsp *http.Response) (*ListBrowserSessionsR
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON412 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON413 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON415 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON422 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON429 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 431:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON431 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON500 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -30513,98 +31902,98 @@ func ParseDeleteBrowserSessionResponse(rsp *http.Response) (*DeleteBrowserSessio
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest OperationStatusEnvelope
+		var dest BrowserSessionRevokeEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
-		var dest ErrorEnvelope
+		var dest P2SessionRevisionConflictErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON412 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON413 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON415 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON422 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON429 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 431:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON431 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON500 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -30622,6 +32011,13 @@ func ParseDeleteBrowserSessionResponse(rsp *http.Response) (*DeleteBrowserSessio
 			}
 			headers.CacheControl = &value
 		}
+		if values := rsp.Header.Values("Set-Cookie"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Set-Cookie", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.SetCookie = &value
+		}
 		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: "uuidv7"}); err != nil {
@@ -30630,6 +32026,16 @@ func ParseDeleteBrowserSessionResponse(rsp *http.Response) (*DeleteBrowserSessio
 			headers.XRequestID = &value
 		}
 		response.Headers200 = &headers
+	case rsp.StatusCode == 409:
+		var headers DeleteBrowserSessionResponse409Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers409 = &headers
 	}
 
 	return response, nil
@@ -30657,91 +32063,91 @@ func ParseCreateUvOptionsResponse(rsp *http.Response) (*CreateUvOptionsResponse,
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON412 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON413 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON415 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON422 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON429 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 431:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON431 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON500 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -30767,6 +32173,16 @@ func ParseCreateUvOptionsResponse(rsp *http.Response) (*CreateUvOptionsResponse,
 			headers.XRequestID = &value
 		}
 		response.Headers200 = &headers
+	case rsp.StatusCode == 409:
+		var headers CreateUvOptionsResponse409Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers409 = &headers
 	}
 
 	return response, nil
@@ -30794,91 +32210,91 @@ func ParseVerifyUvResponse(rsp *http.Response) (*VerifyUvResponse, error) {
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest ErrorEnvelope
+		var dest P2SecretConflictErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON412 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON413 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON415 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON422 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON429 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 431:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON431 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON500 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -30896,6 +32312,13 @@ func ParseVerifyUvResponse(rsp *http.Response) (*VerifyUvResponse, error) {
 			}
 			headers.CacheControl = &value
 		}
+		if values := rsp.Header.Values("Set-Cookie"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Set-Cookie", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.SetCookie = &value
+		}
 		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: "uuidv7"}); err != nil {
@@ -30904,6 +32327,16 @@ func ParseVerifyUvResponse(rsp *http.Response) (*VerifyUvResponse, error) {
 			headers.XRequestID = &value
 		}
 		response.Headers200 = &headers
+	case rsp.StatusCode == 409:
+		var headers VerifyUvResponse409Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers409 = &headers
 	}
 
 	return response, nil
@@ -30931,91 +32364,91 @@ func ParseGetBootstrapCeremonyResponse(rsp *http.Response) (*GetBootstrapCeremon
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON412 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON413 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON415 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON422 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON429 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 431:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON431 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON500 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -31068,91 +32501,91 @@ func ParseCreateBootstrapOptionsResponse(rsp *http.Response) (*CreateBootstrapOp
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON412 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON413 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON415 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON422 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON429 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 431:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON431 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON500 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -31178,6 +32611,16 @@ func ParseCreateBootstrapOptionsResponse(rsp *http.Response) (*CreateBootstrapOp
 			headers.XRequestID = &value
 		}
 		response.Headers200 = &headers
+	case rsp.StatusCode == 409:
+		var headers CreateBootstrapOptionsResponse409Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers409 = &headers
 	}
 
 	return response, nil
@@ -31205,91 +32648,91 @@ func ParseGetBootstrapStatusResponse(rsp *http.Response) (*GetBootstrapStatusRes
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON412 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON413 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON415 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON422 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON429 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 431:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON431 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON500 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -31342,91 +32785,91 @@ func ParseVerifyBootstrapResponse(rsp *http.Response) (*VerifyBootstrapResponse,
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest ErrorEnvelope
+		var dest P2SecretConflictErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON412 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON413 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON415 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON422 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON429 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 431:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON431 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON500 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
-		var dest ErrorEnvelope
+		var dest P2StandardErrorEnvelopeV1
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -31444,6 +32887,13 @@ func ParseVerifyBootstrapResponse(rsp *http.Response) (*VerifyBootstrapResponse,
 			}
 			headers.CacheControl = &value
 		}
+		if values := rsp.Header.Values("Set-Cookie"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Set-Cookie", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.SetCookie = &value
+		}
 		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: "uuidv7"}); err != nil {
@@ -31452,6 +32902,16 @@ func ParseVerifyBootstrapResponse(rsp *http.Response) (*VerifyBootstrapResponse,
 			headers.XRequestID = &value
 		}
 		response.Headers200 = &headers
+	case rsp.StatusCode == 409:
+		var headers VerifyBootstrapResponse409Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers409 = &headers
 	}
 
 	return response, nil
@@ -37838,7 +39298,7 @@ func (siw *ServerInterfaceWrapper) Logout(w http.ResponseWriter, r *http.Request
 
 	// ------------- Required header parameter "Idempotency-Key" -------------
 	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
-		var IdempotencyKey IdempotencyKey
+		var IdempotencyKey P2IdempotencyKey
 		n := len(valueList)
 		if n != 1 {
 			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
@@ -37920,7 +39380,7 @@ func (siw *ServerInterfaceWrapper) CreatePasskeyAuthenticationOptions(w http.Res
 
 	// ------------- Required header parameter "Idempotency-Key" -------------
 	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
-		var IdempotencyKey IdempotencyKey
+		var IdempotencyKey P2IdempotencyKey
 		n := len(valueList)
 		if n != 1 {
 			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
@@ -37965,7 +39425,7 @@ func (siw *ServerInterfaceWrapper) CreatePasskeyRegistrationOptions(w http.Respo
 
 	// ------------- Required header parameter "Idempotency-Key" -------------
 	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
-		var IdempotencyKey IdempotencyKey
+		var IdempotencyKey P2IdempotencyKey
 		n := len(valueList)
 		if n != 1 {
 			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
@@ -38033,7 +39493,7 @@ func (siw *ServerInterfaceWrapper) VerifyPasskeyRegistration(w http.ResponseWrit
 
 	// ------------- Required header parameter "Idempotency-Key" -------------
 	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
-		var IdempotencyKey IdempotencyKey
+		var IdempotencyKey P2IdempotencyKey
 		n := len(valueList)
 		if n != 1 {
 			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
@@ -38101,7 +39561,7 @@ func (siw *ServerInterfaceWrapper) VerifyPasskeyAuthentication(w http.ResponseWr
 
 	// ------------- Required header parameter "Idempotency-Key" -------------
 	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
-		var IdempotencyKey IdempotencyKey
+		var IdempotencyKey P2IdempotencyKey
 		n := len(valueList)
 		if n != 1 {
 			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
@@ -38155,7 +39615,7 @@ func (siw *ServerInterfaceWrapper) DeletePasskey(w http.ResponseWriter, r *http.
 
 	// ------------- Required header parameter "Idempotency-Key" -------------
 	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
-		var IdempotencyKey IdempotencyKey
+		var IdempotencyKey P2IdempotencyKey
 		n := len(valueList)
 		if n != 1 {
 			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
@@ -38246,7 +39706,7 @@ func (siw *ServerInterfaceWrapper) RotateRecoveryCodes(w http.ResponseWriter, r 
 
 	// ------------- Required header parameter "Idempotency-Key" -------------
 	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
-		var IdempotencyKey IdempotencyKey
+		var IdempotencyKey P2IdempotencyKey
 		n := len(valueList)
 		if n != 1 {
 			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
@@ -38314,7 +39774,7 @@ func (siw *ServerInterfaceWrapper) VerifyRecoveryCode(w http.ResponseWriter, r *
 
 	// ------------- Required header parameter "Idempotency-Key" -------------
 	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
-		var IdempotencyKey IdempotencyKey
+		var IdempotencyKey P2IdempotencyKey
 		n := len(valueList)
 		if n != 1 {
 			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
@@ -38382,7 +39842,7 @@ func (siw *ServerInterfaceWrapper) DeleteBrowserSession(w http.ResponseWriter, r
 
 	// ------------- Required header parameter "Idempotency-Key" -------------
 	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
-		var IdempotencyKey IdempotencyKey
+		var IdempotencyKey P2IdempotencyKey
 		n := len(valueList)
 		if n != 1 {
 			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
@@ -38473,7 +39933,7 @@ func (siw *ServerInterfaceWrapper) CreateUvOptions(w http.ResponseWriter, r *htt
 
 	// ------------- Required header parameter "Idempotency-Key" -------------
 	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
-		var IdempotencyKey IdempotencyKey
+		var IdempotencyKey P2IdempotencyKey
 		n := len(valueList)
 		if n != 1 {
 			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
@@ -38541,7 +40001,7 @@ func (siw *ServerInterfaceWrapper) VerifyUv(w http.ResponseWriter, r *http.Reque
 
 	// ------------- Required header parameter "Idempotency-Key" -------------
 	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
-		var IdempotencyKey IdempotencyKey
+		var IdempotencyKey P2IdempotencyKey
 		n := len(valueList)
 		if n != 1 {
 			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
@@ -38635,7 +40095,7 @@ func (siw *ServerInterfaceWrapper) CreateBootstrapOptions(w http.ResponseWriter,
 
 	// ------------- Required header parameter "Idempotency-Key" -------------
 	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
-		var IdempotencyKey IdempotencyKey
+		var IdempotencyKey P2IdempotencyKey
 		n := len(valueList)
 		if n != 1 {
 			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
@@ -38694,7 +40154,7 @@ func (siw *ServerInterfaceWrapper) VerifyBootstrap(w http.ResponseWriter, r *htt
 
 	// ------------- Required header parameter "Idempotency-Key" -------------
 	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
-		var IdempotencyKey IdempotencyKey
+		var IdempotencyKey P2IdempotencyKey
 		n := len(valueList)
 		if n != 1 {
 			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
@@ -42397,7 +43857,7 @@ func (response GetCurrentAuth200JSONResponse) VisitGetCurrentAuthResponse(w http
 	return err
 }
 
-type GetCurrentAuth400JSONResponse ErrorEnvelope
+type GetCurrentAuth400JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetCurrentAuth400JSONResponse) VisitGetCurrentAuthResponse(w http.ResponseWriter) error {
 
@@ -42411,7 +43871,7 @@ func (response GetCurrentAuth400JSONResponse) VisitGetCurrentAuthResponse(w http
 	return err
 }
 
-type GetCurrentAuth401JSONResponse ErrorEnvelope
+type GetCurrentAuth401JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetCurrentAuth401JSONResponse) VisitGetCurrentAuthResponse(w http.ResponseWriter) error {
 
@@ -42425,7 +43885,7 @@ func (response GetCurrentAuth401JSONResponse) VisitGetCurrentAuthResponse(w http
 	return err
 }
 
-type GetCurrentAuth403JSONResponse ErrorEnvelope
+type GetCurrentAuth403JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetCurrentAuth403JSONResponse) VisitGetCurrentAuthResponse(w http.ResponseWriter) error {
 
@@ -42439,7 +43899,7 @@ func (response GetCurrentAuth403JSONResponse) VisitGetCurrentAuthResponse(w http
 	return err
 }
 
-type GetCurrentAuth404JSONResponse ErrorEnvelope
+type GetCurrentAuth404JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetCurrentAuth404JSONResponse) VisitGetCurrentAuthResponse(w http.ResponseWriter) error {
 
@@ -42453,7 +43913,7 @@ func (response GetCurrentAuth404JSONResponse) VisitGetCurrentAuthResponse(w http
 	return err
 }
 
-type GetCurrentAuth409JSONResponse ErrorEnvelope
+type GetCurrentAuth409JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetCurrentAuth409JSONResponse) VisitGetCurrentAuthResponse(w http.ResponseWriter) error {
 
@@ -42467,7 +43927,7 @@ func (response GetCurrentAuth409JSONResponse) VisitGetCurrentAuthResponse(w http
 	return err
 }
 
-type GetCurrentAuth412JSONResponse ErrorEnvelope
+type GetCurrentAuth412JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetCurrentAuth412JSONResponse) VisitGetCurrentAuthResponse(w http.ResponseWriter) error {
 
@@ -42481,7 +43941,7 @@ func (response GetCurrentAuth412JSONResponse) VisitGetCurrentAuthResponse(w http
 	return err
 }
 
-type GetCurrentAuth413JSONResponse ErrorEnvelope
+type GetCurrentAuth413JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetCurrentAuth413JSONResponse) VisitGetCurrentAuthResponse(w http.ResponseWriter) error {
 
@@ -42495,7 +43955,7 @@ func (response GetCurrentAuth413JSONResponse) VisitGetCurrentAuthResponse(w http
 	return err
 }
 
-type GetCurrentAuth415JSONResponse ErrorEnvelope
+type GetCurrentAuth415JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetCurrentAuth415JSONResponse) VisitGetCurrentAuthResponse(w http.ResponseWriter) error {
 
@@ -42509,7 +43969,7 @@ func (response GetCurrentAuth415JSONResponse) VisitGetCurrentAuthResponse(w http
 	return err
 }
 
-type GetCurrentAuth422JSONResponse ErrorEnvelope
+type GetCurrentAuth422JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetCurrentAuth422JSONResponse) VisitGetCurrentAuthResponse(w http.ResponseWriter) error {
 
@@ -42523,7 +43983,7 @@ func (response GetCurrentAuth422JSONResponse) VisitGetCurrentAuthResponse(w http
 	return err
 }
 
-type GetCurrentAuth429JSONResponse ErrorEnvelope
+type GetCurrentAuth429JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetCurrentAuth429JSONResponse) VisitGetCurrentAuthResponse(w http.ResponseWriter) error {
 
@@ -42537,7 +43997,7 @@ func (response GetCurrentAuth429JSONResponse) VisitGetCurrentAuthResponse(w http
 	return err
 }
 
-type GetCurrentAuth431JSONResponse ErrorEnvelope
+type GetCurrentAuth431JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetCurrentAuth431JSONResponse) VisitGetCurrentAuthResponse(w http.ResponseWriter) error {
 
@@ -42551,7 +44011,7 @@ func (response GetCurrentAuth431JSONResponse) VisitGetCurrentAuthResponse(w http
 	return err
 }
 
-type GetCurrentAuth500JSONResponse ErrorEnvelope
+type GetCurrentAuth500JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetCurrentAuth500JSONResponse) VisitGetCurrentAuthResponse(w http.ResponseWriter) error {
 
@@ -42565,7 +44025,7 @@ func (response GetCurrentAuth500JSONResponse) VisitGetCurrentAuthResponse(w http
 	return err
 }
 
-type GetCurrentAuth503JSONResponse ErrorEnvelope
+type GetCurrentAuth503JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetCurrentAuth503JSONResponse) VisitGetCurrentAuthResponse(w http.ResponseWriter) error {
 
@@ -42581,6 +44041,7 @@ func (response GetCurrentAuth503JSONResponse) VisitGetCurrentAuthResponse(w http
 
 type LogoutRequestObject struct {
 	Params LogoutParams
+	Body   *LogoutJSONRequestBody
 }
 
 type LogoutResponseObject interface {
@@ -42589,6 +44050,7 @@ type LogoutResponseObject interface {
 
 type Logout200ResponseHeaders struct {
 	CacheControl *string
+	SetCookie    *string
 	XRequestID   *string
 }
 
@@ -42607,6 +44069,9 @@ func (response Logout200JSONResponse) VisitLogoutResponse(w http.ResponseWriter)
 	if response.Headers.CacheControl != nil {
 		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
 	}
+	if response.Headers.SetCookie != nil {
+		w.Header().Set("Set-Cookie", fmt.Sprint(*response.Headers.SetCookie))
+	}
 	if response.Headers.XRequestID != nil {
 		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
 	}
@@ -42615,7 +44080,7 @@ func (response Logout200JSONResponse) VisitLogoutResponse(w http.ResponseWriter)
 	return err
 }
 
-type Logout400JSONResponse ErrorEnvelope
+type Logout400JSONResponse P2StandardErrorEnvelopeV1
 
 func (response Logout400JSONResponse) VisitLogoutResponse(w http.ResponseWriter) error {
 
@@ -42629,7 +44094,7 @@ func (response Logout400JSONResponse) VisitLogoutResponse(w http.ResponseWriter)
 	return err
 }
 
-type Logout401JSONResponse ErrorEnvelope
+type Logout401JSONResponse P2StandardErrorEnvelopeV1
 
 func (response Logout401JSONResponse) VisitLogoutResponse(w http.ResponseWriter) error {
 
@@ -42643,7 +44108,7 @@ func (response Logout401JSONResponse) VisitLogoutResponse(w http.ResponseWriter)
 	return err
 }
 
-type Logout403JSONResponse ErrorEnvelope
+type Logout403JSONResponse P2StandardErrorEnvelopeV1
 
 func (response Logout403JSONResponse) VisitLogoutResponse(w http.ResponseWriter) error {
 
@@ -42657,7 +44122,7 @@ func (response Logout403JSONResponse) VisitLogoutResponse(w http.ResponseWriter)
 	return err
 }
 
-type Logout404JSONResponse ErrorEnvelope
+type Logout404JSONResponse P2StandardErrorEnvelopeV1
 
 func (response Logout404JSONResponse) VisitLogoutResponse(w http.ResponseWriter) error {
 
@@ -42671,21 +44136,31 @@ func (response Logout404JSONResponse) VisitLogoutResponse(w http.ResponseWriter)
 	return err
 }
 
-type Logout409JSONResponse ErrorEnvelope
+type Logout409ResponseHeaders struct {
+	RetryAfter *string
+}
+
+type Logout409JSONResponse struct {
+	Body    P2StandardErrorEnvelopeV1
+	Headers Logout409ResponseHeaders
+}
 
 func (response Logout409JSONResponse) VisitLogoutResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
 		return err
 	}
 	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
 	w.WriteHeader(409)
 	_, err := buf.WriteTo(w)
 	return err
 }
 
-type Logout412JSONResponse ErrorEnvelope
+type Logout412JSONResponse P2StandardErrorEnvelopeV1
 
 func (response Logout412JSONResponse) VisitLogoutResponse(w http.ResponseWriter) error {
 
@@ -42699,7 +44174,7 @@ func (response Logout412JSONResponse) VisitLogoutResponse(w http.ResponseWriter)
 	return err
 }
 
-type Logout413JSONResponse ErrorEnvelope
+type Logout413JSONResponse P2StandardErrorEnvelopeV1
 
 func (response Logout413JSONResponse) VisitLogoutResponse(w http.ResponseWriter) error {
 
@@ -42713,7 +44188,7 @@ func (response Logout413JSONResponse) VisitLogoutResponse(w http.ResponseWriter)
 	return err
 }
 
-type Logout415JSONResponse ErrorEnvelope
+type Logout415JSONResponse P2StandardErrorEnvelopeV1
 
 func (response Logout415JSONResponse) VisitLogoutResponse(w http.ResponseWriter) error {
 
@@ -42727,7 +44202,7 @@ func (response Logout415JSONResponse) VisitLogoutResponse(w http.ResponseWriter)
 	return err
 }
 
-type Logout422JSONResponse ErrorEnvelope
+type Logout422JSONResponse P2StandardErrorEnvelopeV1
 
 func (response Logout422JSONResponse) VisitLogoutResponse(w http.ResponseWriter) error {
 
@@ -42741,7 +44216,7 @@ func (response Logout422JSONResponse) VisitLogoutResponse(w http.ResponseWriter)
 	return err
 }
 
-type Logout429JSONResponse ErrorEnvelope
+type Logout429JSONResponse P2StandardErrorEnvelopeV1
 
 func (response Logout429JSONResponse) VisitLogoutResponse(w http.ResponseWriter) error {
 
@@ -42755,7 +44230,7 @@ func (response Logout429JSONResponse) VisitLogoutResponse(w http.ResponseWriter)
 	return err
 }
 
-type Logout431JSONResponse ErrorEnvelope
+type Logout431JSONResponse P2StandardErrorEnvelopeV1
 
 func (response Logout431JSONResponse) VisitLogoutResponse(w http.ResponseWriter) error {
 
@@ -42769,7 +44244,7 @@ func (response Logout431JSONResponse) VisitLogoutResponse(w http.ResponseWriter)
 	return err
 }
 
-type Logout500JSONResponse ErrorEnvelope
+type Logout500JSONResponse P2StandardErrorEnvelopeV1
 
 func (response Logout500JSONResponse) VisitLogoutResponse(w http.ResponseWriter) error {
 
@@ -42783,7 +44258,7 @@ func (response Logout500JSONResponse) VisitLogoutResponse(w http.ResponseWriter)
 	return err
 }
 
-type Logout503JSONResponse ErrorEnvelope
+type Logout503JSONResponse P2StandardErrorEnvelopeV1
 
 func (response Logout503JSONResponse) VisitLogoutResponse(w http.ResponseWriter) error {
 
@@ -42832,7 +44307,7 @@ func (response ListPasskeys200JSONResponse) VisitListPasskeysResponse(w http.Res
 	return err
 }
 
-type ListPasskeys400JSONResponse ErrorEnvelope
+type ListPasskeys400JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListPasskeys400JSONResponse) VisitListPasskeysResponse(w http.ResponseWriter) error {
 
@@ -42846,7 +44321,7 @@ func (response ListPasskeys400JSONResponse) VisitListPasskeysResponse(w http.Res
 	return err
 }
 
-type ListPasskeys401JSONResponse ErrorEnvelope
+type ListPasskeys401JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListPasskeys401JSONResponse) VisitListPasskeysResponse(w http.ResponseWriter) error {
 
@@ -42860,7 +44335,7 @@ func (response ListPasskeys401JSONResponse) VisitListPasskeysResponse(w http.Res
 	return err
 }
 
-type ListPasskeys403JSONResponse ErrorEnvelope
+type ListPasskeys403JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListPasskeys403JSONResponse) VisitListPasskeysResponse(w http.ResponseWriter) error {
 
@@ -42874,7 +44349,7 @@ func (response ListPasskeys403JSONResponse) VisitListPasskeysResponse(w http.Res
 	return err
 }
 
-type ListPasskeys404JSONResponse ErrorEnvelope
+type ListPasskeys404JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListPasskeys404JSONResponse) VisitListPasskeysResponse(w http.ResponseWriter) error {
 
@@ -42888,7 +44363,7 @@ func (response ListPasskeys404JSONResponse) VisitListPasskeysResponse(w http.Res
 	return err
 }
 
-type ListPasskeys409JSONResponse ErrorEnvelope
+type ListPasskeys409JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListPasskeys409JSONResponse) VisitListPasskeysResponse(w http.ResponseWriter) error {
 
@@ -42902,7 +44377,7 @@ func (response ListPasskeys409JSONResponse) VisitListPasskeysResponse(w http.Res
 	return err
 }
 
-type ListPasskeys412JSONResponse ErrorEnvelope
+type ListPasskeys412JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListPasskeys412JSONResponse) VisitListPasskeysResponse(w http.ResponseWriter) error {
 
@@ -42916,7 +44391,7 @@ func (response ListPasskeys412JSONResponse) VisitListPasskeysResponse(w http.Res
 	return err
 }
 
-type ListPasskeys413JSONResponse ErrorEnvelope
+type ListPasskeys413JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListPasskeys413JSONResponse) VisitListPasskeysResponse(w http.ResponseWriter) error {
 
@@ -42930,7 +44405,7 @@ func (response ListPasskeys413JSONResponse) VisitListPasskeysResponse(w http.Res
 	return err
 }
 
-type ListPasskeys415JSONResponse ErrorEnvelope
+type ListPasskeys415JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListPasskeys415JSONResponse) VisitListPasskeysResponse(w http.ResponseWriter) error {
 
@@ -42944,7 +44419,7 @@ func (response ListPasskeys415JSONResponse) VisitListPasskeysResponse(w http.Res
 	return err
 }
 
-type ListPasskeys422JSONResponse ErrorEnvelope
+type ListPasskeys422JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListPasskeys422JSONResponse) VisitListPasskeysResponse(w http.ResponseWriter) error {
 
@@ -42958,7 +44433,7 @@ func (response ListPasskeys422JSONResponse) VisitListPasskeysResponse(w http.Res
 	return err
 }
 
-type ListPasskeys429JSONResponse ErrorEnvelope
+type ListPasskeys429JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListPasskeys429JSONResponse) VisitListPasskeysResponse(w http.ResponseWriter) error {
 
@@ -42972,7 +44447,7 @@ func (response ListPasskeys429JSONResponse) VisitListPasskeysResponse(w http.Res
 	return err
 }
 
-type ListPasskeys431JSONResponse ErrorEnvelope
+type ListPasskeys431JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListPasskeys431JSONResponse) VisitListPasskeysResponse(w http.ResponseWriter) error {
 
@@ -42986,7 +44461,7 @@ func (response ListPasskeys431JSONResponse) VisitListPasskeysResponse(w http.Res
 	return err
 }
 
-type ListPasskeys500JSONResponse ErrorEnvelope
+type ListPasskeys500JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListPasskeys500JSONResponse) VisitListPasskeysResponse(w http.ResponseWriter) error {
 
@@ -43000,7 +44475,7 @@ func (response ListPasskeys500JSONResponse) VisitListPasskeysResponse(w http.Res
 	return err
 }
 
-type ListPasskeys503JSONResponse ErrorEnvelope
+type ListPasskeys503JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListPasskeys503JSONResponse) VisitListPasskeysResponse(w http.ResponseWriter) error {
 
@@ -43016,6 +44491,7 @@ func (response ListPasskeys503JSONResponse) VisitListPasskeysResponse(w http.Res
 
 type CreatePasskeyAuthenticationOptionsRequestObject struct {
 	Params CreatePasskeyAuthenticationOptionsParams
+	Body   *CreatePasskeyAuthenticationOptionsJSONRequestBody
 }
 
 type CreatePasskeyAuthenticationOptionsResponseObject interface {
@@ -43050,7 +44526,7 @@ func (response CreatePasskeyAuthenticationOptions200JSONResponse) VisitCreatePas
 	return err
 }
 
-type CreatePasskeyAuthenticationOptions400JSONResponse ErrorEnvelope
+type CreatePasskeyAuthenticationOptions400JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreatePasskeyAuthenticationOptions400JSONResponse) VisitCreatePasskeyAuthenticationOptionsResponse(w http.ResponseWriter) error {
 
@@ -43064,7 +44540,7 @@ func (response CreatePasskeyAuthenticationOptions400JSONResponse) VisitCreatePas
 	return err
 }
 
-type CreatePasskeyAuthenticationOptions401JSONResponse ErrorEnvelope
+type CreatePasskeyAuthenticationOptions401JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreatePasskeyAuthenticationOptions401JSONResponse) VisitCreatePasskeyAuthenticationOptionsResponse(w http.ResponseWriter) error {
 
@@ -43078,7 +44554,7 @@ func (response CreatePasskeyAuthenticationOptions401JSONResponse) VisitCreatePas
 	return err
 }
 
-type CreatePasskeyAuthenticationOptions403JSONResponse ErrorEnvelope
+type CreatePasskeyAuthenticationOptions403JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreatePasskeyAuthenticationOptions403JSONResponse) VisitCreatePasskeyAuthenticationOptionsResponse(w http.ResponseWriter) error {
 
@@ -43092,7 +44568,7 @@ func (response CreatePasskeyAuthenticationOptions403JSONResponse) VisitCreatePas
 	return err
 }
 
-type CreatePasskeyAuthenticationOptions404JSONResponse ErrorEnvelope
+type CreatePasskeyAuthenticationOptions404JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreatePasskeyAuthenticationOptions404JSONResponse) VisitCreatePasskeyAuthenticationOptionsResponse(w http.ResponseWriter) error {
 
@@ -43106,21 +44582,31 @@ func (response CreatePasskeyAuthenticationOptions404JSONResponse) VisitCreatePas
 	return err
 }
 
-type CreatePasskeyAuthenticationOptions409JSONResponse ErrorEnvelope
+type CreatePasskeyAuthenticationOptions409ResponseHeaders struct {
+	RetryAfter *string
+}
+
+type CreatePasskeyAuthenticationOptions409JSONResponse struct {
+	Body    P2StandardErrorEnvelopeV1
+	Headers CreatePasskeyAuthenticationOptions409ResponseHeaders
+}
 
 func (response CreatePasskeyAuthenticationOptions409JSONResponse) VisitCreatePasskeyAuthenticationOptionsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
 		return err
 	}
 	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
 	w.WriteHeader(409)
 	_, err := buf.WriteTo(w)
 	return err
 }
 
-type CreatePasskeyAuthenticationOptions412JSONResponse ErrorEnvelope
+type CreatePasskeyAuthenticationOptions412JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreatePasskeyAuthenticationOptions412JSONResponse) VisitCreatePasskeyAuthenticationOptionsResponse(w http.ResponseWriter) error {
 
@@ -43134,7 +44620,7 @@ func (response CreatePasskeyAuthenticationOptions412JSONResponse) VisitCreatePas
 	return err
 }
 
-type CreatePasskeyAuthenticationOptions413JSONResponse ErrorEnvelope
+type CreatePasskeyAuthenticationOptions413JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreatePasskeyAuthenticationOptions413JSONResponse) VisitCreatePasskeyAuthenticationOptionsResponse(w http.ResponseWriter) error {
 
@@ -43148,7 +44634,7 @@ func (response CreatePasskeyAuthenticationOptions413JSONResponse) VisitCreatePas
 	return err
 }
 
-type CreatePasskeyAuthenticationOptions415JSONResponse ErrorEnvelope
+type CreatePasskeyAuthenticationOptions415JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreatePasskeyAuthenticationOptions415JSONResponse) VisitCreatePasskeyAuthenticationOptionsResponse(w http.ResponseWriter) error {
 
@@ -43162,7 +44648,7 @@ func (response CreatePasskeyAuthenticationOptions415JSONResponse) VisitCreatePas
 	return err
 }
 
-type CreatePasskeyAuthenticationOptions422JSONResponse ErrorEnvelope
+type CreatePasskeyAuthenticationOptions422JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreatePasskeyAuthenticationOptions422JSONResponse) VisitCreatePasskeyAuthenticationOptionsResponse(w http.ResponseWriter) error {
 
@@ -43176,7 +44662,7 @@ func (response CreatePasskeyAuthenticationOptions422JSONResponse) VisitCreatePas
 	return err
 }
 
-type CreatePasskeyAuthenticationOptions429JSONResponse ErrorEnvelope
+type CreatePasskeyAuthenticationOptions429JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreatePasskeyAuthenticationOptions429JSONResponse) VisitCreatePasskeyAuthenticationOptionsResponse(w http.ResponseWriter) error {
 
@@ -43190,7 +44676,7 @@ func (response CreatePasskeyAuthenticationOptions429JSONResponse) VisitCreatePas
 	return err
 }
 
-type CreatePasskeyAuthenticationOptions431JSONResponse ErrorEnvelope
+type CreatePasskeyAuthenticationOptions431JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreatePasskeyAuthenticationOptions431JSONResponse) VisitCreatePasskeyAuthenticationOptionsResponse(w http.ResponseWriter) error {
 
@@ -43204,7 +44690,7 @@ func (response CreatePasskeyAuthenticationOptions431JSONResponse) VisitCreatePas
 	return err
 }
 
-type CreatePasskeyAuthenticationOptions500JSONResponse ErrorEnvelope
+type CreatePasskeyAuthenticationOptions500JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreatePasskeyAuthenticationOptions500JSONResponse) VisitCreatePasskeyAuthenticationOptionsResponse(w http.ResponseWriter) error {
 
@@ -43218,7 +44704,7 @@ func (response CreatePasskeyAuthenticationOptions500JSONResponse) VisitCreatePas
 	return err
 }
 
-type CreatePasskeyAuthenticationOptions503JSONResponse ErrorEnvelope
+type CreatePasskeyAuthenticationOptions503JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreatePasskeyAuthenticationOptions503JSONResponse) VisitCreatePasskeyAuthenticationOptionsResponse(w http.ResponseWriter) error {
 
@@ -43234,6 +44720,7 @@ func (response CreatePasskeyAuthenticationOptions503JSONResponse) VisitCreatePas
 
 type CreatePasskeyRegistrationOptionsRequestObject struct {
 	Params CreatePasskeyRegistrationOptionsParams
+	Body   *CreatePasskeyRegistrationOptionsJSONRequestBody
 }
 
 type CreatePasskeyRegistrationOptionsResponseObject interface {
@@ -43268,7 +44755,7 @@ func (response CreatePasskeyRegistrationOptions200JSONResponse) VisitCreatePassk
 	return err
 }
 
-type CreatePasskeyRegistrationOptions400JSONResponse ErrorEnvelope
+type CreatePasskeyRegistrationOptions400JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreatePasskeyRegistrationOptions400JSONResponse) VisitCreatePasskeyRegistrationOptionsResponse(w http.ResponseWriter) error {
 
@@ -43282,7 +44769,7 @@ func (response CreatePasskeyRegistrationOptions400JSONResponse) VisitCreatePassk
 	return err
 }
 
-type CreatePasskeyRegistrationOptions401JSONResponse ErrorEnvelope
+type CreatePasskeyRegistrationOptions401JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreatePasskeyRegistrationOptions401JSONResponse) VisitCreatePasskeyRegistrationOptionsResponse(w http.ResponseWriter) error {
 
@@ -43296,7 +44783,7 @@ func (response CreatePasskeyRegistrationOptions401JSONResponse) VisitCreatePassk
 	return err
 }
 
-type CreatePasskeyRegistrationOptions403JSONResponse ErrorEnvelope
+type CreatePasskeyRegistrationOptions403JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreatePasskeyRegistrationOptions403JSONResponse) VisitCreatePasskeyRegistrationOptionsResponse(w http.ResponseWriter) error {
 
@@ -43310,7 +44797,7 @@ func (response CreatePasskeyRegistrationOptions403JSONResponse) VisitCreatePassk
 	return err
 }
 
-type CreatePasskeyRegistrationOptions404JSONResponse ErrorEnvelope
+type CreatePasskeyRegistrationOptions404JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreatePasskeyRegistrationOptions404JSONResponse) VisitCreatePasskeyRegistrationOptionsResponse(w http.ResponseWriter) error {
 
@@ -43324,21 +44811,31 @@ func (response CreatePasskeyRegistrationOptions404JSONResponse) VisitCreatePassk
 	return err
 }
 
-type CreatePasskeyRegistrationOptions409JSONResponse ErrorEnvelope
+type CreatePasskeyRegistrationOptions409ResponseHeaders struct {
+	RetryAfter *string
+}
+
+type CreatePasskeyRegistrationOptions409JSONResponse struct {
+	Body    P2StandardErrorEnvelopeV1
+	Headers CreatePasskeyRegistrationOptions409ResponseHeaders
+}
 
 func (response CreatePasskeyRegistrationOptions409JSONResponse) VisitCreatePasskeyRegistrationOptionsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
 		return err
 	}
 	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
 	w.WriteHeader(409)
 	_, err := buf.WriteTo(w)
 	return err
 }
 
-type CreatePasskeyRegistrationOptions412JSONResponse ErrorEnvelope
+type CreatePasskeyRegistrationOptions412JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreatePasskeyRegistrationOptions412JSONResponse) VisitCreatePasskeyRegistrationOptionsResponse(w http.ResponseWriter) error {
 
@@ -43352,7 +44849,7 @@ func (response CreatePasskeyRegistrationOptions412JSONResponse) VisitCreatePassk
 	return err
 }
 
-type CreatePasskeyRegistrationOptions413JSONResponse ErrorEnvelope
+type CreatePasskeyRegistrationOptions413JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreatePasskeyRegistrationOptions413JSONResponse) VisitCreatePasskeyRegistrationOptionsResponse(w http.ResponseWriter) error {
 
@@ -43366,7 +44863,7 @@ func (response CreatePasskeyRegistrationOptions413JSONResponse) VisitCreatePassk
 	return err
 }
 
-type CreatePasskeyRegistrationOptions415JSONResponse ErrorEnvelope
+type CreatePasskeyRegistrationOptions415JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreatePasskeyRegistrationOptions415JSONResponse) VisitCreatePasskeyRegistrationOptionsResponse(w http.ResponseWriter) error {
 
@@ -43380,7 +44877,7 @@ func (response CreatePasskeyRegistrationOptions415JSONResponse) VisitCreatePassk
 	return err
 }
 
-type CreatePasskeyRegistrationOptions422JSONResponse ErrorEnvelope
+type CreatePasskeyRegistrationOptions422JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreatePasskeyRegistrationOptions422JSONResponse) VisitCreatePasskeyRegistrationOptionsResponse(w http.ResponseWriter) error {
 
@@ -43394,7 +44891,7 @@ func (response CreatePasskeyRegistrationOptions422JSONResponse) VisitCreatePassk
 	return err
 }
 
-type CreatePasskeyRegistrationOptions429JSONResponse ErrorEnvelope
+type CreatePasskeyRegistrationOptions429JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreatePasskeyRegistrationOptions429JSONResponse) VisitCreatePasskeyRegistrationOptionsResponse(w http.ResponseWriter) error {
 
@@ -43408,7 +44905,7 @@ func (response CreatePasskeyRegistrationOptions429JSONResponse) VisitCreatePassk
 	return err
 }
 
-type CreatePasskeyRegistrationOptions431JSONResponse ErrorEnvelope
+type CreatePasskeyRegistrationOptions431JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreatePasskeyRegistrationOptions431JSONResponse) VisitCreatePasskeyRegistrationOptionsResponse(w http.ResponseWriter) error {
 
@@ -43422,7 +44919,7 @@ func (response CreatePasskeyRegistrationOptions431JSONResponse) VisitCreatePassk
 	return err
 }
 
-type CreatePasskeyRegistrationOptions500JSONResponse ErrorEnvelope
+type CreatePasskeyRegistrationOptions500JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreatePasskeyRegistrationOptions500JSONResponse) VisitCreatePasskeyRegistrationOptionsResponse(w http.ResponseWriter) error {
 
@@ -43436,7 +44933,7 @@ func (response CreatePasskeyRegistrationOptions500JSONResponse) VisitCreatePassk
 	return err
 }
 
-type CreatePasskeyRegistrationOptions503JSONResponse ErrorEnvelope
+type CreatePasskeyRegistrationOptions503JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreatePasskeyRegistrationOptions503JSONResponse) VisitCreatePasskeyRegistrationOptionsResponse(w http.ResponseWriter) error {
 
@@ -43461,6 +44958,7 @@ type VerifyPasskeyRegistrationResponseObject interface {
 
 type VerifyPasskeyRegistration200ResponseHeaders struct {
 	CacheControl *string
+	SetCookie    *string
 	XRequestID   *string
 }
 
@@ -43479,6 +44977,9 @@ func (response VerifyPasskeyRegistration200JSONResponse) VisitVerifyPasskeyRegis
 	if response.Headers.CacheControl != nil {
 		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
 	}
+	if response.Headers.SetCookie != nil {
+		w.Header().Set("Set-Cookie", fmt.Sprint(*response.Headers.SetCookie))
+	}
 	if response.Headers.XRequestID != nil {
 		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
 	}
@@ -43487,7 +44988,7 @@ func (response VerifyPasskeyRegistration200JSONResponse) VisitVerifyPasskeyRegis
 	return err
 }
 
-type VerifyPasskeyRegistration400JSONResponse ErrorEnvelope
+type VerifyPasskeyRegistration400JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyPasskeyRegistration400JSONResponse) VisitVerifyPasskeyRegistrationResponse(w http.ResponseWriter) error {
 
@@ -43501,7 +45002,7 @@ func (response VerifyPasskeyRegistration400JSONResponse) VisitVerifyPasskeyRegis
 	return err
 }
 
-type VerifyPasskeyRegistration401JSONResponse ErrorEnvelope
+type VerifyPasskeyRegistration401JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyPasskeyRegistration401JSONResponse) VisitVerifyPasskeyRegistrationResponse(w http.ResponseWriter) error {
 
@@ -43515,7 +45016,7 @@ func (response VerifyPasskeyRegistration401JSONResponse) VisitVerifyPasskeyRegis
 	return err
 }
 
-type VerifyPasskeyRegistration403JSONResponse ErrorEnvelope
+type VerifyPasskeyRegistration403JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyPasskeyRegistration403JSONResponse) VisitVerifyPasskeyRegistrationResponse(w http.ResponseWriter) error {
 
@@ -43529,7 +45030,7 @@ func (response VerifyPasskeyRegistration403JSONResponse) VisitVerifyPasskeyRegis
 	return err
 }
 
-type VerifyPasskeyRegistration404JSONResponse ErrorEnvelope
+type VerifyPasskeyRegistration404JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyPasskeyRegistration404JSONResponse) VisitVerifyPasskeyRegistrationResponse(w http.ResponseWriter) error {
 
@@ -43543,21 +45044,31 @@ func (response VerifyPasskeyRegistration404JSONResponse) VisitVerifyPasskeyRegis
 	return err
 }
 
-type VerifyPasskeyRegistration409JSONResponse ErrorEnvelope
+type VerifyPasskeyRegistration409ResponseHeaders struct {
+	RetryAfter *string
+}
+
+type VerifyPasskeyRegistration409JSONResponse struct {
+	Body    P2SecretConflictErrorEnvelopeV1
+	Headers VerifyPasskeyRegistration409ResponseHeaders
+}
 
 func (response VerifyPasskeyRegistration409JSONResponse) VisitVerifyPasskeyRegistrationResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
 		return err
 	}
 	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
 	w.WriteHeader(409)
 	_, err := buf.WriteTo(w)
 	return err
 }
 
-type VerifyPasskeyRegistration412JSONResponse ErrorEnvelope
+type VerifyPasskeyRegistration412JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyPasskeyRegistration412JSONResponse) VisitVerifyPasskeyRegistrationResponse(w http.ResponseWriter) error {
 
@@ -43571,7 +45082,7 @@ func (response VerifyPasskeyRegistration412JSONResponse) VisitVerifyPasskeyRegis
 	return err
 }
 
-type VerifyPasskeyRegistration413JSONResponse ErrorEnvelope
+type VerifyPasskeyRegistration413JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyPasskeyRegistration413JSONResponse) VisitVerifyPasskeyRegistrationResponse(w http.ResponseWriter) error {
 
@@ -43585,7 +45096,7 @@ func (response VerifyPasskeyRegistration413JSONResponse) VisitVerifyPasskeyRegis
 	return err
 }
 
-type VerifyPasskeyRegistration415JSONResponse ErrorEnvelope
+type VerifyPasskeyRegistration415JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyPasskeyRegistration415JSONResponse) VisitVerifyPasskeyRegistrationResponse(w http.ResponseWriter) error {
 
@@ -43599,7 +45110,7 @@ func (response VerifyPasskeyRegistration415JSONResponse) VisitVerifyPasskeyRegis
 	return err
 }
 
-type VerifyPasskeyRegistration422JSONResponse ErrorEnvelope
+type VerifyPasskeyRegistration422JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyPasskeyRegistration422JSONResponse) VisitVerifyPasskeyRegistrationResponse(w http.ResponseWriter) error {
 
@@ -43613,7 +45124,7 @@ func (response VerifyPasskeyRegistration422JSONResponse) VisitVerifyPasskeyRegis
 	return err
 }
 
-type VerifyPasskeyRegistration429JSONResponse ErrorEnvelope
+type VerifyPasskeyRegistration429JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyPasskeyRegistration429JSONResponse) VisitVerifyPasskeyRegistrationResponse(w http.ResponseWriter) error {
 
@@ -43627,7 +45138,7 @@ func (response VerifyPasskeyRegistration429JSONResponse) VisitVerifyPasskeyRegis
 	return err
 }
 
-type VerifyPasskeyRegistration431JSONResponse ErrorEnvelope
+type VerifyPasskeyRegistration431JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyPasskeyRegistration431JSONResponse) VisitVerifyPasskeyRegistrationResponse(w http.ResponseWriter) error {
 
@@ -43641,7 +45152,7 @@ func (response VerifyPasskeyRegistration431JSONResponse) VisitVerifyPasskeyRegis
 	return err
 }
 
-type VerifyPasskeyRegistration500JSONResponse ErrorEnvelope
+type VerifyPasskeyRegistration500JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyPasskeyRegistration500JSONResponse) VisitVerifyPasskeyRegistrationResponse(w http.ResponseWriter) error {
 
@@ -43655,7 +45166,7 @@ func (response VerifyPasskeyRegistration500JSONResponse) VisitVerifyPasskeyRegis
 	return err
 }
 
-type VerifyPasskeyRegistration503JSONResponse ErrorEnvelope
+type VerifyPasskeyRegistration503JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyPasskeyRegistration503JSONResponse) VisitVerifyPasskeyRegistrationResponse(w http.ResponseWriter) error {
 
@@ -43680,6 +45191,7 @@ type VerifyPasskeyAuthenticationResponseObject interface {
 
 type VerifyPasskeyAuthentication200ResponseHeaders struct {
 	CacheControl *string
+	SetCookie    *string
 	XRequestID   *string
 }
 
@@ -43698,6 +45210,9 @@ func (response VerifyPasskeyAuthentication200JSONResponse) VisitVerifyPasskeyAut
 	if response.Headers.CacheControl != nil {
 		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
 	}
+	if response.Headers.SetCookie != nil {
+		w.Header().Set("Set-Cookie", fmt.Sprint(*response.Headers.SetCookie))
+	}
 	if response.Headers.XRequestID != nil {
 		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
 	}
@@ -43706,7 +45221,7 @@ func (response VerifyPasskeyAuthentication200JSONResponse) VisitVerifyPasskeyAut
 	return err
 }
 
-type VerifyPasskeyAuthentication400JSONResponse ErrorEnvelope
+type VerifyPasskeyAuthentication400JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyPasskeyAuthentication400JSONResponse) VisitVerifyPasskeyAuthenticationResponse(w http.ResponseWriter) error {
 
@@ -43720,7 +45235,7 @@ func (response VerifyPasskeyAuthentication400JSONResponse) VisitVerifyPasskeyAut
 	return err
 }
 
-type VerifyPasskeyAuthentication401JSONResponse ErrorEnvelope
+type VerifyPasskeyAuthentication401JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyPasskeyAuthentication401JSONResponse) VisitVerifyPasskeyAuthenticationResponse(w http.ResponseWriter) error {
 
@@ -43734,7 +45249,7 @@ func (response VerifyPasskeyAuthentication401JSONResponse) VisitVerifyPasskeyAut
 	return err
 }
 
-type VerifyPasskeyAuthentication403JSONResponse ErrorEnvelope
+type VerifyPasskeyAuthentication403JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyPasskeyAuthentication403JSONResponse) VisitVerifyPasskeyAuthenticationResponse(w http.ResponseWriter) error {
 
@@ -43748,7 +45263,7 @@ func (response VerifyPasskeyAuthentication403JSONResponse) VisitVerifyPasskeyAut
 	return err
 }
 
-type VerifyPasskeyAuthentication404JSONResponse ErrorEnvelope
+type VerifyPasskeyAuthentication404JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyPasskeyAuthentication404JSONResponse) VisitVerifyPasskeyAuthenticationResponse(w http.ResponseWriter) error {
 
@@ -43762,21 +45277,31 @@ func (response VerifyPasskeyAuthentication404JSONResponse) VisitVerifyPasskeyAut
 	return err
 }
 
-type VerifyPasskeyAuthentication409JSONResponse ErrorEnvelope
+type VerifyPasskeyAuthentication409ResponseHeaders struct {
+	RetryAfter *string
+}
+
+type VerifyPasskeyAuthentication409JSONResponse struct {
+	Body    P2SecretConflictErrorEnvelopeV1
+	Headers VerifyPasskeyAuthentication409ResponseHeaders
+}
 
 func (response VerifyPasskeyAuthentication409JSONResponse) VisitVerifyPasskeyAuthenticationResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
 		return err
 	}
 	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
 	w.WriteHeader(409)
 	_, err := buf.WriteTo(w)
 	return err
 }
 
-type VerifyPasskeyAuthentication412JSONResponse ErrorEnvelope
+type VerifyPasskeyAuthentication412JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyPasskeyAuthentication412JSONResponse) VisitVerifyPasskeyAuthenticationResponse(w http.ResponseWriter) error {
 
@@ -43790,7 +45315,7 @@ func (response VerifyPasskeyAuthentication412JSONResponse) VisitVerifyPasskeyAut
 	return err
 }
 
-type VerifyPasskeyAuthentication413JSONResponse ErrorEnvelope
+type VerifyPasskeyAuthentication413JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyPasskeyAuthentication413JSONResponse) VisitVerifyPasskeyAuthenticationResponse(w http.ResponseWriter) error {
 
@@ -43804,7 +45329,7 @@ func (response VerifyPasskeyAuthentication413JSONResponse) VisitVerifyPasskeyAut
 	return err
 }
 
-type VerifyPasskeyAuthentication415JSONResponse ErrorEnvelope
+type VerifyPasskeyAuthentication415JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyPasskeyAuthentication415JSONResponse) VisitVerifyPasskeyAuthenticationResponse(w http.ResponseWriter) error {
 
@@ -43818,7 +45343,7 @@ func (response VerifyPasskeyAuthentication415JSONResponse) VisitVerifyPasskeyAut
 	return err
 }
 
-type VerifyPasskeyAuthentication422JSONResponse ErrorEnvelope
+type VerifyPasskeyAuthentication422JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyPasskeyAuthentication422JSONResponse) VisitVerifyPasskeyAuthenticationResponse(w http.ResponseWriter) error {
 
@@ -43832,7 +45357,7 @@ func (response VerifyPasskeyAuthentication422JSONResponse) VisitVerifyPasskeyAut
 	return err
 }
 
-type VerifyPasskeyAuthentication429JSONResponse ErrorEnvelope
+type VerifyPasskeyAuthentication429JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyPasskeyAuthentication429JSONResponse) VisitVerifyPasskeyAuthenticationResponse(w http.ResponseWriter) error {
 
@@ -43846,7 +45371,7 @@ func (response VerifyPasskeyAuthentication429JSONResponse) VisitVerifyPasskeyAut
 	return err
 }
 
-type VerifyPasskeyAuthentication431JSONResponse ErrorEnvelope
+type VerifyPasskeyAuthentication431JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyPasskeyAuthentication431JSONResponse) VisitVerifyPasskeyAuthenticationResponse(w http.ResponseWriter) error {
 
@@ -43860,7 +45385,7 @@ func (response VerifyPasskeyAuthentication431JSONResponse) VisitVerifyPasskeyAut
 	return err
 }
 
-type VerifyPasskeyAuthentication500JSONResponse ErrorEnvelope
+type VerifyPasskeyAuthentication500JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyPasskeyAuthentication500JSONResponse) VisitVerifyPasskeyAuthenticationResponse(w http.ResponseWriter) error {
 
@@ -43874,7 +45399,7 @@ func (response VerifyPasskeyAuthentication500JSONResponse) VisitVerifyPasskeyAut
 	return err
 }
 
-type VerifyPasskeyAuthentication503JSONResponse ErrorEnvelope
+type VerifyPasskeyAuthentication503JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyPasskeyAuthentication503JSONResponse) VisitVerifyPasskeyAuthenticationResponse(w http.ResponseWriter) error {
 
@@ -43891,6 +45416,7 @@ func (response VerifyPasskeyAuthentication503JSONResponse) VisitVerifyPasskeyAut
 type DeletePasskeyRequestObject struct {
 	PasskeyId string `json:"passkeyId"`
 	Params    DeletePasskeyParams
+	Body      *DeletePasskeyJSONRequestBody
 }
 
 type DeletePasskeyResponseObject interface {
@@ -43899,6 +45425,7 @@ type DeletePasskeyResponseObject interface {
 
 type DeletePasskey200ResponseHeaders struct {
 	CacheControl *string
+	SetCookie    *string
 	XRequestID   *string
 }
 
@@ -43917,6 +45444,9 @@ func (response DeletePasskey200JSONResponse) VisitDeletePasskeyResponse(w http.R
 	if response.Headers.CacheControl != nil {
 		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
 	}
+	if response.Headers.SetCookie != nil {
+		w.Header().Set("Set-Cookie", fmt.Sprint(*response.Headers.SetCookie))
+	}
 	if response.Headers.XRequestID != nil {
 		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
 	}
@@ -43925,7 +45455,7 @@ func (response DeletePasskey200JSONResponse) VisitDeletePasskeyResponse(w http.R
 	return err
 }
 
-type DeletePasskey400JSONResponse ErrorEnvelope
+type DeletePasskey400JSONResponse P2StandardErrorEnvelopeV1
 
 func (response DeletePasskey400JSONResponse) VisitDeletePasskeyResponse(w http.ResponseWriter) error {
 
@@ -43939,7 +45469,7 @@ func (response DeletePasskey400JSONResponse) VisitDeletePasskeyResponse(w http.R
 	return err
 }
 
-type DeletePasskey401JSONResponse ErrorEnvelope
+type DeletePasskey401JSONResponse P2StandardErrorEnvelopeV1
 
 func (response DeletePasskey401JSONResponse) VisitDeletePasskeyResponse(w http.ResponseWriter) error {
 
@@ -43953,7 +45483,7 @@ func (response DeletePasskey401JSONResponse) VisitDeletePasskeyResponse(w http.R
 	return err
 }
 
-type DeletePasskey403JSONResponse ErrorEnvelope
+type DeletePasskey403JSONResponse P2StandardErrorEnvelopeV1
 
 func (response DeletePasskey403JSONResponse) VisitDeletePasskeyResponse(w http.ResponseWriter) error {
 
@@ -43967,7 +45497,7 @@ func (response DeletePasskey403JSONResponse) VisitDeletePasskeyResponse(w http.R
 	return err
 }
 
-type DeletePasskey404JSONResponse ErrorEnvelope
+type DeletePasskey404JSONResponse P2StandardErrorEnvelopeV1
 
 func (response DeletePasskey404JSONResponse) VisitDeletePasskeyResponse(w http.ResponseWriter) error {
 
@@ -43981,21 +45511,31 @@ func (response DeletePasskey404JSONResponse) VisitDeletePasskeyResponse(w http.R
 	return err
 }
 
-type DeletePasskey409JSONResponse ErrorEnvelope
+type DeletePasskey409ResponseHeaders struct {
+	RetryAfter *string
+}
+
+type DeletePasskey409JSONResponse struct {
+	Body    P2StandardErrorEnvelopeV1
+	Headers DeletePasskey409ResponseHeaders
+}
 
 func (response DeletePasskey409JSONResponse) VisitDeletePasskeyResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
 		return err
 	}
 	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
 	w.WriteHeader(409)
 	_, err := buf.WriteTo(w)
 	return err
 }
 
-type DeletePasskey412JSONResponse ErrorEnvelope
+type DeletePasskey412JSONResponse P2StandardErrorEnvelopeV1
 
 func (response DeletePasskey412JSONResponse) VisitDeletePasskeyResponse(w http.ResponseWriter) error {
 
@@ -44009,7 +45549,7 @@ func (response DeletePasskey412JSONResponse) VisitDeletePasskeyResponse(w http.R
 	return err
 }
 
-type DeletePasskey413JSONResponse ErrorEnvelope
+type DeletePasskey413JSONResponse P2StandardErrorEnvelopeV1
 
 func (response DeletePasskey413JSONResponse) VisitDeletePasskeyResponse(w http.ResponseWriter) error {
 
@@ -44023,7 +45563,7 @@ func (response DeletePasskey413JSONResponse) VisitDeletePasskeyResponse(w http.R
 	return err
 }
 
-type DeletePasskey415JSONResponse ErrorEnvelope
+type DeletePasskey415JSONResponse P2StandardErrorEnvelopeV1
 
 func (response DeletePasskey415JSONResponse) VisitDeletePasskeyResponse(w http.ResponseWriter) error {
 
@@ -44037,7 +45577,7 @@ func (response DeletePasskey415JSONResponse) VisitDeletePasskeyResponse(w http.R
 	return err
 }
 
-type DeletePasskey422JSONResponse ErrorEnvelope
+type DeletePasskey422JSONResponse P2StandardErrorEnvelopeV1
 
 func (response DeletePasskey422JSONResponse) VisitDeletePasskeyResponse(w http.ResponseWriter) error {
 
@@ -44051,7 +45591,7 @@ func (response DeletePasskey422JSONResponse) VisitDeletePasskeyResponse(w http.R
 	return err
 }
 
-type DeletePasskey429JSONResponse ErrorEnvelope
+type DeletePasskey429JSONResponse P2StandardErrorEnvelopeV1
 
 func (response DeletePasskey429JSONResponse) VisitDeletePasskeyResponse(w http.ResponseWriter) error {
 
@@ -44065,7 +45605,7 @@ func (response DeletePasskey429JSONResponse) VisitDeletePasskeyResponse(w http.R
 	return err
 }
 
-type DeletePasskey431JSONResponse ErrorEnvelope
+type DeletePasskey431JSONResponse P2StandardErrorEnvelopeV1
 
 func (response DeletePasskey431JSONResponse) VisitDeletePasskeyResponse(w http.ResponseWriter) error {
 
@@ -44079,7 +45619,7 @@ func (response DeletePasskey431JSONResponse) VisitDeletePasskeyResponse(w http.R
 	return err
 }
 
-type DeletePasskey500JSONResponse ErrorEnvelope
+type DeletePasskey500JSONResponse P2StandardErrorEnvelopeV1
 
 func (response DeletePasskey500JSONResponse) VisitDeletePasskeyResponse(w http.ResponseWriter) error {
 
@@ -44093,7 +45633,7 @@ func (response DeletePasskey500JSONResponse) VisitDeletePasskeyResponse(w http.R
 	return err
 }
 
-type DeletePasskey503JSONResponse ErrorEnvelope
+type DeletePasskey503JSONResponse P2StandardErrorEnvelopeV1
 
 func (response DeletePasskey503JSONResponse) VisitDeletePasskeyResponse(w http.ResponseWriter) error {
 
@@ -44109,6 +45649,7 @@ func (response DeletePasskey503JSONResponse) VisitDeletePasskeyResponse(w http.R
 
 type RotateRecoveryCodesRequestObject struct {
 	Params RotateRecoveryCodesParams
+	Body   *RotateRecoveryCodesJSONRequestBody
 }
 
 type RotateRecoveryCodesResponseObject interface {
@@ -44143,7 +45684,7 @@ func (response RotateRecoveryCodes200JSONResponse) VisitRotateRecoveryCodesRespo
 	return err
 }
 
-type RotateRecoveryCodes400JSONResponse ErrorEnvelope
+type RotateRecoveryCodes400JSONResponse P2StandardErrorEnvelopeV1
 
 func (response RotateRecoveryCodes400JSONResponse) VisitRotateRecoveryCodesResponse(w http.ResponseWriter) error {
 
@@ -44157,7 +45698,7 @@ func (response RotateRecoveryCodes400JSONResponse) VisitRotateRecoveryCodesRespo
 	return err
 }
 
-type RotateRecoveryCodes401JSONResponse ErrorEnvelope
+type RotateRecoveryCodes401JSONResponse P2StandardErrorEnvelopeV1
 
 func (response RotateRecoveryCodes401JSONResponse) VisitRotateRecoveryCodesResponse(w http.ResponseWriter) error {
 
@@ -44171,7 +45712,7 @@ func (response RotateRecoveryCodes401JSONResponse) VisitRotateRecoveryCodesRespo
 	return err
 }
 
-type RotateRecoveryCodes403JSONResponse ErrorEnvelope
+type RotateRecoveryCodes403JSONResponse P2StandardErrorEnvelopeV1
 
 func (response RotateRecoveryCodes403JSONResponse) VisitRotateRecoveryCodesResponse(w http.ResponseWriter) error {
 
@@ -44185,7 +45726,7 @@ func (response RotateRecoveryCodes403JSONResponse) VisitRotateRecoveryCodesRespo
 	return err
 }
 
-type RotateRecoveryCodes404JSONResponse ErrorEnvelope
+type RotateRecoveryCodes404JSONResponse P2StandardErrorEnvelopeV1
 
 func (response RotateRecoveryCodes404JSONResponse) VisitRotateRecoveryCodesResponse(w http.ResponseWriter) error {
 
@@ -44199,21 +45740,31 @@ func (response RotateRecoveryCodes404JSONResponse) VisitRotateRecoveryCodesRespo
 	return err
 }
 
-type RotateRecoveryCodes409JSONResponse ErrorEnvelope
+type RotateRecoveryCodes409ResponseHeaders struct {
+	RetryAfter *string
+}
+
+type RotateRecoveryCodes409JSONResponse struct {
+	Body    P2SecretConflictErrorEnvelopeV1
+	Headers RotateRecoveryCodes409ResponseHeaders
+}
 
 func (response RotateRecoveryCodes409JSONResponse) VisitRotateRecoveryCodesResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
 		return err
 	}
 	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
 	w.WriteHeader(409)
 	_, err := buf.WriteTo(w)
 	return err
 }
 
-type RotateRecoveryCodes412JSONResponse ErrorEnvelope
+type RotateRecoveryCodes412JSONResponse P2StandardErrorEnvelopeV1
 
 func (response RotateRecoveryCodes412JSONResponse) VisitRotateRecoveryCodesResponse(w http.ResponseWriter) error {
 
@@ -44227,7 +45778,7 @@ func (response RotateRecoveryCodes412JSONResponse) VisitRotateRecoveryCodesRespo
 	return err
 }
 
-type RotateRecoveryCodes413JSONResponse ErrorEnvelope
+type RotateRecoveryCodes413JSONResponse P2StandardErrorEnvelopeV1
 
 func (response RotateRecoveryCodes413JSONResponse) VisitRotateRecoveryCodesResponse(w http.ResponseWriter) error {
 
@@ -44241,7 +45792,7 @@ func (response RotateRecoveryCodes413JSONResponse) VisitRotateRecoveryCodesRespo
 	return err
 }
 
-type RotateRecoveryCodes415JSONResponse ErrorEnvelope
+type RotateRecoveryCodes415JSONResponse P2StandardErrorEnvelopeV1
 
 func (response RotateRecoveryCodes415JSONResponse) VisitRotateRecoveryCodesResponse(w http.ResponseWriter) error {
 
@@ -44255,7 +45806,7 @@ func (response RotateRecoveryCodes415JSONResponse) VisitRotateRecoveryCodesRespo
 	return err
 }
 
-type RotateRecoveryCodes422JSONResponse ErrorEnvelope
+type RotateRecoveryCodes422JSONResponse P2StandardErrorEnvelopeV1
 
 func (response RotateRecoveryCodes422JSONResponse) VisitRotateRecoveryCodesResponse(w http.ResponseWriter) error {
 
@@ -44269,7 +45820,7 @@ func (response RotateRecoveryCodes422JSONResponse) VisitRotateRecoveryCodesRespo
 	return err
 }
 
-type RotateRecoveryCodes429JSONResponse ErrorEnvelope
+type RotateRecoveryCodes429JSONResponse P2StandardErrorEnvelopeV1
 
 func (response RotateRecoveryCodes429JSONResponse) VisitRotateRecoveryCodesResponse(w http.ResponseWriter) error {
 
@@ -44283,7 +45834,7 @@ func (response RotateRecoveryCodes429JSONResponse) VisitRotateRecoveryCodesRespo
 	return err
 }
 
-type RotateRecoveryCodes431JSONResponse ErrorEnvelope
+type RotateRecoveryCodes431JSONResponse P2StandardErrorEnvelopeV1
 
 func (response RotateRecoveryCodes431JSONResponse) VisitRotateRecoveryCodesResponse(w http.ResponseWriter) error {
 
@@ -44297,7 +45848,7 @@ func (response RotateRecoveryCodes431JSONResponse) VisitRotateRecoveryCodesRespo
 	return err
 }
 
-type RotateRecoveryCodes500JSONResponse ErrorEnvelope
+type RotateRecoveryCodes500JSONResponse P2StandardErrorEnvelopeV1
 
 func (response RotateRecoveryCodes500JSONResponse) VisitRotateRecoveryCodesResponse(w http.ResponseWriter) error {
 
@@ -44311,7 +45862,7 @@ func (response RotateRecoveryCodes500JSONResponse) VisitRotateRecoveryCodesRespo
 	return err
 }
 
-type RotateRecoveryCodes503JSONResponse ErrorEnvelope
+type RotateRecoveryCodes503JSONResponse P2StandardErrorEnvelopeV1
 
 func (response RotateRecoveryCodes503JSONResponse) VisitRotateRecoveryCodesResponse(w http.ResponseWriter) error {
 
@@ -44336,6 +45887,7 @@ type VerifyRecoveryCodeResponseObject interface {
 
 type VerifyRecoveryCode200ResponseHeaders struct {
 	CacheControl *string
+	SetCookie    *string
 	XRequestID   *string
 }
 
@@ -44354,6 +45906,9 @@ func (response VerifyRecoveryCode200JSONResponse) VisitVerifyRecoveryCodeRespons
 	if response.Headers.CacheControl != nil {
 		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
 	}
+	if response.Headers.SetCookie != nil {
+		w.Header().Set("Set-Cookie", fmt.Sprint(*response.Headers.SetCookie))
+	}
 	if response.Headers.XRequestID != nil {
 		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
 	}
@@ -44362,7 +45917,7 @@ func (response VerifyRecoveryCode200JSONResponse) VisitVerifyRecoveryCodeRespons
 	return err
 }
 
-type VerifyRecoveryCode400JSONResponse ErrorEnvelope
+type VerifyRecoveryCode400JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyRecoveryCode400JSONResponse) VisitVerifyRecoveryCodeResponse(w http.ResponseWriter) error {
 
@@ -44376,7 +45931,7 @@ func (response VerifyRecoveryCode400JSONResponse) VisitVerifyRecoveryCodeRespons
 	return err
 }
 
-type VerifyRecoveryCode401JSONResponse ErrorEnvelope
+type VerifyRecoveryCode401JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyRecoveryCode401JSONResponse) VisitVerifyRecoveryCodeResponse(w http.ResponseWriter) error {
 
@@ -44390,7 +45945,7 @@ func (response VerifyRecoveryCode401JSONResponse) VisitVerifyRecoveryCodeRespons
 	return err
 }
 
-type VerifyRecoveryCode403JSONResponse ErrorEnvelope
+type VerifyRecoveryCode403JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyRecoveryCode403JSONResponse) VisitVerifyRecoveryCodeResponse(w http.ResponseWriter) error {
 
@@ -44404,7 +45959,7 @@ func (response VerifyRecoveryCode403JSONResponse) VisitVerifyRecoveryCodeRespons
 	return err
 }
 
-type VerifyRecoveryCode404JSONResponse ErrorEnvelope
+type VerifyRecoveryCode404JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyRecoveryCode404JSONResponse) VisitVerifyRecoveryCodeResponse(w http.ResponseWriter) error {
 
@@ -44418,21 +45973,31 @@ func (response VerifyRecoveryCode404JSONResponse) VisitVerifyRecoveryCodeRespons
 	return err
 }
 
-type VerifyRecoveryCode409JSONResponse ErrorEnvelope
+type VerifyRecoveryCode409ResponseHeaders struct {
+	RetryAfter *string
+}
+
+type VerifyRecoveryCode409JSONResponse struct {
+	Body    P2SecretConflictErrorEnvelopeV1
+	Headers VerifyRecoveryCode409ResponseHeaders
+}
 
 func (response VerifyRecoveryCode409JSONResponse) VisitVerifyRecoveryCodeResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
 		return err
 	}
 	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
 	w.WriteHeader(409)
 	_, err := buf.WriteTo(w)
 	return err
 }
 
-type VerifyRecoveryCode412JSONResponse ErrorEnvelope
+type VerifyRecoveryCode412JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyRecoveryCode412JSONResponse) VisitVerifyRecoveryCodeResponse(w http.ResponseWriter) error {
 
@@ -44446,7 +46011,7 @@ func (response VerifyRecoveryCode412JSONResponse) VisitVerifyRecoveryCodeRespons
 	return err
 }
 
-type VerifyRecoveryCode413JSONResponse ErrorEnvelope
+type VerifyRecoveryCode413JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyRecoveryCode413JSONResponse) VisitVerifyRecoveryCodeResponse(w http.ResponseWriter) error {
 
@@ -44460,7 +46025,7 @@ func (response VerifyRecoveryCode413JSONResponse) VisitVerifyRecoveryCodeRespons
 	return err
 }
 
-type VerifyRecoveryCode415JSONResponse ErrorEnvelope
+type VerifyRecoveryCode415JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyRecoveryCode415JSONResponse) VisitVerifyRecoveryCodeResponse(w http.ResponseWriter) error {
 
@@ -44474,7 +46039,7 @@ func (response VerifyRecoveryCode415JSONResponse) VisitVerifyRecoveryCodeRespons
 	return err
 }
 
-type VerifyRecoveryCode422JSONResponse ErrorEnvelope
+type VerifyRecoveryCode422JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyRecoveryCode422JSONResponse) VisitVerifyRecoveryCodeResponse(w http.ResponseWriter) error {
 
@@ -44488,7 +46053,7 @@ func (response VerifyRecoveryCode422JSONResponse) VisitVerifyRecoveryCodeRespons
 	return err
 }
 
-type VerifyRecoveryCode429JSONResponse ErrorEnvelope
+type VerifyRecoveryCode429JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyRecoveryCode429JSONResponse) VisitVerifyRecoveryCodeResponse(w http.ResponseWriter) error {
 
@@ -44502,7 +46067,7 @@ func (response VerifyRecoveryCode429JSONResponse) VisitVerifyRecoveryCodeRespons
 	return err
 }
 
-type VerifyRecoveryCode431JSONResponse ErrorEnvelope
+type VerifyRecoveryCode431JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyRecoveryCode431JSONResponse) VisitVerifyRecoveryCodeResponse(w http.ResponseWriter) error {
 
@@ -44516,7 +46081,7 @@ func (response VerifyRecoveryCode431JSONResponse) VisitVerifyRecoveryCodeRespons
 	return err
 }
 
-type VerifyRecoveryCode500JSONResponse ErrorEnvelope
+type VerifyRecoveryCode500JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyRecoveryCode500JSONResponse) VisitVerifyRecoveryCodeResponse(w http.ResponseWriter) error {
 
@@ -44530,7 +46095,7 @@ func (response VerifyRecoveryCode500JSONResponse) VisitVerifyRecoveryCodeRespons
 	return err
 }
 
-type VerifyRecoveryCode503JSONResponse ErrorEnvelope
+type VerifyRecoveryCode503JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyRecoveryCode503JSONResponse) VisitVerifyRecoveryCodeResponse(w http.ResponseWriter) error {
 
@@ -44579,7 +46144,7 @@ func (response ListBrowserSessions200JSONResponse) VisitListBrowserSessionsRespo
 	return err
 }
 
-type ListBrowserSessions400JSONResponse ErrorEnvelope
+type ListBrowserSessions400JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListBrowserSessions400JSONResponse) VisitListBrowserSessionsResponse(w http.ResponseWriter) error {
 
@@ -44593,7 +46158,7 @@ func (response ListBrowserSessions400JSONResponse) VisitListBrowserSessionsRespo
 	return err
 }
 
-type ListBrowserSessions401JSONResponse ErrorEnvelope
+type ListBrowserSessions401JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListBrowserSessions401JSONResponse) VisitListBrowserSessionsResponse(w http.ResponseWriter) error {
 
@@ -44607,7 +46172,7 @@ func (response ListBrowserSessions401JSONResponse) VisitListBrowserSessionsRespo
 	return err
 }
 
-type ListBrowserSessions403JSONResponse ErrorEnvelope
+type ListBrowserSessions403JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListBrowserSessions403JSONResponse) VisitListBrowserSessionsResponse(w http.ResponseWriter) error {
 
@@ -44621,7 +46186,7 @@ func (response ListBrowserSessions403JSONResponse) VisitListBrowserSessionsRespo
 	return err
 }
 
-type ListBrowserSessions404JSONResponse ErrorEnvelope
+type ListBrowserSessions404JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListBrowserSessions404JSONResponse) VisitListBrowserSessionsResponse(w http.ResponseWriter) error {
 
@@ -44635,7 +46200,7 @@ func (response ListBrowserSessions404JSONResponse) VisitListBrowserSessionsRespo
 	return err
 }
 
-type ListBrowserSessions409JSONResponse ErrorEnvelope
+type ListBrowserSessions409JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListBrowserSessions409JSONResponse) VisitListBrowserSessionsResponse(w http.ResponseWriter) error {
 
@@ -44649,7 +46214,7 @@ func (response ListBrowserSessions409JSONResponse) VisitListBrowserSessionsRespo
 	return err
 }
 
-type ListBrowserSessions412JSONResponse ErrorEnvelope
+type ListBrowserSessions412JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListBrowserSessions412JSONResponse) VisitListBrowserSessionsResponse(w http.ResponseWriter) error {
 
@@ -44663,7 +46228,7 @@ func (response ListBrowserSessions412JSONResponse) VisitListBrowserSessionsRespo
 	return err
 }
 
-type ListBrowserSessions413JSONResponse ErrorEnvelope
+type ListBrowserSessions413JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListBrowserSessions413JSONResponse) VisitListBrowserSessionsResponse(w http.ResponseWriter) error {
 
@@ -44677,7 +46242,7 @@ func (response ListBrowserSessions413JSONResponse) VisitListBrowserSessionsRespo
 	return err
 }
 
-type ListBrowserSessions415JSONResponse ErrorEnvelope
+type ListBrowserSessions415JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListBrowserSessions415JSONResponse) VisitListBrowserSessionsResponse(w http.ResponseWriter) error {
 
@@ -44691,7 +46256,7 @@ func (response ListBrowserSessions415JSONResponse) VisitListBrowserSessionsRespo
 	return err
 }
 
-type ListBrowserSessions422JSONResponse ErrorEnvelope
+type ListBrowserSessions422JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListBrowserSessions422JSONResponse) VisitListBrowserSessionsResponse(w http.ResponseWriter) error {
 
@@ -44705,7 +46270,7 @@ func (response ListBrowserSessions422JSONResponse) VisitListBrowserSessionsRespo
 	return err
 }
 
-type ListBrowserSessions429JSONResponse ErrorEnvelope
+type ListBrowserSessions429JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListBrowserSessions429JSONResponse) VisitListBrowserSessionsResponse(w http.ResponseWriter) error {
 
@@ -44719,7 +46284,7 @@ func (response ListBrowserSessions429JSONResponse) VisitListBrowserSessionsRespo
 	return err
 }
 
-type ListBrowserSessions431JSONResponse ErrorEnvelope
+type ListBrowserSessions431JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListBrowserSessions431JSONResponse) VisitListBrowserSessionsResponse(w http.ResponseWriter) error {
 
@@ -44733,7 +46298,7 @@ func (response ListBrowserSessions431JSONResponse) VisitListBrowserSessionsRespo
 	return err
 }
 
-type ListBrowserSessions500JSONResponse ErrorEnvelope
+type ListBrowserSessions500JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListBrowserSessions500JSONResponse) VisitListBrowserSessionsResponse(w http.ResponseWriter) error {
 
@@ -44747,7 +46312,7 @@ func (response ListBrowserSessions500JSONResponse) VisitListBrowserSessionsRespo
 	return err
 }
 
-type ListBrowserSessions503JSONResponse ErrorEnvelope
+type ListBrowserSessions503JSONResponse P2StandardErrorEnvelopeV1
 
 func (response ListBrowserSessions503JSONResponse) VisitListBrowserSessionsResponse(w http.ResponseWriter) error {
 
@@ -44764,6 +46329,7 @@ func (response ListBrowserSessions503JSONResponse) VisitListBrowserSessionsRespo
 type DeleteBrowserSessionRequestObject struct {
 	SessionId string `json:"sessionId"`
 	Params    DeleteBrowserSessionParams
+	Body      *DeleteBrowserSessionJSONRequestBody
 }
 
 type DeleteBrowserSessionResponseObject interface {
@@ -44772,11 +46338,12 @@ type DeleteBrowserSessionResponseObject interface {
 
 type DeleteBrowserSession200ResponseHeaders struct {
 	CacheControl *string
+	SetCookie    *string
 	XRequestID   *string
 }
 
 type DeleteBrowserSession200JSONResponse struct {
-	Body    OperationStatusEnvelope
+	Body    BrowserSessionRevokeEnvelopeV1
 	Headers DeleteBrowserSession200ResponseHeaders
 }
 
@@ -44790,6 +46357,9 @@ func (response DeleteBrowserSession200JSONResponse) VisitDeleteBrowserSessionRes
 	if response.Headers.CacheControl != nil {
 		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
 	}
+	if response.Headers.SetCookie != nil {
+		w.Header().Set("Set-Cookie", fmt.Sprint(*response.Headers.SetCookie))
+	}
 	if response.Headers.XRequestID != nil {
 		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
 	}
@@ -44798,7 +46368,7 @@ func (response DeleteBrowserSession200JSONResponse) VisitDeleteBrowserSessionRes
 	return err
 }
 
-type DeleteBrowserSession400JSONResponse ErrorEnvelope
+type DeleteBrowserSession400JSONResponse P2StandardErrorEnvelopeV1
 
 func (response DeleteBrowserSession400JSONResponse) VisitDeleteBrowserSessionResponse(w http.ResponseWriter) error {
 
@@ -44812,7 +46382,7 @@ func (response DeleteBrowserSession400JSONResponse) VisitDeleteBrowserSessionRes
 	return err
 }
 
-type DeleteBrowserSession401JSONResponse ErrorEnvelope
+type DeleteBrowserSession401JSONResponse P2StandardErrorEnvelopeV1
 
 func (response DeleteBrowserSession401JSONResponse) VisitDeleteBrowserSessionResponse(w http.ResponseWriter) error {
 
@@ -44826,7 +46396,7 @@ func (response DeleteBrowserSession401JSONResponse) VisitDeleteBrowserSessionRes
 	return err
 }
 
-type DeleteBrowserSession403JSONResponse ErrorEnvelope
+type DeleteBrowserSession403JSONResponse P2StandardErrorEnvelopeV1
 
 func (response DeleteBrowserSession403JSONResponse) VisitDeleteBrowserSessionResponse(w http.ResponseWriter) error {
 
@@ -44840,7 +46410,7 @@ func (response DeleteBrowserSession403JSONResponse) VisitDeleteBrowserSessionRes
 	return err
 }
 
-type DeleteBrowserSession404JSONResponse ErrorEnvelope
+type DeleteBrowserSession404JSONResponse P2StandardErrorEnvelopeV1
 
 func (response DeleteBrowserSession404JSONResponse) VisitDeleteBrowserSessionResponse(w http.ResponseWriter) error {
 
@@ -44854,21 +46424,31 @@ func (response DeleteBrowserSession404JSONResponse) VisitDeleteBrowserSessionRes
 	return err
 }
 
-type DeleteBrowserSession409JSONResponse ErrorEnvelope
+type DeleteBrowserSession409ResponseHeaders struct {
+	RetryAfter *string
+}
+
+type DeleteBrowserSession409JSONResponse struct {
+	Body    P2StandardErrorEnvelopeV1
+	Headers DeleteBrowserSession409ResponseHeaders
+}
 
 func (response DeleteBrowserSession409JSONResponse) VisitDeleteBrowserSessionResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
 		return err
 	}
 	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
 	w.WriteHeader(409)
 	_, err := buf.WriteTo(w)
 	return err
 }
 
-type DeleteBrowserSession412JSONResponse ErrorEnvelope
+type DeleteBrowserSession412JSONResponse P2SessionRevisionConflictErrorEnvelopeV1
 
 func (response DeleteBrowserSession412JSONResponse) VisitDeleteBrowserSessionResponse(w http.ResponseWriter) error {
 
@@ -44882,7 +46462,7 @@ func (response DeleteBrowserSession412JSONResponse) VisitDeleteBrowserSessionRes
 	return err
 }
 
-type DeleteBrowserSession413JSONResponse ErrorEnvelope
+type DeleteBrowserSession413JSONResponse P2StandardErrorEnvelopeV1
 
 func (response DeleteBrowserSession413JSONResponse) VisitDeleteBrowserSessionResponse(w http.ResponseWriter) error {
 
@@ -44896,7 +46476,7 @@ func (response DeleteBrowserSession413JSONResponse) VisitDeleteBrowserSessionRes
 	return err
 }
 
-type DeleteBrowserSession415JSONResponse ErrorEnvelope
+type DeleteBrowserSession415JSONResponse P2StandardErrorEnvelopeV1
 
 func (response DeleteBrowserSession415JSONResponse) VisitDeleteBrowserSessionResponse(w http.ResponseWriter) error {
 
@@ -44910,7 +46490,7 @@ func (response DeleteBrowserSession415JSONResponse) VisitDeleteBrowserSessionRes
 	return err
 }
 
-type DeleteBrowserSession422JSONResponse ErrorEnvelope
+type DeleteBrowserSession422JSONResponse P2StandardErrorEnvelopeV1
 
 func (response DeleteBrowserSession422JSONResponse) VisitDeleteBrowserSessionResponse(w http.ResponseWriter) error {
 
@@ -44924,7 +46504,7 @@ func (response DeleteBrowserSession422JSONResponse) VisitDeleteBrowserSessionRes
 	return err
 }
 
-type DeleteBrowserSession429JSONResponse ErrorEnvelope
+type DeleteBrowserSession429JSONResponse P2StandardErrorEnvelopeV1
 
 func (response DeleteBrowserSession429JSONResponse) VisitDeleteBrowserSessionResponse(w http.ResponseWriter) error {
 
@@ -44938,7 +46518,7 @@ func (response DeleteBrowserSession429JSONResponse) VisitDeleteBrowserSessionRes
 	return err
 }
 
-type DeleteBrowserSession431JSONResponse ErrorEnvelope
+type DeleteBrowserSession431JSONResponse P2StandardErrorEnvelopeV1
 
 func (response DeleteBrowserSession431JSONResponse) VisitDeleteBrowserSessionResponse(w http.ResponseWriter) error {
 
@@ -44952,7 +46532,7 @@ func (response DeleteBrowserSession431JSONResponse) VisitDeleteBrowserSessionRes
 	return err
 }
 
-type DeleteBrowserSession500JSONResponse ErrorEnvelope
+type DeleteBrowserSession500JSONResponse P2StandardErrorEnvelopeV1
 
 func (response DeleteBrowserSession500JSONResponse) VisitDeleteBrowserSessionResponse(w http.ResponseWriter) error {
 
@@ -44966,7 +46546,7 @@ func (response DeleteBrowserSession500JSONResponse) VisitDeleteBrowserSessionRes
 	return err
 }
 
-type DeleteBrowserSession503JSONResponse ErrorEnvelope
+type DeleteBrowserSession503JSONResponse P2StandardErrorEnvelopeV1
 
 func (response DeleteBrowserSession503JSONResponse) VisitDeleteBrowserSessionResponse(w http.ResponseWriter) error {
 
@@ -44982,6 +46562,7 @@ func (response DeleteBrowserSession503JSONResponse) VisitDeleteBrowserSessionRes
 
 type CreateUvOptionsRequestObject struct {
 	Params CreateUvOptionsParams
+	Body   *CreateUvOptionsJSONRequestBody
 }
 
 type CreateUvOptionsResponseObject interface {
@@ -45016,7 +46597,7 @@ func (response CreateUvOptions200JSONResponse) VisitCreateUvOptionsResponse(w ht
 	return err
 }
 
-type CreateUvOptions400JSONResponse ErrorEnvelope
+type CreateUvOptions400JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreateUvOptions400JSONResponse) VisitCreateUvOptionsResponse(w http.ResponseWriter) error {
 
@@ -45030,7 +46611,7 @@ func (response CreateUvOptions400JSONResponse) VisitCreateUvOptionsResponse(w ht
 	return err
 }
 
-type CreateUvOptions401JSONResponse ErrorEnvelope
+type CreateUvOptions401JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreateUvOptions401JSONResponse) VisitCreateUvOptionsResponse(w http.ResponseWriter) error {
 
@@ -45044,7 +46625,7 @@ func (response CreateUvOptions401JSONResponse) VisitCreateUvOptionsResponse(w ht
 	return err
 }
 
-type CreateUvOptions403JSONResponse ErrorEnvelope
+type CreateUvOptions403JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreateUvOptions403JSONResponse) VisitCreateUvOptionsResponse(w http.ResponseWriter) error {
 
@@ -45058,7 +46639,7 @@ func (response CreateUvOptions403JSONResponse) VisitCreateUvOptionsResponse(w ht
 	return err
 }
 
-type CreateUvOptions404JSONResponse ErrorEnvelope
+type CreateUvOptions404JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreateUvOptions404JSONResponse) VisitCreateUvOptionsResponse(w http.ResponseWriter) error {
 
@@ -45072,21 +46653,31 @@ func (response CreateUvOptions404JSONResponse) VisitCreateUvOptionsResponse(w ht
 	return err
 }
 
-type CreateUvOptions409JSONResponse ErrorEnvelope
+type CreateUvOptions409ResponseHeaders struct {
+	RetryAfter *string
+}
+
+type CreateUvOptions409JSONResponse struct {
+	Body    P2StandardErrorEnvelopeV1
+	Headers CreateUvOptions409ResponseHeaders
+}
 
 func (response CreateUvOptions409JSONResponse) VisitCreateUvOptionsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
 		return err
 	}
 	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
 	w.WriteHeader(409)
 	_, err := buf.WriteTo(w)
 	return err
 }
 
-type CreateUvOptions412JSONResponse ErrorEnvelope
+type CreateUvOptions412JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreateUvOptions412JSONResponse) VisitCreateUvOptionsResponse(w http.ResponseWriter) error {
 
@@ -45100,7 +46691,7 @@ func (response CreateUvOptions412JSONResponse) VisitCreateUvOptionsResponse(w ht
 	return err
 }
 
-type CreateUvOptions413JSONResponse ErrorEnvelope
+type CreateUvOptions413JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreateUvOptions413JSONResponse) VisitCreateUvOptionsResponse(w http.ResponseWriter) error {
 
@@ -45114,7 +46705,7 @@ func (response CreateUvOptions413JSONResponse) VisitCreateUvOptionsResponse(w ht
 	return err
 }
 
-type CreateUvOptions415JSONResponse ErrorEnvelope
+type CreateUvOptions415JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreateUvOptions415JSONResponse) VisitCreateUvOptionsResponse(w http.ResponseWriter) error {
 
@@ -45128,7 +46719,7 @@ func (response CreateUvOptions415JSONResponse) VisitCreateUvOptionsResponse(w ht
 	return err
 }
 
-type CreateUvOptions422JSONResponse ErrorEnvelope
+type CreateUvOptions422JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreateUvOptions422JSONResponse) VisitCreateUvOptionsResponse(w http.ResponseWriter) error {
 
@@ -45142,7 +46733,7 @@ func (response CreateUvOptions422JSONResponse) VisitCreateUvOptionsResponse(w ht
 	return err
 }
 
-type CreateUvOptions429JSONResponse ErrorEnvelope
+type CreateUvOptions429JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreateUvOptions429JSONResponse) VisitCreateUvOptionsResponse(w http.ResponseWriter) error {
 
@@ -45156,7 +46747,7 @@ func (response CreateUvOptions429JSONResponse) VisitCreateUvOptionsResponse(w ht
 	return err
 }
 
-type CreateUvOptions431JSONResponse ErrorEnvelope
+type CreateUvOptions431JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreateUvOptions431JSONResponse) VisitCreateUvOptionsResponse(w http.ResponseWriter) error {
 
@@ -45170,7 +46761,7 @@ func (response CreateUvOptions431JSONResponse) VisitCreateUvOptionsResponse(w ht
 	return err
 }
 
-type CreateUvOptions500JSONResponse ErrorEnvelope
+type CreateUvOptions500JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreateUvOptions500JSONResponse) VisitCreateUvOptionsResponse(w http.ResponseWriter) error {
 
@@ -45184,7 +46775,7 @@ func (response CreateUvOptions500JSONResponse) VisitCreateUvOptionsResponse(w ht
 	return err
 }
 
-type CreateUvOptions503JSONResponse ErrorEnvelope
+type CreateUvOptions503JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreateUvOptions503JSONResponse) VisitCreateUvOptionsResponse(w http.ResponseWriter) error {
 
@@ -45209,6 +46800,7 @@ type VerifyUvResponseObject interface {
 
 type VerifyUv200ResponseHeaders struct {
 	CacheControl *string
+	SetCookie    *string
 	XRequestID   *string
 }
 
@@ -45227,6 +46819,9 @@ func (response VerifyUv200JSONResponse) VisitVerifyUvResponse(w http.ResponseWri
 	if response.Headers.CacheControl != nil {
 		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
 	}
+	if response.Headers.SetCookie != nil {
+		w.Header().Set("Set-Cookie", fmt.Sprint(*response.Headers.SetCookie))
+	}
 	if response.Headers.XRequestID != nil {
 		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
 	}
@@ -45235,7 +46830,7 @@ func (response VerifyUv200JSONResponse) VisitVerifyUvResponse(w http.ResponseWri
 	return err
 }
 
-type VerifyUv400JSONResponse ErrorEnvelope
+type VerifyUv400JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyUv400JSONResponse) VisitVerifyUvResponse(w http.ResponseWriter) error {
 
@@ -45249,7 +46844,7 @@ func (response VerifyUv400JSONResponse) VisitVerifyUvResponse(w http.ResponseWri
 	return err
 }
 
-type VerifyUv401JSONResponse ErrorEnvelope
+type VerifyUv401JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyUv401JSONResponse) VisitVerifyUvResponse(w http.ResponseWriter) error {
 
@@ -45263,7 +46858,7 @@ func (response VerifyUv401JSONResponse) VisitVerifyUvResponse(w http.ResponseWri
 	return err
 }
 
-type VerifyUv403JSONResponse ErrorEnvelope
+type VerifyUv403JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyUv403JSONResponse) VisitVerifyUvResponse(w http.ResponseWriter) error {
 
@@ -45277,7 +46872,7 @@ func (response VerifyUv403JSONResponse) VisitVerifyUvResponse(w http.ResponseWri
 	return err
 }
 
-type VerifyUv404JSONResponse ErrorEnvelope
+type VerifyUv404JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyUv404JSONResponse) VisitVerifyUvResponse(w http.ResponseWriter) error {
 
@@ -45291,21 +46886,31 @@ func (response VerifyUv404JSONResponse) VisitVerifyUvResponse(w http.ResponseWri
 	return err
 }
 
-type VerifyUv409JSONResponse ErrorEnvelope
+type VerifyUv409ResponseHeaders struct {
+	RetryAfter *string
+}
+
+type VerifyUv409JSONResponse struct {
+	Body    P2SecretConflictErrorEnvelopeV1
+	Headers VerifyUv409ResponseHeaders
+}
 
 func (response VerifyUv409JSONResponse) VisitVerifyUvResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
 		return err
 	}
 	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
 	w.WriteHeader(409)
 	_, err := buf.WriteTo(w)
 	return err
 }
 
-type VerifyUv412JSONResponse ErrorEnvelope
+type VerifyUv412JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyUv412JSONResponse) VisitVerifyUvResponse(w http.ResponseWriter) error {
 
@@ -45319,7 +46924,7 @@ func (response VerifyUv412JSONResponse) VisitVerifyUvResponse(w http.ResponseWri
 	return err
 }
 
-type VerifyUv413JSONResponse ErrorEnvelope
+type VerifyUv413JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyUv413JSONResponse) VisitVerifyUvResponse(w http.ResponseWriter) error {
 
@@ -45333,7 +46938,7 @@ func (response VerifyUv413JSONResponse) VisitVerifyUvResponse(w http.ResponseWri
 	return err
 }
 
-type VerifyUv415JSONResponse ErrorEnvelope
+type VerifyUv415JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyUv415JSONResponse) VisitVerifyUvResponse(w http.ResponseWriter) error {
 
@@ -45347,7 +46952,7 @@ func (response VerifyUv415JSONResponse) VisitVerifyUvResponse(w http.ResponseWri
 	return err
 }
 
-type VerifyUv422JSONResponse ErrorEnvelope
+type VerifyUv422JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyUv422JSONResponse) VisitVerifyUvResponse(w http.ResponseWriter) error {
 
@@ -45361,7 +46966,7 @@ func (response VerifyUv422JSONResponse) VisitVerifyUvResponse(w http.ResponseWri
 	return err
 }
 
-type VerifyUv429JSONResponse ErrorEnvelope
+type VerifyUv429JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyUv429JSONResponse) VisitVerifyUvResponse(w http.ResponseWriter) error {
 
@@ -45375,7 +46980,7 @@ func (response VerifyUv429JSONResponse) VisitVerifyUvResponse(w http.ResponseWri
 	return err
 }
 
-type VerifyUv431JSONResponse ErrorEnvelope
+type VerifyUv431JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyUv431JSONResponse) VisitVerifyUvResponse(w http.ResponseWriter) error {
 
@@ -45389,7 +46994,7 @@ func (response VerifyUv431JSONResponse) VisitVerifyUvResponse(w http.ResponseWri
 	return err
 }
 
-type VerifyUv500JSONResponse ErrorEnvelope
+type VerifyUv500JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyUv500JSONResponse) VisitVerifyUvResponse(w http.ResponseWriter) error {
 
@@ -45403,7 +47008,7 @@ func (response VerifyUv500JSONResponse) VisitVerifyUvResponse(w http.ResponseWri
 	return err
 }
 
-type VerifyUv503JSONResponse ErrorEnvelope
+type VerifyUv503JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyUv503JSONResponse) VisitVerifyUvResponse(w http.ResponseWriter) error {
 
@@ -45453,7 +47058,7 @@ func (response GetBootstrapCeremony200JSONResponse) VisitGetBootstrapCeremonyRes
 	return err
 }
 
-type GetBootstrapCeremony400JSONResponse ErrorEnvelope
+type GetBootstrapCeremony400JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapCeremony400JSONResponse) VisitGetBootstrapCeremonyResponse(w http.ResponseWriter) error {
 
@@ -45467,7 +47072,7 @@ func (response GetBootstrapCeremony400JSONResponse) VisitGetBootstrapCeremonyRes
 	return err
 }
 
-type GetBootstrapCeremony401JSONResponse ErrorEnvelope
+type GetBootstrapCeremony401JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapCeremony401JSONResponse) VisitGetBootstrapCeremonyResponse(w http.ResponseWriter) error {
 
@@ -45481,7 +47086,7 @@ func (response GetBootstrapCeremony401JSONResponse) VisitGetBootstrapCeremonyRes
 	return err
 }
 
-type GetBootstrapCeremony403JSONResponse ErrorEnvelope
+type GetBootstrapCeremony403JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapCeremony403JSONResponse) VisitGetBootstrapCeremonyResponse(w http.ResponseWriter) error {
 
@@ -45495,7 +47100,7 @@ func (response GetBootstrapCeremony403JSONResponse) VisitGetBootstrapCeremonyRes
 	return err
 }
 
-type GetBootstrapCeremony404JSONResponse ErrorEnvelope
+type GetBootstrapCeremony404JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapCeremony404JSONResponse) VisitGetBootstrapCeremonyResponse(w http.ResponseWriter) error {
 
@@ -45509,7 +47114,7 @@ func (response GetBootstrapCeremony404JSONResponse) VisitGetBootstrapCeremonyRes
 	return err
 }
 
-type GetBootstrapCeremony409JSONResponse ErrorEnvelope
+type GetBootstrapCeremony409JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapCeremony409JSONResponse) VisitGetBootstrapCeremonyResponse(w http.ResponseWriter) error {
 
@@ -45523,7 +47128,7 @@ func (response GetBootstrapCeremony409JSONResponse) VisitGetBootstrapCeremonyRes
 	return err
 }
 
-type GetBootstrapCeremony412JSONResponse ErrorEnvelope
+type GetBootstrapCeremony412JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapCeremony412JSONResponse) VisitGetBootstrapCeremonyResponse(w http.ResponseWriter) error {
 
@@ -45537,7 +47142,7 @@ func (response GetBootstrapCeremony412JSONResponse) VisitGetBootstrapCeremonyRes
 	return err
 }
 
-type GetBootstrapCeremony413JSONResponse ErrorEnvelope
+type GetBootstrapCeremony413JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapCeremony413JSONResponse) VisitGetBootstrapCeremonyResponse(w http.ResponseWriter) error {
 
@@ -45551,7 +47156,7 @@ func (response GetBootstrapCeremony413JSONResponse) VisitGetBootstrapCeremonyRes
 	return err
 }
 
-type GetBootstrapCeremony415JSONResponse ErrorEnvelope
+type GetBootstrapCeremony415JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapCeremony415JSONResponse) VisitGetBootstrapCeremonyResponse(w http.ResponseWriter) error {
 
@@ -45565,7 +47170,7 @@ func (response GetBootstrapCeremony415JSONResponse) VisitGetBootstrapCeremonyRes
 	return err
 }
 
-type GetBootstrapCeremony422JSONResponse ErrorEnvelope
+type GetBootstrapCeremony422JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapCeremony422JSONResponse) VisitGetBootstrapCeremonyResponse(w http.ResponseWriter) error {
 
@@ -45579,7 +47184,7 @@ func (response GetBootstrapCeremony422JSONResponse) VisitGetBootstrapCeremonyRes
 	return err
 }
 
-type GetBootstrapCeremony429JSONResponse ErrorEnvelope
+type GetBootstrapCeremony429JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapCeremony429JSONResponse) VisitGetBootstrapCeremonyResponse(w http.ResponseWriter) error {
 
@@ -45593,7 +47198,7 @@ func (response GetBootstrapCeremony429JSONResponse) VisitGetBootstrapCeremonyRes
 	return err
 }
 
-type GetBootstrapCeremony431JSONResponse ErrorEnvelope
+type GetBootstrapCeremony431JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapCeremony431JSONResponse) VisitGetBootstrapCeremonyResponse(w http.ResponseWriter) error {
 
@@ -45607,7 +47212,7 @@ func (response GetBootstrapCeremony431JSONResponse) VisitGetBootstrapCeremonyRes
 	return err
 }
 
-type GetBootstrapCeremony500JSONResponse ErrorEnvelope
+type GetBootstrapCeremony500JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapCeremony500JSONResponse) VisitGetBootstrapCeremonyResponse(w http.ResponseWriter) error {
 
@@ -45621,7 +47226,7 @@ func (response GetBootstrapCeremony500JSONResponse) VisitGetBootstrapCeremonyRes
 	return err
 }
 
-type GetBootstrapCeremony503JSONResponse ErrorEnvelope
+type GetBootstrapCeremony503JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapCeremony503JSONResponse) VisitGetBootstrapCeremonyResponse(w http.ResponseWriter) error {
 
@@ -45672,7 +47277,7 @@ func (response CreateBootstrapOptions200JSONResponse) VisitCreateBootstrapOption
 	return err
 }
 
-type CreateBootstrapOptions400JSONResponse ErrorEnvelope
+type CreateBootstrapOptions400JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreateBootstrapOptions400JSONResponse) VisitCreateBootstrapOptionsResponse(w http.ResponseWriter) error {
 
@@ -45686,7 +47291,7 @@ func (response CreateBootstrapOptions400JSONResponse) VisitCreateBootstrapOption
 	return err
 }
 
-type CreateBootstrapOptions401JSONResponse ErrorEnvelope
+type CreateBootstrapOptions401JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreateBootstrapOptions401JSONResponse) VisitCreateBootstrapOptionsResponse(w http.ResponseWriter) error {
 
@@ -45700,7 +47305,7 @@ func (response CreateBootstrapOptions401JSONResponse) VisitCreateBootstrapOption
 	return err
 }
 
-type CreateBootstrapOptions403JSONResponse ErrorEnvelope
+type CreateBootstrapOptions403JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreateBootstrapOptions403JSONResponse) VisitCreateBootstrapOptionsResponse(w http.ResponseWriter) error {
 
@@ -45714,7 +47319,7 @@ func (response CreateBootstrapOptions403JSONResponse) VisitCreateBootstrapOption
 	return err
 }
 
-type CreateBootstrapOptions404JSONResponse ErrorEnvelope
+type CreateBootstrapOptions404JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreateBootstrapOptions404JSONResponse) VisitCreateBootstrapOptionsResponse(w http.ResponseWriter) error {
 
@@ -45728,21 +47333,31 @@ func (response CreateBootstrapOptions404JSONResponse) VisitCreateBootstrapOption
 	return err
 }
 
-type CreateBootstrapOptions409JSONResponse ErrorEnvelope
+type CreateBootstrapOptions409ResponseHeaders struct {
+	RetryAfter *string
+}
+
+type CreateBootstrapOptions409JSONResponse struct {
+	Body    P2StandardErrorEnvelopeV1
+	Headers CreateBootstrapOptions409ResponseHeaders
+}
 
 func (response CreateBootstrapOptions409JSONResponse) VisitCreateBootstrapOptionsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
 		return err
 	}
 	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
 	w.WriteHeader(409)
 	_, err := buf.WriteTo(w)
 	return err
 }
 
-type CreateBootstrapOptions412JSONResponse ErrorEnvelope
+type CreateBootstrapOptions412JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreateBootstrapOptions412JSONResponse) VisitCreateBootstrapOptionsResponse(w http.ResponseWriter) error {
 
@@ -45756,7 +47371,7 @@ func (response CreateBootstrapOptions412JSONResponse) VisitCreateBootstrapOption
 	return err
 }
 
-type CreateBootstrapOptions413JSONResponse ErrorEnvelope
+type CreateBootstrapOptions413JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreateBootstrapOptions413JSONResponse) VisitCreateBootstrapOptionsResponse(w http.ResponseWriter) error {
 
@@ -45770,7 +47385,7 @@ func (response CreateBootstrapOptions413JSONResponse) VisitCreateBootstrapOption
 	return err
 }
 
-type CreateBootstrapOptions415JSONResponse ErrorEnvelope
+type CreateBootstrapOptions415JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreateBootstrapOptions415JSONResponse) VisitCreateBootstrapOptionsResponse(w http.ResponseWriter) error {
 
@@ -45784,7 +47399,7 @@ func (response CreateBootstrapOptions415JSONResponse) VisitCreateBootstrapOption
 	return err
 }
 
-type CreateBootstrapOptions422JSONResponse ErrorEnvelope
+type CreateBootstrapOptions422JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreateBootstrapOptions422JSONResponse) VisitCreateBootstrapOptionsResponse(w http.ResponseWriter) error {
 
@@ -45798,7 +47413,7 @@ func (response CreateBootstrapOptions422JSONResponse) VisitCreateBootstrapOption
 	return err
 }
 
-type CreateBootstrapOptions429JSONResponse ErrorEnvelope
+type CreateBootstrapOptions429JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreateBootstrapOptions429JSONResponse) VisitCreateBootstrapOptionsResponse(w http.ResponseWriter) error {
 
@@ -45812,7 +47427,7 @@ func (response CreateBootstrapOptions429JSONResponse) VisitCreateBootstrapOption
 	return err
 }
 
-type CreateBootstrapOptions431JSONResponse ErrorEnvelope
+type CreateBootstrapOptions431JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreateBootstrapOptions431JSONResponse) VisitCreateBootstrapOptionsResponse(w http.ResponseWriter) error {
 
@@ -45826,7 +47441,7 @@ func (response CreateBootstrapOptions431JSONResponse) VisitCreateBootstrapOption
 	return err
 }
 
-type CreateBootstrapOptions500JSONResponse ErrorEnvelope
+type CreateBootstrapOptions500JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreateBootstrapOptions500JSONResponse) VisitCreateBootstrapOptionsResponse(w http.ResponseWriter) error {
 
@@ -45840,7 +47455,7 @@ func (response CreateBootstrapOptions500JSONResponse) VisitCreateBootstrapOption
 	return err
 }
 
-type CreateBootstrapOptions503JSONResponse ErrorEnvelope
+type CreateBootstrapOptions503JSONResponse P2StandardErrorEnvelopeV1
 
 func (response CreateBootstrapOptions503JSONResponse) VisitCreateBootstrapOptionsResponse(w http.ResponseWriter) error {
 
@@ -45889,7 +47504,7 @@ func (response GetBootstrapStatus200JSONResponse) VisitGetBootstrapStatusRespons
 	return err
 }
 
-type GetBootstrapStatus400JSONResponse ErrorEnvelope
+type GetBootstrapStatus400JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapStatus400JSONResponse) VisitGetBootstrapStatusResponse(w http.ResponseWriter) error {
 
@@ -45903,7 +47518,7 @@ func (response GetBootstrapStatus400JSONResponse) VisitGetBootstrapStatusRespons
 	return err
 }
 
-type GetBootstrapStatus401JSONResponse ErrorEnvelope
+type GetBootstrapStatus401JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapStatus401JSONResponse) VisitGetBootstrapStatusResponse(w http.ResponseWriter) error {
 
@@ -45917,7 +47532,7 @@ func (response GetBootstrapStatus401JSONResponse) VisitGetBootstrapStatusRespons
 	return err
 }
 
-type GetBootstrapStatus403JSONResponse ErrorEnvelope
+type GetBootstrapStatus403JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapStatus403JSONResponse) VisitGetBootstrapStatusResponse(w http.ResponseWriter) error {
 
@@ -45931,7 +47546,7 @@ func (response GetBootstrapStatus403JSONResponse) VisitGetBootstrapStatusRespons
 	return err
 }
 
-type GetBootstrapStatus404JSONResponse ErrorEnvelope
+type GetBootstrapStatus404JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapStatus404JSONResponse) VisitGetBootstrapStatusResponse(w http.ResponseWriter) error {
 
@@ -45945,7 +47560,7 @@ func (response GetBootstrapStatus404JSONResponse) VisitGetBootstrapStatusRespons
 	return err
 }
 
-type GetBootstrapStatus409JSONResponse ErrorEnvelope
+type GetBootstrapStatus409JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapStatus409JSONResponse) VisitGetBootstrapStatusResponse(w http.ResponseWriter) error {
 
@@ -45959,7 +47574,7 @@ func (response GetBootstrapStatus409JSONResponse) VisitGetBootstrapStatusRespons
 	return err
 }
 
-type GetBootstrapStatus412JSONResponse ErrorEnvelope
+type GetBootstrapStatus412JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapStatus412JSONResponse) VisitGetBootstrapStatusResponse(w http.ResponseWriter) error {
 
@@ -45973,7 +47588,7 @@ func (response GetBootstrapStatus412JSONResponse) VisitGetBootstrapStatusRespons
 	return err
 }
 
-type GetBootstrapStatus413JSONResponse ErrorEnvelope
+type GetBootstrapStatus413JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapStatus413JSONResponse) VisitGetBootstrapStatusResponse(w http.ResponseWriter) error {
 
@@ -45987,7 +47602,7 @@ func (response GetBootstrapStatus413JSONResponse) VisitGetBootstrapStatusRespons
 	return err
 }
 
-type GetBootstrapStatus415JSONResponse ErrorEnvelope
+type GetBootstrapStatus415JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapStatus415JSONResponse) VisitGetBootstrapStatusResponse(w http.ResponseWriter) error {
 
@@ -46001,7 +47616,7 @@ func (response GetBootstrapStatus415JSONResponse) VisitGetBootstrapStatusRespons
 	return err
 }
 
-type GetBootstrapStatus422JSONResponse ErrorEnvelope
+type GetBootstrapStatus422JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapStatus422JSONResponse) VisitGetBootstrapStatusResponse(w http.ResponseWriter) error {
 
@@ -46015,7 +47630,7 @@ func (response GetBootstrapStatus422JSONResponse) VisitGetBootstrapStatusRespons
 	return err
 }
 
-type GetBootstrapStatus429JSONResponse ErrorEnvelope
+type GetBootstrapStatus429JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapStatus429JSONResponse) VisitGetBootstrapStatusResponse(w http.ResponseWriter) error {
 
@@ -46029,7 +47644,7 @@ func (response GetBootstrapStatus429JSONResponse) VisitGetBootstrapStatusRespons
 	return err
 }
 
-type GetBootstrapStatus431JSONResponse ErrorEnvelope
+type GetBootstrapStatus431JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapStatus431JSONResponse) VisitGetBootstrapStatusResponse(w http.ResponseWriter) error {
 
@@ -46043,7 +47658,7 @@ func (response GetBootstrapStatus431JSONResponse) VisitGetBootstrapStatusRespons
 	return err
 }
 
-type GetBootstrapStatus500JSONResponse ErrorEnvelope
+type GetBootstrapStatus500JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapStatus500JSONResponse) VisitGetBootstrapStatusResponse(w http.ResponseWriter) error {
 
@@ -46057,7 +47672,7 @@ func (response GetBootstrapStatus500JSONResponse) VisitGetBootstrapStatusRespons
 	return err
 }
 
-type GetBootstrapStatus503JSONResponse ErrorEnvelope
+type GetBootstrapStatus503JSONResponse P2StandardErrorEnvelopeV1
 
 func (response GetBootstrapStatus503JSONResponse) VisitGetBootstrapStatusResponse(w http.ResponseWriter) error {
 
@@ -46082,6 +47697,7 @@ type VerifyBootstrapResponseObject interface {
 
 type VerifyBootstrap200ResponseHeaders struct {
 	CacheControl *string
+	SetCookie    *string
 	XRequestID   *string
 }
 
@@ -46100,6 +47716,9 @@ func (response VerifyBootstrap200JSONResponse) VisitVerifyBootstrapResponse(w ht
 	if response.Headers.CacheControl != nil {
 		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
 	}
+	if response.Headers.SetCookie != nil {
+		w.Header().Set("Set-Cookie", fmt.Sprint(*response.Headers.SetCookie))
+	}
 	if response.Headers.XRequestID != nil {
 		w.Header().Set("X-Request-ID", fmt.Sprint(*response.Headers.XRequestID))
 	}
@@ -46108,7 +47727,7 @@ func (response VerifyBootstrap200JSONResponse) VisitVerifyBootstrapResponse(w ht
 	return err
 }
 
-type VerifyBootstrap400JSONResponse ErrorEnvelope
+type VerifyBootstrap400JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyBootstrap400JSONResponse) VisitVerifyBootstrapResponse(w http.ResponseWriter) error {
 
@@ -46122,7 +47741,7 @@ func (response VerifyBootstrap400JSONResponse) VisitVerifyBootstrapResponse(w ht
 	return err
 }
 
-type VerifyBootstrap401JSONResponse ErrorEnvelope
+type VerifyBootstrap401JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyBootstrap401JSONResponse) VisitVerifyBootstrapResponse(w http.ResponseWriter) error {
 
@@ -46136,7 +47755,7 @@ func (response VerifyBootstrap401JSONResponse) VisitVerifyBootstrapResponse(w ht
 	return err
 }
 
-type VerifyBootstrap403JSONResponse ErrorEnvelope
+type VerifyBootstrap403JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyBootstrap403JSONResponse) VisitVerifyBootstrapResponse(w http.ResponseWriter) error {
 
@@ -46150,7 +47769,7 @@ func (response VerifyBootstrap403JSONResponse) VisitVerifyBootstrapResponse(w ht
 	return err
 }
 
-type VerifyBootstrap404JSONResponse ErrorEnvelope
+type VerifyBootstrap404JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyBootstrap404JSONResponse) VisitVerifyBootstrapResponse(w http.ResponseWriter) error {
 
@@ -46164,21 +47783,31 @@ func (response VerifyBootstrap404JSONResponse) VisitVerifyBootstrapResponse(w ht
 	return err
 }
 
-type VerifyBootstrap409JSONResponse ErrorEnvelope
+type VerifyBootstrap409ResponseHeaders struct {
+	RetryAfter *string
+}
+
+type VerifyBootstrap409JSONResponse struct {
+	Body    P2SecretConflictErrorEnvelopeV1
+	Headers VerifyBootstrap409ResponseHeaders
+}
 
 func (response VerifyBootstrap409JSONResponse) VisitVerifyBootstrapResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
 		return err
 	}
 	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
 	w.WriteHeader(409)
 	_, err := buf.WriteTo(w)
 	return err
 }
 
-type VerifyBootstrap412JSONResponse ErrorEnvelope
+type VerifyBootstrap412JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyBootstrap412JSONResponse) VisitVerifyBootstrapResponse(w http.ResponseWriter) error {
 
@@ -46192,7 +47821,7 @@ func (response VerifyBootstrap412JSONResponse) VisitVerifyBootstrapResponse(w ht
 	return err
 }
 
-type VerifyBootstrap413JSONResponse ErrorEnvelope
+type VerifyBootstrap413JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyBootstrap413JSONResponse) VisitVerifyBootstrapResponse(w http.ResponseWriter) error {
 
@@ -46206,7 +47835,7 @@ func (response VerifyBootstrap413JSONResponse) VisitVerifyBootstrapResponse(w ht
 	return err
 }
 
-type VerifyBootstrap415JSONResponse ErrorEnvelope
+type VerifyBootstrap415JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyBootstrap415JSONResponse) VisitVerifyBootstrapResponse(w http.ResponseWriter) error {
 
@@ -46220,7 +47849,7 @@ func (response VerifyBootstrap415JSONResponse) VisitVerifyBootstrapResponse(w ht
 	return err
 }
 
-type VerifyBootstrap422JSONResponse ErrorEnvelope
+type VerifyBootstrap422JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyBootstrap422JSONResponse) VisitVerifyBootstrapResponse(w http.ResponseWriter) error {
 
@@ -46234,7 +47863,7 @@ func (response VerifyBootstrap422JSONResponse) VisitVerifyBootstrapResponse(w ht
 	return err
 }
 
-type VerifyBootstrap429JSONResponse ErrorEnvelope
+type VerifyBootstrap429JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyBootstrap429JSONResponse) VisitVerifyBootstrapResponse(w http.ResponseWriter) error {
 
@@ -46248,7 +47877,7 @@ func (response VerifyBootstrap429JSONResponse) VisitVerifyBootstrapResponse(w ht
 	return err
 }
 
-type VerifyBootstrap431JSONResponse ErrorEnvelope
+type VerifyBootstrap431JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyBootstrap431JSONResponse) VisitVerifyBootstrapResponse(w http.ResponseWriter) error {
 
@@ -46262,7 +47891,7 @@ func (response VerifyBootstrap431JSONResponse) VisitVerifyBootstrapResponse(w ht
 	return err
 }
 
-type VerifyBootstrap500JSONResponse ErrorEnvelope
+type VerifyBootstrap500JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyBootstrap500JSONResponse) VisitVerifyBootstrapResponse(w http.ResponseWriter) error {
 
@@ -46276,7 +47905,7 @@ func (response VerifyBootstrap500JSONResponse) VisitVerifyBootstrapResponse(w ht
 	return err
 }
 
-type VerifyBootstrap503JSONResponse ErrorEnvelope
+type VerifyBootstrap503JSONResponse P2StandardErrorEnvelopeV1
 
 func (response VerifyBootstrap503JSONResponse) VisitVerifyBootstrapResponse(w http.ResponseWriter) error {
 
@@ -56259,6 +57888,13 @@ func (sh *strictHandler) Logout(w http.ResponseWriter, r *http.Request, params L
 
 	request.Params = params
 
+	var body LogoutJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.Logout(ctx, request.(LogoutRequestObject))
 	}
@@ -56309,6 +57945,13 @@ func (sh *strictHandler) CreatePasskeyAuthenticationOptions(w http.ResponseWrite
 
 	request.Params = params
 
+	var body CreatePasskeyAuthenticationOptionsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.CreatePasskeyAuthenticationOptions(ctx, request.(CreatePasskeyAuthenticationOptionsRequestObject))
 	}
@@ -56334,6 +57977,13 @@ func (sh *strictHandler) CreatePasskeyRegistrationOptions(w http.ResponseWriter,
 	var request CreatePasskeyRegistrationOptionsRequestObject
 
 	request.Params = params
+
+	var body CreatePasskeyRegistrationOptionsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.CreatePasskeyRegistrationOptions(ctx, request.(CreatePasskeyRegistrationOptionsRequestObject))
@@ -56428,6 +58078,13 @@ func (sh *strictHandler) DeletePasskey(w http.ResponseWriter, r *http.Request, p
 	request.PasskeyId = passkeyId
 	request.Params = params
 
+	var body DeletePasskeyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.DeletePasskey(ctx, request.(DeletePasskeyRequestObject))
 	}
@@ -56453,6 +58110,13 @@ func (sh *strictHandler) RotateRecoveryCodes(w http.ResponseWriter, r *http.Requ
 	var request RotateRecoveryCodesRequestObject
 
 	request.Params = params
+
+	var body RotateRecoveryCodesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.RotateRecoveryCodes(ctx, request.(RotateRecoveryCodesRequestObject))
@@ -56538,6 +58202,13 @@ func (sh *strictHandler) DeleteBrowserSession(w http.ResponseWriter, r *http.Req
 	request.SessionId = sessionId
 	request.Params = params
 
+	var body DeleteBrowserSessionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.DeleteBrowserSession(ctx, request.(DeleteBrowserSessionRequestObject))
 	}
@@ -56563,6 +58234,13 @@ func (sh *strictHandler) CreateUvOptions(w http.ResponseWriter, r *http.Request,
 	var request CreateUvOptionsRequestObject
 
 	request.Params = params
+
+	var body CreateUvOptionsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.CreateUvOptions(ctx, request.(CreateUvOptionsRequestObject))
@@ -58029,412 +59707,448 @@ func (sh *strictHandler) ListWorkspaces(w http.ResponseWriter, r *http.Request, 
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

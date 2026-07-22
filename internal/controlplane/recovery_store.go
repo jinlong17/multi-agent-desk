@@ -11,7 +11,11 @@ import (
 )
 
 func (s *Store) RecoveryCandidates(ctx context.Context) ([]RecoveryCandidate, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT rc.id,rc.salt,rc.code_hash,rc.status FROM recovery_codes rc JOIN recovery_batches rb ON rb.id=rc.batch_id WHERE rb.status IN ('active','exhausted') ORDER BY rc.ordinal`)
+	return recoveryCandidates(ctx, s.db)
+}
+
+func recoveryCandidates(ctx context.Context, queryer rowsQueryer) ([]RecoveryCandidate, error) {
+	rows, err := queryer.QueryContext(ctx, `SELECT rc.id,rc.salt,rc.code_hash,rc.status FROM recovery_codes rc JOIN recovery_batches rb ON rb.id=rc.batch_id WHERE rb.status IN ('active','exhausted') ORDER BY rc.ordinal`)
 	if err != nil {
 		return nil, fmt.Errorf("read recovery candidates: %w", err)
 	}
@@ -28,26 +32,31 @@ func (s *Store) RecoveryCandidates(ctx context.Context) ([]RecoveryCandidate, er
 }
 
 func (s *Store) ConsumeRecoveryCode(ctx context.Context, codeID string, session BrowserSessionCreate, now time.Time) (BrowserSession, error) {
+	if err := validateRecoveryConsume(codeID, session, now); err != nil {
+		return BrowserSession{}, err
+	}
+	return withImmediateConn(ctx, s.db, "recovery consume", func(conn *sql.Conn) (BrowserSession, error) {
+		return consumeRecoveryCodeTx(ctx, conn, codeID, session, now)
+	})
+}
+
+func validateRecoveryConsume(codeID string, session BrowserSessionCreate, now time.Time) error {
 	if _, err := transport.ParseUUIDv7(codeID); err != nil {
-		return BrowserSession{}, ErrRecoveryInvalidOrRateLimited
+		return ErrRecoveryInvalidOrRateLimited
 	}
 	if err := validateBrowserSessionCreate(session, now); err != nil || session.AuthenticationMethod != "recovery" {
-		return BrowserSession{}, fmt.Errorf("recovery session is invalid")
+		return fmt.Errorf("recovery session is invalid")
 	}
-	conn, err := s.db.Conn(ctx)
-	if err != nil {
+	return nil
+}
+
+func consumeRecoveryCodeTx(ctx context.Context, conn *sql.Conn, codeID string, session BrowserSessionCreate, now time.Time) (BrowserSession, error) {
+	if conn == nil {
+		return BrowserSession{}, fmt.Errorf("recovery transaction is required")
+	}
+	if err := validateRecoveryConsume(codeID, session, now); err != nil {
 		return BrowserSession{}, err
 	}
-	defer conn.Close()
-	if _, err := conn.ExecContext(ctx, "BEGIN IMMEDIATE"); err != nil {
-		return BrowserSession{}, err
-	}
-	committed := false
-	defer func() {
-		if !committed {
-			_, _ = conn.ExecContext(context.Background(), "ROLLBACK")
-		}
-	}()
 	var userID, batchID, status string
 	if err := conn.QueryRowContext(ctx, "SELECT user_id,batch_id,status FROM recovery_codes WHERE id=?", codeID).Scan(&userID, &batchID, &status); err != nil || status != "active" || userID != session.UserID {
 		return BrowserSession{}, ErrRecoveryConsumed
@@ -74,49 +83,42 @@ func (s *Store) ConsumeRecoveryCode(ctx context.Context, codeID string, session 
 	if err := insertAuthAudit(ctx, conn, "recovery", "recovery.verify", "allowed", "recovery_consumed", codeID, userID, now); err != nil {
 		return BrowserSession{}, err
 	}
-	if _, err := conn.ExecContext(ctx, "COMMIT"); err != nil {
-		return BrowserSession{}, err
-	}
-	committed = true
 	digest := sha256.Sum256(session.RawToken)
 	return browserSessionByToken(ctx, conn, digest[:], now)
 }
 
 type RecoveryRotationInput struct {
-	UserID      string
-	ScopeDigest [sha256.Size]byte
-	BatchID     string
-	Codes       []RecoveryCodeHash
-	At          time.Time
+	UserID  string
+	BatchID string
+	Codes   []RecoveryCodeHash
+	At      time.Time
 }
 
 func (s *Store) RotateRecoveryCodes(ctx context.Context, input RecoveryRotationInput) error {
+	if err := validateRecoveryRotation(input); err != nil {
+		return err
+	}
+	_, err := withImmediateConn(ctx, s.db, "recovery rotation", func(conn *sql.Conn) (struct{}, error) {
+		return struct{}{}, rotateRecoveryCodesTx(ctx, conn, input)
+	})
+	return err
+}
+
+func validateRecoveryRotation(input RecoveryRotationInput) error {
 	if _, err := transport.ParseUUIDv7(input.UserID); err != nil {
 		return fmt.Errorf("recovery rotation user is invalid")
 	}
 	if _, err := transport.ParseUUIDv7(input.BatchID); err != nil || len(input.Codes) != recoveryCodeCount || input.At.IsZero() {
 		return fmt.Errorf("recovery rotation is invalid")
 	}
-	conn, err := s.db.Conn(ctx)
-	if err != nil {
-		return err
+	return nil
+}
+
+func rotateRecoveryCodesTx(ctx context.Context, conn *sql.Conn, input RecoveryRotationInput) error {
+	if conn == nil {
+		return fmt.Errorf("recovery rotation transaction is required")
 	}
-	defer conn.Close()
-	if _, err := conn.ExecContext(ctx, "BEGIN IMMEDIATE"); err != nil {
-		return err
-	}
-	committed := false
-	defer func() {
-		if !committed {
-			_, _ = conn.ExecContext(context.Background(), "ROLLBACK")
-		}
-	}()
-	var marker int
-	err = conn.QueryRowContext(ctx, "SELECT 1 FROM one_time_operations WHERE scope_digest=?", input.ScopeDigest[:]).Scan(&marker)
-	if err == nil {
-		return ErrOneTimeResultUnavailable
-	}
-	if err != nil && err != sql.ErrNoRows {
+	if err := validateRecoveryRotation(input); err != nil {
 		return err
 	}
 	if _, err := conn.ExecContext(ctx, `UPDATE recovery_codes SET status='invalidated' WHERE user_id=? AND status='active'`, input.UserID); err != nil {
@@ -141,15 +143,8 @@ func (s *Store) RotateRecoveryCodes(ctx context.Context, input RecoveryRotationI
 			return err
 		}
 	}
-	if _, err := conn.ExecContext(ctx, `INSERT INTO one_time_operations(scope_digest,user_id,operation,created_at) VALUES(?,?,'recovery_rotate',?)`, input.ScopeDigest[:], input.UserID, formatServerTime(input.At)); err != nil {
-		return err
-	}
 	if err := insertAuthAudit(ctx, conn, "browser", "recovery.rotate", "allowed", "recovery_batch_replaced", input.BatchID, input.UserID, input.At); err != nil {
 		return err
 	}
-	if _, err := conn.ExecContext(ctx, "COMMIT"); err != nil {
-		return err
-	}
-	committed = true
 	return nil
 }

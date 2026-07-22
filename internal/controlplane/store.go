@@ -46,7 +46,7 @@ func (s *Store) RememberIdempotentResponse(ctx context.Context, scopeDigest, req
 		return IdempotencyResponse{}, false, fmt.Errorf("begin idempotency transaction: %w", err)
 	}
 	defer tx.Rollback()
-	if _, err := tx.ExecContext(ctx, "DELETE FROM idempotency_records WHERE scope_digest=? AND expires_at<=?", scopeDigest[:], now.UTC().Format(time.RFC3339Nano)); err != nil {
+	if _, err := tx.ExecContext(ctx, "DELETE FROM idempotency_records WHERE scope_digest=? AND expires_at<=?", scopeDigest[:], formatServerTime(now)); err != nil {
 		return IdempotencyResponse{}, false, fmt.Errorf("expire idempotency record: %w", err)
 	}
 	var storedRequest, body []byte
@@ -67,7 +67,7 @@ func (s *Store) RememberIdempotentResponse(ctx context.Context, scopeDigest, req
 	}
 	if _, err := tx.ExecContext(ctx, `INSERT INTO idempotency_records(scope_digest,request_digest,response_status,response_content_type,response_body,created_at,expires_at)
         VALUES(?,?,?,?,?,?,?)`, scopeDigest[:], requestDigest[:], response.Status, response.ContentType, response.Body,
-		now.UTC().Format(time.RFC3339Nano), now.Add(24*time.Hour).UTC().Format(time.RFC3339Nano)); err != nil {
+		formatServerTime(now), formatServerTime(now.Add(24*time.Hour))); err != nil {
 		return IdempotencyResponse{}, false, fmt.Errorf("store idempotency result: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
@@ -109,31 +109,41 @@ func OpenStore(ctx context.Context, options StoreOptions) (*Store, error) {
 			return nil, err
 		}
 	}
-	existed := true
-	if _, err := os.Lstat(options.Path); errors.Is(err, os.ErrNotExist) {
-		existed = false
+	// Always race through O_EXCL instead of first observing the path with
+	// Lstat. A concurrent creator necessarily exposes a short interval between
+	// creating the file and applying the protected platform ACL. Treating an
+	// Lstat hit as a fully initialized pre-existing file made that interval a
+	// one-shot permission failure on Windows. An O_EXCL loser waits for the
+	// creator's permission transition; a genuinely pre-existing unsafe file
+	// never becomes valid and therefore still fails closed at the bounded
+	// deadline.
+	file, err := os.OpenFile(options.Path, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0o600)
+	if errors.Is(err, os.ErrExist) {
+		if err := waitForPrivateFile(ctx, options.Path, options.BusyTimeout); err != nil {
+			return nil, err
+		}
 	} else if err != nil {
-		return nil, fmt.Errorf("inspect database: %w", err)
-	} else if err := verifyPrivateFile(options.Path); err != nil {
+		return nil, fmt.Errorf("create private database file: %w", err)
+	} else {
+		if err := file.Close(); err != nil {
+			return nil, fmt.Errorf("close private database file: %w", err)
+		}
+		if err := protectPrivateFile(options.Path); err != nil {
+			return nil, err
+		}
+	}
+	// Re-check the named objects immediately before SQLite opens them. On
+	// Windows this also rejects junctions and every other reparse-point class,
+	// not only the symlinks represented by os.FileMode.
+	if err := verifyPrivateDirectory(directory); err != nil {
 		return nil, err
 	}
-	if !existed {
-		file, err := os.OpenFile(options.Path, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0o600)
-		if errors.Is(err, os.ErrExist) {
-			existed = true
-			if err := waitForPrivateFile(ctx, options.Path, options.BusyTimeout); err != nil {
-				return nil, err
-			}
-		} else if err != nil {
-			return nil, fmt.Errorf("create private database file: %w", err)
-		} else {
-			if err := file.Close(); err != nil {
-				return nil, fmt.Errorf("close private database file: %w", err)
-			}
-			if err := protectPrivateFile(options.Path); err != nil {
-				return nil, err
-			}
-		}
+	if err := verifyPrivateFile(options.Path); err != nil {
+		return nil, err
+	}
+	preexistingSidecars, err := verifyPrivateDatabaseSidecars(options.Path)
+	if err != nil {
+		return nil, err
 	}
 	dsn := "file:" + options.Path + "?_pragma=busy_timeout(" + strconv.FormatInt(options.BusyTimeout.Milliseconds(), 10) + ")&_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)"
 	db, err := sql.Open("sqlite", dsn)
@@ -147,6 +157,15 @@ func OpenStore(ctx context.Context, options StoreOptions) (*Store, error) {
 	if err := db.PingContext(ctx); err != nil {
 		return cleanup(fmt.Errorf("open server database: %w", err))
 	}
+	if err := verifyPrivateDirectory(directory); err != nil {
+		return cleanup(err)
+	}
+	if err := verifyPrivateFile(options.Path); err != nil {
+		return cleanup(err)
+	}
+	if err := store.protectDatabaseFiles(preexistingSidecars); err != nil {
+		return cleanup(err)
+	}
 	if err := store.backupPriorSchema(ctx, filepath.Join(directory, "backups")); err != nil {
 		return cleanup(err)
 	}
@@ -156,7 +175,7 @@ func OpenStore(ctx context.Context, options StoreOptions) (*Store, error) {
 	if err := store.verifyPragmas(ctx, options.BusyTimeout); err != nil {
 		return cleanup(err)
 	}
-	if err := store.protectDatabaseFiles(); err != nil {
+	if err := store.protectDatabaseFiles(preexistingSidecars); err != nil {
 		return cleanup(err)
 	}
 	return store, nil
@@ -279,7 +298,7 @@ func (s *Store) migrate(ctx context.Context, now func() time.Time) error {
 			return fmt.Errorf("apply server migration %s: %w", migration.Name, err)
 		}
 		if _, err := conn.ExecContext(ctx, "INSERT INTO schema_migrations(version,name,checksum,applied_at) VALUES(?,?,?,?)",
-			migration.Version, migration.Name, hex.EncodeToString(migration.Checksum[:]), now().UTC().Format(time.RFC3339Nano)); err != nil {
+			migration.Version, migration.Name, hex.EncodeToString(migration.Checksum[:]), formatServerTime(now())); err != nil {
 			return fmt.Errorf("record server migration %s: %w", migration.Name, err)
 		}
 		if _, err := conn.ExecContext(ctx, fmt.Sprintf("PRAGMA user_version=%d", migration.Version)); err != nil {
@@ -295,7 +314,7 @@ func (s *Store) migrate(ctx context.Context, now func() time.Time) error {
 		if err != nil {
 			return fmt.Errorf("generate schema epoch: %w", err)
 		}
-		stamp := now().UTC().Format(time.RFC3339Nano)
+		stamp := formatServerTime(now())
 		if _, err := conn.ExecContext(ctx, "INSERT INTO server_metadata(singleton,schema_epoch,created_at,updated_at) VALUES(1,?,?,?)", epoch.String(), stamp, stamp); err != nil {
 			return fmt.Errorf("initialize server metadata: %w", err)
 		}
@@ -360,11 +379,28 @@ func (s *Store) Backup(ctx context.Context, directory string) (string, error) {
 	return path, nil
 }
 
-func (s *Store) protectDatabaseFiles() error {
+func verifyPrivateDatabaseSidecars(databasePath string) (map[string]bool, error) {
+	result := make(map[string]bool, 3)
+	for _, suffix := range []string{"-journal", "-shm", "-wal"} {
+		path := databasePath + suffix
+		if _, err := os.Lstat(path); errors.Is(err, os.ErrNotExist) {
+			continue
+		} else if err != nil {
+			return nil, fmt.Errorf("inspect database sidecar: %w", err)
+		}
+		if err := verifyPrivateFile(path); err != nil {
+			return nil, err
+		}
+		result[path] = true
+	}
+	return result, nil
+}
+
+func (s *Store) protectDatabaseFiles(preexistingSidecars map[string]bool) error {
 	if err := verifyPrivateDirectory(filepath.Dir(s.path)); err != nil {
 		return err
 	}
-	if err := protectPrivateFile(s.path); err != nil {
+	if err := verifyPrivateFile(s.path); err != nil {
 		return err
 	}
 	for _, suffix := range []string{"-journal", "-shm", "-wal"} {
@@ -374,7 +410,11 @@ func (s *Store) protectDatabaseFiles() error {
 		} else if err != nil {
 			return fmt.Errorf("inspect database sidecar: %w", err)
 		}
-		if err := protectPrivateFile(path); err != nil {
+		if preexistingSidecars[path] {
+			if err := verifyPrivateFile(path); err != nil {
+				return fmt.Errorf("verify database sidecar: %w", err)
+			}
+		} else if err := protectPrivateFile(path); err != nil {
 			return fmt.Errorf("protect database sidecar: %w", err)
 		}
 	}

@@ -3,9 +3,11 @@
 package storage
 
 import (
+	"context"
 	"errors"
 	"os"
 	"runtime"
+	"time"
 
 	"github.com/jinlong17/multi-agent-desk/internal/domain"
 )
@@ -13,7 +15,12 @@ import (
 func runtimeGOOS() string { return runtime.GOOS }
 
 func ensurePrivateBackupDirectory(path string) error {
-	if err := os.MkdirAll(path, 0o700); err != nil {
+	if _, err := os.Lstat(path); err == nil {
+		return verifyDevicePrivateDirectory(path)
+	} else if !os.IsNotExist(err) {
+		return domain.WrapError(domain.CodeConflict, "backup root could not be inspected", err)
+	}
+	if err := os.Mkdir(path, 0o700); err != nil {
 		return domain.WrapError(domain.CodeConflict, "backup root could not be created", err)
 	}
 	return protectDevicePrivateDirectory(path)
@@ -55,6 +62,16 @@ func verifyDevicePrivateFile(path string) error {
 		return domain.NewError(domain.CodePermissionDenied, "private file permissions are unsafe")
 	}
 	return nil
+}
+
+func prepareExistingDevicePrivateDirectory(_ context.Context, path string, _ time.Duration) error {
+	return verifyDevicePrivateDirectory(path)
+}
+
+func prepareExistingDevicePrivateFile(_ context.Context, path string, _ time.Duration) error {
+	// Pre-P2 Device databases may have been created with a process umask rather
+	// than the explicit 0600 contract. Restrict them before SQLite opens them.
+	return protectDevicePrivateFile(path)
 }
 
 func syncDirectory(path string) error {

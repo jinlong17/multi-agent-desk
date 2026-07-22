@@ -98,9 +98,11 @@ type BrowserSessionCreate struct {
 	UserID                  string
 	RawToken                []byte
 	RawCSRF                 []byte
+	CSRFGeneration          int64
 	AuthenticationMethod    string
 	AuthenticationPasskeyID string
 	AuthenticatedAt         time.Time
+	LastSeenAt              time.Time
 	RecentUVAt              *time.Time
 	ExpiresAt               time.Time
 	IdleExpiresAt           time.Time
@@ -111,14 +113,17 @@ type BrowserSession struct {
 	UserID                  string
 	TokenDigest             []byte
 	CSRFDigest              []byte
+	CSRFGeneration          int64
 	AuthenticationMethod    string
 	AuthenticationPasskeyID string
 	AuthenticatedAt         time.Time
+	LastSeenAt              time.Time
 	RecentUVAt              *time.Time
 	ExpiresAt               time.Time
 	IdleExpiresAt           time.Time
 	RevokedAt               *time.Time
 	Revision                int64
+	ActivityRevision        int64
 	CreatedAt               time.Time
 	UpdatedAt               time.Time
 }
@@ -252,6 +257,10 @@ func (s *Store) BootstrapState(ctx context.Context, now time.Time) (BootstrapSta
 }
 
 func (s *Store) ValidateBootstrapToken(ctx context.Context, plaintext string, now time.Time) ([sha256.Size]byte, error) {
+	return validateBootstrapToken(ctx, s.db, plaintext, now)
+}
+
+func validateBootstrapToken(ctx context.Context, queryer rowQueryer, plaintext string, now time.Time) ([sha256.Size]byte, error) {
 	var result [sha256.Size]byte
 	decoded, err := base64.RawURLEncoding.DecodeString(plaintext)
 	if err != nil || len(decoded) != 32 || base64.RawURLEncoding.EncodeToString(decoded) != plaintext {
@@ -261,7 +270,7 @@ func (s *Store) ValidateBootstrapToken(ctx context.Context, plaintext string, no
 	digest := sha256.Sum256(decoded)
 	var stored []byte
 	var expiresText string
-	if err := s.db.QueryRowContext(ctx, "SELECT token_digest,token_expires_at FROM bootstrap_state WHERE singleton=1").Scan(&stored, &expiresText); err != nil {
+	if err := queryer.QueryRowContext(ctx, "SELECT token_digest,token_expires_at FROM bootstrap_state WHERE singleton=1").Scan(&stored, &expiresText); err != nil {
 		return result, fmt.Errorf("bootstrap token is unavailable")
 	}
 	expires, err := parseServerTime(expiresText)
@@ -275,20 +284,19 @@ func (s *Store) CommitBootstrap(ctx context.Context, input BootstrapCommitInput)
 	if err := validateBootstrapCommitInput(input); err != nil {
 		return err
 	}
-	conn, err := s.db.Conn(ctx)
-	if err != nil {
-		return fmt.Errorf("acquire bootstrap commit connection: %w", err)
+	_, err := withImmediateConn(ctx, s.db, "bootstrap commit", func(conn *sql.Conn) (struct{}, error) {
+		return struct{}{}, commitBootstrapTx(ctx, conn, input)
+	})
+	return err
+}
+
+func commitBootstrapTx(ctx context.Context, conn *sql.Conn, input BootstrapCommitInput) error {
+	if conn == nil {
+		return fmt.Errorf("bootstrap transaction is required")
 	}
-	defer conn.Close()
-	if _, err := conn.ExecContext(ctx, "BEGIN IMMEDIATE"); err != nil {
-		return fmt.Errorf("begin bootstrap commit: %w", err)
+	if err := validateBootstrapCommitInput(input); err != nil {
+		return err
 	}
-	committed := false
-	defer func() {
-		if !committed {
-			_, _ = conn.ExecContext(context.Background(), "ROLLBACK")
-		}
-	}()
 	var userCount int
 	if err := conn.QueryRowContext(ctx, "SELECT count(*) FROM users").Scan(&userCount); err != nil || userCount != 0 {
 		return fmt.Errorf("server is already initialized")
@@ -347,10 +355,6 @@ func (s *Store) CommitBootstrap(ctx context.Context, input BootstrapCommitInput)
 	if _, err := conn.ExecContext(ctx, `UPDATE bootstrap_state SET token_digest=NULL,token_expires_at=NULL,revision=revision+1,updated_at=? WHERE singleton=1`, formatServerTime(input.At)); err != nil {
 		return fmt.Errorf("consume bootstrap token: %w", err)
 	}
-	if _, err := conn.ExecContext(ctx, "COMMIT"); err != nil {
-		return fmt.Errorf("commit bootstrap transaction: %w", err)
-	}
-	committed = true
 	return nil
 }
 
@@ -392,9 +396,13 @@ func (s *Store) BootstrapReceipt(ctx context.Context, ceremonyID string) ([]byte
 }
 
 func (s *Store) SoleUser(ctx context.Context) (StoredUser, error) {
+	return soleUser(ctx, s.db)
+}
+
+func soleUser(ctx context.Context, queryer readQueryer) (StoredUser, error) {
 	var user StoredUser
 	var created, updated string
-	if err := s.db.QueryRowContext(ctx, `SELECT id,user_handle,display_name,revision,created_at,updated_at FROM users WHERE singleton=1`).Scan(&user.ID, &user.Handle, &user.DisplayName, &user.Revision, &created, &updated); err != nil {
+	if err := queryer.QueryRowContext(ctx, `SELECT id,user_handle,display_name,revision,created_at,updated_at FROM users WHERE singleton=1`).Scan(&user.ID, &user.Handle, &user.DisplayName, &user.Revision, &created, &updated); err != nil {
 		return StoredUser{}, fmt.Errorf("read user: %w", err)
 	}
 	var err error
@@ -404,7 +412,7 @@ func (s *Store) SoleUser(ctx context.Context) (StoredUser, error) {
 	if user.UpdatedAt, err = parseServerTime(updated); err != nil {
 		return StoredUser{}, err
 	}
-	rows, err := s.db.QueryContext(ctx, `SELECT credential_json FROM passkeys WHERE user_id=? AND active=1 ORDER BY created_at`, user.ID)
+	rows, err := queryer.QueryContext(ctx, `SELECT credential_json FROM passkeys WHERE user_id=? AND active=1 ORDER BY created_at`, user.ID)
 	if err != nil {
 		return StoredUser{}, fmt.Errorf("list user passkeys: %w", err)
 	}
@@ -424,7 +432,11 @@ func (s *Store) SoleUser(ctx context.Context) (StoredUser, error) {
 }
 
 func (s *Store) PasskeyByCredentialID(ctx context.Context, credentialID []byte) (StoredPasskey, error) {
-	return scanStoredPasskey(s.db.QueryRowContext(ctx, `SELECT id,user_id,credential_json,name,transports_json,sign_count,credential_revision,active,created_at,last_used_at,updated_at FROM passkeys WHERE credential_id=?`, credentialID))
+	return passkeyByCredentialID(ctx, s.db, credentialID)
+}
+
+func passkeyByCredentialID(ctx context.Context, queryer rowQueryer, credentialID []byte) (StoredPasskey, error) {
+	return scanStoredPasskey(queryer.QueryRowContext(ctx, `SELECT id,user_id,credential_json,name,transports_json,sign_count,credential_revision,active,created_at,last_used_at,updated_at FROM passkeys WHERE credential_id=?`, credentialID))
 }
 
 func scanStoredPasskey(row interface{ Scan(...any) error }) (StoredPasskey, error) {
@@ -458,7 +470,8 @@ func scanStoredPasskey(row interface{ Scan(...any) error }) (StoredPasskey, erro
 	return value, nil
 }
 
-func NewBrowserSessionCreate(userID, method, passkeyID string, now time.Time) (BrowserSessionCreate, error) {
+func NewBrowserSessionCreate(userID, method, passkeyID, serverOrigin string, now time.Time) (BrowserSessionCreate, error) {
+	now = normalizeServerTime(now)
 	id, err := transport.NewUUIDv7()
 	if err != nil {
 		return BrowserSessionCreate{}, err
@@ -467,24 +480,21 @@ func NewBrowserSessionCreate(userID, method, passkeyID string, now time.Time) (B
 	if err != nil {
 		return BrowserSessionCreate{}, err
 	}
-	csrf, err := randomFixed(32)
-	if err != nil {
-		zeroBytes(token)
-		return BrowserSessionCreate{}, err
-	}
-	expires := now.UTC().Add(browserAbsoluteLifetime)
-	idle := now.UTC().Add(browserIdleLifetime)
+	expires := now.Add(browserAbsoluteLifetime)
+	idle := now.Add(browserIdleLifetime)
 	if method == "recovery" {
-		expires = now.UTC().Add(recoverySessionLifetime)
+		expires = now.Add(recoverySessionLifetime)
 		idle = expires
 		passkeyID = ""
 	}
-	recent := now.UTC()
+	recent := now
 	var recentPtr *time.Time
 	if method == "passkey" {
 		recentPtr = &recent
 	}
-	return BrowserSessionCreate{ID: id, UserID: userID, RawToken: token, RawCSRF: csrf, AuthenticationMethod: method, AuthenticationPasskeyID: passkeyID, AuthenticatedAt: now.UTC(), RecentUVAt: recentPtr, ExpiresAt: expires, IdleExpiresAt: idle}, nil
+	const generation = int64(1)
+	csrf := deriveSessionCSRF(token, serverOrigin, id, generation)
+	return BrowserSessionCreate{ID: id, UserID: userID, RawToken: token, RawCSRF: csrf, CSRFGeneration: generation, AuthenticationMethod: method, AuthenticationPasskeyID: passkeyID, AuthenticatedAt: now, LastSeenAt: now, RecentUVAt: recentPtr, ExpiresAt: expires, IdleExpiresAt: idle}, nil
 }
 
 func validateBrowserSessionCreate(value BrowserSessionCreate, now time.Time) error {
@@ -494,7 +504,7 @@ func validateBrowserSessionCreate(value BrowserSessionCreate, now time.Time) err
 	if _, err := transport.ParseUUIDv7(value.UserID); err != nil {
 		return fmt.Errorf("browser session user is invalid")
 	}
-	if len(value.RawToken) != 32 || len(value.RawCSRF) != 32 || value.AuthenticatedAt.IsZero() || value.ExpiresAt.IsZero() || value.IdleExpiresAt.IsZero() || value.ExpiresAt.Before(value.IdleExpiresAt) || value.AuthenticatedAt.After(value.IdleExpiresAt) {
+	if len(value.RawToken) != 32 || len(value.RawCSRF) != 32 || value.CSRFGeneration < 1 || value.AuthenticatedAt.IsZero() || value.LastSeenAt.IsZero() || value.LastSeenAt.Before(value.AuthenticatedAt) || value.ExpiresAt.IsZero() || value.IdleExpiresAt.IsZero() || value.ExpiresAt.Before(value.IdleExpiresAt) || value.AuthenticatedAt.After(value.IdleExpiresAt) {
 		return fmt.Errorf("browser session timing or material is invalid")
 	}
 	if value.AuthenticationMethod == "passkey" {
@@ -517,8 +527,8 @@ func insertBrowserSession(ctx context.Context, execer dbExecer, value BrowserSes
 	}
 	tokenDigest := sha256.Sum256(value.RawToken)
 	csrfDigest := sha256.Sum256(value.RawCSRF)
-	if _, err := execer.ExecContext(ctx, `INSERT INTO browser_sessions(id,user_id,token_digest,csrf_digest,authentication_method,authentication_passkey_id,authenticated_at,recent_uv_at,expires_at,idle_expires_at,revoked_at,revision,created_at,updated_at)
-		VALUES(?,?,?,?,?,?,?,?,?,?,NULL,1,?,?)`, value.ID, value.UserID, tokenDigest[:], csrfDigest[:], value.AuthenticationMethod, nullString(value.AuthenticationPasskeyID), formatServerTime(value.AuthenticatedAt), nullTime(value.RecentUVAt), formatServerTime(value.ExpiresAt), formatServerTime(value.IdleExpiresAt), formatServerTime(now), formatServerTime(now)); err != nil {
+	if _, err := execer.ExecContext(ctx, `INSERT INTO browser_sessions(id,user_id,token_digest,csrf_digest,csrf_generation,authentication_method,authentication_passkey_id,authenticated_at,last_seen_at,recent_uv_at,expires_at,idle_expires_at,revoked_at,revision,activity_revision,created_at,updated_at)
+		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,NULL,1,1,?,?)`, value.ID, value.UserID, tokenDigest[:], csrfDigest[:], value.CSRFGeneration, value.AuthenticationMethod, nullString(value.AuthenticationPasskeyID), formatServerTime(value.AuthenticatedAt), formatServerTime(value.LastSeenAt), nullTime(value.RecentUVAt), formatServerTime(value.ExpiresAt), formatServerTime(value.IdleExpiresAt), formatServerTime(now), formatServerTime(now)); err != nil {
 		return fmt.Errorf("create browser session: %w", err)
 	}
 	return nil
@@ -532,27 +542,31 @@ func (s *Store) BrowserSessionByToken(ctx context.Context, rawToken []byte, now 
 	return browserSessionByToken(ctx, s.db, digest[:], now)
 }
 
-func (s *Store) RotateSessionCSRF(ctx context.Context, sessionID string, expectedRevision int64, rawCSRF []byte, now time.Time) (int64, error) {
-	if len(rawCSRF) != 32 {
-		return 0, fmt.Errorf("CSRF value is invalid")
+func (s *Store) RotateSessionCSRF(ctx context.Context, session BrowserSession, rawSessionToken []byte, serverOrigin string, now time.Time) ([]byte, int64, int64, error) {
+	if len(rawSessionToken) != 32 || session.CSRFGeneration < 1 {
+		return nil, 0, 0, fmt.Errorf("CSRF rotation input is invalid")
 	}
+	nextGeneration := session.CSRFGeneration + 1
+	rawCSRF := deriveSessionCSRF(rawSessionToken, serverOrigin, session.ID, nextGeneration)
 	digest := sha256.Sum256(rawCSRF)
-	result, err := s.db.ExecContext(ctx, `UPDATE browser_sessions SET csrf_digest=?,revision=revision+1,updated_at=? WHERE id=? AND revision=? AND revoked_at IS NULL AND expires_at>? AND idle_expires_at>?`, digest[:], formatServerTime(now), sessionID, expectedRevision, formatServerTime(now), formatServerTime(now))
+	result, err := s.db.ExecContext(ctx, `UPDATE browser_sessions SET csrf_digest=?,csrf_generation=?,revision=revision+1,updated_at=? WHERE id=? AND revision=? AND csrf_generation=? AND revoked_at IS NULL AND expires_at>? AND idle_expires_at>?`, digest[:], nextGeneration, formatServerTime(now), session.ID, session.Revision, session.CSRFGeneration, formatServerTime(now), formatServerTime(now))
 	if err != nil {
-		return 0, fmt.Errorf("rotate session CSRF: %w", err)
+		zeroBytes(rawCSRF)
+		return nil, 0, 0, fmt.Errorf("rotate session CSRF: %w", err)
 	}
 	changed, _ := result.RowsAffected()
 	if changed != 1 {
-		return 0, fmt.Errorf("browser session changed")
+		zeroBytes(rawCSRF)
+		return nil, 0, 0, ErrRevisionChanged
 	}
-	return expectedRevision + 1, nil
+	return rawCSRF, nextGeneration, session.Revision + 1, nil
 }
 
-func (s *Store) ValidateCSRF(session BrowserSession, raw []byte) bool {
-	if len(raw) != 32 || len(session.CSRFDigest) != 32 {
+func (s *Store) ValidateCSRFIntegrity(session BrowserSession, derived []byte) bool {
+	if len(derived) != 32 || len(session.CSRFDigest) != 32 {
 		return false
 	}
-	digest := sha256.Sum256(raw)
+	digest := sha256.Sum256(derived)
 	return subtle.ConstantTimeCompare(digest[:], session.CSRFDigest) == 1
 }
 
@@ -570,10 +584,22 @@ func zeroBytes(value []byte) {
 	}
 }
 
-func formatServerTime(value time.Time) string { return value.UTC().Format(time.RFC3339Nano) }
+const serverTimeLayout = "2006-01-02T15:04:05.000000Z"
+
+func normalizeServerTime(value time.Time) time.Time {
+	return value.UTC().Truncate(time.Microsecond)
+}
+
+func formatServerTime(value time.Time) string {
+	return normalizeServerTime(value).Format(serverTimeLayout)
+}
+
 func parseServerTime(value string) (time.Time, error) {
-	parsed, err := time.Parse(time.RFC3339Nano, value)
-	if err != nil || parsed.Location() != time.UTC {
+	if len(value) != len(serverTimeLayout) {
+		return time.Time{}, fmt.Errorf("stored UTC time is invalid")
+	}
+	parsed, err := time.Parse(serverTimeLayout, value)
+	if err != nil || parsed.Location() != time.UTC || parsed.Format(serverTimeLayout) != value {
 		return time.Time{}, fmt.Errorf("stored UTC time is invalid")
 	}
 	return parsed, nil

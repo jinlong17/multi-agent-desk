@@ -3,9 +3,11 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"runtime"
+	"time"
 	"unsafe"
 
 	"github.com/jinlong17/multi-agent-desk/internal/domain"
@@ -26,7 +28,12 @@ const backupFileAllAccess windows.ACCESS_MASK = windows.STANDARD_RIGHTS_ALL |
 func runtimeGOOS() string { return runtime.GOOS }
 
 func ensurePrivateBackupDirectory(path string) error {
-	if err := os.MkdirAll(path, 0o700); err != nil {
+	if _, err := os.Lstat(path); err == nil {
+		return verifyDevicePrivateDirectory(path)
+	} else if !os.IsNotExist(err) {
+		return domain.WrapError(domain.CodeConflict, "backup root could not be inspected", err)
+	}
+	if err := os.Mkdir(path, 0o700); err != nil {
 		return domain.WrapError(domain.CodeConflict, "backup root could not be created", err)
 	}
 	return protectDevicePrivateDirectory(path)
@@ -37,17 +44,24 @@ func backupCurrentUserSID() (*windows.SID, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read current Windows token user: %w", err)
 	}
-	return user.User.Sid, nil
+	sid, err := user.User.Sid.Copy()
+	if err != nil {
+		return nil, fmt.Errorf("copy current Windows token user SID: %w", err)
+	}
+	return sid, nil
 }
 
 func backupSystemSID() (*windows.SID, error) {
-	return windows.StringToSid("S-1-5-18")
+	return windows.CreateWellKnownSid(windows.WinLocalSystemSid)
 }
 
-func protectDevicePrivateDirectory(path string) error { return protectDeviceWindowsPath(path) }
-func protectDevicePrivateFile(path string) error      { return protectDeviceWindowsPath(path) }
+func protectDevicePrivateDirectory(path string) error { return protectDeviceWindowsPath(path, true) }
+func protectDevicePrivateFile(path string) error      { return protectDeviceWindowsPath(path, false) }
 
-func protectDeviceWindowsPath(path string) error {
+func protectDeviceWindowsPath(path string, wantDirectory bool) error {
+	if err := verifyDeviceWindowsPathKind(path, wantDirectory); err != nil {
+		return err
+	}
 	owner, err := backupCurrentUserSID()
 	if err != nil {
 		return domain.WrapError(domain.CodePermissionDenied, "private Windows owner could not be resolved", err)
@@ -69,26 +83,53 @@ func protectDeviceWindowsPath(path string) error {
 		descriptorOwner, nil, dacl, nil); err != nil {
 		return domain.WrapError(domain.CodePermissionDenied, "private Windows DACL could not be applied", err)
 	}
-	return verifyDeviceWindowsPath(path)
+	return verifyDeviceWindowsPath(path, wantDirectory)
 }
 
 func verifyDevicePrivateDirectory(path string) error {
-	info, err := os.Lstat(path)
-	if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
-		return domain.NewError(domain.CodePermissionDenied, "private Windows directory is unsafe")
-	}
-	return verifyDeviceWindowsPath(path)
+	return verifyDeviceWindowsPath(path, true)
 }
 
 func verifyDevicePrivateFile(path string) error {
-	info, err := os.Lstat(path)
-	if err != nil || !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {
-		return domain.NewError(domain.CodePermissionDenied, "private Windows file is unsafe")
-	}
-	return verifyDeviceWindowsPath(path)
+	return verifyDeviceWindowsPath(path, false)
 }
 
-func verifyDeviceWindowsPath(path string) error {
+func prepareExistingDevicePrivateDirectory(ctx context.Context, path string, timeout time.Duration) error {
+	return waitForDeviceWindowsPath(ctx, path, true, timeout)
+}
+
+func prepareExistingDevicePrivateFile(ctx context.Context, path string, timeout time.Duration) error {
+	return waitForDeviceWindowsPath(ctx, path, false, timeout)
+}
+
+func waitForDeviceWindowsPath(ctx context.Context, path string, wantDirectory bool, timeout time.Duration) error {
+	if timeout <= 0 {
+		return domain.NewError(domain.CodeInvalidArgument, "private Windows path wait is invalid")
+	}
+	deadline := time.NewTimer(timeout)
+	defer deadline.Stop()
+	ticker := time.NewTicker(5 * time.Millisecond)
+	defer ticker.Stop()
+	var lastErr error
+	for {
+		lastErr = verifyDeviceWindowsPath(path, wantDirectory)
+		if lastErr == nil {
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+			return domain.WrapError(domain.CodePermissionDenied, "private Windows path did not become safe", ctx.Err())
+		case <-deadline.C:
+			return lastErr
+		case <-ticker.C:
+		}
+	}
+}
+
+func verifyDeviceWindowsPath(path string, wantDirectory bool) error {
+	if err := verifyDeviceWindowsPathKind(path, wantDirectory); err != nil {
+		return err
+	}
 	ownerSID, err := backupCurrentUserSID()
 	if err != nil {
 		return err
@@ -122,16 +163,38 @@ func verifyDeviceWindowsPath(path string) error {
 		}
 		aceSID := (*windows.SID)(unsafe.Pointer(&ace.SidStart))
 		switch {
-		case aceSID.Equals(ownerSID):
+		case aceSID.Equals(ownerSID) && !seenOwner:
 			seenOwner = true
-		case aceSID.Equals(systemSID):
+		case aceSID.Equals(systemSID) && !seenSystem:
 			seenSystem = true
 		default:
-			return domain.NewError(domain.CodePermissionDenied, "private Windows DACL grants an unexpected principal")
+			return domain.NewError(domain.CodePermissionDenied, "private Windows DACL grants an unexpected or duplicate principal")
 		}
 	}
 	if !seenOwner || !seenSystem {
 		return domain.NewError(domain.CodePermissionDenied, "private Windows DACL is missing owner or SYSTEM")
+	}
+	return verifyDeviceWindowsPathKind(path, wantDirectory)
+}
+
+func verifyDeviceWindowsPathKind(path string, wantDirectory bool) error {
+	pointer, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		return domain.WrapError(domain.CodePermissionDenied, "private Windows path is invalid", err)
+	}
+	attributes, err := windows.GetFileAttributes(pointer)
+	if err != nil {
+		return domain.WrapError(domain.CodePermissionDenied, "private Windows path attributes are unavailable", err)
+	}
+	if attributes&windows.FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+		return domain.NewError(domain.CodePermissionDenied, "private Windows path is a reparse point")
+	}
+	if attributes&windows.FILE_ATTRIBUTE_DEVICE != 0 {
+		return domain.NewError(domain.CodePermissionDenied, "private Windows path is a device")
+	}
+	isDirectory := attributes&windows.FILE_ATTRIBUTE_DIRECTORY != 0
+	if isDirectory != wantDirectory {
+		return domain.NewError(domain.CodePermissionDenied, "private Windows path kind is invalid")
 	}
 	return nil
 }
@@ -141,7 +204,9 @@ func syncDirectory(path string) error {
 	if err != nil {
 		return domain.WrapError(domain.CodeConflict, "private Windows directory path is invalid", err)
 	}
-	handle, err := windows.CreateFile(pointer, windows.GENERIC_READ, windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE|windows.FILE_SHARE_DELETE,
+	// FlushFileBuffers requires a handle opened with GENERIC_WRITE. The exact
+	// private owner+SYSTEM DACL grants this directory handle the needed access.
+	handle, err := windows.CreateFile(pointer, windows.GENERIC_WRITE, windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE|windows.FILE_SHARE_DELETE,
 		nil, windows.OPEN_EXISTING, windows.FILE_FLAG_BACKUP_SEMANTICS, 0)
 	if err != nil {
 		return domain.WrapError(domain.CodeConflict, "private Windows directory could not be opened for sync", err)

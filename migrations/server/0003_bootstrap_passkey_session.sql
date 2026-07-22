@@ -1,6 +1,18 @@
 -- Phase 4a P2: atomic initial Daemon bootstrap, Passkeys, recovery codes, and
 -- browser sessions. Device enrollment, projections, sync, commands, and
 -- realtime tables intentionally remain absent.
+-- P1 wrote RFC3339Nano values with variable-width fractional seconds. P2 uses
+-- fixed-width microseconds so SQLite TEXT ordering has the same order as time.
+UPDATE idempotency_records
+SET created_at = CASE
+        WHEN instr(created_at,'.') = 0 THEN substr(created_at,1,19) || '.000000Z'
+        ELSE substr(created_at,1,instr(created_at,'.')) || substr(substr(created_at,instr(created_at,'.')+1,instr(created_at,'Z')-instr(created_at,'.')-1) || '000000',1,6) || 'Z'
+    END,
+    expires_at = CASE
+        WHEN instr(expires_at,'.') = 0 THEN substr(expires_at,1,19) || '.000000Z'
+        ELSE substr(expires_at,1,instr(expires_at,'.')) || substr(substr(expires_at,instr(expires_at,'.')+1,instr(expires_at,'Z')-instr(expires_at,'.')-1) || '000000',1,6) || 'Z'
+    END;
+
 CREATE TABLE bootstrap_state (
     singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
     token_digest BLOB CHECK (token_digest IS NULL OR length(token_digest) = 32),
@@ -106,14 +118,17 @@ CREATE TABLE browser_sessions (
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     token_digest BLOB NOT NULL UNIQUE CHECK (length(token_digest) = 32),
     csrf_digest BLOB NOT NULL CHECK (length(csrf_digest) = 32),
+    csrf_generation INTEGER NOT NULL CHECK (csrf_generation >= 1),
     authentication_method TEXT NOT NULL CHECK (authentication_method IN ('passkey','recovery')),
     authentication_passkey_id TEXT REFERENCES passkeys(id) ON DELETE SET NULL,
     authenticated_at TEXT NOT NULL,
+    last_seen_at TEXT NOT NULL,
     recent_uv_at TEXT,
     expires_at TEXT NOT NULL,
     idle_expires_at TEXT NOT NULL,
     revoked_at TEXT,
     revision INTEGER NOT NULL CHECK (revision >= 1),
+    activity_revision INTEGER NOT NULL CHECK (activity_revision >= 1),
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     CHECK ((authentication_method='passkey' AND authentication_passkey_id IS NOT NULL)
@@ -122,12 +137,56 @@ CREATE TABLE browser_sessions (
 CREATE INDEX browser_sessions_user_live ON browser_sessions(user_id,revoked_at,expires_at,idle_expires_at);
 CREATE INDEX browser_sessions_passkey_live ON browser_sessions(authentication_passkey_id,revoked_at);
 
-CREATE TABLE one_time_operations (
-    scope_digest BLOB PRIMARY KEY CHECK (length(scope_digest) = 32),
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    operation TEXT NOT NULL CHECK (operation IN ('recovery_rotate')),
-    created_at TEXT NOT NULL
+CREATE TABLE auth_idempotency_operations (
+    key_digest BLOB PRIMARY KEY CHECK (length(key_digest) = 32),
+    request_identity_digest BLOB NOT NULL CHECK (length(request_identity_digest) = 32),
+    actor_class TEXT NOT NULL CHECK (actor_class IN ('bootstrap_token','preauth_browser','browser_session')),
+    actor_identity_digest BLOB NOT NULL CHECK (length(actor_identity_digest) = 32),
+    method TEXT NOT NULL CHECK (method IN ('POST','DELETE')),
+    canonical_path TEXT NOT NULL CHECK (canonical_path GLOB '/v1/*' AND canonical_path NOT LIKE '%?%' AND canonical_path NOT LIKE '%/' AND length(canonical_path) <= 256),
+    body_digest BLOB NOT NULL CHECK (length(body_digest) = 32),
+    canonical_if_match TEXT NOT NULL,
+    operation_id TEXT NOT NULL UNIQUE CHECK (length(operation_id) = 36),
+    operation TEXT NOT NULL CHECK (operation IN (
+        'bootstrap_options',
+        'bootstrap_verify',
+        'passkey_login_options',
+        'passkey_login_verify',
+        'passkey_registration_options',
+        'passkey_registration_verify',
+        'passkey_delete',
+        'uv_options',
+        'uv_verify',
+        'recovery_verify',
+        'recovery_codes_rotate',
+        'logout',
+        'session_delete'
+    )),
+    state TEXT NOT NULL CHECK (state IN ('in_progress','committed')),
+    server_boot_epoch TEXT NOT NULL CHECK (length(server_boot_epoch) = 36),
+    public_receipt_json TEXT CHECK (public_receipt_json IS NULL OR (json_valid(public_receipt_json) AND length(public_receipt_json) <= 16384)),
+    cookie_action TEXT NOT NULL CHECK (cookie_action IN ('none','clear','secret_issued')),
+    ceremony_id TEXT CHECK (ceremony_id IS NULL OR length(ceremony_id) = 36),
+    public_options_digest BLOB CHECK (public_options_digest IS NULL OR length(public_options_digest) = 32),
+    created_at TEXT NOT NULL,
+    committed_at TEXT,
+    expires_at TEXT NOT NULL,
+    CHECK ((operation IN ('passkey_delete','session_delete')
+            AND method='DELETE'
+            AND length(canonical_if_match) BETWEEN 7 AND 25
+            AND substr(canonical_if_match,1,5)='"rev-'
+            AND substr(canonical_if_match,-1,1)='"'
+            AND substr(canonical_if_match,6,1) BETWEEN '1' AND '9'
+            AND substr(canonical_if_match,6,length(canonical_if_match)-6) NOT GLOB '*[^0-9]*')
+        OR (operation NOT IN ('passkey_delete','session_delete')
+            AND method='POST'
+            AND canonical_if_match='')),
+    CHECK ((state='in_progress' AND public_receipt_json IS NULL AND committed_at IS NULL)
+        OR (state='committed' AND public_receipt_json IS NOT NULL AND committed_at IS NOT NULL)),
+    CHECK ((ceremony_id IS NULL) = (public_options_digest IS NULL))
 ) STRICT;
+CREATE INDEX auth_idempotency_operations_cleanup ON auth_idempotency_operations(expires_at,key_digest);
+CREATE UNIQUE INDEX auth_idempotency_operations_ceremony ON auth_idempotency_operations(ceremony_id) WHERE ceremony_id IS NOT NULL;
 
 CREATE TABLE auth_audit_events (
     id TEXT PRIMARY KEY CHECK (length(id) = 36),

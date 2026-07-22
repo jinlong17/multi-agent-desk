@@ -20,6 +20,9 @@
     "go:test": "go test ./...",
     "web:check": "pnpm --recursive --filter \"!@multi-agent-desk/desktop\" --if-present run check",
     "web:build": "pnpm --recursive --filter \"!@multi-agent-desk/desktop\" --if-present run build",
+    "web:assets:generate": "pnpm --filter @multi-agent-desk/web build:dist && pnpm --filter @multi-agent-desk/web embed:generate",
+    "web:assets:verify": "pnpm --filter @multi-agent-desk/web embed:verify",
+    "acceptance:p2-browser:test": "node --test scripts/acceptance/p2-browser-receipt.test.mjs",
     "desktop:fmt-check": "cargo fmt --manifest-path apps/desktop/src-tauri/Cargo.toml --check",
     "desktop:check": "pnpm --filter @multi-agent-desk/web build && cargo check --locked --manifest-path apps/desktop/src-tauri/Cargo.toml",
     "desktop:build": "pnpm --filter @multi-agent-desk/desktop tauri build --no-bundle",
@@ -30,7 +33,7 @@
     "ci:codeowners": "node scripts/ci/verify-codeowners.mjs",
     "ci:links": "node scripts/ci/check-local-links.mjs",
     "ci:licenses": "node scripts/ci/verify-licenses.mjs",
-    "ci:fixtures": "node scripts/ci/test-gates.mjs",
+    "ci:fixtures": "node scripts/ci/test-gates.mjs && npm run acceptance:p2-browser:test",
     "ci:static": "npm run ci:actions && npm run ci:codeowners",
     "ci:verify": "npm run ci:static && npm run ci:fixtures && npm run ci:links && npm run ci:licenses"
   },

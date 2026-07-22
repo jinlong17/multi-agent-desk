@@ -50,15 +50,33 @@ func Open(ctx context.Context, path string) (*Store, error) {
 	if err != nil {
 		return nil, domain.WrapError(domain.CodeInvalidArgument, "database path is invalid", err)
 	}
-	if err := ensurePrivateDirectory(filepath.Dir(absolute)); err != nil {
+	if err := ensurePrivateDirectory(ctx, filepath.Dir(absolute)); err != nil {
 		return nil, err
 	}
-	if info, err := os.Lstat(absolute); err == nil {
-		if info.Mode()&os.ModeSymlink != 0 || !info.Mode().IsRegular() {
-			return nil, domain.NewError(domain.CodeConflict, "database path is not a regular file")
+	file, err := os.OpenFile(absolute, os.O_CREATE|os.O_EXCL|os.O_RDWR, databaseFileMode)
+	if errors.Is(err, os.ErrExist) {
+		if err := prepareExistingDevicePrivateFile(ctx, absolute, DefaultBusyTimeout); err != nil {
+			return nil, err
 		}
-	} else if !errors.Is(err, os.ErrNotExist) {
-		return nil, domain.WrapError(domain.CodeConflict, "database path cannot be inspected", err)
+	} else if err != nil {
+		return nil, domain.WrapError(domain.CodeConflict, "private database file could not be created", err)
+	} else {
+		if err := file.Close(); err != nil {
+			return nil, domain.WrapError(domain.CodeConflict, "private database file could not be closed", err)
+		}
+		if err := protectDevicePrivateFile(absolute); err != nil {
+			return nil, err
+		}
+	}
+	if err := verifyDevicePrivateDirectory(filepath.Dir(absolute)); err != nil {
+		return nil, err
+	}
+	if err := verifyDevicePrivateFile(absolute); err != nil {
+		return nil, err
+	}
+	preexistingSidecars, err := prepareExistingDeviceSidecars(ctx, absolute, DefaultBusyTimeout)
+	if err != nil {
+		return nil, err
 	}
 
 	dsn, err := sqliteDSNForOS(runtime.GOOS, absolute)
@@ -83,16 +101,25 @@ func Open(ctx context.Context, path string) (*Store, error) {
 	if err := db.PingContext(ctx); err != nil {
 		return nil, domain.WrapError(domain.CodeConflict, "database open failed", err)
 	}
-	if err := os.Chmod(absolute, databaseFileMode); err != nil {
-		return nil, domain.WrapError(domain.CodeConflict, "database permissions could not be restricted", err)
+	if err := verifyDevicePrivateDirectory(filepath.Dir(absolute)); err != nil {
+		return nil, err
+	}
+	if err := verifyDevicePrivateFile(absolute); err != nil {
+		return nil, err
 	}
 	if err := store.configure(ctx); err != nil {
+		return nil, err
+	}
+	if err := store.protectDeviceDatabaseFiles(preexistingSidecars); err != nil {
 		return nil, err
 	}
 	if err := store.backupSchemaV7BeforeMigration(ctx, DeviceBinaryVersion, time.Now); err != nil {
 		return nil, err
 	}
 	if err := store.migrate(ctx); err != nil {
+		return nil, err
+	}
+	if err := store.protectDeviceDatabaseFiles(preexistingSidecars); err != nil {
 		return nil, err
 	}
 	ok = true
@@ -130,24 +157,73 @@ func sqliteDSNForOS(goos, absolute string) (string, error) {
 	return (&url.URL{Scheme: "file", Path: "/" + normalized}).String(), nil
 }
 
-func ensurePrivateDirectory(path string) error {
+func ensurePrivateDirectory(ctx context.Context, path string) error {
+	if _, err := os.Lstat(path); err == nil {
+		return prepareExistingDevicePrivateDirectory(ctx, path, DefaultBusyTimeout)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return domain.WrapError(domain.CodeConflict, "database directory cannot be inspected", err)
+	}
 	if err := os.MkdirAll(path, databaseDirMode); err != nil {
 		return domain.WrapError(domain.CodeConflict, "database directory could not be created", err)
 	}
-	info, err := os.Lstat(path)
-	if err != nil {
-		return domain.WrapError(domain.CodeConflict, "database directory cannot be inspected", err)
+	return protectDevicePrivateDirectory(path)
+}
+
+func prepareExistingDeviceSidecars(ctx context.Context, databasePath string, timeout time.Duration) (map[string]bool, error) {
+	result := make(map[string]bool, 3)
+	for _, suffix := range []string{"-journal", "-shm", "-wal"} {
+		path := databasePath + suffix
+		if _, err := os.Lstat(path); errors.Is(err, os.ErrNotExist) {
+			continue
+		} else if err != nil {
+			return nil, domain.WrapError(domain.CodeConflict, "database sidecar cannot be inspected", err)
+		}
+		if err := prepareExistingDevicePrivateFile(ctx, path, timeout); err != nil {
+			return nil, err
+		}
+		result[path] = true
 	}
-	if info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
-		return domain.NewError(domain.CodeConflict, "database directory is not private")
+	return result, nil
+}
+
+func (s *Store) protectDeviceDatabaseFiles(preexistingSidecars map[string]bool) error {
+	if s == nil || s.path == "" {
+		return domain.NewError(domain.CodeConflict, "database path is unavailable")
 	}
-	if runtime.GOOS != "windows" && info.Mode().Perm()&0o077 != 0 {
-		return domain.NewError(domain.CodePermissionDenied, "database directory permissions are too broad")
+	if err := verifyDevicePrivateDirectory(filepath.Dir(s.path)); err != nil {
+		return err
+	}
+	if err := verifyDevicePrivateFile(s.path); err != nil {
+		return err
+	}
+	for _, suffix := range []string{"-journal", "-shm", "-wal"} {
+		path := s.path + suffix
+		if _, err := os.Lstat(path); errors.Is(err, os.ErrNotExist) {
+			continue
+		} else if err != nil {
+			return domain.WrapError(domain.CodeConflict, "database sidecar cannot be inspected", err)
+		}
+		if preexistingSidecars[path] {
+			if err := verifyDevicePrivateFile(path); err != nil {
+				return err
+			}
+		} else if err := protectDevicePrivateFile(path); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func (s *Store) configure(ctx context.Context) error {
+	milliseconds := DefaultBusyTimeout.Milliseconds()
+	// Install the busy handler before the first pragma that may need an
+	// exclusive lock. Two processes can discover a brand-new Device database at
+	// the same time; without this ordering both journal-mode transitions can
+	// fail immediately instead of allowing one initializer to become the
+	// creator and the other to follow it.
+	if _, err := s.db.ExecContext(ctx, "PRAGMA busy_timeout="+strconv.FormatInt(milliseconds, 10)); err != nil {
+		return domain.WrapError(domain.CodeConflict, "database busy-timeout configuration failed", err)
+	}
 	var mode string
 	if err := s.db.QueryRowContext(ctx, "PRAGMA journal_mode=WAL").Scan(&mode); err != nil {
 		return domain.WrapError(domain.CodeConflict, "database journal configuration failed", err)
@@ -157,10 +233,6 @@ func (s *Store) configure(ctx context.Context) error {
 	}
 	if _, err := s.db.ExecContext(ctx, "PRAGMA foreign_keys=ON"); err != nil {
 		return domain.WrapError(domain.CodeConflict, "database foreign-key configuration failed", err)
-	}
-	milliseconds := DefaultBusyTimeout.Milliseconds()
-	if _, err := s.db.ExecContext(ctx, "PRAGMA busy_timeout="+strconv.FormatInt(milliseconds, 10)); err != nil {
-		return domain.WrapError(domain.CodeConflict, "database busy-timeout configuration failed", err)
 	}
 	pragmas, err := s.Pragmas(ctx)
 	if err != nil {

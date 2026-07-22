@@ -13,7 +13,7 @@
   },
   "scripts": {
     "check": "tsc --noEmit",
-    "test": "tsc && node --test dist/control-plane-client.test.js dist/control-plane-contract.test.js",
+    "test": "tsc && node --test dist/auth-idempotency.test.js dist/control-plane-client.test.js dist/control-plane-contract.test.js",
     "build": "tsc"
   },
   "devDependencies": {

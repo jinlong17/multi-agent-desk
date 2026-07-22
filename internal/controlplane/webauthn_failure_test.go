@@ -86,7 +86,7 @@ func TestWebAuthnFailuresConsumeBootstrapLoginRegistrationAndUV(t *testing.T) {
 			t.Fatal(err)
 		}
 		user := StoredUser{ID: "018f47a0-7b1c-7cc2-8000-000000000001", Handle: []byte("0123456789abcdef0123456789abcdef"), DisplayName: "Owner"}
-		_, ceremony, err := service.BeginRegistration(t.Context(), ceremonyBootstrapRegistration, user, "")
+		_, ceremony, err := service.BeginRegistration(t.Context(), ceremonyBootstrapRegistration, user, "", 0)
 		if err != nil {
 			t.Fatal(err)
 		}

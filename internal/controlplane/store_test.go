@@ -141,6 +141,13 @@ func TestStoreConcurrentMigrationHasOneCompleteLedger(t *testing.T) {
 	results := make(chan error, 2)
 	var storesMu sync.Mutex
 	var stores []*Store
+	t.Cleanup(func() {
+		storesMu.Lock()
+		defer storesMu.Unlock()
+		for _, store := range stores {
+			_ = store.Close()
+		}
+	})
 	for range 2 {
 		go func() {
 			<-start
@@ -163,11 +170,6 @@ func TestStoreConcurrentMigrationHasOneCompleteLedger(t *testing.T) {
 			busyFailures++
 		}
 	}
-	defer func() {
-		for _, store := range stores {
-			_ = store.Close()
-		}
-	}()
 	if len(stores) == 0 || busyFailures > 1 {
 		t.Fatalf("concurrent migration stores=%d busyFailures=%d", len(stores), busyFailures)
 	}
@@ -259,6 +261,73 @@ func TestStorePriorSchemaBacksUpAndUpgrades(t *testing.T) {
 	var epoch string
 	if err := restored.QueryRow("SELECT schema_epoch FROM server_metadata WHERE singleton=1").Scan(&epoch); err != nil || epoch != "018f47a0-7b1c-7cc2-8000-000000000001" {
 		t.Fatalf("restored epoch=%q err=%v", epoch, err)
+	}
+}
+
+func TestStoreP1IdempotencyTimesNormalizeAcrossP2Upgrade(t *testing.T) {
+	directory := privateTestDirectory(t)
+	path := filepath.Join(directory, "server.sqlite")
+	migrations, err := servermigrations.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := sql.Open("sqlite", "file:"+path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations[:2] {
+		if _, err := raw.Exec(migration.SQL); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := raw.Exec(`CREATE TABLE schema_migrations(version INTEGER PRIMARY KEY,name TEXT NOT NULL UNIQUE,checksum TEXT NOT NULL,applied_at TEXT NOT NULL) STRICT`); err != nil {
+		t.Fatal(err)
+	}
+	for _, migration := range migrations[:2] {
+		if _, err := raw.Exec("INSERT INTO schema_migrations VALUES(?,?,?,?)", migration.Version, migration.Name, hex.EncodeToString(migration.Checksum[:]), "prior"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := raw.Exec("PRAGMA user_version=2"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := raw.Exec("INSERT INTO server_metadata VALUES(1,'018f47a0-7b1c-7cc2-8000-000000000001','prior','prior')"); err != nil {
+		t.Fatal(err)
+	}
+	scope := bytes.Repeat([]byte{0x11}, 32)
+	requestDigest := bytes.Repeat([]byte{0x22}, 32)
+	if _, err := raw.Exec(`INSERT INTO idempotency_records(scope_digest,request_digest,response_status,response_content_type,response_body,created_at,expires_at) VALUES(?,?,?,?,?,?,?)`, scope, requestDigest, 201, "application/json", []byte(`{"p1":true}`), "2030-03-01T00:00:00.1Z", "2030-03-02T00:00:00.123456789Z"); err != nil {
+		t.Fatal(err)
+	}
+	if err := raw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := protectPrivateFile(path); err != nil {
+		t.Fatal(err)
+	}
+	store, err := OpenStore(t.Context(), StoreOptions{Path: path, BusyTimeout: 500 * time.Millisecond, Now: func() time.Time { return time.Date(2030, 3, 1, 12, 0, 0, 0, time.UTC) }})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	var created, expires string
+	if err := store.db.QueryRow(`SELECT created_at,expires_at FROM idempotency_records`).Scan(&created, &expires); err != nil {
+		t.Fatal(err)
+	}
+	if created != "2030-03-01T00:00:00.100000Z" || expires != "2030-03-02T00:00:00.123456Z" {
+		t.Fatalf("created=%q expires=%q", created, expires)
+	}
+	var scopeArray, requestArray, changedArray [32]byte
+	copy(scopeArray[:], scope)
+	copy(requestArray[:], requestDigest)
+	copy(changedArray[:], bytes.Repeat([]byte{0x33}, 32))
+	response := IdempotencyResponse{Status: 202, ContentType: "application/json", Body: []byte(`{"new":true}`)}
+	boundary := time.Date(2030, 3, 2, 0, 0, 0, 123456000, time.UTC)
+	if got, replay, err := store.RememberIdempotentResponse(t.Context(), scopeArray, requestArray, response, boundary.Add(-time.Microsecond)); err != nil || !replay || got.Status != 201 {
+		t.Fatalf("before boundary got=%+v replay=%v err=%v", got, replay, err)
+	}
+	if got, replay, err := store.RememberIdempotentResponse(t.Context(), scopeArray, changedArray, response, boundary); err != nil || replay || got.Status != 202 {
+		t.Fatalf("at boundary got=%+v replay=%v err=%v", got, replay, err)
 	}
 }
 

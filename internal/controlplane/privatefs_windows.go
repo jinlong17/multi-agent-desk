@@ -25,41 +25,63 @@ func currentUserSID() (*windows.SID, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read current Windows token user: %w", err)
 	}
-	return user.User.Sid, nil
+	sid, err := user.User.Sid.Copy()
+	if err != nil {
+		return nil, fmt.Errorf("copy current Windows token user SID: %w", err)
+	}
+	return sid, nil
 }
 
-func protectPrivateDirectory(path string) error { return protectWindowsPath(path) }
-func verifyPrivateDirectory(path string) error  { return verifyWindowsPathDACL(path) }
-func protectPrivateFile(path string) error      { return protectWindowsPath(path) }
-func verifyPrivateFile(path string) error       { return verifyWindowsPathDACL(path) }
+func localSystemSID() (*windows.SID, error) {
+	sid, err := windows.CreateWellKnownSid(windows.WinLocalSystemSid)
+	if err != nil {
+		return nil, fmt.Errorf("resolve Windows LocalSystem SID: %w", err)
+	}
+	return sid, nil
+}
 
-func protectWindowsPath(path string) error {
-	sid, err := currentUserSID()
+func protectPrivateDirectory(path string) error { return protectWindowsPath(path, true) }
+func verifyPrivateDirectory(path string) error  { return verifyWindowsPath(path, true) }
+func protectPrivateFile(path string) error      { return protectWindowsPath(path, false) }
+func verifyPrivateFile(path string) error       { return verifyWindowsPath(path, false) }
+
+func protectWindowsPath(path string, wantDirectory bool) error {
+	if err := verifyWindowsPathKind(path, wantDirectory); err != nil {
+		return err
+	}
+	ownerSID, err := currentUserSID()
 	if err != nil {
 		return err
 	}
-	descriptor, err := windows.SecurityDescriptorFromString("O:" + sid.String() + "D:P(A;;FA;;;" + sid.String() + ")")
+	descriptor, err := windows.SecurityDescriptorFromString("O:" + ownerSID.String() + "D:P(A;;FA;;;SY)(A;;FA;;;" + ownerSID.String() + ")")
 	if err != nil {
-		return fmt.Errorf("build owner-only Windows DACL: %w", err)
+		return fmt.Errorf("build private Windows DACL: %w", err)
 	}
 	owner, _, err := descriptor.Owner()
 	if err != nil {
-		return fmt.Errorf("read owner-only Windows owner: %w", err)
+		return fmt.Errorf("read private Windows owner: %w", err)
 	}
 	dacl, _, err := descriptor.DACL()
 	if err != nil {
-		return fmt.Errorf("read owner-only Windows DACL: %w", err)
+		return fmt.Errorf("read private Windows DACL: %w", err)
 	}
 	if err := windows.SetNamedSecurityInfo(path, windows.SE_FILE_OBJECT,
 		windows.OWNER_SECURITY_INFORMATION|windows.DACL_SECURITY_INFORMATION|windows.PROTECTED_DACL_SECURITY_INFORMATION,
 		owner, nil, dacl, nil); err != nil {
-		return fmt.Errorf("apply owner-only Windows DACL: %w", err)
+		return fmt.Errorf("apply private Windows DACL: %w", err)
 	}
-	return verifyWindowsPathDACL(path)
+	return verifyWindowsPath(path, wantDirectory)
 }
 
-func verifyWindowsPathDACL(path string) error {
-	want, err := currentUserSID()
+func verifyWindowsPath(path string, wantDirectory bool) error {
+	if err := verifyWindowsPathKind(path, wantDirectory); err != nil {
+		return err
+	}
+	ownerSID, err := currentUserSID()
+	if err != nil {
+		return err
+	}
+	systemSID, err := localSystemSID()
 	if err != nil {
 		return err
 	}
@@ -72,7 +94,7 @@ func verifyWindowsPathDACL(path string) error {
 		return fmt.Errorf("Windows path has no security descriptor")
 	}
 	owner, defaulted, err := descriptor.Owner()
-	if err != nil || owner == nil || defaulted || !owner.Equals(want) {
+	if err != nil || owner == nil || defaulted || !owner.Equals(ownerSID) {
 		return fmt.Errorf("Windows path owner is not the current logon SID")
 	}
 	control, _, err := descriptor.Control()
@@ -80,19 +102,52 @@ func verifyWindowsPathDACL(path string) error {
 		return fmt.Errorf("Windows path DACL inheritance is not protected")
 	}
 	dacl, defaulted, err := descriptor.DACL()
-	if err != nil || dacl == nil || defaulted || dacl.AceCount != 1 {
-		return fmt.Errorf("Windows path DACL is not an explicit single-principal ACL")
+	if err != nil || dacl == nil || defaulted || dacl.AceCount != 2 {
+		return fmt.Errorf("Windows path DACL does not contain exactly current logon and LocalSystem")
 	}
-	var ace *windows.ACCESS_ALLOWED_ACE
-	if err := windows.GetAce(dacl, 0, &ace); err != nil || ace == nil {
-		return fmt.Errorf("read Windows path DACL ACE: %w", err)
+	seenOwner, seenSystem := false, false
+	for index := uint32(0); index < uint32(dacl.AceCount); index++ {
+		var ace *windows.ACCESS_ALLOWED_ACE
+		if err := windows.GetAce(dacl, index, &ace); err != nil || ace == nil {
+			return fmt.Errorf("read Windows path DACL ACE %d: %w", index, err)
+		}
+		if ace.Header.AceType != windows.ACCESS_ALLOWED_ACE_TYPE || ace.Header.AceFlags != 0 || ace.Mask != fileAllAccess {
+			return fmt.Errorf("Windows path DACL contains an unsafe ACE")
+		}
+		aceSID := (*windows.SID)(unsafe.Pointer(&ace.SidStart))
+		switch {
+		case aceSID.Equals(ownerSID) && !seenOwner:
+			seenOwner = true
+		case aceSID.Equals(systemSID) && !seenSystem:
+			seenSystem = true
+		default:
+			return fmt.Errorf("Windows path DACL grants an unexpected or duplicate principal")
+		}
 	}
-	if ace.Header.AceType != windows.ACCESS_ALLOWED_ACE_TYPE || ace.Header.AceFlags != 0 {
-		return fmt.Errorf("Windows path DACL contains a non-allow ACE")
+	if !seenOwner || !seenSystem {
+		return fmt.Errorf("Windows path DACL is missing current logon or LocalSystem")
 	}
-	aceSID := (*windows.SID)(unsafe.Pointer(&ace.SidStart))
-	if !aceSID.Equals(want) || ace.Mask != fileAllAccess {
-		return fmt.Errorf("Windows path DACL does not grant only current-logon full control")
+	return verifyWindowsPathKind(path, wantDirectory)
+}
+
+func verifyWindowsPathKind(path string, wantDirectory bool) error {
+	pointer, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		return fmt.Errorf("encode Windows path: %w", err)
+	}
+	attributes, err := windows.GetFileAttributes(pointer)
+	if err != nil {
+		return fmt.Errorf("read Windows path attributes: %w", err)
+	}
+	if attributes&windows.FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+		return fmt.Errorf("Windows path is a reparse point")
+	}
+	if attributes&windows.FILE_ATTRIBUTE_DEVICE != 0 {
+		return fmt.Errorf("Windows path is a device")
+	}
+	isDirectory := attributes&windows.FILE_ATTRIBUTE_DIRECTORY != 0
+	if isDirectory != wantDirectory {
+		return fmt.Errorf("Windows path kind is invalid")
 	}
 	return nil
 }

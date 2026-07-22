@@ -1,6 +1,7 @@
 package controlplane
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
@@ -39,7 +40,7 @@ func (s *Server) mountP2(mux *http.ServeMux) {
 }
 
 func (s *Server) bootstrapStatus(writer http.ResponseWriter, request *http.Request) {
-	state, err := s.store.BootstrapState(request.Context(), time.Now().UTC())
+	state, err := s.store.BootstrapState(request.Context(), s.now())
 	if err != nil {
 		s.writeSafeError(writer, err)
 		return
@@ -55,59 +56,123 @@ func (s *Server) bootstrapStatus(writer http.ResponseWriter, request *http.Reque
 }
 
 func (s *Server) bootstrapOptions(writer http.ResponseWriter, request *http.Request) {
-	if err := s.requirePreAuthMutation(request); err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
-	if _, err := requireIdempotencyKey(request); err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
-	token, err := bootstrapAuthorization(request)
-	if err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
 	var body generatedapi.BootstrapOptionsRequestV1
-	if err := transport.DecodeStrictJSON(request.Body, 64<<10, &body); err != nil {
-		s.writeSafeError(writer, fmt.Errorf("invalid_argument: bootstrap request JSON is invalid"))
-		return
-	}
-	result, err := s.bootstrap.Begin(request.Context(), token, body)
+	prepared, err := s.prepareP2Mutation(request, AuthOperationBootstrapOptions, 64<<10, &body, func() error {
+		if _, anchorErr := validateBootstrapAnchor(body.Anchor); anchorErr != nil || !jsonSchemaStringLength(body.DisplayName, 1, 128) {
+			return fmt.Errorf("invalid_argument: bootstrap anchor is invalid")
+		}
+		return nil
+	})
 	if err != nil {
 		s.writeSafeError(writer, err)
 		return
+	}
+	defer prepared.zero()
+	now := s.now()
+	var result generatedapi.BootstrapAnchorChallengeV1
+	record, replay, err := s.store.WithAuthIdempotency(request.Context(), prepared.Request, now, func(tx *AuthIdempotencyTx, operationID string) (AuthIdempotencyCommit, error) {
+		conn := tx.Conn
+		if productErr := tx.BeginProduct(request.Context()); productErr != nil {
+			return AuthIdempotencyCommit{}, productErr
+		}
+		var beginErr error
+		result, beginErr = s.bootstrap.BeginTx(request.Context(), conn, prepared.BootstrapToken, body)
+		if beginErr != nil {
+			return AuthIdempotencyCommit{}, beginErr
+		}
+		ceremonyID := result.CeremonyId
+		if hookErr := tx.OnRollback(func() { s.bootstrap.forgetEphemeral(ceremonyID) }); hookErr != nil {
+			return AuthIdempotencyCommit{}, hookErr
+		}
+		if hookErr := tx.OnCommit(func() { s.bootstrap.armEphemeral(ceremonyID) }); hookErr != nil {
+			return AuthIdempotencyCommit{}, hookErr
+		}
+		encoded, cacheErr := json.Marshal(result)
+		if cacheErr != nil {
+			return AuthIdempotencyCommit{}, cacheErr
+		}
+		digest := sha256.Sum256(encoded)
+		resourceID := result.CeremonyId
+		return AuthIdempotencyCommit{Receipt: authOperationReceipt(operationID, now, &resourceID), CeremonyID: result.CeremonyId, PublicOptionsDigest: digest[:], At: now}, nil
+	})
+	if err != nil {
+		if result.CeremonyId != "" {
+			s.bootstrap.forgetEphemeral(result.CeremonyId)
+		}
+		s.writeSafeError(writer, err)
+		return
+	}
+	if replay {
+		if err := s.replayAuthOptions(request.Context(), record, &result); err != nil {
+			s.writeSafeError(writer, err)
+			return
+		}
 	}
 	writeJSON(writer, http.StatusOK, generatedapi.BootstrapChallengeEnvelopeV1{ApiVersion: generatedapi.BootstrapChallengeEnvelopeV1ApiVersionV1, Data: result, Meta: responseMeta(writer)})
 }
 
 func (s *Server) bootstrapVerify(writer http.ResponseWriter, request *http.Request) {
-	if err := s.requirePreAuthMutation(request); err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
-	if _, err := requireIdempotencyKey(request); err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
-	token, err := bootstrapAuthorization(request)
-	if err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
 	var body generatedapi.BootstrapVerifyRequestV1
-	if err := transport.DecodeStrictJSON(request.Body, 384<<10, &body); err != nil {
-		s.writeSafeError(writer, fmt.Errorf("invalid_argument: bootstrap verification JSON is invalid"))
-		return
-	}
-	result, err := s.bootstrap.Verify(request.Context(), token, body)
+	prepared, err := s.prepareP2Mutation(request, AuthOperationBootstrapVerify, 512<<10, &body, func() error {
+		if _, parseErr := transport.ParseUUIDv7(body.CeremonyId); parseErr != nil {
+			return fmt.Errorf("invalid_argument: bootstrap ceremony is invalid")
+		}
+		if credentialErr := validateRegistrationCredential(body.Credential); credentialErr != nil {
+			return credentialErr
+		}
+		signing, signingErr := transport.DecodeBase64URLFixed(body.SigningProof, 64)
+		zeroBytes(signing)
+		exchange, exchangeErr := transport.DecodeBase64URLFixed(body.ExchangeProof, 32)
+		zeroBytes(exchange)
+		if signingErr != nil || exchangeErr != nil {
+			return fmt.Errorf("invalid_argument: bootstrap proof is invalid")
+		}
+		return nil
+	})
 	if err != nil {
 		s.writeSafeError(writer, err)
 		return
 	}
-	defer result.RecoveryCodes.ZeroPlaintext()
-	defer zeroBytes(result.Session.RawToken)
-	defer zeroBytes(result.Session.RawCSRF)
+	defer prepared.zero()
+	now := s.now()
+	var result BootstrapCommitResult
+	defer func() {
+		result.RecoveryCodes.ZeroPlaintext()
+		zeroBytes(result.Session.RawToken)
+		zeroBytes(result.Session.RawCSRF)
+	}()
+	record, replay, err := s.store.WithAuthIdempotency(request.Context(), prepared.Request, now, func(tx *AuthIdempotencyTx, operationID string) (AuthIdempotencyCommit, error) {
+		conn := tx.Conn
+		if productErr := tx.BeginProduct(request.Context()); productErr != nil {
+			return AuthIdempotencyCommit{}, productErr
+		}
+		if productErr := tx.ConsumeCeremonyOnFailure(body.CeremonyId, ceremonyBootstrapRegistration); productErr != nil {
+			return AuthIdempotencyCommit{}, productErr
+		}
+		if hookErr := tx.OnFinish(func() { s.bootstrap.forgetEphemeral(body.CeremonyId) }); hookErr != nil {
+			return AuthIdempotencyCommit{}, hookErr
+		}
+		var verifyErr error
+		result, verifyErr = s.bootstrap.VerifyTx(request.Context(), conn, prepared.BootstrapToken, body)
+		if verifyErr != nil {
+			return AuthIdempotencyCommit{}, verifyErr
+		}
+		resourceID := result.Session.ID
+		receipt := authOperationReceipt(operationID, now, &resourceID)
+		receipt.CookieOutcome = generatedapi.AuthOperationReceiptV1CookieOutcomeIssuedNotReplayable
+		receipt.CsrfOutcome = generatedapi.AuthOperationReceiptV1CsrfOutcomeIssuedNotReplayable
+		receipt.RecoveryCodesOutcome = generatedapi.AuthOperationReceiptV1RecoveryCodesOutcomeIssuedNotReplayable
+		receipt.NextAction = generatedapi.AuthOperationReceiptV1NextActionFreshPasskeyLogin
+		return AuthIdempotencyCommit{Receipt: receipt, CookieAction: "secret_issued", At: now}, nil
+	})
+	if err != nil {
+		s.writeSafeError(writer, err)
+		return
+	}
+	if replay {
+		s.writeSecretReplay(writer, record)
+		return
+	}
 	s.setSessionCookie(writer, result.Session.RawToken, result.Session.ExpiresAt)
 	data := generatedapi.BootstrapResultV1{CurrentAuth: result.CurrentAuth, Receipt: result.Receipt, RecoveryCodes: generatedapi.RecoveryCodesResultV1{BatchId: result.RecoveryCodes.BatchID, Codes: result.RecoveryCodes.Plaintext, GeneratedAt: result.RecoveryCodes.GeneratedAt}}
 	writeJSON(writer, http.StatusOK, generatedapi.BootstrapResultEnvelopeV1{ApiVersion: generatedapi.BootstrapResultEnvelopeV1ApiVersionV1, Data: data, Meta: responseMeta(writer)})
@@ -123,7 +188,7 @@ func (s *Server) bootstrapCeremony(writer http.ResponseWriter, request *http.Req
 		s.writeSafeError(writer, fmt.Errorf("invalid_argument: ceremony ID is invalid"))
 		return
 	}
-	if challenge, err := s.webauthn.Ceremonies.BootstrapChallenge(request.Context(), id, time.Now().UTC()); err == nil {
+	if challenge, err := s.webauthn.Ceremonies.BootstrapChallenge(request.Context(), id, s.now()); err == nil {
 		var data generatedapi.BootstrapCeremonyV1
 		_ = data.FromBootstrapAnchorChallengeV1(challenge)
 		writeJSON(writer, http.StatusOK, generatedapi.BootstrapCeremonyEnvelopeV1{ApiVersion: generatedapi.BootstrapCeremonyEnvelopeV1ApiVersionV1, Data: data, Meta: responseMeta(writer)})
@@ -145,7 +210,9 @@ func (s *Server) bootstrapCeremony(writer http.ResponseWriter, request *http.Req
 }
 
 func (s *Server) authCurrent(writer http.ResponseWriter, request *http.Request) {
-	session, rawToken, err := s.authenticate(request)
+	securityCtx, cancelSecurity := detachedAuthSecurityContext(request.Context())
+	defer cancelSecurity()
+	session, rawToken, err := s.authenticateContext(securityCtx, request)
 	if err != nil {
 		s.writeSafeError(writer, err)
 		return
@@ -155,196 +222,414 @@ func (s *Server) authCurrent(writer http.ResponseWriter, request *http.Request) 
 		s.writeSafeError(writer, err)
 		return
 	}
-	csrf := deriveSessionCSRF(rawToken, session.ID)
+	csrf := deriveSessionCSRF(rawToken, s.config.PublicOrigin, session.ID, session.CSRFGeneration)
 	defer zeroBytes(csrf)
-	if !s.store.ValidateCSRF(session, csrf) {
-		s.writeSafeError(writer, fmt.Errorf("browser session CSRF state is invalid"))
+	if !s.store.ValidateCSRFIntegrity(session, csrf) {
+		if err := s.revokeSessionIntegrityDurably(request.Context(), session); err != nil {
+			s.writeSafeError(writer, err)
+			return
+		}
+		s.writeSafeError(writer, ErrSessionIntegrityInvalid)
+		return
+	}
+	session, err = s.store.TouchBrowserSession(request.Context(), session.ID, session.ActivityRevision, s.now())
+	if err != nil {
+		s.writeSafeError(writer, fmt.Errorf("unauthenticated"))
 		return
 	}
 	writeJSON(writer, http.StatusOK, generatedapi.CurrentAuthEnvelope{ApiVersion: generatedapi.CurrentAuthEnvelopeApiVersionV1, Data: currentAuthFromStored(session, csrf), Meta: responseMeta(writer)})
 }
 
 func (s *Server) passkeyAuthenticationOptions(writer http.ResponseWriter, request *http.Request) {
-	if err := s.requirePreAuthMutation(request); err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
-	if _, err := requireIdempotencyKey(request); err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
-	if err := decodeEmptyJSON(request); err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
-	result, err := s.auth.BeginLogin(request.Context())
+	prepared, err := s.prepareP2Mutation(request, AuthOperationPasskeyLoginOptions, 16, nil, nil)
 	if err != nil {
 		s.writeSafeError(writer, err)
 		return
+	}
+	defer prepared.zero()
+	now := s.now()
+	var result generatedapi.WebAuthnRequestOptionsV1
+	record, replay, err := s.store.WithAuthIdempotency(request.Context(), prepared.Request, now, func(tx *AuthIdempotencyTx, operationID string) (AuthIdempotencyCommit, error) {
+		conn := tx.Conn
+		if productErr := tx.BeginProduct(request.Context()); productErr != nil {
+			return AuthIdempotencyCommit{}, productErr
+		}
+		var beginErr error
+		result, beginErr = s.auth.BeginLoginTx(request.Context(), conn)
+		if beginErr != nil {
+			return AuthIdempotencyCommit{}, beginErr
+		}
+		encoded, cacheErr := json.Marshal(result)
+		if cacheErr != nil {
+			return AuthIdempotencyCommit{}, cacheErr
+		}
+		digest := sha256.Sum256(encoded)
+		resourceID := result.CeremonyId
+		return AuthIdempotencyCommit{Receipt: authOperationReceipt(operationID, now, &resourceID), CeremonyID: result.CeremonyId, PublicOptionsDigest: digest[:], At: now}, nil
+	})
+	if err != nil {
+		s.writeSafeError(writer, err)
+		return
+	}
+	if replay {
+		if err := s.replayAuthOptions(request.Context(), record, &result); err != nil {
+			s.writeSafeError(writer, err)
+			return
+		}
 	}
 	writeJSON(writer, http.StatusOK, generatedapi.WebAuthnRequestOptionsEnvelopeV1{ApiVersion: generatedapi.WebAuthnRequestOptionsEnvelopeV1ApiVersionV1, Data: result, Meta: responseMeta(writer)})
 }
 
 func (s *Server) passkeyAuthenticationVerify(writer http.ResponseWriter, request *http.Request) {
-	if err := s.requirePreAuthMutation(request); err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
-	if _, err := requireIdempotencyKey(request); err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
 	var body generatedapi.WebAuthnAssertionVerifyRequestV1
-	if err := transport.DecodeStrictJSON(request.Body, 256<<10, &body); err != nil {
-		s.writeSafeError(writer, fmt.Errorf("invalid_argument: assertion JSON is invalid"))
-		return
-	}
-	result, err := s.auth.VerifyLogin(request.Context(), body)
+	prepared, err := s.prepareP2Mutation(request, AuthOperationPasskeyLoginVerify, 384<<10, &body, func() error {
+		if _, parseErr := transport.ParseUUIDv7(body.CeremonyId); parseErr != nil {
+			return fmt.Errorf("invalid_argument: login ceremony is invalid")
+		}
+		return validateAssertionCredential(body.Credential)
+	})
 	if err != nil {
 		s.writeSafeError(writer, err)
 		return
 	}
-	defer zeroBytes(result.Session.RawToken)
-	defer zeroBytes(result.Session.RawCSRF)
+	defer prepared.zero()
+	now := s.now()
+	var result AuthResult
+	defer func() {
+		zeroBytes(result.Session.RawToken)
+		zeroBytes(result.Session.RawCSRF)
+	}()
+	record, replay, err := s.store.WithAuthIdempotency(request.Context(), prepared.Request, now, func(tx *AuthIdempotencyTx, operationID string) (AuthIdempotencyCommit, error) {
+		conn := tx.Conn
+		if productErr := tx.BeginProduct(request.Context()); productErr != nil {
+			return AuthIdempotencyCommit{}, productErr
+		}
+		if productErr := tx.ConsumeCeremonyOnFailure(body.CeremonyId, ceremonyPasskeyLogin); productErr != nil {
+			return AuthIdempotencyCommit{}, productErr
+		}
+		var verifyErr error
+		result, verifyErr = s.auth.VerifyLoginTx(request.Context(), conn, body)
+		if verifyErr != nil {
+			return AuthIdempotencyCommit{}, verifyErr
+		}
+		resourceID := result.Session.ID
+		receipt := authOperationReceipt(operationID, now, &resourceID)
+		receipt.CookieOutcome = generatedapi.AuthOperationReceiptV1CookieOutcomeIssuedNotReplayable
+		receipt.CsrfOutcome = generatedapi.AuthOperationReceiptV1CsrfOutcomeIssuedNotReplayable
+		receipt.NextAction = generatedapi.AuthOperationReceiptV1NextActionFreshPasskeyLogin
+		return AuthIdempotencyCommit{Receipt: receipt, CookieAction: "secret_issued", At: now}, nil
+	})
+	if err != nil {
+		s.writeSafeError(writer, err)
+		return
+	}
+	if replay {
+		s.writeSecretReplay(writer, record)
+		return
+	}
 	s.setSessionCookie(writer, result.Session.RawToken, result.Session.ExpiresAt)
 	writeJSON(writer, http.StatusOK, generatedapi.CurrentAuthEnvelope{ApiVersion: generatedapi.CurrentAuthEnvelopeApiVersionV1, Data: result.CurrentAuth, Meta: responseMeta(writer)})
 }
 
 func (s *Server) passkeyRegistrationOptions(writer http.ResponseWriter, request *http.Request) {
-	session, _, err := s.requireAuthenticatedMutation(request)
+	prepared, err := s.prepareP2Mutation(request, AuthOperationPasskeyRegistrationOptions, 16, nil, nil)
 	if err != nil {
 		s.writeSafeError(writer, err)
 		return
 	}
-	if err := decodeEmptyJSON(request); err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
-	result, err := s.auth.BeginRegistration(request.Context(), session)
+	defer prepared.zero()
+	now := s.now()
+	var result generatedapi.WebAuthnCreationOptionsV1
+	record, replay, err := s.store.WithAuthIdempotency(request.Context(), prepared.Request, now, func(tx *AuthIdempotencyTx, operationID string) (AuthIdempotencyCommit, error) {
+		conn := tx.Conn
+		session, authErr := s.authorizeBrowserWinnerTx(request.Context(), conn, &prepared, false, now)
+		if authErr != nil {
+			return AuthIdempotencyCommit{}, authErr
+		}
+		if productErr := tx.BeginProduct(request.Context()); productErr != nil {
+			return AuthIdempotencyCommit{}, productErr
+		}
+		result, authErr = s.auth.BeginRegistrationTx(request.Context(), conn, session)
+		if authErr != nil {
+			return AuthIdempotencyCommit{}, authErr
+		}
+		encoded, cacheErr := json.Marshal(result)
+		if cacheErr != nil {
+			return AuthIdempotencyCommit{}, cacheErr
+		}
+		digest := sha256.Sum256(encoded)
+		resourceID := result.CeremonyId
+		return AuthIdempotencyCommit{Receipt: authOperationReceipt(operationID, now, &resourceID), CeremonyID: result.CeremonyId, PublicOptionsDigest: digest[:], At: now}, nil
+	})
 	if err != nil {
 		s.writeSafeError(writer, err)
 		return
+	}
+	if replay {
+		if err := s.validateBrowserBeginReplay(request.Context(), record, &prepared); err != nil {
+			s.writeSafeError(writer, err)
+			return
+		}
+		if err := s.replayAuthOptions(request.Context(), record, &result); err != nil {
+			s.writeSafeError(writer, err)
+			return
+		}
 	}
 	writeJSON(writer, http.StatusOK, generatedapi.WebAuthnCreationOptionsEnvelopeV1{ApiVersion: generatedapi.WebAuthnCreationOptionsEnvelopeV1ApiVersionV1, Data: result, Meta: responseMeta(writer)})
 }
 
 func (s *Server) passkeyRegistrationVerify(writer http.ResponseWriter, request *http.Request) {
-	session, _, err := s.requireAuthenticatedMutation(request)
-	if err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
 	var body generatedapi.WebAuthnRegistrationVerifyRequestV1
-	if err := transport.DecodeStrictJSON(request.Body, 384<<10, &body); err != nil {
-		s.writeSafeError(writer, fmt.Errorf("invalid_argument: registration JSON is invalid"))
-		return
-	}
-	result, err := s.auth.VerifyRegistration(request.Context(), session, body)
+	prepared, err := s.prepareP2Mutation(request, AuthOperationPasskeyRegistrationVerify, 512<<10, &body, func() error {
+		if _, parseErr := transport.ParseUUIDv7(body.CeremonyId); parseErr != nil {
+			return fmt.Errorf("invalid_argument: registration ceremony is invalid")
+		}
+		return validateRegistrationCredential(body.Credential)
+	})
 	if err != nil {
 		s.writeSafeError(writer, err)
 		return
 	}
-	defer zeroBytes(result.Session.RawToken)
-	defer zeroBytes(result.Session.RawCSRF)
+	defer prepared.zero()
+	now := s.now()
+	var result AuthResult
+	defer func() {
+		zeroBytes(result.Session.RawToken)
+		zeroBytes(result.Session.RawCSRF)
+	}()
+	record, replay, err := s.store.WithAuthIdempotency(request.Context(), prepared.Request, now, func(tx *AuthIdempotencyTx, operationID string) (AuthIdempotencyCommit, error) {
+		conn := tx.Conn
+		session, authErr := s.authorizeBrowserWinnerTx(request.Context(), conn, &prepared, false, now)
+		if authErr != nil {
+			return AuthIdempotencyCommit{}, authErr
+		}
+		if productErr := tx.BeginProduct(request.Context()); productErr != nil {
+			return AuthIdempotencyCommit{}, productErr
+		}
+		if productErr := tx.ConsumeCeremonyOnFailure(body.CeremonyId, ceremonyPasskeyRegistration); productErr != nil {
+			return AuthIdempotencyCommit{}, productErr
+		}
+		result, authErr = s.auth.VerifyRegistrationTx(request.Context(), conn, session, body)
+		if authErr != nil {
+			return AuthIdempotencyCommit{}, authErr
+		}
+		resourceID := result.Session.ID
+		receipt := authOperationReceipt(operationID, now, &resourceID)
+		receipt.CookieOutcome = generatedapi.AuthOperationReceiptV1CookieOutcomeIssuedNotReplayable
+		receipt.CsrfOutcome = generatedapi.AuthOperationReceiptV1CsrfOutcomeIssuedNotReplayable
+		receipt.NextAction = generatedapi.AuthOperationReceiptV1NextActionFreshPasskeyLogin
+		return AuthIdempotencyCommit{Receipt: receipt, CookieAction: "secret_issued", At: now}, nil
+	})
+	if err != nil {
+		s.writeSafeError(writer, err)
+		return
+	}
+	if replay {
+		if err := s.validateBrowserReplayCSRF(request.Context(), &prepared); err != nil {
+			s.writeSafeError(writer, err)
+			return
+		}
+		s.writeSecretReplay(writer, record)
+		return
+	}
 	s.setSessionCookie(writer, result.Session.RawToken, result.Session.ExpiresAt)
 	writeJSON(writer, http.StatusOK, generatedapi.CurrentAuthEnvelope{ApiVersion: generatedapi.CurrentAuthEnvelopeApiVersionV1, Data: result.CurrentAuth, Meta: responseMeta(writer)})
 }
 
 func (s *Server) uvOptions(writer http.ResponseWriter, request *http.Request) {
-	session, _, err := s.requireAuthenticatedMutation(request)
+	prepared, err := s.prepareP2Mutation(request, AuthOperationUVOptions, 16, nil, nil)
 	if err != nil {
 		s.writeSafeError(writer, err)
 		return
 	}
-	if err := requireNormalBrowserSession(session); err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
-	if err := decodeEmptyJSON(request); err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
-	result, err := s.auth.BeginUV(request.Context(), session)
+	defer prepared.zero()
+	now := s.now()
+	var result generatedapi.WebAuthnRequestOptionsV1
+	record, replay, err := s.store.WithAuthIdempotency(request.Context(), prepared.Request, now, func(tx *AuthIdempotencyTx, operationID string) (AuthIdempotencyCommit, error) {
+		conn := tx.Conn
+		session, authErr := s.authorizeBrowserWinnerTx(request.Context(), conn, &prepared, true, now)
+		if authErr != nil {
+			return AuthIdempotencyCommit{}, authErr
+		}
+		if productErr := tx.BeginProduct(request.Context()); productErr != nil {
+			return AuthIdempotencyCommit{}, productErr
+		}
+		result, authErr = s.auth.BeginUVTx(request.Context(), conn, session)
+		if authErr != nil {
+			return AuthIdempotencyCommit{}, authErr
+		}
+		encoded, cacheErr := json.Marshal(result)
+		if cacheErr != nil {
+			return AuthIdempotencyCommit{}, cacheErr
+		}
+		digest := sha256.Sum256(encoded)
+		resourceID := result.CeremonyId
+		return AuthIdempotencyCommit{Receipt: authOperationReceipt(operationID, now, &resourceID), CeremonyID: result.CeremonyId, PublicOptionsDigest: digest[:], At: now}, nil
+	})
 	if err != nil {
 		s.writeSafeError(writer, err)
 		return
+	}
+	if replay {
+		if err := s.validateBrowserBeginReplay(request.Context(), record, &prepared); err != nil {
+			s.writeSafeError(writer, err)
+			return
+		}
+		if err := s.replayAuthOptions(request.Context(), record, &result); err != nil {
+			s.writeSafeError(writer, err)
+			return
+		}
 	}
 	writeJSON(writer, http.StatusOK, generatedapi.WebAuthnRequestOptionsEnvelopeV1{ApiVersion: generatedapi.WebAuthnRequestOptionsEnvelopeV1ApiVersionV1, Data: result, Meta: responseMeta(writer)})
 }
 
 func (s *Server) uvVerify(writer http.ResponseWriter, request *http.Request) {
-	session, _, err := s.requireAuthenticatedMutation(request)
-	if err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
-	if err := requireNormalBrowserSession(session); err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
 	var body generatedapi.WebAuthnAssertionVerifyRequestV1
-	if err := transport.DecodeStrictJSON(request.Body, 256<<10, &body); err != nil {
-		s.writeSafeError(writer, fmt.Errorf("invalid_argument: assertion JSON is invalid"))
-		return
-	}
-	result, err := s.auth.VerifyUV(request.Context(), session, body)
+	prepared, err := s.prepareP2Mutation(request, AuthOperationUVVerify, 384<<10, &body, func() error {
+		if _, parseErr := transport.ParseUUIDv7(body.CeremonyId); parseErr != nil {
+			return fmt.Errorf("invalid_argument: UV ceremony is invalid")
+		}
+		return validateAssertionCredential(body.Credential)
+	})
 	if err != nil {
 		s.writeSafeError(writer, err)
 		return
 	}
-	defer zeroBytes(result.Session.RawToken)
-	defer zeroBytes(result.Session.RawCSRF)
+	defer prepared.zero()
+	now := s.now()
+	var result AuthResult
+	defer func() {
+		zeroBytes(result.Session.RawToken)
+		zeroBytes(result.Session.RawCSRF)
+	}()
+	record, replay, err := s.store.WithAuthIdempotency(request.Context(), prepared.Request, now, func(tx *AuthIdempotencyTx, operationID string) (AuthIdempotencyCommit, error) {
+		conn := tx.Conn
+		session, authErr := s.authorizeBrowserWinnerTx(request.Context(), conn, &prepared, true, now)
+		if authErr != nil {
+			return AuthIdempotencyCommit{}, authErr
+		}
+		if productErr := tx.BeginProduct(request.Context()); productErr != nil {
+			return AuthIdempotencyCommit{}, productErr
+		}
+		if productErr := tx.ConsumeCeremonyOnFailure(body.CeremonyId, ceremonyRecentUV); productErr != nil {
+			return AuthIdempotencyCommit{}, productErr
+		}
+		result, authErr = s.auth.VerifyUVTx(request.Context(), conn, session, body)
+		if authErr != nil {
+			return AuthIdempotencyCommit{}, authErr
+		}
+		resourceID := result.Session.ID
+		receipt := authOperationReceipt(operationID, now, &resourceID)
+		receipt.CookieOutcome = generatedapi.AuthOperationReceiptV1CookieOutcomeIssuedNotReplayable
+		receipt.CsrfOutcome = generatedapi.AuthOperationReceiptV1CsrfOutcomeIssuedNotReplayable
+		receipt.NextAction = generatedapi.AuthOperationReceiptV1NextActionFreshPasskeyLogin
+		return AuthIdempotencyCommit{Receipt: receipt, CookieAction: "secret_issued", At: now}, nil
+	})
+	if err != nil {
+		s.writeSafeError(writer, err)
+		return
+	}
+	if replay {
+		if err := s.validateBrowserReplayCSRF(request.Context(), &prepared); err != nil {
+			s.writeSafeError(writer, err)
+			return
+		}
+		s.writeSecretReplay(writer, record)
+		return
+	}
 	s.setSessionCookie(writer, result.Session.RawToken, result.Session.ExpiresAt)
 	writeJSON(writer, http.StatusOK, generatedapi.CurrentAuthEnvelope{ApiVersion: generatedapi.CurrentAuthEnvelopeApiVersionV1, Data: result.CurrentAuth, Meta: responseMeta(writer)})
 }
 
 func (s *Server) recoveryVerify(writer http.ResponseWriter, request *http.Request) {
-	if err := s.requirePreAuthMutation(request); err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
-	if _, err := requireIdempotencyKey(request); err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
 	var body generatedapi.RecoveryVerifyRequestV1
-	if err := transport.DecodeStrictJSON(request.Body, 4096, &body); err != nil {
-		s.writeSafeError(writer, ErrRecoveryInvalidOrRateLimited)
-		return
-	}
-	result, err := s.auth.VerifyRecovery(request.Context(), s.recoveryLimiter, s.requestSource(request), body.Code)
+	prepared, err := s.prepareP2Mutation(request, AuthOperationRecoveryVerify, 4096, &body, func() error {
+		if _, parseErr := ParseRecoveryCode(body.Code); parseErr != nil {
+			return fmt.Errorf("invalid_argument: recovery code schema is invalid")
+		}
+		return nil
+	})
 	if err != nil {
 		s.writeSafeError(writer, err)
 		return
 	}
-	defer zeroBytes(result.Session.RawToken)
-	defer zeroBytes(result.Session.RawCSRF)
+	defer prepared.zero()
+	now := s.now()
+	var result AuthResult
+	defer func() {
+		zeroBytes(result.Session.RawToken)
+		zeroBytes(result.Session.RawCSRF)
+	}()
+	record, replay, err := s.store.WithAuthIdempotency(request.Context(), prepared.Request, now, func(tx *AuthIdempotencyTx, operationID string) (AuthIdempotencyCommit, error) {
+		conn := tx.Conn
+		if productErr := tx.BeginProduct(request.Context()); productErr != nil {
+			return AuthIdempotencyCommit{}, productErr
+		}
+		var verifyErr error
+		result, verifyErr = s.auth.VerifyRecoveryTx(request.Context(), conn, s.recoveryLimiter, s.requestSource(request), body.Code)
+		if verifyErr != nil {
+			return AuthIdempotencyCommit{}, verifyErr
+		}
+		resourceID := result.Session.ID
+		receipt := authOperationReceipt(operationID, now, &resourceID)
+		receipt.CookieOutcome = generatedapi.AuthOperationReceiptV1CookieOutcomeIssuedNotReplayable
+		receipt.CsrfOutcome = generatedapi.AuthOperationReceiptV1CsrfOutcomeIssuedNotReplayable
+		receipt.NextAction = generatedapi.AuthOperationReceiptV1NextActionUseAnotherRecoveryCode
+		return AuthIdempotencyCommit{Receipt: receipt, CookieAction: "secret_issued", At: now}, nil
+	})
+	if err != nil {
+		s.writeSafeError(writer, err)
+		return
+	}
+	if replay {
+		s.writeSecretReplay(writer, record)
+		return
+	}
 	s.setSessionCookie(writer, result.Session.RawToken, result.Session.ExpiresAt)
 	writeJSON(writer, http.StatusOK, generatedapi.CurrentAuthEnvelope{ApiVersion: generatedapi.CurrentAuthEnvelopeApiVersionV1, Data: result.CurrentAuth, Meta: responseMeta(writer)})
 }
 
 func (s *Server) recoveryRotate(writer http.ResponseWriter, request *http.Request) {
-	session, idempotencyKey, err := s.requireAuthenticatedMutation(request)
+	prepared, err := s.prepareP2Mutation(request, AuthOperationRecoveryCodesRotate, 16, nil, nil)
 	if err != nil {
 		s.writeSafeError(writer, err)
 		return
 	}
-	if err := requireNormalBrowserSession(session); err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
-	if err := decodeEmptyJSON(request); err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
-	framed, _ := transport.Frame([]byte("multidesk-one-time-operation-v1"), []byte(session.UserID), []byte("recovery_rotate"), []byte(idempotencyKey))
-	scope := sha256.Sum256(framed)
-	result, err := s.auth.RotateRecoveryCodes(request.Context(), session, scope)
+	defer prepared.zero()
+	now := s.now()
+	var result RecoveryCodeSet
+	defer func() { result.ZeroPlaintext() }()
+	record, replay, err := s.store.WithAuthIdempotency(request.Context(), prepared.Request, now, func(tx *AuthIdempotencyTx, operationID string) (AuthIdempotencyCommit, error) {
+		conn := tx.Conn
+		session, authErr := s.authorizeBrowserWinnerTx(request.Context(), conn, &prepared, true, now)
+		if authErr != nil {
+			return AuthIdempotencyCommit{}, authErr
+		}
+		if productErr := tx.BeginProduct(request.Context()); productErr != nil {
+			return AuthIdempotencyCommit{}, productErr
+		}
+		result, authErr = s.auth.RotateRecoveryCodesTx(request.Context(), conn, session)
+		if authErr != nil {
+			return AuthIdempotencyCommit{}, authErr
+		}
+		resourceID := result.BatchID
+		receipt := authOperationReceipt(operationID, now, &resourceID)
+		receipt.RecoveryCodesOutcome = generatedapi.AuthOperationReceiptV1RecoveryCodesOutcomeIssuedNotReplayable
+		receipt.NextAction = generatedapi.AuthOperationReceiptV1NextActionRotateRecoveryCodes
+		return AuthIdempotencyCommit{Receipt: receipt, CookieAction: "none", At: now}, nil
+	})
 	if err != nil {
 		s.writeSafeError(writer, err)
 		return
 	}
-	defer result.ZeroPlaintext()
+	if replay {
+		if err := s.validateBrowserReplayCSRF(request.Context(), &prepared); err != nil {
+			s.writeSafeError(writer, err)
+			return
+		}
+		s.writeSecretReplay(writer, record)
+		return
+	}
 	writeJSON(writer, http.StatusOK, generatedapi.RecoveryCodesEnvelopeV1{ApiVersion: generatedapi.RecoveryCodesEnvelopeV1ApiVersionV1, Data: generatedapi.RecoveryCodesResultV1{BatchId: result.BatchID, Codes: result.Plaintext, GeneratedAt: result.GeneratedAt}, Meta: responseMeta(writer)})
 }
 
@@ -363,62 +648,78 @@ func (s *Server) passkeyList(writer http.ResponseWriter, request *http.Request) 
 		s.writeSafeError(writer, err)
 		return
 	}
+	session, err = s.store.TouchBrowserSession(request.Context(), session.ID, session.ActivityRevision, s.now())
+	if err != nil {
+		s.writeSafeError(writer, fmt.Errorf("unauthenticated"))
+		return
+	}
 	values, err := s.store.ListPasskeys(request.Context(), session.UserID)
 	if err != nil {
 		s.writeSafeError(writer, err)
 		return
 	}
 	result := make([]generatedapi.PasskeyV1, 0, len(values))
-	maxRevision := 1
 	for _, value := range values {
 		var transportNames []generatedapi.PasskeyV1Transports
 		_ = json.Unmarshal(value.TransportsJSON, &transportNames)
 		result = append(result, generatedapi.PasskeyV1{Id: value.ID, Name: value.Name, CreatedAt: value.CreatedAt, LastUsedAt: value.LastUsedAt, Transports: transportNames, CredentialRevision: int(value.CredentialRevision), Current: value.ID == session.AuthenticationPasskeyID})
-		if int(value.CredentialRevision) > maxRevision {
-			maxRevision = int(value.CredentialRevision)
-		}
 	}
-	writeJSON(writer, http.StatusOK, generatedapi.PasskeyListEnvelopeV1{ApiVersion: generatedapi.PasskeyListEnvelopeV1ApiVersionV1, Data: generatedapi.PasskeyListResultV1{Passkeys: result, Revision: maxRevision}, Meta: responseMeta(writer)})
+	writeJSON(writer, http.StatusOK, generatedapi.PasskeyListEnvelopeV1{ApiVersion: generatedapi.PasskeyListEnvelopeV1ApiVersionV1, Data: generatedapi.PasskeyListResultV1{Passkeys: result}, Meta: responseMeta(writer)})
 }
 
 func (s *Server) passkeyDelete(writer http.ResponseWriter, request *http.Request) {
-	session, _, err := s.requireAuthenticatedMutation(request)
+	prepared, err := s.prepareP2Mutation(request, AuthOperationPasskeyDelete, 16, nil, nil)
 	if err != nil {
 		s.writeSafeError(writer, err)
 		return
 	}
-	if err := requireNormalBrowserSession(session); err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
-	if err := decodeEmptyJSON(request); err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
-	now := time.Now().UTC()
-	if session.AuthenticationMethod != "passkey" || session.RecentUVAt == nil || now.Sub(*session.RecentUVAt) < 0 || now.Sub(*session.RecentUVAt) > 5*time.Minute {
-		s.writeSafeError(writer, fmt.Errorf("recent user verification is required"))
-		return
-	}
-	revision, err := parseIfMatch(request)
-	if err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
+	defer prepared.zero()
+	now := s.now()
 	passkeyID := request.PathValue("passkeyId")
-	if _, err := transport.ParseUUIDv7(passkeyID); err != nil {
-		s.writeSafeError(writer, fmt.Errorf("invalid_argument: Passkey ID is invalid"))
-		return
-	}
-	result, err := s.store.DeletePasskeyCAS(request.Context(), session.UserID, passkeyID, session.ID, revision, now)
+	var data generatedapi.PasskeyDeleteResultV1
+	record, replay, err := s.store.WithAuthIdempotency(request.Context(), prepared.Request, now, func(tx *AuthIdempotencyTx, operationID string) (AuthIdempotencyCommit, error) {
+		conn := tx.Conn
+		session, authErr := s.authorizeBrowserWinnerTx(request.Context(), conn, &prepared, true, now)
+		if authErr != nil {
+			return AuthIdempotencyCommit{}, authErr
+		}
+		if productErr := tx.BeginProduct(request.Context()); productErr != nil {
+			return AuthIdempotencyCommit{}, productErr
+		}
+		if session.RecentUVAt == nil || now.Sub(*session.RecentUVAt) < 0 || now.Sub(*session.RecentUVAt) > 5*time.Minute {
+			return AuthIdempotencyCommit{}, fmt.Errorf("recent user verification is required")
+		}
+		result, deleteErr := deletePasskeyCASTx(request.Context(), conn, session.UserID, passkeyID, session.ID, prepared.Revision, now)
+		if deleteErr != nil {
+			return AuthIdempotencyCommit{}, deleteErr
+		}
+		data = generatedapi.PasskeyDeleteResultV1{PasskeyId: passkeyID, RevokedSessionCount: result.RevokedSessionCount, CurrentSessionRevoked: result.CurrentSessionRevoked}
+		receipt := authOperationReceipt(operationID, now, &passkeyID)
+		cookieAction := "none"
+		if result.CurrentSessionRevoked {
+			receipt.CookieOutcome = generatedapi.AuthOperationReceiptV1CookieOutcomeCleared
+			cookieAction = "clear"
+		}
+		return AuthIdempotencyCommit{Receipt: receipt, PublicResult: data, CookieAction: cookieAction, At: now}, nil
+	})
 	if err != nil {
 		s.writeSafeError(writer, err)
 		return
 	}
-	if result.CurrentSessionRevoked {
+	if replay {
+		if err := s.validateBrowserReplayCSRF(request.Context(), &prepared); err != nil {
+			s.writeSafeError(writer, err)
+			return
+		}
+		if err := decodeAuthPublicResult(record, &data); err != nil {
+			s.writeSafeError(writer, err)
+			return
+		}
+	}
+	if data.CurrentSessionRevoked {
 		s.clearSessionCookie(writer)
 	}
-	writeJSON(writer, http.StatusOK, generatedapi.PasskeyDeleteEnvelopeV1{ApiVersion: generatedapi.PasskeyDeleteEnvelopeV1ApiVersionV1, Data: generatedapi.PasskeyDeleteResultV1{PasskeyId: passkeyID, RevokedSessionCount: result.RevokedSessionCount, CurrentSessionRevoked: result.CurrentSessionRevoked}, Meta: responseMeta(writer)})
+	writeJSON(writer, http.StatusOK, generatedapi.PasskeyDeleteEnvelopeV1{ApiVersion: generatedapi.PasskeyDeleteEnvelopeV1ApiVersionV1, Data: data, Meta: responseMeta(writer)})
 }
 
 func (s *Server) browserSessionList(writer http.ResponseWriter, request *http.Request) {
@@ -436,75 +737,130 @@ func (s *Server) browserSessionList(writer http.ResponseWriter, request *http.Re
 		s.writeSafeError(writer, err)
 		return
 	}
-	values, err := s.store.ListBrowserSessions(request.Context(), current.UserID, time.Now().UTC())
+	current, err = s.store.TouchBrowserSession(request.Context(), current.ID, current.ActivityRevision, s.now())
+	if err != nil {
+		s.writeSafeError(writer, fmt.Errorf("unauthenticated"))
+		return
+	}
+	values, err := s.store.ListBrowserSessions(request.Context(), current.UserID, s.now())
 	if err != nil {
 		s.writeSafeError(writer, err)
 		return
 	}
 	result := make([]generatedapi.BrowserSessionV1, 0, len(values))
-	maxRevision := 1
 	for _, value := range values {
-		result = append(result, generatedapi.BrowserSessionV1{Id: value.ID, AuthenticationMethod: generatedapi.BrowserSessionV1AuthenticationMethod(value.AuthenticationMethod), CreatedAt: value.CreatedAt, LastSeenAt: value.UpdatedAt, ExpiresAt: value.ExpiresAt, Current: value.ID == current.ID})
-		if int(value.Revision) > maxRevision {
-			maxRevision = int(value.Revision)
-		}
+		result = append(result, generatedapi.BrowserSessionV1{Id: value.ID, AuthenticationMethod: generatedapi.BrowserSessionV1AuthenticationMethod(value.AuthenticationMethod), CreatedAt: value.CreatedAt, LastSeenAt: value.LastSeenAt, ExpiresAt: value.ExpiresAt, IdleExpiresAt: value.IdleExpiresAt, Revision: int(value.Revision), ActivityRevision: int(value.ActivityRevision), Current: value.ID == current.ID})
 	}
-	writeJSON(writer, http.StatusOK, generatedapi.BrowserSessionListEnvelopeV1{ApiVersion: generatedapi.BrowserSessionListEnvelopeV1ApiVersionV1, Data: generatedapi.BrowserSessionListResultV1{Sessions: result, Revision: maxRevision}, Meta: responseMeta(writer)})
+	writeJSON(writer, http.StatusOK, generatedapi.BrowserSessionListEnvelopeV1{ApiVersion: generatedapi.BrowserSessionListEnvelopeV1ApiVersionV1, Data: generatedapi.BrowserSessionListResultV1{Sessions: result}, Meta: responseMeta(writer)})
 }
 
 func (s *Server) browserSessionDelete(writer http.ResponseWriter, request *http.Request) {
-	current, _, err := s.requireAuthenticatedMutation(request)
+	prepared, err := s.prepareP2Mutation(request, AuthOperationSessionDelete, 16, nil, nil)
 	if err != nil {
 		s.writeSafeError(writer, err)
 		return
 	}
-	if err := requireNormalBrowserSession(current); err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
-	if err := decodeEmptyJSON(request); err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
-	revision, err := parseIfMatch(request)
-	if err != nil {
-		s.writeSafeError(writer, err)
-		return
-	}
+	defer prepared.zero()
 	id := request.PathValue("sessionId")
-	if _, err := transport.ParseUUIDv7(id); err != nil {
-		s.writeSafeError(writer, fmt.Errorf("invalid_argument: session ID is invalid"))
-		return
-	}
-	if _, err := s.store.RevokeBrowserSession(request.Context(), id, revision, time.Now().UTC()); err != nil {
+	now := s.now()
+	var current BrowserSession
+	var data generatedapi.BrowserSessionRevokeResultV1
+	record, replay, err := s.store.WithAuthIdempotency(request.Context(), prepared.Request, now, func(tx *AuthIdempotencyTx, operationID string) (AuthIdempotencyCommit, error) {
+		conn := tx.Conn
+		var authErr error
+		current, authErr = s.authorizeBrowserWinnerTx(request.Context(), conn, &prepared, true, now)
+		if authErr != nil {
+			return AuthIdempotencyCommit{}, authErr
+		}
+		if productErr := tx.BeginProduct(request.Context()); productErr != nil {
+			return AuthIdempotencyCommit{}, productErr
+		}
+		revoked, revokeErr := revokeBrowserSession(request.Context(), conn, id, prepared.Revision, now)
+		if revokeErr != nil {
+			return AuthIdempotencyCommit{}, revokeErr
+		}
+		currentRevoked := id == current.ID
+		data = generatedapi.BrowserSessionRevokeResultV1{SessionId: revoked.SessionID, RevokedAt: revoked.RevokedAt, Revision: int(revoked.Revision), CurrentSessionRevoked: currentRevoked}
+		receipt := authOperationReceipt(operationID, now, &id)
+		cookieAction := "none"
+		if currentRevoked {
+			receipt.CookieOutcome = generatedapi.AuthOperationReceiptV1CookieOutcomeCleared
+			cookieAction = "clear"
+		}
+		return AuthIdempotencyCommit{Receipt: receipt, PublicResult: data, CookieAction: cookieAction, At: now}, nil
+	})
+	if err != nil {
 		s.writeSafeError(writer, err)
 		return
 	}
-	if id == current.ID {
+	if replay {
+		if err := s.validateBrowserReplayCSRF(request.Context(), &prepared); err != nil {
+			s.writeSafeError(writer, err)
+			return
+		}
+		if err = decodeAuthPublicResult(record, &data); err != nil {
+			s.writeSafeError(writer, err)
+			return
+		}
+	}
+	if data.CurrentSessionRevoked {
 		s.clearSessionCookie(writer)
 	}
-	writeJSON(writer, http.StatusOK, generatedapi.OperationStatusEnvelope{ApiVersion: generatedapi.OperationStatusEnvelopeApiVersionV1, Data: generatedapi.OperationStatusData{Status: generatedapi.OperationStatusDataStatusRevoked, Id: &id}, Meta: responseMeta(writer)})
+	writeJSON(writer, http.StatusOK, generatedapi.BrowserSessionRevokeEnvelopeV1{ApiVersion: generatedapi.BrowserSessionRevokeEnvelopeV1ApiVersionV1, Data: data, Meta: responseMeta(writer)})
 }
 
 func (s *Server) authLogout(writer http.ResponseWriter, request *http.Request) {
-	current, _, err := s.requireAuthenticatedMutation(request)
+	prepared, err := s.prepareP2Mutation(request, AuthOperationLogout, 16, nil, nil)
 	if err != nil {
 		s.writeSafeError(writer, err)
 		return
 	}
-	if err := decodeEmptyJSON(request); err != nil {
+	defer prepared.zero()
+	now := s.now()
+	var current BrowserSession
+	var data generatedapi.OperationStatusData
+	record, replay, err := s.store.WithAuthIdempotency(request.Context(), prepared.Request, now, func(tx *AuthIdempotencyTx, operationID string) (AuthIdempotencyCommit, error) {
+		conn := tx.Conn
+		var authErr error
+		current, authErr = s.authorizeBrowserWinnerTx(request.Context(), conn, &prepared, false, now)
+		if authErr != nil {
+			return AuthIdempotencyCommit{}, authErr
+		}
+		if productErr := tx.BeginProduct(request.Context()); productErr != nil {
+			return AuthIdempotencyCommit{}, productErr
+		}
+		if _, authErr = revokeBrowserSession(request.Context(), conn, current.ID, current.Revision, now); authErr != nil {
+			return AuthIdempotencyCommit{}, authErr
+		}
+		resourceID := current.ID
+		data = generatedapi.OperationStatusData{Status: generatedapi.OperationStatusDataStatusRevoked, Id: &resourceID}
+		receipt := authOperationReceipt(operationID, now, &resourceID)
+		receipt.CookieOutcome = generatedapi.AuthOperationReceiptV1CookieOutcomeCleared
+		return AuthIdempotencyCommit{Receipt: receipt, PublicResult: data, CookieAction: "clear", At: now}, nil
+	})
+	if err != nil {
 		s.writeSafeError(writer, err)
 		return
 	}
-	if _, err := s.store.RevokeBrowserSession(request.Context(), current.ID, current.Revision, time.Now().UTC()); err != nil {
-		s.writeSafeError(writer, err)
-		return
+	if replay {
+		if err := s.validateBrowserReplayCSRF(request.Context(), &prepared); err != nil {
+			s.writeSafeError(writer, err)
+			return
+		}
+		if err := decodeAuthPublicResult(record, &data); err != nil || data.Id == nil {
+			s.writeSafeError(writer, fmt.Errorf("stored logout receipt is invalid"))
+			return
+		}
 	}
 	s.clearSessionCookie(writer)
-	writeJSON(writer, http.StatusOK, generatedapi.OperationStatusEnvelope{ApiVersion: generatedapi.OperationStatusEnvelopeApiVersionV1, Data: generatedapi.OperationStatusData{Status: generatedapi.OperationStatusDataStatusRevoked, Id: &current.ID}, Meta: responseMeta(writer)})
+	writeJSON(writer, http.StatusOK, generatedapi.OperationStatusEnvelope{ApiVersion: generatedapi.OperationStatusEnvelopeApiVersionV1, Data: data, Meta: responseMeta(writer)})
 }
 
 func (s *Server) authenticate(request *http.Request) (BrowserSession, []byte, error) {
+	return s.authenticateContext(request.Context(), request)
+}
+
+func (s *Server) authenticateContext(ctx context.Context, request *http.Request) (BrowserSession, []byte, error) {
 	if len(request.Header.Values("Cookie")) != 1 {
 		return BrowserSession{}, nil, fmt.Errorf("unauthenticated")
 	}
@@ -525,38 +881,12 @@ func (s *Server) authenticate(request *http.Request) (BrowserSession, []byte, er
 	if err != nil {
 		return BrowserSession{}, nil, fmt.Errorf("unauthenticated")
 	}
-	session, err := s.store.BrowserSessionByToken(request.Context(), raw, time.Now().UTC())
+	session, err := s.store.BrowserSessionByToken(ctx, raw, s.now())
 	if err != nil {
 		zeroBytes(raw)
 		return BrowserSession{}, nil, fmt.Errorf("unauthenticated")
 	}
 	return session, raw, nil
-}
-
-func (s *Server) requireAuthenticatedMutation(request *http.Request) (BrowserSession, string, error) {
-	if err := s.requireBrowserMutationHeaders(request); err != nil {
-		return BrowserSession{}, "", err
-	}
-	key, err := requireIdempotencyKey(request)
-	if err != nil {
-		return BrowserSession{}, "", err
-	}
-	session, rawToken, err := s.authenticate(request)
-	zeroBytes(rawToken)
-	if err != nil {
-		return BrowserSession{}, "", err
-	}
-	csrfValues := request.Header.Values("X-CSRF-Token")
-	if len(csrfValues) != 1 {
-		return BrowserSession{}, "", fmt.Errorf("csrf_invalid")
-	}
-	rawCSRF, err := transport.DecodeBase64URLFixed(csrfValues[0], 32)
-	if err != nil || !s.store.ValidateCSRF(session, rawCSRF) {
-		zeroBytes(rawCSRF)
-		return BrowserSession{}, "", fmt.Errorf("csrf_invalid")
-	}
-	zeroBytes(rawCSRF)
-	return session, key, nil
 }
 
 func requireNormalBrowserSession(session BrowserSession) error {
@@ -616,51 +946,12 @@ func exactHeader(request *http.Request, name string) (string, bool) {
 	return returnValue, len(values) == 1
 }
 
-func decodeEmptyJSON(request *http.Request) error {
-	var value struct{}
-	if err := transport.DecodeStrictJSON(request.Body, 16, &value); err != nil {
-		return fmt.Errorf("invalid_argument: request body must be an empty JSON object")
-	}
-	return nil
-}
-
-func requireIdempotencyKey(request *http.Request) (string, error) {
-	values := request.Header.Values("Idempotency-Key")
-	if len(values) == 0 {
-		return "", fmt.Errorf("idempotency_key_required")
-	}
-	if len(values) != 1 || len(values[0]) < 16 || len(values[0]) > 128 {
-		return "", fmt.Errorf("idempotency_key_invalid")
-	}
-	for _, value := range []byte(values[0]) {
-		if value < 0x21 || value > 0x7e {
-			return "", fmt.Errorf("idempotency_key_invalid")
-		}
-	}
-	return values[0], nil
-}
-
 func bootstrapAuthorization(request *http.Request) (string, error) {
 	values := request.Header.Values("Authorization")
 	if len(values) != 1 || !strings.HasPrefix(values[0], "Bootstrap ") || strings.Count(values[0], " ") != 1 {
 		return "", fmt.Errorf("bootstrap token is invalid")
 	}
 	return strings.TrimPrefix(values[0], "Bootstrap "), nil
-}
-
-func parseIfMatch(request *http.Request) (int64, error) {
-	values := request.Header.Values("If-Match")
-	if len(values) == 0 {
-		return 0, fmt.Errorf("if_match_required")
-	}
-	if len(values) != 1 {
-		return 0, fmt.Errorf("invalid_argument: revision precondition is invalid")
-	}
-	parsed, err := transport.ParseIfMatch(values[0])
-	if err != nil {
-		return 0, fmt.Errorf("invalid_argument: revision precondition is invalid")
-	}
-	return int64(parsed), nil
 }
 
 func (s *Server) setSessionCookie(writer http.ResponseWriter, raw []byte, expires time.Time) {
@@ -703,6 +994,8 @@ func (s *Server) writeSafeError(writer http.ResponseWriter, err error) {
 	code := "invalid_argument"
 	status := http.StatusBadRequest
 	message := "request was rejected"
+	details := any([]any{})
+	var sessionConflict *SessionRevisionConflictError
 	switch {
 	case errors.Is(err, ErrPasskeyCounterRegressed):
 		code, status, message = "passkey_counter_regressed", http.StatusUnauthorized, "Passkey verification was rejected"
@@ -710,6 +1003,18 @@ func (s *Server) writeSafeError(writer http.ResponseWriter, err error) {
 		code, status, message = "last_passkey_required", http.StatusConflict, "the last Passkey cannot be deleted"
 	case errors.Is(err, ErrRevisionChanged):
 		code, status, message = "conflict", http.StatusPreconditionFailed, "resource revision changed"
+	case errors.Is(err, ErrSessionIntegrityInvalid):
+		code, status, message = "session_integrity_invalid", http.StatusUnauthorized, "browser session integrity verification failed"
+	case errors.As(err, &sessionConflict):
+		code, status, message = "session_revision_conflict", http.StatusPreconditionFailed, "browser session revision changed"
+		details = generatedapi.SessionRevisionConflictDetailsV1{SessionId: sessionConflict.SessionID, ExpectedRevision: int(sessionConflict.ExpectedRevision), CurrentRevision: int(sessionConflict.CurrentRevision)}
+	case errors.Is(err, ErrAuthIdempotencyKeyReused):
+		code, status, message = "idempotency_key_reused", http.StatusConflict, "Idempotency-Key was already used for a different request"
+	case errors.Is(err, ErrAuthIdempotencyInProgress):
+		code, status, message = "idempotency_in_progress", http.StatusConflict, "the matching operation is still in progress"
+		writer.Header().Set("Retry-After", "1")
+	case errors.Is(err, ErrCeremonyRestartRequired):
+		code, status, message = "ceremony_restart_required", http.StatusConflict, "the ceremony must be restarted with a fresh Idempotency-Key"
 	case errors.Is(err, ErrRecoveryInvalidOrRateLimited), errors.Is(err, ErrRecoveryConsumed):
 		code, status, message = "recovery_invalid_or_rate_limited", http.StatusUnauthorized, "recovery verification failed"
 	case errors.Is(err, ErrOneTimeResultUnavailable):
@@ -747,5 +1052,5 @@ func (s *Server) writeSafeError(writer http.ResponseWriter, err error) {
 	case strings.Contains(err.Error(), "WebAuthn") || strings.Contains(err.Error(), "webauthn"):
 		code, status, message = "webauthn_verification_failed", http.StatusUnauthorized, "WebAuthn verification failed"
 	}
-	safeError(writer, status, code, message, writer.Header().Get("X-Request-ID"))
+	safeErrorDetails(writer, status, code, message, writer.Header().Get("X-Request-ID"), details)
 }

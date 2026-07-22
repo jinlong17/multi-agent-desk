@@ -978,6 +978,36 @@ export interface components {
             field: string;
             reason: string;
         };
+        /** @enum {string} */
+        AuthIdempotencyOperationV1: "bootstrap_options" | "bootstrap_verify" | "passkey_login_options" | "passkey_login_verify" | "passkey_registration_options" | "passkey_registration_verify" | "passkey_delete" | "uv_options" | "uv_verify" | "recovery_verify" | "recovery_codes_rotate" | "logout" | "session_delete";
+        AuthOperationReceiptV1: {
+            /** Format: uuidv7 */
+            operationId: string;
+            operation: components["schemas"]["AuthIdempotencyOperationV1"];
+            /** @enum {string} */
+            state: "committed";
+            /** Format: date-time */
+            committedAt: string;
+            /** Format: uuidv7 */
+            resourceId?: string;
+            /** @enum {string} */
+            cookieOutcome: "none" | "cleared" | "issued_not_replayable";
+            /** @enum {string} */
+            csrfOutcome: "none" | "issued_not_replayable";
+            /** @enum {string} */
+            recoveryCodesOutcome: "none" | "issued_not_replayable";
+            /** @enum {string} */
+            nextAction: "none" | "get_auth_current" | "fresh_passkey_login" | "use_another_recovery_code" | "rotate_recovery_codes";
+        };
+        AuthReceiptErrorDetailsV1: {
+            receipt: components["schemas"]["AuthOperationReceiptV1"];
+        };
+        SessionRevisionConflictDetailsV1: {
+            /** Format: uuidv7 */
+            sessionId: string;
+            expectedRevision: number;
+            currentRevision: number;
+        };
         ApiError: {
             /** @enum {string} */
             code: "invalid_argument" | "unauthenticated" | "permission_denied" | "not_found" | "conflict" | "resource_exhausted" | "rate_limited" | "request_too_large" | "unsupported_api_version" | "schema_incompatible" | "idempotency_key_required" | "idempotency_key_reused" | "if_match_required" | "sync_conflict" | "sync_history_missing" | "sync_base_digest_mismatch" | "sync_next_digest_mismatch" | "sync_patch_mismatch" | "sync_patch_too_large" | "invalid_cursor" | "stale_resurrection" | "snapshot_required" | "snapshot_in_progress" | "snapshot_expired" | "snapshot_page_invalid" | "snapshot_commit_conflict" | "snapshot_page_too_large" | "cross_server_identity_rebind" | "bootstrap_unavailable" | "bootstrap_expired" | "bootstrap_replayed" | "bootstrap_anchor_required" | "origin_mismatch" | "rp_id_mismatch" | "webauthn_challenge_expired" | "webauthn_challenge_replayed" | "webauthn_verification_failed" | "passkey_counter_regressed" | "recovery_invalid_or_rate_limited" | "recovery_consumed" | "one_time_result_unavailable" | "recent_uv_required" | "last_passkey_required" | "recovery_batch_replaced" | "csrf_invalid" | "session_expired" | "device_not_enrolled" | "device_revoked" | "device_key_changed" | "key_digest_mismatch" | "device_key_envelope_corrupt" | "device_key_envelope_conflict" | "pin_mismatch" | "attestation_invalid" | "attestation_expired" | "attestation_replayed" | "cross_type_signature_replay" | "enrollment_preauth_invalid" | "approver_not_pinned" | "capability_denied" | "capability_revision_conflict" | "capability_not_recognized" | "activation_receipt_invalid" | "enrollment_cancelled" | "signature_invalid" | "request_replayed" | "clock_skew" | "command_expired" | "command_claimed" | "command_state_conflict" | "command_digest_mismatch" | "projection_read_only" | "command_attempt_stale" | "command_execution_ambiguous" | "command_reconciliation_required" | "command_receipt_inconsistent" | "delivery_attempts_exhausted" | "phase4b_controller_required" | "mapping_quarantined" | "forbidden_metadata_field" | "provider_control_unsupported" | "provider_session_start_unsupported" | "provider_resume_unsupported" | "provider_stop_unsupported" | "provider_kill_unsupported" | "daemon_shutting_down" | "daemon_unavailable";
@@ -1255,7 +1285,6 @@ export interface components {
         };
         PasskeyListResultV1: {
             passkeys: components["schemas"]["PasskeyV1"][];
-            revision: number;
         };
         PasskeyDeleteResultV1: {
             /** Format: uuidv7 */
@@ -1287,15 +1316,32 @@ export interface components {
             lastSeenAt: string;
             /** Format: date-time */
             expiresAt: string;
+            /** Format: date-time */
+            idleExpiresAt: string;
+            revision: number;
+            activityRevision: number;
         };
         BrowserSessionListResultV1: {
             sessions: components["schemas"]["BrowserSessionV1"][];
+        };
+        BrowserSessionRevokeResultV1: {
+            /** Format: uuidv7 */
+            sessionId: string;
+            /** Format: date-time */
+            revokedAt: string;
             revision: number;
+            currentSessionRevoked: boolean;
         };
         BrowserSessionListEnvelopeV1: {
             /** @enum {string} */
             apiVersion: "v1";
             data: components["schemas"]["BrowserSessionListResultV1"];
+            meta: components["schemas"]["ResponseMeta"];
+        };
+        BrowserSessionRevokeEnvelopeV1: {
+            /** @enum {string} */
+            apiVersion: "v1";
+            data: components["schemas"]["BrowserSessionRevokeResultV1"];
             meta: components["schemas"]["ResponseMeta"];
         };
         DeviceCapabilityListV1: components["schemas"]["DeviceCapabilityV1"][];
@@ -1333,7 +1379,7 @@ export interface components {
             /** @enum {string} */
             storageMode: "portable_vault_v1";
             keyEnvelopeAssertion: components["schemas"]["BootstrapKeyEnvelopeAssertionV1"];
-            capabilities: components["schemas"]["DeviceCapabilityListV1"];
+            capabilities: components["schemas"]["P2BootstrapDeviceCapabilityListV1"];
         };
         BootstrapAnchorDescriptorV1: {
             /** @enum {integer} */
@@ -3853,10 +3899,54 @@ export interface components {
             data: components["schemas"]["DeviceCommandStateV1"];
             meta: components["schemas"]["ResponseMeta"];
         };
+        P2EmptyObjectRequestV1: Record<string, never>;
+        P2BootstrapDeviceCapabilityListV1: components["schemas"]["DeviceCapabilityV1"][];
+        P2StandardApiErrorV1: {
+            /** @enum {string} */
+            code: "invalid_argument" | "unauthenticated" | "permission_denied" | "not_found" | "conflict" | "resource_exhausted" | "rate_limited" | "request_too_large" | "unsupported_api_version" | "schema_incompatible" | "idempotency_key_required" | "idempotency_key_reused" | "idempotency_in_progress" | "if_match_required" | "sync_conflict" | "sync_history_missing" | "sync_base_digest_mismatch" | "sync_next_digest_mismatch" | "sync_patch_mismatch" | "sync_patch_too_large" | "invalid_cursor" | "stale_resurrection" | "snapshot_required" | "snapshot_in_progress" | "snapshot_expired" | "snapshot_page_invalid" | "snapshot_commit_conflict" | "snapshot_page_too_large" | "cross_server_identity_rebind" | "bootstrap_unavailable" | "bootstrap_expired" | "bootstrap_replayed" | "bootstrap_anchor_required" | "ceremony_restart_required" | "origin_mismatch" | "rp_id_mismatch" | "webauthn_challenge_expired" | "webauthn_challenge_replayed" | "webauthn_verification_failed" | "passkey_counter_regressed" | "recovery_invalid_or_rate_limited" | "recovery_consumed" | "recent_uv_required" | "last_passkey_required" | "recovery_batch_replaced" | "csrf_invalid" | "session_integrity_invalid" | "session_expired" | "device_not_enrolled" | "device_revoked" | "device_key_changed" | "key_digest_mismatch" | "device_key_envelope_corrupt" | "device_key_envelope_conflict" | "pin_mismatch" | "attestation_invalid" | "attestation_expired" | "attestation_replayed" | "cross_type_signature_replay" | "enrollment_preauth_invalid" | "approver_not_pinned" | "capability_denied" | "capability_revision_conflict" | "capability_not_recognized" | "activation_receipt_invalid" | "enrollment_cancelled" | "signature_invalid" | "request_replayed" | "clock_skew" | "command_expired" | "command_claimed" | "command_state_conflict" | "command_digest_mismatch" | "projection_read_only" | "command_attempt_stale" | "command_execution_ambiguous" | "command_reconciliation_required" | "command_receipt_inconsistent" | "delivery_attempts_exhausted" | "phase4b_controller_required" | "mapping_quarantined" | "forbidden_metadata_field" | "provider_control_unsupported" | "provider_session_start_unsupported" | "provider_resume_unsupported" | "provider_stop_unsupported" | "provider_kill_unsupported" | "daemon_shutting_down" | "daemon_unavailable";
+            message: string;
+            /** Format: uuidv7 */
+            requestId: string;
+            details: components["schemas"]["ErrorDetail"][];
+        };
+        P2OneTimeResultUnavailableApiErrorV1: {
+            /** @enum {string} */
+            code: "one_time_result_unavailable";
+            message: string;
+            /** Format: uuidv7 */
+            requestId: string;
+            details: components["schemas"]["AuthReceiptErrorDetailsV1"];
+        };
+        P2SessionRevisionConflictApiErrorV1: {
+            /** @enum {string} */
+            code: "session_revision_conflict";
+            message: string;
+            /** Format: uuidv7 */
+            requestId: string;
+            details: components["schemas"]["SessionRevisionConflictDetailsV1"];
+        };
+        P2ApiErrorV1: components["schemas"]["P2StandardApiErrorV1"] | components["schemas"]["P2OneTimeResultUnavailableApiErrorV1"] | components["schemas"]["P2SessionRevisionConflictApiErrorV1"];
+        P2StandardErrorEnvelopeV1: {
+            /** @enum {string} */
+            apiVersion: "v1";
+            error: components["schemas"]["P2StandardApiErrorV1"];
+        };
+        P2OneTimeResultUnavailableErrorEnvelopeV1: {
+            /** @enum {string} */
+            apiVersion: "v1";
+            error: components["schemas"]["P2OneTimeResultUnavailableApiErrorV1"];
+        };
+        P2SessionRevisionConflictErrorEnvelopeV1: {
+            /** @enum {string} */
+            apiVersion: "v1";
+            error: components["schemas"]["P2SessionRevisionConflictApiErrorV1"];
+        };
+        P2SecretConflictErrorEnvelopeV1: components["schemas"]["P2StandardErrorEnvelopeV1"] | components["schemas"]["P2OneTimeResultUnavailableErrorEnvelopeV1"];
     };
     responses: never;
     parameters: {
         IdempotencyKey: string;
+        P2IdempotencyKey: string;
         IfMatch: string;
         Csrf: string;
         RequestTimestamp: string;
@@ -3868,7 +3958,23 @@ export interface components {
         Wait: number;
     };
     requestBodies: never;
-    headers: never;
+    headers: {
+        /**
+         * @description Issues the host-only P2 browser session cookie. Domain is forbidden.
+         * @example __Host-mad_session=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA; Path=/; Expires=Fri, 01 Mar 2030 12:00:00 GMT; HttpOnly; Secure; SameSite=Strict
+         */
+        P2IssuedSessionCookieV1: string;
+        /**
+         * @description Clears the host-only P2 browser session cookie. Domain is forbidden.
+         * @example __Host-mad_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; Max-Age=0; HttpOnly; Secure; SameSite=Strict
+         */
+        P2ClearedSessionCookieV1: "__Host-mad_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; Max-Age=0; HttpOnly; Secure; SameSite=Strict";
+        /**
+         * @description Present with the exact value 1 only for idempotency_in_progress.
+         * @example 1
+         */
+        P2RetryAfterV1: "1";
+    };
     pathItems: never;
 }
 export type $defs = Record<string, never>;
@@ -4823,7 +4929,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 401 error */
@@ -4843,7 +4949,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 403 error */
@@ -4863,7 +4969,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 404 error */
@@ -4883,7 +4989,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 409 error */
@@ -4903,7 +5009,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 412 error */
@@ -4923,7 +5029,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 413 error */
@@ -4943,7 +5049,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 415 error */
@@ -4963,7 +5069,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 422 error */
@@ -4983,7 +5089,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 429 error */
@@ -5003,7 +5109,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 431 error */
@@ -5023,7 +5129,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 500 error */
@@ -5043,7 +5149,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 503 error */
@@ -5063,7 +5169,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
         };
@@ -5072,12 +5178,17 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                "Idempotency-Key": components["parameters"]["P2IdempotencyKey"];
             };
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                /** @example {} */
+                "application/json": components["schemas"]["P2EmptyObjectRequestV1"];
+            };
+        };
         responses: {
             /** @description Success */
             200: {
@@ -5134,7 +5245,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 401 error */
@@ -5154,7 +5265,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 403 error */
@@ -5174,7 +5285,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 404 error */
@@ -5194,12 +5305,13 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 409 error */
             409: {
                 headers: {
+                    "Retry-After": components["headers"]["P2RetryAfterV1"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -5214,7 +5326,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 412 error */
@@ -5234,7 +5346,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 413 error */
@@ -5254,7 +5366,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 415 error */
@@ -5274,7 +5386,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 422 error */
@@ -5294,7 +5406,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 429 error */
@@ -5314,7 +5426,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 431 error */
@@ -5334,7 +5446,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 500 error */
@@ -5354,7 +5466,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 503 error */
@@ -5374,7 +5486,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
         };
@@ -5383,7 +5495,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                "Idempotency-Key": components["parameters"]["P2IdempotencyKey"];
             };
             path?: never;
             cookie?: never;
@@ -5417,6 +5529,7 @@ export interface operations {
                     "Cache-Control"?: string;
                     /** @example 018f47a0-7b1c-7cc2-8000-000000000001 */
                     "X-Request-ID"?: string;
+                    "Set-Cookie": components["headers"]["P2IssuedSessionCookieV1"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -5459,7 +5572,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 401 error */
@@ -5479,7 +5592,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 403 error */
@@ -5499,7 +5612,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 404 error */
@@ -5519,12 +5632,13 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 409 error */
             409: {
                 headers: {
+                    "Retry-After": components["headers"]["P2RetryAfterV1"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -5539,7 +5653,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2SecretConflictErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 412 error */
@@ -5559,7 +5673,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 413 error */
@@ -5579,7 +5693,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 415 error */
@@ -5599,7 +5713,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 422 error */
@@ -5619,7 +5733,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 429 error */
@@ -5639,7 +5753,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 431 error */
@@ -5659,7 +5773,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 500 error */
@@ -5679,7 +5793,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 503 error */
@@ -5699,7 +5813,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
         };
@@ -5708,13 +5822,18 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                "Idempotency-Key": components["parameters"]["P2IdempotencyKey"];
                 "X-CSRF-Token": components["parameters"]["Csrf"];
             };
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                /** @example {} */
+                "application/json": components["schemas"]["P2EmptyObjectRequestV1"];
+            };
+        };
         responses: {
             /** @description Success */
             200: {
@@ -5793,7 +5912,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 401 error */
@@ -5813,7 +5932,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 403 error */
@@ -5833,7 +5952,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 404 error */
@@ -5853,12 +5972,13 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 409 error */
             409: {
                 headers: {
+                    "Retry-After": components["headers"]["P2RetryAfterV1"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -5873,7 +5993,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 412 error */
@@ -5893,7 +6013,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 413 error */
@@ -5913,7 +6033,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 415 error */
@@ -5933,7 +6053,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 422 error */
@@ -5953,7 +6073,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 429 error */
@@ -5973,7 +6093,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 431 error */
@@ -5993,7 +6113,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 500 error */
@@ -6013,7 +6133,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 503 error */
@@ -6033,7 +6153,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
         };
@@ -6042,7 +6162,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                "Idempotency-Key": components["parameters"]["P2IdempotencyKey"];
                 "X-CSRF-Token": components["parameters"]["Csrf"];
             };
             path?: never;
@@ -6076,6 +6196,7 @@ export interface operations {
                     "Cache-Control"?: string;
                     /** @example 018f47a0-7b1c-7cc2-8000-000000000001 */
                     "X-Request-ID"?: string;
+                    "Set-Cookie": components["headers"]["P2IssuedSessionCookieV1"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -6118,7 +6239,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 401 error */
@@ -6138,7 +6259,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 403 error */
@@ -6158,7 +6279,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 404 error */
@@ -6178,12 +6299,13 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 409 error */
             409: {
                 headers: {
+                    "Retry-After": components["headers"]["P2RetryAfterV1"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -6198,7 +6320,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2SecretConflictErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 412 error */
@@ -6218,7 +6340,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 413 error */
@@ -6238,7 +6360,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 415 error */
@@ -6258,7 +6380,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 422 error */
@@ -6278,7 +6400,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 429 error */
@@ -6298,7 +6420,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 431 error */
@@ -6318,7 +6440,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 500 error */
@@ -6338,7 +6460,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 503 error */
@@ -6358,7 +6480,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
         };
@@ -6367,13 +6489,18 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                "Idempotency-Key": components["parameters"]["P2IdempotencyKey"];
                 "X-CSRF-Token": components["parameters"]["Csrf"];
             };
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                /** @example {} */
+                "application/json": components["schemas"]["P2EmptyObjectRequestV1"];
+            };
+        };
         responses: {
             /** @description Success */
             200: {
@@ -6430,7 +6557,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 401 error */
@@ -6450,7 +6577,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 403 error */
@@ -6470,7 +6597,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 404 error */
@@ -6490,12 +6617,13 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 409 error */
             409: {
                 headers: {
+                    "Retry-After": components["headers"]["P2RetryAfterV1"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -6510,7 +6638,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 412 error */
@@ -6530,7 +6658,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 413 error */
@@ -6550,7 +6678,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 415 error */
@@ -6570,7 +6698,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 422 error */
@@ -6590,7 +6718,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 429 error */
@@ -6610,7 +6738,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 431 error */
@@ -6630,7 +6758,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 500 error */
@@ -6650,7 +6778,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 503 error */
@@ -6670,7 +6798,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
         };
@@ -6679,7 +6807,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                "Idempotency-Key": components["parameters"]["P2IdempotencyKey"];
                 "X-CSRF-Token": components["parameters"]["Csrf"];
             };
             path?: never;
@@ -6714,6 +6842,7 @@ export interface operations {
                     "Cache-Control"?: string;
                     /** @example 018f47a0-7b1c-7cc2-8000-000000000001 */
                     "X-Request-ID"?: string;
+                    "Set-Cookie": components["headers"]["P2IssuedSessionCookieV1"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -6756,7 +6885,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 401 error */
@@ -6776,7 +6905,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 403 error */
@@ -6796,7 +6925,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 404 error */
@@ -6816,12 +6945,13 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 409 error */
             409: {
                 headers: {
+                    "Retry-After": components["headers"]["P2RetryAfterV1"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -6836,7 +6966,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2SecretConflictErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 412 error */
@@ -6856,7 +6986,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 413 error */
@@ -6876,7 +7006,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 415 error */
@@ -6896,7 +7026,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 422 error */
@@ -6916,7 +7046,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 429 error */
@@ -6936,7 +7066,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 431 error */
@@ -6956,7 +7086,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 500 error */
@@ -6976,7 +7106,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 503 error */
@@ -6996,7 +7126,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
         };
@@ -7005,7 +7135,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                "Idempotency-Key": components["parameters"]["P2IdempotencyKey"];
             };
             path?: never;
             cookie?: never;
@@ -7028,6 +7158,7 @@ export interface operations {
                     "Cache-Control"?: string;
                     /** @example 018f47a0-7b1c-7cc2-8000-000000000001 */
                     "X-Request-ID"?: string;
+                    "Set-Cookie": components["headers"]["P2IssuedSessionCookieV1"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -7070,7 +7201,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 401 error */
@@ -7090,7 +7221,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 403 error */
@@ -7110,7 +7241,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 404 error */
@@ -7130,12 +7261,13 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 409 error */
             409: {
                 headers: {
+                    "Retry-After": components["headers"]["P2RetryAfterV1"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -7150,7 +7282,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2SecretConflictErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 412 error */
@@ -7170,7 +7302,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 413 error */
@@ -7190,7 +7322,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 415 error */
@@ -7210,7 +7342,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 422 error */
@@ -7230,7 +7362,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 429 error */
@@ -7250,7 +7382,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 431 error */
@@ -7270,7 +7402,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 500 error */
@@ -7290,7 +7422,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 503 error */
@@ -7310,7 +7442,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
         };
@@ -7319,13 +7451,18 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                "Idempotency-Key": components["parameters"]["P2IdempotencyKey"];
                 "X-CSRF-Token": components["parameters"]["Csrf"];
             };
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                /** @example {} */
+                "application/json": components["schemas"]["P2EmptyObjectRequestV1"];
+            };
+        };
         responses: {
             /** @description Success */
             200: {
@@ -7382,7 +7519,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 401 error */
@@ -7402,7 +7539,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 403 error */
@@ -7422,7 +7559,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 404 error */
@@ -7442,12 +7579,13 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 409 error */
             409: {
                 headers: {
+                    "Retry-After": components["headers"]["P2RetryAfterV1"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -7462,7 +7600,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2SecretConflictErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 412 error */
@@ -7482,7 +7620,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 413 error */
@@ -7502,7 +7640,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 415 error */
@@ -7522,7 +7660,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 422 error */
@@ -7542,7 +7680,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 429 error */
@@ -7562,7 +7700,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 431 error */
@@ -7582,7 +7720,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 500 error */
@@ -7602,7 +7740,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 503 error */
@@ -7622,7 +7760,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
         };
@@ -7631,13 +7769,18 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                "Idempotency-Key": components["parameters"]["P2IdempotencyKey"];
                 "X-CSRF-Token": components["parameters"]["Csrf"];
             };
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                /** @example {} */
+                "application/json": components["schemas"]["P2EmptyObjectRequestV1"];
+            };
+        };
         responses: {
             /** @description Success */
             200: {
@@ -7646,6 +7789,7 @@ export interface operations {
                     "Cache-Control"?: string;
                     /** @example 018f47a0-7b1c-7cc2-8000-000000000001 */
                     "X-Request-ID"?: string;
+                    "Set-Cookie": components["headers"]["P2ClearedSessionCookieV1"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -7682,7 +7826,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 401 error */
@@ -7702,7 +7846,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 403 error */
@@ -7722,7 +7866,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 404 error */
@@ -7742,12 +7886,13 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 409 error */
             409: {
                 headers: {
+                    "Retry-After": components["headers"]["P2RetryAfterV1"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -7762,7 +7907,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 412 error */
@@ -7782,7 +7927,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 413 error */
@@ -7802,7 +7947,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 415 error */
@@ -7822,7 +7967,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 422 error */
@@ -7842,7 +7987,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 429 error */
@@ -7862,7 +8007,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 431 error */
@@ -7882,7 +8027,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 500 error */
@@ -7902,7 +8047,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 503 error */
@@ -7922,7 +8067,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
         };
@@ -7988,7 +8133,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 401 error */
@@ -8008,7 +8153,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 403 error */
@@ -8028,7 +8173,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 404 error */
@@ -8048,7 +8193,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 409 error */
@@ -8068,7 +8213,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 412 error */
@@ -8088,7 +8233,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 413 error */
@@ -8108,7 +8253,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 415 error */
@@ -8128,7 +8273,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 422 error */
@@ -8148,7 +8293,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 429 error */
@@ -8168,7 +8313,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 431 error */
@@ -8188,7 +8333,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 500 error */
@@ -8208,7 +8353,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 503 error */
@@ -8228,7 +8373,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
         };
@@ -8237,7 +8382,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                "Idempotency-Key": components["parameters"]["P2IdempotencyKey"];
                 "X-CSRF-Token": components["parameters"]["Csrf"];
                 "If-Match": components["parameters"]["IfMatch"];
             };
@@ -8246,7 +8391,12 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                /** @example {} */
+                "application/json": components["schemas"]["P2EmptyObjectRequestV1"];
+            };
+        };
         responses: {
             /** @description Success */
             200: {
@@ -8255,6 +8405,7 @@ export interface operations {
                     "Cache-Control"?: string;
                     /** @example 018f47a0-7b1c-7cc2-8000-000000000001 */
                     "X-Request-ID"?: string;
+                    "Set-Cookie": components["headers"]["P2ClearedSessionCookieV1"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -8292,7 +8443,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 401 error */
@@ -8312,7 +8463,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 403 error */
@@ -8332,7 +8483,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 404 error */
@@ -8352,12 +8503,13 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 409 error */
             409: {
                 headers: {
+                    "Retry-After": components["headers"]["P2RetryAfterV1"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -8372,7 +8524,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 412 error */
@@ -8392,7 +8544,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 413 error */
@@ -8412,7 +8564,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 415 error */
@@ -8432,7 +8584,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 422 error */
@@ -8452,7 +8604,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 429 error */
@@ -8472,7 +8624,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 431 error */
@@ -8492,7 +8644,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 500 error */
@@ -8512,7 +8664,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 503 error */
@@ -8532,7 +8684,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
         };
@@ -8598,7 +8750,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 401 error */
@@ -8618,7 +8770,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 403 error */
@@ -8638,7 +8790,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 404 error */
@@ -8658,7 +8810,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 409 error */
@@ -8678,7 +8830,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 412 error */
@@ -8698,7 +8850,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 413 error */
@@ -8718,7 +8870,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 415 error */
@@ -8738,7 +8890,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 422 error */
@@ -8758,7 +8910,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 429 error */
@@ -8778,7 +8930,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 431 error */
@@ -8798,7 +8950,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 500 error */
@@ -8818,7 +8970,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 503 error */
@@ -8838,7 +8990,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
         };
@@ -8847,7 +8999,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                "Idempotency-Key": components["parameters"]["P2IdempotencyKey"];
                 "X-CSRF-Token": components["parameters"]["Csrf"];
                 "If-Match": components["parameters"]["IfMatch"];
             };
@@ -8856,7 +9008,12 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                /** @example {} */
+                "application/json": components["schemas"]["P2EmptyObjectRequestV1"];
+            };
+        };
         responses: {
             /** @description Success */
             200: {
@@ -8865,6 +9022,7 @@ export interface operations {
                     "Cache-Control"?: string;
                     /** @example 018f47a0-7b1c-7cc2-8000-000000000001 */
                     "X-Request-ID"?: string;
+                    "Set-Cookie": components["headers"]["P2ClearedSessionCookieV1"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -8881,7 +9039,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["OperationStatusEnvelope"];
+                    "application/json": components["schemas"]["BrowserSessionRevokeEnvelopeV1"];
                 };
             };
             /** @description Typed 400 error */
@@ -8901,7 +9059,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 401 error */
@@ -8921,7 +9079,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 403 error */
@@ -8941,7 +9099,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 404 error */
@@ -8961,12 +9119,13 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 409 error */
             409: {
                 headers: {
+                    "Retry-After": components["headers"]["P2RetryAfterV1"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -8981,7 +9140,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 412 error */
@@ -8994,14 +9153,18 @@ export interface operations {
                      * @example {
                      *       "apiVersion": "v1",
                      *       "error": {
-                     *         "code": "invalid_argument",
-                     *         "message": "request rejected",
+                     *         "code": "session_revision_conflict",
+                     *         "message": "browser session revision changed",
                      *         "requestId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                     *         "details": []
+                     *         "details": {
+                     *           "sessionId": "018f47a0-7b1c-7cc2-8000-000000000002",
+                     *           "expectedRevision": 1,
+                     *           "currentRevision": 2
+                     *         }
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2SessionRevisionConflictErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 413 error */
@@ -9021,7 +9184,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 415 error */
@@ -9041,7 +9204,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 422 error */
@@ -9061,7 +9224,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 429 error */
@@ -9081,7 +9244,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 431 error */
@@ -9101,7 +9264,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 500 error */
@@ -9121,7 +9284,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 503 error */
@@ -9141,7 +9304,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
         };
@@ -9197,7 +9360,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 401 error */
@@ -9217,7 +9380,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 403 error */
@@ -9237,7 +9400,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 404 error */
@@ -9257,7 +9420,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 409 error */
@@ -9277,7 +9440,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 412 error */
@@ -9297,7 +9460,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 413 error */
@@ -9317,7 +9480,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 415 error */
@@ -9337,7 +9500,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 422 error */
@@ -9357,7 +9520,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 429 error */
@@ -9377,7 +9540,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 431 error */
@@ -9397,7 +9560,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 500 error */
@@ -9417,7 +9580,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 503 error */
@@ -9437,7 +9600,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
         };
@@ -9446,7 +9609,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                "Idempotency-Key": components["parameters"]["P2IdempotencyKey"];
             };
             path?: never;
             cookie?: never;
@@ -9592,7 +9755,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 401 error */
@@ -9612,7 +9775,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 403 error */
@@ -9632,7 +9795,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 404 error */
@@ -9652,12 +9815,13 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 409 error */
             409: {
                 headers: {
+                    "Retry-After": components["headers"]["P2RetryAfterV1"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -9672,7 +9836,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 412 error */
@@ -9692,7 +9856,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 413 error */
@@ -9712,7 +9876,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 415 error */
@@ -9732,7 +9896,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 422 error */
@@ -9752,7 +9916,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 429 error */
@@ -9772,7 +9936,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 431 error */
@@ -9792,7 +9956,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 500 error */
@@ -9812,7 +9976,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 503 error */
@@ -9832,7 +9996,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
         };
@@ -9841,7 +10005,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                "Idempotency-Key": components["parameters"]["P2IdempotencyKey"];
             };
             path?: never;
             cookie?: never;
@@ -9876,6 +10040,7 @@ export interface operations {
                     "Cache-Control"?: string;
                     /** @example 018f47a0-7b1c-7cc2-8000-000000000001 */
                     "X-Request-ID"?: string;
+                    "Set-Cookie": components["headers"]["P2IssuedSessionCookieV1"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -9951,7 +10116,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 401 error */
@@ -9971,7 +10136,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 403 error */
@@ -9991,7 +10156,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 404 error */
@@ -10011,12 +10176,13 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 409 error */
             409: {
                 headers: {
+                    "Retry-After": components["headers"]["P2RetryAfterV1"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -10031,7 +10197,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2SecretConflictErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 412 error */
@@ -10051,7 +10217,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 413 error */
@@ -10071,7 +10237,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 415 error */
@@ -10091,7 +10257,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 422 error */
@@ -10111,7 +10277,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 429 error */
@@ -10131,7 +10297,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 431 error */
@@ -10151,7 +10317,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 500 error */
@@ -10171,7 +10337,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 503 error */
@@ -10191,7 +10357,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
         };
@@ -10315,7 +10481,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 401 error */
@@ -10335,7 +10501,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 403 error */
@@ -10355,7 +10521,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 404 error */
@@ -10375,7 +10541,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 409 error */
@@ -10395,7 +10561,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 412 error */
@@ -10415,7 +10581,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 413 error */
@@ -10435,7 +10601,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 415 error */
@@ -10455,7 +10621,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 422 error */
@@ -10475,7 +10641,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 429 error */
@@ -10495,7 +10661,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 431 error */
@@ -10515,7 +10681,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 500 error */
@@ -10535,7 +10701,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
             /** @description Typed 503 error */
@@ -10555,7 +10721,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorEnvelope"];
+                    "application/json": components["schemas"]["P2StandardErrorEnvelopeV1"];
                 };
             };
         };

@@ -82,7 +82,15 @@ func (s *Store) backupSchemaV7BeforeMigration(ctx context.Context, binaryVersion
 	if createdAt.IsZero() {
 		return domain.NewError(domain.CodeSchemaIncompatible, "schema v7 backup time is invalid")
 	}
-	backupRoot := filepath.Join(filepath.Dir(s.path), "backups", "schema-v7")
+	databaseDirectory := filepath.Dir(s.path)
+	if err := verifyDevicePrivateDirectory(databaseDirectory); err != nil {
+		return err
+	}
+	backupBase := filepath.Join(databaseDirectory, "backups")
+	if err := ensurePrivateBackupDirectory(backupBase); err != nil {
+		return err
+	}
+	backupRoot := filepath.Join(backupBase, "schema-v7")
 	if err := ensurePrivateBackupDirectory(backupRoot); err != nil {
 		return err
 	}
@@ -175,6 +183,12 @@ func (s *Store) backupSchemaV7BeforeMigration(ctx context.Context, binaryVersion
 	if err := syncDirectory(backupRoot); err != nil {
 		return err
 	}
+	if err := syncDirectory(backupBase); err != nil {
+		return err
+	}
+	if err := syncDirectory(databaseDirectory); err != nil {
+		return err
+	}
 	if err := verifySchemaV7Backup(ctx, backupDirectory, binaryVersion); err != nil {
 		return err
 	}
@@ -189,14 +203,21 @@ func RestoreSchemaV7Backup(ctx context.Context, databasePath, backupDirectory, b
 	if ctx == nil || !filepath.IsAbs(databasePath) || filepath.Clean(databasePath) != databasePath || !filepath.IsAbs(backupDirectory) || filepath.Clean(backupDirectory) != backupDirectory {
 		return domain.NewError(domain.CodeInvalidArgument, "restore paths must be absolute and clean")
 	}
+	targetDirectory := filepath.Dir(databasePath)
+	if err := verifyDevicePrivateDirectory(targetDirectory); err != nil {
+		return err
+	}
 	if err := verifyDevicePrivateDirectory(backupDirectory); err != nil {
 		return err
 	}
 	if err := verifySchemaV7Backup(ctx, backupDirectory, binaryVersion); err != nil {
 		return err
 	}
-	if info, err := os.Lstat(databasePath); err != nil || !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {
-		return domain.NewError(domain.CodeConflict, "restore target must be a stopped regular Device database")
+	if err := verifyDevicePrivateFile(databasePath); err != nil {
+		return err
+	}
+	if err := rejectRestoreSidecars(databasePath); err != nil {
+		return err
 	}
 	// An exclusive probe rejects a concurrently running Daemon before any
 	// replacement bytes are written.
@@ -215,6 +236,15 @@ func RestoreSchemaV7Backup(ctx context.Context, databasePath, backupDirectory, b
 	_, _ = probe.ExecContext(ctx, "ROLLBACK")
 	if err := probe.Close(); err != nil {
 		return domain.WrapError(domain.CodeConflict, "restore exclusive probe could not close", err)
+	}
+	if err := verifyDevicePrivateFile(databasePath); err != nil {
+		return err
+	}
+	if err := verifyDevicePrivateDirectory(targetDirectory); err != nil {
+		return err
+	}
+	if err := rejectRestoreSidecars(databasePath); err != nil {
+		return err
 	}
 
 	sourcePath := filepath.Join(backupDirectory, "device.sqlite")
@@ -251,14 +281,29 @@ func RestoreSchemaV7Backup(ctx context.Context, databasePath, backupDirectory, b
 	if err := verifySQLiteFile(ctx, temporaryPath, schemaV7BackupVersion); err != nil {
 		return err
 	}
-	if err := os.Rename(temporaryPath, databasePath); err != nil {
+	if err := verifyDevicePrivateDirectory(targetDirectory); err != nil {
+		return err
+	}
+	if err := verifyDevicePrivateFile(databasePath); err != nil {
+		return err
+	}
+	if err := rejectRestoreSidecars(databasePath); err != nil {
+		return err
+	}
+	if err := replaceDeviceDatabaseFile(temporaryPath, databasePath); err != nil {
 		return domain.WrapError(domain.CodeConflict, "restore atomic replacement failed", err)
 	}
 	cleanup = false
-	if err := syncDirectory(filepath.Dir(databasePath)); err != nil {
+	if err := syncDirectory(targetDirectory); err != nil {
 		return err
 	}
-	return protectDevicePrivateFile(databasePath)
+	if err := verifyDevicePrivateDirectory(targetDirectory); err != nil {
+		return err
+	}
+	if err := protectDevicePrivateFile(databasePath); err != nil {
+		return err
+	}
+	return rejectRestoreSidecars(databasePath)
 }
 
 func verifySchemaV7Backup(ctx context.Context, directory, binaryVersion string) error {
@@ -301,6 +346,9 @@ func verifySchemaV7Backup(ctx context.Context, directory, binaryVersion string) 
 }
 
 func verifySQLiteFile(ctx context.Context, path string, wantVersion int) error {
+	if err := verifyDevicePrivateFile(path); err != nil {
+		return err
+	}
 	dsn, err := sqliteDSNForOS(runtimeGOOS(), path)
 	if err != nil {
 		return err
@@ -329,6 +377,19 @@ func verifySQLiteFile(ctx context.Context, path string, wantVersion int) error {
 	var version int
 	if err := db.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil || version != wantVersion {
 		return domain.NewError(domain.CodeSchemaIncompatible, "backup schema version is invalid")
+	}
+	return nil
+}
+
+func rejectRestoreSidecars(databasePath string) error {
+	for _, suffix := range []string{"-journal", "-shm", "-wal"} {
+		path := databasePath + suffix
+		if _, err := os.Lstat(path); errors.Is(err, os.ErrNotExist) {
+			continue
+		} else if err != nil {
+			return domain.WrapError(domain.CodeConflict, "restore target sidecar could not be inspected", err)
+		}
+		return domain.NewError(domain.CodeConflict, "restore target contains a SQLite sidecar")
 	}
 	return nil
 }

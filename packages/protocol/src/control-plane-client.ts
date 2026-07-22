@@ -12,6 +12,14 @@ const enrollmentOperationIds = [
   "resumeDeviceEnrollment",
 ] as const satisfies readonly OperationId[];
 type EnrollmentOperationId = typeof enrollmentOperationIds[number];
+type P2DeleteOperationId = "deletePasskey" | "deleteBrowserSession";
+type P2AuthOperationId =
+  | "createPasskeyAuthenticationOptions" | "verifyPasskeyAuthentication"
+  | "createPasskeyRegistrationOptions" | "verifyPasskeyRegistration"
+  | "createUvOptions" | "verifyUv" | "verifyRecoveryCode"
+  | "rotateRecoveryCodes" | "logout" | P2DeleteOperationId
+  | "createBootstrapOptions" | "verifyBootstrap";
+type StrongRevisionTag = `"rev-${number}"`;
 
 type PropertyIsRequired<T, Key extends PropertyKey> = T extends object
   ? Key extends keyof T
@@ -78,26 +86,40 @@ type StandardAuthorizationInput =
 type AuthorizationInput<K extends OperationId> = K extends EnrollmentOperationId
   ? { bootstrapToken?: never; device?: never; enrollment: EnrollmentRequestHeaders }
   : StandardAuthorizationInput;
+type IfMatchInput<K extends OperationId> = K extends P2DeleteOperationId
+  ? { ifMatch: StrongRevisionTag }
+  : K extends P2AuthOperationId
+    ? { ifMatch?: never }
+    : { ifMatch?: StrongRevisionTag };
+type IdempotencyInput<K extends OperationId> = K extends P2AuthOperationId
+  ? { idempotencyKey: string }
+  : { idempotencyKey?: string };
 
-export type ControlPlaneCallInput<K extends OperationId> = ControlPlaneCallShape<operations[K]> & AuthorizationInput<K> & {
-  idempotencyKey?: string;
-  ifMatch?: `"rev-${number}"`;
+export type ControlPlaneCallInput<K extends OperationId> = ControlPlaneCallShape<operations[K]> & AuthorizationInput<K> & IfMatchInput<K> & IdempotencyInput<K> & {
   signal?: AbortSignal;
 };
 
+type StableApiErrorCode =
+  | components["schemas"]["ApiError"]["code"]
+  | components["schemas"]["P2StandardApiErrorV1"]["code"]
+  | components["schemas"]["P2OneTimeResultUnavailableApiErrorV1"]["code"]
+  | components["schemas"]["P2SessionRevisionConflictApiErrorV1"]["code"];
+
 export class ControlPlaneError extends Error {
-  readonly code: components["schemas"]["ApiError"]["code"] | "unknown_error";
+  readonly code: StableApiErrorCode | "unknown_error";
   readonly requestId?: string;
   readonly status: number;
+  readonly details?: unknown;
 
-  constructor(status: number, code: string, message: string, requestId?: string) {
+  constructor(status: number, code: string, message: string, requestId?: string, details?: unknown) {
     super(message);
     this.name = "ControlPlaneError";
     this.status = status;
     this.code = stableErrorCodes.has(code)
-      ? code as components["schemas"]["ApiError"]["code"]
+      ? code as StableApiErrorCode
       : "unknown_error";
     this.requestId = requestId;
+    this.details = details;
   }
 }
 
@@ -106,34 +128,35 @@ interface OperationDefinition {
   path: `/v1/${string}`;
   csrf: boolean;
   authorization: "standard" | "enrollment";
+  authOperation?: components["schemas"]["AuthIdempotencyOperationV1"];
 }
 
-const mutation = (path: `/v1/${string}`, csrf = true): OperationDefinition => ({ method: "POST", path, csrf, authorization: "standard" });
+const mutation = (path: `/v1/${string}`, csrf = true, authOperation?: components["schemas"]["AuthIdempotencyOperationV1"]): OperationDefinition => ({ method: "POST", path, csrf, authorization: "standard", authOperation });
 const get = (path: `/v1/${string}`): OperationDefinition => ({ method: "GET", path, csrf: false, authorization: "standard" });
 const enrollmentMutation = (path: `/v1/${string}`): OperationDefinition => ({ method: "POST", path, csrf: false, authorization: "enrollment" });
 const enrollmentGet = (path: `/v1/${string}`): OperationDefinition => ({ method: "GET", path, csrf: false, authorization: "enrollment" });
 
-export const operationDefinitions = {
+export const operationDefinitions: Record<OperationId, OperationDefinition> = {
   getHealth: get("/v1/healthz"),
   getReady: get("/v1/readyz"),
   getVersion: get("/v1/version"),
   getCurrentAuth: get("/v1/auth/current"),
-  createPasskeyAuthenticationOptions: mutation("/v1/auth/passkeys/options", false),
-  verifyPasskeyAuthentication: mutation("/v1/auth/passkeys/verify", false),
-  createPasskeyRegistrationOptions: mutation("/v1/auth/passkeys/registration/options"),
-  verifyPasskeyRegistration: mutation("/v1/auth/passkeys/registration/verify"),
-  createUvOptions: mutation("/v1/auth/uv/options"),
-  verifyUv: mutation("/v1/auth/uv/verify"),
-  verifyRecoveryCode: mutation("/v1/auth/recovery/verify", false),
-  rotateRecoveryCodes: mutation("/v1/auth/recovery-codes/rotate"),
-  logout: mutation("/v1/auth/logout"),
+  createPasskeyAuthenticationOptions: mutation("/v1/auth/passkeys/options", false, "passkey_login_options"),
+  verifyPasskeyAuthentication: mutation("/v1/auth/passkeys/verify", false, "passkey_login_verify"),
+  createPasskeyRegistrationOptions: mutation("/v1/auth/passkeys/registration/options", true, "passkey_registration_options"),
+  verifyPasskeyRegistration: mutation("/v1/auth/passkeys/registration/verify", true, "passkey_registration_verify"),
+  createUvOptions: mutation("/v1/auth/uv/options", true, "uv_options"),
+  verifyUv: mutation("/v1/auth/uv/verify", true, "uv_verify"),
+  verifyRecoveryCode: mutation("/v1/auth/recovery/verify", false, "recovery_verify"),
+  rotateRecoveryCodes: mutation("/v1/auth/recovery-codes/rotate", true, "recovery_codes_rotate"),
+  logout: mutation("/v1/auth/logout", true, "logout"),
   listPasskeys: get("/v1/auth/passkeys"),
-  deletePasskey: { method: "DELETE", path: "/v1/auth/passkeys/{passkeyId}", csrf: true, authorization: "standard" },
+  deletePasskey: { method: "DELETE", path: "/v1/auth/passkeys/{passkeyId}", csrf: true, authorization: "standard", authOperation: "passkey_delete" },
   listBrowserSessions: get("/v1/auth/sessions"),
-  deleteBrowserSession: { method: "DELETE", path: "/v1/auth/sessions/{sessionId}", csrf: true, authorization: "standard" },
+  deleteBrowserSession: { method: "DELETE", path: "/v1/auth/sessions/{sessionId}", csrf: true, authorization: "standard", authOperation: "session_delete" },
   getBootstrapStatus: get("/v1/bootstrap/status"),
-  createBootstrapOptions: mutation("/v1/bootstrap/options", false),
-  verifyBootstrap: mutation("/v1/bootstrap/verify", false),
+  createBootstrapOptions: mutation("/v1/bootstrap/options", false, "bootstrap_options"),
+  verifyBootstrap: mutation("/v1/bootstrap/verify", false, "bootstrap_verify"),
   getBootstrapCeremony: get("/v1/bootstrap/ceremonies/{ceremonyId}"),
   listDevices: get("/v1/devices"),
   getDevice: get("/v1/devices/{deviceId}"),
@@ -179,21 +202,21 @@ export const operationDefinitions = {
   ackSessionCommand: mutation("/v1/device/session-commands/{commandId}/ack", false),
   completeSessionCommand: mutation("/v1/device/session-commands/{commandId}/result", false),
   reconcileSessionCommand: mutation("/v1/device/session-commands/{commandId}/reconcile", false),
-} as const satisfies Record<OperationId, OperationDefinition>;
+};
 
-const stableErrorCodes = new Set<string>([
+export const stableErrorCodeValues = [
   "invalid_argument", "unauthenticated", "permission_denied", "not_found", "conflict",
   "resource_exhausted", "rate_limited", "request_too_large", "unsupported_api_version",
-  "schema_incompatible", "idempotency_key_required", "idempotency_key_reused", "if_match_required",
+  "schema_incompatible", "idempotency_key_required", "idempotency_key_reused", "idempotency_in_progress", "if_match_required",
   "sync_conflict", "sync_history_missing", "sync_base_digest_mismatch", "sync_next_digest_mismatch",
   "sync_patch_mismatch", "sync_patch_too_large", "invalid_cursor", "stale_resurrection",
   "snapshot_required", "snapshot_in_progress", "snapshot_expired", "snapshot_page_invalid",
   "snapshot_commit_conflict", "snapshot_page_too_large", "cross_server_identity_rebind",
-  "bootstrap_unavailable", "bootstrap_expired", "bootstrap_replayed", "bootstrap_anchor_required",
+  "bootstrap_unavailable", "bootstrap_expired", "bootstrap_replayed", "bootstrap_anchor_required", "ceremony_restart_required",
   "origin_mismatch", "rp_id_mismatch", "webauthn_challenge_expired", "webauthn_challenge_replayed",
   "webauthn_verification_failed", "passkey_counter_regressed", "recovery_invalid_or_rate_limited",
   "recovery_consumed", "one_time_result_unavailable", "recent_uv_required", "last_passkey_required",
-  "recovery_batch_replaced", "csrf_invalid", "session_expired", "device_not_enrolled", "device_revoked",
+  "recovery_batch_replaced", "csrf_invalid", "session_integrity_invalid", "session_revision_conflict", "session_expired", "device_not_enrolled", "device_revoked",
   "device_key_changed", "key_digest_mismatch", "device_key_envelope_corrupt", "device_key_envelope_conflict",
   "pin_mismatch", "attestation_invalid", "attestation_expired", "attestation_replayed",
   "cross_type_signature_replay", "enrollment_preauth_invalid", "approver_not_pinned", "capability_denied",
@@ -205,7 +228,11 @@ const stableErrorCodes = new Set<string>([
   "mapping_quarantined", "forbidden_metadata_field", "provider_control_unsupported",
   "provider_session_start_unsupported", "provider_resume_unsupported", "provider_stop_unsupported",
   "provider_kill_unsupported", "daemon_shutting_down", "daemon_unavailable",
-]);
+] as const satisfies readonly StableApiErrorCode[];
+type MissingStableErrorCode = Exclude<StableApiErrorCode, typeof stableErrorCodeValues[number]>;
+const stableErrorCodeParity: MissingStableErrorCode extends never ? true : never = true;
+void stableErrorCodeParity;
+const stableErrorCodes = new Set<string>(stableErrorCodeValues);
 
 type RequiredKeys<Value> = {
   [Key in keyof Value]-?: {} extends Pick<Value, Key> ? never : Key;
@@ -224,6 +251,18 @@ export interface ControlPlaneClient {
   clearCsrfToken(): void;
 }
 
+interface RuntimeControlPlaneCall {
+  bootstrapToken?: string;
+  device?: DeviceRequestHeaders;
+  enrollment?: EnrollmentRequestHeaders;
+  path?: Readonly<Record<string, string | number>>;
+  query?: Readonly<Record<string, string | number | boolean | undefined>>;
+  body?: unknown;
+  idempotencyKey?: string;
+  ifMatch?: string;
+  signal?: AbortSignal;
+}
+
 export function createControlPlaneClient(baseURL: string, fetchImpl: typeof fetch = fetch): ControlPlaneClient {
   const parsedBase = new URL(baseURL, globalThis.location?.origin);
   if (globalThis.location && parsedBase.origin !== globalThis.location.origin) {
@@ -237,9 +276,9 @@ export function createControlPlaneClient(baseURL: string, fetchImpl: typeof fetc
 
   const enrollmentOperations = new Set<OperationId>(enrollmentOperationIds);
 
-  async function invoke<K extends OperationId>(id: K, input?: ControlPlaneCallInput<K>): Promise<SuccessBody<K>> {
+  async function invoke(id: OperationId, input?: unknown): Promise<unknown> {
     const definition = operationDefinitions[id];
-    const call = (input ?? {}) as ControlPlaneCallInput<K>;
+    const call = (input ?? {}) as RuntimeControlPlaneCall;
     const suppliedAuthorization = [call.bootstrapToken, call.device, call.enrollment].filter((value) => value !== undefined).length;
     if (suppliedAuthorization > 1) throw new Error(`${id}: authorization classes are mutually exclusive`);
     if (definition.authorization === "enrollment" && !call.enrollment) throw new Error(`${id}: Enrollment pre-auth headers are required`);
@@ -248,16 +287,25 @@ export function createControlPlaneClient(baseURL: string, fetchImpl: typeof fetc
       throw new Error(`${id}: Enrollment operation classification drifted`);
     }
     let path = definition.path as string;
-    for (const [name, value] of Object.entries(call.path ?? {} as Record<string, string>)) {
-      path = path.replace(`{${name}}`, encodeURIComponent(value));
+    for (const [name, value] of Object.entries(call.path ?? {})) {
+      path = path.replace(`{${name}}`, encodeURIComponent(String(value)));
     }
     if (path.includes("{")) throw new Error(`${id}: missing path parameter`);
     const url = new URL(path, parsedBase);
-    for (const [name, value] of Object.entries(call.query ?? {} as Record<string, string | number | boolean | undefined>)) {
+    for (const [name, value] of Object.entries(call.query ?? {})) {
       if (value !== undefined) url.searchParams.set(name, String(value));
     }
     const headers = new Headers({ Accept: "application/json" });
     if (definition.method !== "GET") headers.set("Content-Type", "application/json");
+    if (definition.authOperation && (!call.idempotencyKey || !/^[\x21-\x2b\x2d-\x7e]{16,128}$/.test(call.idempotencyKey))) {
+      throw new Error(`${id}: a normalized P2 Idempotency-Key is required`);
+    }
+    const p2Delete = definition.authOperation === "passkey_delete" || definition.authOperation === "session_delete";
+    if (p2Delete && call.ifMatch === undefined) throw new Error(`${id}: If-Match is required`);
+    if (definition.authOperation && !p2Delete && call.ifMatch !== undefined) throw new Error(`${id}: If-Match is forbidden`);
+    if (call.ifMatch !== undefined && !/^"rev-[1-9][0-9]*"$/.test(call.ifMatch)) {
+      throw new Error(`${id}: If-Match must be an exact positive revision tag`);
+    }
     if (call.idempotencyKey) headers.set("Idempotency-Key", call.idempotencyKey);
     if (call.ifMatch) headers.set("If-Match", call.ifMatch);
     if (definition.csrf || (definition.method !== "GET" && call.enrollment?.browserCandidate === true)) {
@@ -299,14 +347,14 @@ export function createControlPlaneClient(baseURL: string, fetchImpl: typeof fetc
     if (contentType !== "application/json") throw new ControlPlaneError(response.status, "unknown_error", "server returned a non-JSON response");
     const payload: unknown = await response.json();
     if (!response.ok) {
-      const envelope = payload as Partial<components["schemas"]["ErrorEnvelope"]>;
-      throw new ControlPlaneError(response.status, envelope.error?.code ?? "unknown_error", envelope.error?.message ?? "request failed", envelope.error?.requestId);
+      const envelope = payload as { error?: { code?: string; message?: string; requestId?: string; details?: unknown } };
+      throw new ControlPlaneError(response.status, envelope.error?.code ?? "unknown_error", envelope.error?.message ?? "request failed", envelope.error?.requestId, envelope.error?.details);
     }
-    return payload as SuccessBody<K>;
+    return payload;
   }
 
   const methods = Object.fromEntries(
-    (Object.keys(operationDefinitions) as OperationId[]).map((id) => [id, (input?: ControlPlaneCallInput<typeof id>) => invoke(id, input)]),
+    (Object.keys(operationDefinitions) as OperationId[]).map((id) => [id, (input?: unknown) => invoke(id, input)]),
   ) as unknown as ControlPlaneMethods;
   return {
     methods,

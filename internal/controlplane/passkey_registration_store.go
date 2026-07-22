@@ -2,6 +2,7 @@ package controlplane
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -21,33 +22,44 @@ type PasskeyRegistrationCommit struct {
 }
 
 func (s *Store) CommitPasskeyRegistration(ctx context.Context, input PasskeyRegistrationCommit) error {
-	if input.UserID == "" || input.CurrentSessionID == "" || input.ExpectedSessionRevision < 1 || input.Passkey.ID == "" || input.Passkey.UserID != input.UserID || input.At.IsZero() {
-		return fmt.Errorf("passkey registration commit is invalid")
-	}
-	if _, err := transport.ParseUUIDv7(input.CeremonyID); err != nil {
-		return fmt.Errorf("passkey registration ceremony is invalid")
-	}
-	if err := validateBrowserSessionCreate(input.ReplacementSession, input.At); err != nil {
-		return err
-	}
-	credentialJSON, err := json.Marshal(input.Passkey.Credential)
-	if err != nil || len(credentialJSON) > 1<<20 {
-		return fmt.Errorf("registered passkey is invalid")
-	}
-	conn, err := s.db.Conn(ctx)
+	credentialJSON, err := validatePasskeyRegistrationCommit(input)
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
-	if _, err := conn.ExecContext(ctx, "BEGIN IMMEDIATE"); err != nil {
+	_, err = withImmediateConn(ctx, s.db, "passkey registration", func(conn *sql.Conn) (struct{}, error) {
+		return struct{}{}, commitPasskeyRegistrationTx(ctx, conn, input, credentialJSON)
+	})
+	return err
+}
+
+func validatePasskeyRegistrationCommit(input PasskeyRegistrationCommit) ([]byte, error) {
+	if input.UserID == "" || input.CurrentSessionID == "" || input.ExpectedSessionRevision < 1 || input.Passkey.ID == "" || input.Passkey.UserID != input.UserID || input.At.IsZero() {
+		return nil, fmt.Errorf("passkey registration commit is invalid")
+	}
+	if _, err := transport.ParseUUIDv7(input.CeremonyID); err != nil {
+		return nil, fmt.Errorf("passkey registration ceremony is invalid")
+	}
+	if err := validateBrowserSessionCreate(input.ReplacementSession, input.At); err != nil {
+		return nil, err
+	}
+	credentialJSON, err := json.Marshal(input.Passkey.Credential)
+	if err != nil || len(credentialJSON) > 1<<20 {
+		return nil, fmt.Errorf("registered passkey is invalid")
+	}
+	return credentialJSON, nil
+}
+
+func commitPasskeyRegistrationTx(ctx context.Context, conn *sql.Conn, input PasskeyRegistrationCommit, credentialJSON []byte) error {
+	if conn == nil {
+		return fmt.Errorf("passkey registration transaction is required")
+	}
+	validatedJSON, err := validatePasskeyRegistrationCommit(input)
+	if err != nil {
 		return err
 	}
-	committed := false
-	defer func() {
-		if !committed {
-			_, _ = conn.ExecContext(context.Background(), "ROLLBACK")
-		}
-	}()
+	if credentialJSON == nil {
+		credentialJSON = validatedJSON
+	}
 	if err := consumeWebAuthnCeremony(ctx, conn, input.CeremonyID, ceremonyPasskeyRegistration); err != nil {
 		return err
 	}
@@ -74,9 +86,5 @@ func (s *Store) CommitPasskeyRegistration(ctx context.Context, input PasskeyRegi
 	if err := insertAuthAudit(ctx, conn, "browser", "passkey.register", "allowed", "passkey_registered", input.Passkey.ID, input.UserID, input.At); err != nil {
 		return err
 	}
-	if _, err := conn.ExecContext(ctx, "COMMIT"); err != nil {
-		return err
-	}
-	committed = true
 	return nil
 }

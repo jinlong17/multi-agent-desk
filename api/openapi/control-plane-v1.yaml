@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "MultiAgentDesk Control Plane API",
-    "version": "1.0.0-v0.7",
-    "description": "Phase 4a plan v0.7 complete P2-P6 contract. P1 mounts only healthz, readyz, and version."
+    "version": "1.0.0-v0.9",
+    "description": "Phase 4a plan v0.9 contract. P2 mounts the 18 bootstrap and browser-authentication routes; P3-P6 remain contract-only."
   },
   "servers": [
     {
@@ -977,7 +977,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -996,7 +996,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1015,7 +1015,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1034,7 +1034,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1053,7 +1053,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1072,7 +1072,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1091,7 +1091,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1110,7 +1110,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1129,7 +1129,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1148,7 +1148,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1167,7 +1167,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1186,7 +1186,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1205,7 +1205,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1231,7 +1231,7 @@
         "security": [],
         "parameters": [
           {
-            "$ref": "#/components/parameters/IdempotencyKey"
+            "$ref": "#/components/parameters/P2IdempotencyKey"
           }
         ],
         "responses": {
@@ -1291,7 +1291,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1310,7 +1310,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1329,7 +1329,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1348,7 +1348,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1367,7 +1367,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1379,6 +1379,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Retry-After": {
+                "$ref": "#/components/headers/P2RetryAfterV1"
+              }
             }
           },
           "412": {
@@ -1386,7 +1391,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1405,7 +1410,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1424,7 +1429,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1443,7 +1448,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1462,7 +1467,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1481,7 +1486,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1500,7 +1505,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1519,7 +1524,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1531,6 +1536,17 @@
                   }
                 }
               }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/P2EmptyObjectRequestV1"
+              },
+              "example": {}
             }
           }
         }
@@ -1545,7 +1561,7 @@
         "security": [],
         "parameters": [
           {
-            "$ref": "#/components/parameters/IdempotencyKey"
+            "$ref": "#/components/parameters/P2IdempotencyKey"
           }
         ],
         "requestBody": {
@@ -1591,6 +1607,9 @@
                   "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
                 },
                 "example": "018f47a0-7b1c-7cc2-8000-000000000001"
+              },
+              "Set-Cookie": {
+                "$ref": "#/components/headers/P2IssuedSessionCookieV1"
               }
             },
             "content": {
@@ -1623,7 +1642,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1642,7 +1661,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1661,7 +1680,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1680,7 +1699,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1699,7 +1718,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2SecretConflictErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1711,6 +1730,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Retry-After": {
+                "$ref": "#/components/headers/P2RetryAfterV1"
+              }
             }
           },
           "412": {
@@ -1718,7 +1742,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1737,7 +1761,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1756,7 +1780,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1775,7 +1799,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1794,7 +1818,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1813,7 +1837,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1832,7 +1856,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1851,7 +1875,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1881,7 +1905,7 @@
         ],
         "parameters": [
           {
-            "$ref": "#/components/parameters/IdempotencyKey"
+            "$ref": "#/components/parameters/P2IdempotencyKey"
           },
           {
             "$ref": "#/components/parameters/Csrf"
@@ -1966,7 +1990,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -1985,7 +2009,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2004,7 +2028,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2023,7 +2047,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2042,7 +2066,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2054,6 +2078,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Retry-After": {
+                "$ref": "#/components/headers/P2RetryAfterV1"
+              }
             }
           },
           "412": {
@@ -2061,7 +2090,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2080,7 +2109,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2099,7 +2128,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2118,7 +2147,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2137,7 +2166,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2156,7 +2185,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2175,7 +2204,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2194,7 +2223,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2206,6 +2235,17 @@
                   }
                 }
               }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/P2EmptyObjectRequestV1"
+              },
+              "example": {}
             }
           }
         }
@@ -2224,7 +2264,7 @@
         ],
         "parameters": [
           {
-            "$ref": "#/components/parameters/IdempotencyKey"
+            "$ref": "#/components/parameters/P2IdempotencyKey"
           },
           {
             "$ref": "#/components/parameters/Csrf"
@@ -2272,6 +2312,9 @@
                   "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
                 },
                 "example": "018f47a0-7b1c-7cc2-8000-000000000001"
+              },
+              "Set-Cookie": {
+                "$ref": "#/components/headers/P2IssuedSessionCookieV1"
               }
             },
             "content": {
@@ -2304,7 +2347,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2323,7 +2366,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2342,7 +2385,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2361,7 +2404,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2380,7 +2423,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2SecretConflictErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2392,6 +2435,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Retry-After": {
+                "$ref": "#/components/headers/P2RetryAfterV1"
+              }
             }
           },
           "412": {
@@ -2399,7 +2447,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2418,7 +2466,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2437,7 +2485,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2456,7 +2504,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2475,7 +2523,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2494,7 +2542,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2513,7 +2561,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2532,7 +2580,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2562,7 +2610,7 @@
         ],
         "parameters": [
           {
-            "$ref": "#/components/parameters/IdempotencyKey"
+            "$ref": "#/components/parameters/P2IdempotencyKey"
           },
           {
             "$ref": "#/components/parameters/Csrf"
@@ -2625,7 +2673,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2644,7 +2692,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2663,7 +2711,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2682,7 +2730,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2701,7 +2749,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2713,6 +2761,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Retry-After": {
+                "$ref": "#/components/headers/P2RetryAfterV1"
+              }
             }
           },
           "412": {
@@ -2720,7 +2773,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2739,7 +2792,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2758,7 +2811,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2777,7 +2830,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2796,7 +2849,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2815,7 +2868,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2834,7 +2887,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2853,7 +2906,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2865,6 +2918,17 @@
                   }
                 }
               }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/P2EmptyObjectRequestV1"
+              },
+              "example": {}
             }
           }
         }
@@ -2883,7 +2947,7 @@
         ],
         "parameters": [
           {
-            "$ref": "#/components/parameters/IdempotencyKey"
+            "$ref": "#/components/parameters/P2IdempotencyKey"
           },
           {
             "$ref": "#/components/parameters/Csrf"
@@ -2932,6 +2996,9 @@
                   "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
                 },
                 "example": "018f47a0-7b1c-7cc2-8000-000000000001"
+              },
+              "Set-Cookie": {
+                "$ref": "#/components/headers/P2IssuedSessionCookieV1"
               }
             },
             "content": {
@@ -2964,7 +3031,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -2983,7 +3050,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3002,7 +3069,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3021,7 +3088,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3040,7 +3107,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2SecretConflictErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3052,6 +3119,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Retry-After": {
+                "$ref": "#/components/headers/P2RetryAfterV1"
+              }
             }
           },
           "412": {
@@ -3059,7 +3131,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3078,7 +3150,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3097,7 +3169,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3116,7 +3188,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3135,7 +3207,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3154,7 +3226,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3173,7 +3245,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3192,7 +3264,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3218,7 +3290,7 @@
         "security": [],
         "parameters": [
           {
-            "$ref": "#/components/parameters/IdempotencyKey"
+            "$ref": "#/components/parameters/P2IdempotencyKey"
           }
         ],
         "requestBody": {
@@ -3253,6 +3325,9 @@
                   "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
                 },
                 "example": "018f47a0-7b1c-7cc2-8000-000000000001"
+              },
+              "Set-Cookie": {
+                "$ref": "#/components/headers/P2IssuedSessionCookieV1"
               }
             },
             "content": {
@@ -3285,7 +3360,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3304,7 +3379,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3323,7 +3398,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3342,7 +3417,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3361,7 +3436,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2SecretConflictErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3373,6 +3448,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Retry-After": {
+                "$ref": "#/components/headers/P2RetryAfterV1"
+              }
             }
           },
           "412": {
@@ -3380,7 +3460,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3399,7 +3479,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3418,7 +3498,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3437,7 +3517,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3456,7 +3536,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3475,7 +3555,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3494,7 +3574,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3513,7 +3593,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3543,7 +3623,7 @@
         ],
         "parameters": [
           {
-            "$ref": "#/components/parameters/IdempotencyKey"
+            "$ref": "#/components/parameters/P2IdempotencyKey"
           },
           {
             "$ref": "#/components/parameters/Csrf"
@@ -3606,7 +3686,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3625,7 +3705,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3644,7 +3724,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3663,7 +3743,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3682,7 +3762,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2SecretConflictErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3694,6 +3774,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Retry-After": {
+                "$ref": "#/components/headers/P2RetryAfterV1"
+              }
             }
           },
           "412": {
@@ -3701,7 +3786,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3720,7 +3805,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3739,7 +3824,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3758,7 +3843,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3777,7 +3862,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3796,7 +3881,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3815,7 +3900,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3834,7 +3919,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3846,6 +3931,17 @@
                   }
                 }
               }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/P2EmptyObjectRequestV1"
+              },
+              "example": {}
             }
           }
         }
@@ -3864,7 +3960,7 @@
         ],
         "parameters": [
           {
-            "$ref": "#/components/parameters/IdempotencyKey"
+            "$ref": "#/components/parameters/P2IdempotencyKey"
           },
           {
             "$ref": "#/components/parameters/Csrf"
@@ -3889,6 +3985,9 @@
                   "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
                 },
                 "example": "018f47a0-7b1c-7cc2-8000-000000000001"
+              },
+              "Set-Cookie": {
+                "$ref": "#/components/headers/P2ClearedSessionCookieV1"
               }
             },
             "content": {
@@ -3915,7 +4014,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3934,7 +4033,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3953,7 +4052,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3972,7 +4071,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -3991,7 +4090,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4003,6 +4102,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Retry-After": {
+                "$ref": "#/components/headers/P2RetryAfterV1"
+              }
             }
           },
           "412": {
@@ -4010,7 +4114,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4029,7 +4133,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4048,7 +4152,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4067,7 +4171,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4086,7 +4190,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4105,7 +4209,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4124,7 +4228,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4143,7 +4247,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4155,6 +4259,17 @@
                   }
                 }
               }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/P2EmptyObjectRequestV1"
+              },
+              "example": {}
             }
           }
         }
@@ -4226,7 +4341,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4245,7 +4360,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4264,7 +4379,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4283,7 +4398,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4302,7 +4417,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4321,7 +4436,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4340,7 +4455,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4359,7 +4474,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4378,7 +4493,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4397,7 +4512,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4416,7 +4531,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4435,7 +4550,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4454,7 +4569,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4496,7 +4611,7 @@
             }
           },
           {
-            "$ref": "#/components/parameters/IdempotencyKey"
+            "$ref": "#/components/parameters/P2IdempotencyKey"
           },
           {
             "$ref": "#/components/parameters/Csrf"
@@ -4524,6 +4639,9 @@
                   "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
                 },
                 "example": "018f47a0-7b1c-7cc2-8000-000000000001"
+              },
+              "Set-Cookie": {
+                "$ref": "#/components/headers/P2ClearedSessionCookieV1"
               }
             },
             "content": {
@@ -4551,7 +4669,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4570,7 +4688,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4589,7 +4707,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4608,7 +4726,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4627,7 +4745,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4639,6 +4757,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Retry-After": {
+                "$ref": "#/components/headers/P2RetryAfterV1"
+              }
             }
           },
           "412": {
@@ -4646,7 +4769,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4665,7 +4788,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4684,7 +4807,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4703,7 +4826,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4722,7 +4845,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4741,7 +4864,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4760,7 +4883,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4779,7 +4902,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4791,6 +4914,17 @@
                   }
                 }
               }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/P2EmptyObjectRequestV1"
+              },
+              "example": {}
             }
           }
         }
@@ -4862,7 +4996,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4881,7 +5015,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4900,7 +5034,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4919,7 +5053,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4938,7 +5072,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4957,7 +5091,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4976,7 +5110,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -4995,7 +5129,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5014,7 +5148,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5033,7 +5167,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5052,7 +5186,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5071,7 +5205,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5090,7 +5224,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5132,7 +5266,7 @@
             }
           },
           {
-            "$ref": "#/components/parameters/IdempotencyKey"
+            "$ref": "#/components/parameters/P2IdempotencyKey"
           },
           {
             "$ref": "#/components/parameters/Csrf"
@@ -5160,12 +5294,15 @@
                   "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
                 },
                 "example": "018f47a0-7b1c-7cc2-8000-000000000001"
+              },
+              "Set-Cookie": {
+                "$ref": "#/components/headers/P2ClearedSessionCookieV1"
               }
             },
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OperationStatusEnvelope"
+                  "$ref": "#/components/schemas/BrowserSessionRevokeEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5186,7 +5323,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5205,7 +5342,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5224,7 +5361,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5243,7 +5380,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5262,7 +5399,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5274,6 +5411,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Retry-After": {
+                "$ref": "#/components/headers/P2RetryAfterV1"
+              }
             }
           },
           "412": {
@@ -5281,15 +5423,19 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2SessionRevisionConflictErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
                   "error": {
-                    "code": "invalid_argument",
-                    "message": "request rejected",
+                    "code": "session_revision_conflict",
+                    "message": "browser session revision changed",
                     "requestId": "018f47a0-7b1c-7cc2-8000-000000000001",
-                    "details": []
+                    "details": {
+                      "sessionId": "018f47a0-7b1c-7cc2-8000-000000000002",
+                      "expectedRevision": 1,
+                      "currentRevision": 2
+                    }
                   }
                 }
               }
@@ -5300,7 +5446,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5319,7 +5465,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5338,7 +5484,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5357,7 +5503,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5376,7 +5522,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5395,7 +5541,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5414,7 +5560,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5426,6 +5572,17 @@
                   }
                 }
               }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/P2EmptyObjectRequestV1"
+              },
+              "example": {}
             }
           }
         }
@@ -5483,7 +5640,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5502,7 +5659,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5521,7 +5678,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5540,7 +5697,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5559,7 +5716,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5578,7 +5735,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5597,7 +5754,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5616,7 +5773,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5635,7 +5792,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5654,7 +5811,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5673,7 +5830,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5692,7 +5849,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5711,7 +5868,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5741,7 +5898,7 @@
         ],
         "parameters": [
           {
-            "$ref": "#/components/parameters/IdempotencyKey"
+            "$ref": "#/components/parameters/P2IdempotencyKey"
           }
         ],
         "requestBody": {
@@ -5889,7 +6046,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5908,7 +6065,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5927,7 +6084,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5946,7 +6103,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5965,7 +6122,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -5977,6 +6134,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Retry-After": {
+                "$ref": "#/components/headers/P2RetryAfterV1"
+              }
             }
           },
           "412": {
@@ -5984,7 +6146,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6003,7 +6165,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6022,7 +6184,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6041,7 +6203,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6060,7 +6222,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6079,7 +6241,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6098,7 +6260,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6117,7 +6279,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6147,7 +6309,7 @@
         ],
         "parameters": [
           {
-            "$ref": "#/components/parameters/IdempotencyKey"
+            "$ref": "#/components/parameters/P2IdempotencyKey"
           }
         ],
         "requestBody": {
@@ -6194,6 +6356,9 @@
                   "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
                 },
                 "example": "018f47a0-7b1c-7cc2-8000-000000000001"
+              },
+              "Set-Cookie": {
+                "$ref": "#/components/headers/P2IssuedSessionCookieV1"
               }
             },
             "content": {
@@ -6259,7 +6424,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6278,7 +6443,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6297,7 +6462,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6316,7 +6481,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6335,7 +6500,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2SecretConflictErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6347,6 +6512,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "Retry-After": {
+                "$ref": "#/components/headers/P2RetryAfterV1"
+              }
             }
           },
           "412": {
@@ -6354,7 +6524,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6373,7 +6543,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6392,7 +6562,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6411,7 +6581,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6430,7 +6600,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6449,7 +6619,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6468,7 +6638,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6487,7 +6657,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6635,7 +6805,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6654,7 +6824,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6673,7 +6843,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6692,7 +6862,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6711,7 +6881,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6730,7 +6900,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6749,7 +6919,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6768,7 +6938,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6787,7 +6957,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6806,7 +6976,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6825,7 +6995,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6844,7 +7014,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -6863,7 +7033,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
+                  "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
                 },
                 "example": {
                   "apiVersion": "v1",
@@ -22109,6 +22279,17 @@
           "pattern": "^[\\x21-\\x7e]+$"
         }
       },
+      "P2IdempotencyKey": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 128,
+          "pattern": "^[\\x21-\\x2b\\x2d-\\x7e]{16,128}$"
+        }
+      },
       "IfMatch": {
         "name": "If-Match",
         "in": "header",
@@ -22261,6 +22442,141 @@
         "required": [
           "field",
           "reason"
+        ]
+      },
+      "AuthIdempotencyOperationV1": {
+        "type": "string",
+        "enum": [
+          "bootstrap_options",
+          "bootstrap_verify",
+          "passkey_login_options",
+          "passkey_login_verify",
+          "passkey_registration_options",
+          "passkey_registration_verify",
+          "passkey_delete",
+          "uv_options",
+          "uv_verify",
+          "recovery_verify",
+          "recovery_codes_rotate",
+          "logout",
+          "session_delete"
+        ]
+      },
+      "AuthOperationReceiptV1": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "operationId": {
+            "type": "string",
+            "minLength": 36,
+            "maxLength": 36,
+            "format": "uuidv7",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "operation": {
+            "$ref": "#/components/schemas/AuthIdempotencyOperationV1"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "committed"
+            ]
+          },
+          "committedAt": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 35,
+            "format": "date-time"
+          },
+          "resourceId": {
+            "type": "string",
+            "minLength": 36,
+            "maxLength": 36,
+            "format": "uuidv7",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "cookieOutcome": {
+            "type": "string",
+            "enum": [
+              "none",
+              "cleared",
+              "issued_not_replayable"
+            ]
+          },
+          "csrfOutcome": {
+            "type": "string",
+            "enum": [
+              "none",
+              "issued_not_replayable"
+            ]
+          },
+          "recoveryCodesOutcome": {
+            "type": "string",
+            "enum": [
+              "none",
+              "issued_not_replayable"
+            ]
+          },
+          "nextAction": {
+            "type": "string",
+            "enum": [
+              "none",
+              "get_auth_current",
+              "fresh_passkey_login",
+              "use_another_recovery_code",
+              "rotate_recovery_codes"
+            ]
+          }
+        },
+        "required": [
+          "operationId",
+          "operation",
+          "state",
+          "committedAt",
+          "cookieOutcome",
+          "csrfOutcome",
+          "recoveryCodesOutcome",
+          "nextAction"
+        ]
+      },
+      "AuthReceiptErrorDetailsV1": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "receipt": {
+            "$ref": "#/components/schemas/AuthOperationReceiptV1"
+          }
+        },
+        "required": [
+          "receipt"
+        ]
+      },
+      "SessionRevisionConflictDetailsV1": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "minLength": 36,
+            "maxLength": 36,
+            "format": "uuidv7",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "currentRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "sessionId",
+          "expectedRevision",
+          "currentRevision"
         ]
       },
       "ApiError": {
@@ -23452,7 +23768,7 @@
             "type": "string",
             "minLength": 47,
             "maxLength": 47,
-            "pattern": "^MAD-RC1-(?:[A-Z2-7]{4}-){7}[A-Z2-7]{4}$"
+            "pattern": "^[Mm][Aa][Dd]-[Rr][Cc]1-(?:[A-Za-z2-7]{4}-){7}[A-Za-z2-7]{4}$"
           }
         },
         "required": [
@@ -23591,16 +23907,10 @@
             },
             "minItems": 1,
             "maxItems": 64
-          },
-          "revision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
           }
         },
         "required": [
-          "passkeys",
-          "revision"
+          "passkeys"
         ]
       },
       "PasskeyDeleteResultV1": {
@@ -23713,6 +24023,22 @@
             "minLength": 20,
             "maxLength": 35,
             "format": "date-time"
+          },
+          "idleExpiresAt": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 35,
+            "format": "date-time"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "activityRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
           }
         },
         "required": [
@@ -23721,7 +24047,10 @@
           "current",
           "createdAt",
           "lastSeenAt",
-          "expiresAt"
+          "expiresAt",
+          "idleExpiresAt",
+          "revision",
+          "activityRevision"
         ]
       },
       "BrowserSessionListResultV1": {
@@ -23735,16 +24064,43 @@
             },
             "minItems": 1,
             "maxItems": 128
-          },
-          "revision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
           }
         },
         "required": [
-          "sessions",
-          "revision"
+          "sessions"
+        ]
+      },
+      "BrowserSessionRevokeResultV1": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "minLength": 36,
+            "maxLength": 36,
+            "format": "uuidv7",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "revokedAt": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 35,
+            "format": "date-time"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 9007199254740991
+          },
+          "currentSessionRevoked": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "sessionId",
+          "revokedAt",
+          "revision",
+          "currentSessionRevoked"
         ]
       },
       "BrowserSessionListEnvelopeV1": {
@@ -23759,6 +24115,29 @@
           },
           "data": {
             "$ref": "#/components/schemas/BrowserSessionListResultV1"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "apiVersion",
+          "data",
+          "meta"
+        ]
+      },
+      "BrowserSessionRevokeEnvelopeV1": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "apiVersion": {
+            "type": "string",
+            "enum": [
+              "v1"
+            ]
+          },
+          "data": {
+            "$ref": "#/components/schemas/BrowserSessionRevokeResultV1"
           },
           "meta": {
             "$ref": "#/components/schemas/ResponseMeta"
@@ -23863,40 +24242,40 @@
           },
           "signingPublicKey": {
             "type": "string",
-            "minLength": 42,
-            "maxLength": 42,
+            "minLength": 43,
+            "maxLength": 43,
             "format": "base64url",
             "pattern": "^[A-Za-z0-9_-]+$",
             "x-mad-decoded-bytes": 32
           },
           "exchangePublicKey": {
             "type": "string",
-            "minLength": 42,
-            "maxLength": 42,
+            "minLength": 43,
+            "maxLength": 43,
             "format": "base64url",
             "pattern": "^[A-Za-z0-9_-]+$",
             "x-mad-decoded-bytes": 32
           },
           "signingKeyDigest": {
             "type": "string",
-            "minLength": 42,
-            "maxLength": 42,
+            "minLength": 43,
+            "maxLength": 43,
             "format": "base64url",
             "pattern": "^[A-Za-z0-9_-]+$",
             "x-mad-decoded-bytes": 32
           },
           "exchangeKeyDigest": {
             "type": "string",
-            "minLength": 42,
-            "maxLength": 42,
+            "minLength": 43,
+            "maxLength": 43,
             "format": "base64url",
             "pattern": "^[A-Za-z0-9_-]+$",
             "x-mad-decoded-bytes": 32
           },
           "pinDigest": {
             "type": "string",
-            "minLength": 42,
-            "maxLength": 42,
+            "minLength": 43,
+            "maxLength": 43,
             "format": "base64url",
             "pattern": "^[A-Za-z0-9_-]+$",
             "x-mad-decoded-bytes": 32
@@ -23911,7 +24290,7 @@
             "$ref": "#/components/schemas/BootstrapKeyEnvelopeAssertionV1"
           },
           "capabilities": {
-            "$ref": "#/components/schemas/DeviceCapabilityListV1"
+            "$ref": "#/components/schemas/P2BootstrapDeviceCapabilityListV1"
           }
         },
         "required": [
@@ -24065,16 +24444,16 @@
           },
           "signingProof": {
             "type": "string",
-            "minLength": 85,
-            "maxLength": 85,
+            "minLength": 86,
+            "maxLength": 86,
             "format": "base64url",
             "pattern": "^[A-Za-z0-9_-]+$",
             "x-mad-decoded-bytes": 64
           },
           "exchangeProof": {
             "type": "string",
-            "minLength": 42,
-            "maxLength": 42,
+            "minLength": 43,
+            "maxLength": 43,
             "format": "base64url",
             "pattern": "^[A-Za-z0-9_-]+$",
             "x-mad-decoded-bytes": 32
@@ -34898,6 +35277,328 @@
           "data",
           "meta"
         ]
+      },
+      "P2EmptyObjectRequestV1": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "x-go-type": "transport.EmptyJSONObjectV1",
+        "x-go-type-import": {
+          "path": "github.com/jinlong17/multi-agent-desk/internal/transport",
+          "name": "transport"
+        }
+      },
+      "P2BootstrapDeviceCapabilityListV1": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/DeviceCapabilityV1"
+        },
+        "minItems": 1,
+        "maxItems": 12,
+        "uniqueItems": true
+      },
+      "P2StandardApiErrorV1": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "invalid_argument",
+              "unauthenticated",
+              "permission_denied",
+              "not_found",
+              "conflict",
+              "resource_exhausted",
+              "rate_limited",
+              "request_too_large",
+              "unsupported_api_version",
+              "schema_incompatible",
+              "idempotency_key_required",
+              "idempotency_key_reused",
+              "idempotency_in_progress",
+              "if_match_required",
+              "sync_conflict",
+              "sync_history_missing",
+              "sync_base_digest_mismatch",
+              "sync_next_digest_mismatch",
+              "sync_patch_mismatch",
+              "sync_patch_too_large",
+              "invalid_cursor",
+              "stale_resurrection",
+              "snapshot_required",
+              "snapshot_in_progress",
+              "snapshot_expired",
+              "snapshot_page_invalid",
+              "snapshot_commit_conflict",
+              "snapshot_page_too_large",
+              "cross_server_identity_rebind",
+              "bootstrap_unavailable",
+              "bootstrap_expired",
+              "bootstrap_replayed",
+              "bootstrap_anchor_required",
+              "ceremony_restart_required",
+              "origin_mismatch",
+              "rp_id_mismatch",
+              "webauthn_challenge_expired",
+              "webauthn_challenge_replayed",
+              "webauthn_verification_failed",
+              "passkey_counter_regressed",
+              "recovery_invalid_or_rate_limited",
+              "recovery_consumed",
+              "recent_uv_required",
+              "last_passkey_required",
+              "recovery_batch_replaced",
+              "csrf_invalid",
+              "session_integrity_invalid",
+              "session_expired",
+              "device_not_enrolled",
+              "device_revoked",
+              "device_key_changed",
+              "key_digest_mismatch",
+              "device_key_envelope_corrupt",
+              "device_key_envelope_conflict",
+              "pin_mismatch",
+              "attestation_invalid",
+              "attestation_expired",
+              "attestation_replayed",
+              "cross_type_signature_replay",
+              "enrollment_preauth_invalid",
+              "approver_not_pinned",
+              "capability_denied",
+              "capability_revision_conflict",
+              "capability_not_recognized",
+              "activation_receipt_invalid",
+              "enrollment_cancelled",
+              "signature_invalid",
+              "request_replayed",
+              "clock_skew",
+              "command_expired",
+              "command_claimed",
+              "command_state_conflict",
+              "command_digest_mismatch",
+              "projection_read_only",
+              "command_attempt_stale",
+              "command_execution_ambiguous",
+              "command_reconciliation_required",
+              "command_receipt_inconsistent",
+              "delivery_attempts_exhausted",
+              "phase4b_controller_required",
+              "mapping_quarantined",
+              "forbidden_metadata_field",
+              "provider_control_unsupported",
+              "provider_session_start_unsupported",
+              "provider_resume_unsupported",
+              "provider_stop_unsupported",
+              "provider_kill_unsupported",
+              "daemon_shutting_down",
+              "daemon_unavailable"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "requestId": {
+            "type": "string",
+            "minLength": 36,
+            "maxLength": 36,
+            "format": "uuidv7",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorDetail"
+            },
+            "minItems": 0,
+            "maxItems": 32
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "requestId",
+          "details"
+        ]
+      },
+      "P2OneTimeResultUnavailableApiErrorV1": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "one_time_result_unavailable"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "requestId": {
+            "type": "string",
+            "minLength": 36,
+            "maxLength": 36,
+            "format": "uuidv7",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "details": {
+            "$ref": "#/components/schemas/AuthReceiptErrorDetailsV1"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "requestId",
+          "details"
+        ]
+      },
+      "P2SessionRevisionConflictApiErrorV1": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "session_revision_conflict"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "requestId": {
+            "type": "string",
+            "minLength": 36,
+            "maxLength": 36,
+            "format": "uuidv7",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "details": {
+            "$ref": "#/components/schemas/SessionRevisionConflictDetailsV1"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "requestId",
+          "details"
+        ]
+      },
+      "P2ApiErrorV1": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/P2StandardApiErrorV1"
+          },
+          {
+            "$ref": "#/components/schemas/P2OneTimeResultUnavailableApiErrorV1"
+          },
+          {
+            "$ref": "#/components/schemas/P2SessionRevisionConflictApiErrorV1"
+          }
+        ]
+      },
+      "P2StandardErrorEnvelopeV1": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "apiVersion": {
+            "type": "string",
+            "enum": [
+              "v1"
+            ]
+          },
+          "error": {
+            "$ref": "#/components/schemas/P2StandardApiErrorV1"
+          }
+        },
+        "required": [
+          "apiVersion",
+          "error"
+        ]
+      },
+      "P2OneTimeResultUnavailableErrorEnvelopeV1": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "apiVersion": {
+            "type": "string",
+            "enum": [
+              "v1"
+            ]
+          },
+          "error": {
+            "$ref": "#/components/schemas/P2OneTimeResultUnavailableApiErrorV1"
+          }
+        },
+        "required": [
+          "apiVersion",
+          "error"
+        ]
+      },
+      "P2SessionRevisionConflictErrorEnvelopeV1": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "apiVersion": {
+            "type": "string",
+            "enum": [
+              "v1"
+            ]
+          },
+          "error": {
+            "$ref": "#/components/schemas/P2SessionRevisionConflictApiErrorV1"
+          }
+        },
+        "required": [
+          "apiVersion",
+          "error"
+        ]
+      },
+      "P2SecretConflictErrorEnvelopeV1": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/P2StandardErrorEnvelopeV1"
+          },
+          {
+            "$ref": "#/components/schemas/P2OneTimeResultUnavailableErrorEnvelopeV1"
+          }
+        ]
+      }
+    },
+    "headers": {
+      "P2IssuedSessionCookieV1": {
+        "description": "Issues the host-only P2 browser session cookie. Domain is forbidden.",
+        "schema": {
+          "type": "string",
+          "pattern": "^__Host-mad_session=[A-Za-z0-9_-]{43}; Path=/; Expires=[A-Z][a-z]{2}, [0-9]{2} [A-Z][a-z]{2} [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} GMT; HttpOnly; Secure; SameSite=Strict$"
+        },
+        "example": "__Host-mad_session=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA; Path=/; Expires=Fri, 01 Mar 2030 12:00:00 GMT; HttpOnly; Secure; SameSite=Strict"
+      },
+      "P2ClearedSessionCookieV1": {
+        "description": "Clears the host-only P2 browser session cookie. Domain is forbidden.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "__Host-mad_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; Max-Age=0; HttpOnly; Secure; SameSite=Strict"
+          ]
+        },
+        "example": "__Host-mad_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; Max-Age=0; HttpOnly; Secure; SameSite=Strict"
+      },
+      "P2RetryAfterV1": {
+        "description": "Present with the exact value 1 only for idempotency_in_progress.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ],
+          "default": "1"
+        },
+        "example": "1"
       }
     }
   }

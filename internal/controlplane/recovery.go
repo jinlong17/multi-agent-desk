@@ -41,6 +41,7 @@ type RecoveryCodeSet struct {
 }
 
 func GenerateRecoveryCodeSet(now time.Time) (RecoveryCodeSet, error) {
+	now = normalizeServerTime(now)
 	select {
 	case recoveryHashSlots <- struct{}{}:
 		defer func() { <-recoveryHashSlots }()
@@ -51,7 +52,7 @@ func GenerateRecoveryCodeSet(now time.Time) (RecoveryCodeSet, error) {
 	if err != nil {
 		return RecoveryCodeSet{}, err
 	}
-	result := RecoveryCodeSet{BatchID: batchID, GeneratedAt: now.UTC(), Plaintext: make([]string, 0, recoveryCodeCount), Hashes: make([]RecoveryCodeHash, 0, recoveryCodeCount)}
+	result := RecoveryCodeSet{BatchID: batchID, GeneratedAt: now, Plaintext: make([]string, 0, recoveryCodeCount), Hashes: make([]RecoveryCodeHash, 0, recoveryCodeCount)}
 	for ordinal := 1; ordinal <= recoveryCodeCount; ordinal++ {
 		entropy := make([]byte, recoveryCodeEntropySize)
 		if _, err := rand.Read(entropy); err != nil {

@@ -93,6 +93,7 @@ func testServer(t *testing.T) (*Server, *Store) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(server.bootstrap.clearEphemeral)
 	return server, store
 }
 
@@ -165,7 +166,7 @@ func TestCompleteContractInventoryMountsOnlyP2AndLeavesLaterPhasesSideEffectFree
 	if err := rows.Close(); err != nil {
 		t.Fatal(err)
 	}
-	wantTables := []string{"anchor_devices", "auth_audit_events", "bootstrap_receipts", "bootstrap_state", "browser_sessions", "idempotency_records", "one_time_operations", "passkeys", "pre_user_audit_events", "recovery_batches", "recovery_codes", "schema_migrations", "server_metadata", "users", "webauthn_ceremonies"}
+	wantTables := []string{"anchor_devices", "auth_audit_events", "auth_idempotency_operations", "bootstrap_receipts", "bootstrap_state", "browser_sessions", "idempotency_records", "passkeys", "pre_user_audit_events", "recovery_batches", "recovery_codes", "schema_migrations", "server_metadata", "users", "webauthn_ceremonies"}
 	if !slices.Equal(tables, wantTables) {
 		t.Fatalf("P2 schema inventory mismatch: %v", tables)
 	}
@@ -202,7 +203,7 @@ func TestCompleteContractInventoryMountsOnlyP2AndLeavesLaterPhasesSideEffectFree
 				t.Fatalf("P3+ operation mounted: %s %s -> %d %s", method, target, response.Code, response.Body.String())
 			}
 			if len(response.Header().Values("Set-Cookie")) != 0 || response.Header().Get("Location") != "" {
-				t.Fatalf("P2+ operation emitted authority: %s %s headers=%v", method, target, response.Header())
+				t.Fatalf("P3+ operation emitted authority: %s %s headers=%v", method, target, response.Header())
 			}
 		}
 	}

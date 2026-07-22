@@ -21,7 +21,7 @@ func TestWebAuthnExactOptionsAndOneShotCeremony(t *testing.T) {
 	now := time.Now().UTC()
 	service.Now = func() time.Time { return now }
 	user := StoredUser{ID: "018f47a0-7b1c-7cc2-8000-000000000001", Handle: []byte("0123456789abcdef0123456789abcdef"), DisplayName: "Owner"}
-	options, ceremony, err := service.BeginRegistration(t.Context(), ceremonyBootstrapRegistration, user, "")
+	options, ceremony, err := service.BeginRegistration(t.Context(), ceremonyBootstrapRegistration, user, "", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +53,7 @@ func TestWebAuthnExactOptionsAndOneShotCeremony(t *testing.T) {
 
 	credentialID := []byte("credential-id")
 	user.Credentials = []webauthn.Credential{{ID: credentialID}}
-	assertion, err := service.BeginAssertion(t.Context(), ceremonyPasskeyLogin, user, "")
+	assertion, err := service.BeginAssertion(t.Context(), ceremonyPasskeyLogin, user, "", 0)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	generatedapi "github.com/jinlong17/multi-agent-desk/internal/controlplane/api/generated"
@@ -20,34 +21,46 @@ type CeremonyStore struct {
 }
 
 func (s *CeremonyStore) put(ctx context.Context, value *webAuthnCeremony) error {
-	if s == nil || s.Store == nil || value == nil || value.ID == "" || value.ExpiresAt.IsZero() || !validCeremonyKind(value.Kind) {
-		return fmt.Errorf("WebAuthn ceremony is invalid")
-	}
-	if _, err := transport.ParseUUIDv7(value.ID); err != nil {
-		return fmt.Errorf("WebAuthn ceremony ID is invalid")
-	}
-	payload, err := json.Marshal(value)
-	if err != nil || len(payload) < 2 || len(payload) > maxWebAuthnCeremonyPayload {
-		return fmt.Errorf("WebAuthn ceremony payload is invalid")
-	}
-	now := time.Now().UTC()
-	if s.Now != nil {
-		now = s.Now().UTC()
-	}
-	conn, err := s.Store.db.Conn(ctx)
+	now, payload, err := s.validatePut(value)
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
-	if _, err := conn.ExecContext(ctx, "BEGIN IMMEDIATE"); err != nil {
+	_, err = withImmediateConn(ctx, s.Store.db, "WebAuthn ceremony", func(conn *sql.Conn) (struct{}, error) {
+		return struct{}{}, putWebAuthnCeremonyTx(ctx, conn, value, payload, now)
+	})
+	return err
+}
+
+func (s *CeremonyStore) validatePut(value *webAuthnCeremony) (time.Time, []byte, error) {
+	if s == nil || s.Store == nil || value == nil || value.ID == "" || value.ExpiresAt.IsZero() || !validCeremonyKind(value.Kind) {
+		return time.Time{}, nil, fmt.Errorf("WebAuthn ceremony is invalid")
+	}
+	if _, err := transport.ParseUUIDv7(value.ID); err != nil {
+		return time.Time{}, nil, fmt.Errorf("WebAuthn ceremony ID is invalid")
+	}
+	payload, err := json.Marshal(value)
+	if err != nil || len(payload) < 2 || len(payload) > maxWebAuthnCeremonyPayload {
+		return time.Time{}, nil, fmt.Errorf("WebAuthn ceremony payload is invalid")
+	}
+	now := normalizeServerTime(time.Now())
+	if s.Now != nil {
+		now = normalizeServerTime(s.Now())
+	}
+	return now, payload, nil
+}
+
+func (s *CeremonyStore) putTx(ctx context.Context, conn *sql.Conn, value *webAuthnCeremony) error {
+	now, payload, err := s.validatePut(value)
+	if err != nil {
 		return err
 	}
-	committed := false
-	defer func() {
-		if !committed {
-			_, _ = conn.ExecContext(context.Background(), "ROLLBACK")
-		}
-	}()
+	return putWebAuthnCeremonyTx(ctx, conn, value, payload, now)
+}
+
+func putWebAuthnCeremonyTx(ctx context.Context, conn *sql.Conn, value *webAuthnCeremony, payload []byte, now time.Time) error {
+	if conn == nil {
+		return fmt.Errorf("WebAuthn ceremony transaction is required")
+	}
 	if _, err := conn.ExecContext(ctx, `DELETE FROM webauthn_ceremonies WHERE expires_at<=?`, formatServerTime(now)); err != nil {
 		return err
 	}
@@ -61,14 +74,28 @@ func (s *CeremonyStore) put(ctx context.Context, value *webAuthnCeremony) error 
 	if _, err := conn.ExecContext(ctx, `INSERT INTO webauthn_ceremonies(id,kind,payload_json,expires_at,created_at) VALUES(?,?,?,?,?)`, value.ID, string(value.Kind), payload, formatServerTime(value.ExpiresAt), formatServerTime(now)); err != nil {
 		return fmt.Errorf("store WebAuthn ceremony: %w", err)
 	}
-	if _, err := conn.ExecContext(ctx, "COMMIT"); err != nil {
-		return err
-	}
-	committed = true
 	return nil
 }
 
 func (s *CeremonyStore) Load(ctx context.Context, id string, kind ceremonyKind, now time.Time) (*webAuthnCeremony, error) {
+	if s == nil || s.Store == nil {
+		return nil, fmt.Errorf("webauthn_challenge_replayed")
+	}
+	value, err := s.loadWith(ctx, s.Store.db, id, kind, now)
+	if err != nil && (strings.Contains(err.Error(), "expired") || strings.Contains(err.Error(), "replayed")) {
+		_ = s.Consume(context.Background(), id, kind)
+	}
+	return value, err
+}
+
+func (s *CeremonyStore) loadTx(ctx context.Context, conn *sql.Conn, id string, kind ceremonyKind, now time.Time) (*webAuthnCeremony, error) {
+	if conn == nil {
+		return nil, fmt.Errorf("webauthn_challenge_replayed")
+	}
+	return s.loadWith(ctx, conn, id, kind, now)
+}
+
+func (s *CeremonyStore) loadWith(ctx context.Context, queryer rowQueryer, id string, kind ceremonyKind, now time.Time) (*webAuthnCeremony, error) {
 	if s == nil || s.Store == nil || !validCeremonyKind(kind) {
 		return nil, fmt.Errorf("webauthn_challenge_replayed")
 	}
@@ -77,7 +104,7 @@ func (s *CeremonyStore) Load(ctx context.Context, id string, kind ceremonyKind, 
 	}
 	var storedKind, expiresText string
 	var payload []byte
-	err := s.Store.db.QueryRowContext(ctx, `SELECT kind,payload_json,expires_at FROM webauthn_ceremonies WHERE id=?`, id).Scan(&storedKind, &payload, &expiresText)
+	err := queryer.QueryRowContext(ctx, `SELECT kind,payload_json,expires_at FROM webauthn_ceremonies WHERE id=?`, id).Scan(&storedKind, &payload, &expiresText)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("webauthn_challenge_replayed")
 	}
@@ -89,16 +116,13 @@ func (s *CeremonyStore) Load(ctx context.Context, id string, kind ceremonyKind, 
 	}
 	expires, err := parseServerTime(expiresText)
 	if err != nil {
-		_ = s.Consume(context.Background(), id, kind)
 		return nil, fmt.Errorf("webauthn_challenge_replayed")
 	}
 	if !expires.After(now.UTC()) {
-		_ = s.Consume(context.Background(), id, kind)
 		return nil, fmt.Errorf("webauthn_challenge_expired")
 	}
 	var value webAuthnCeremony
 	if err := json.Unmarshal(payload, &value); err != nil || value.ID != id || value.Kind != kind || !value.ExpiresAt.Equal(expires) {
-		_ = s.Consume(context.Background(), id, kind)
 		return nil, fmt.Errorf("webauthn_challenge_replayed")
 	}
 	return &value, nil
@@ -152,6 +176,23 @@ func consumeWebAuthnCeremony(ctx context.Context, execer dbExecer, id string, ki
 	}
 	if changed, _ := result.RowsAffected(); changed != 1 {
 		return fmt.Errorf("webauthn_challenge_replayed")
+	}
+	return nil
+}
+
+// consumeWebAuthnCeremonyIfPresent is used only while finalizing a failed
+// outer transaction. The product savepoint may already have deleted the row,
+// so both zero and one affected row are valid typed outcomes.
+func consumeWebAuthnCeremonyIfPresent(ctx context.Context, execer dbExecer, id string, kind ceremonyKind) error {
+	if _, err := transport.ParseUUIDv7(id); err != nil || !validCeremonyKind(kind) {
+		return fmt.Errorf("WebAuthn ceremony binding is invalid")
+	}
+	result, err := execer.ExecContext(ctx, `DELETE FROM webauthn_ceremonies WHERE id=? AND kind=?`, id, string(kind))
+	if err != nil {
+		return fmt.Errorf("consume WebAuthn ceremony if present: %w", err)
+	}
+	if changed, rowsErr := result.RowsAffected(); rowsErr != nil || changed < 0 || changed > 1 {
+		return fmt.Errorf("consume WebAuthn ceremony if present: invalid row count")
 	}
 	return nil
 }

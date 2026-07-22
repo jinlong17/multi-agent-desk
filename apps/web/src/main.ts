@@ -374,6 +374,7 @@ function renderPasskeys(): void {
         path: { passkeyId: passkey.id },
         ifMatch: `"rev-${passkey.credentialRevision}"`,
         idempotencyKey: idempotencyKey(),
+        body: {},
       });
       setStatus(`Passkey deleted; ${result.data.revokedSessionCount} browser session(s) revoked.`);
       if (result.data.currentSessionRevoked) setAuth(undefined);
@@ -400,14 +401,14 @@ function renderSessions(): void {
     const name = document.createElement("strong");
     const metadata = document.createElement("span");
     name.textContent = `${session.authenticationMethod} session${session.current ? " · current" : ""}`;
-    metadata.textContent = `Last seen ${formatDate(session.lastSeenAt)} · expires ${formatDate(session.expiresAt)}`;
+    metadata.textContent = `Last seen ${formatDate(session.lastSeenAt)} · expires ${formatDate(session.expiresAt)} · state revision ${session.revision} · activity revision ${session.activityRevision}`;
     detail.append(name, metadata);
     const disabled = document.createElement("button");
     disabled.type = "button";
-    disabled.className = "secondary";
-    disabled.textContent = "Revoke pending contract";
+    disabled.className = "danger secondary";
+    disabled.textContent = "Revoke after P2 verification";
     disabled.disabled = true;
-    disabled.title = "The API currently exposes a collection revision but deletion requires an item revision; v0.8 planning must resolve this.";
+    disabled.title = "The per-item flow is implemented and tested; P6 enables this control only after P2 is independently verified.";
     item.append(detail, disabled);
     sessionList.append(item);
   }
@@ -573,7 +574,7 @@ bind("download-receipt", async () => {
 });
 
 bind("passkey-login", async () => {
-  const options = await controlPlane.methods.createPasskeyAuthenticationOptions({ idempotencyKey: idempotencyKey() });
+  const options = await controlPlane.methods.createPasskeyAuthenticationOptions({ idempotencyKey: idempotencyKey(), body: {} });
   const credential = await getPublicKey(toRequestOptions(options.data));
   const result = await controlPlane.methods.verifyPasskeyAuthentication({
     idempotencyKey: idempotencyKey(),
@@ -597,7 +598,7 @@ bind("recovery-login", async () => {
 
 async function registerPasskey(): Promise<void> {
   if (!currentAuth) throw new Error("Authentication is required");
-  const options = await controlPlane.methods.createPasskeyRegistrationOptions({ idempotencyKey: idempotencyKey() });
+  const options = await controlPlane.methods.createPasskeyRegistrationOptions({ idempotencyKey: idempotencyKey(), body: {} });
   const credential = await createPublicKey(toCreationOptions(options.data));
   const result = await controlPlane.methods.verifyPasskeyRegistration({
     idempotencyKey: idempotencyKey(),
@@ -614,7 +615,7 @@ bind("register-replacement-passkey", registerPasskey);
 
 bind("uv-step-up", async () => {
   if (currentAuth?.authenticationMethod !== "passkey") throw new Error("A normal Passkey session is required");
-  const options = await controlPlane.methods.createUvOptions({ idempotencyKey: idempotencyKey() });
+  const options = await controlPlane.methods.createUvOptions({ idempotencyKey: idempotencyKey(), body: {} });
   const credential = await getPublicKey(toRequestOptions(options.data));
   const result = await controlPlane.methods.verifyUv({
     idempotencyKey: idempotencyKey(),
@@ -626,7 +627,7 @@ bind("uv-step-up", async () => {
 
 bind("rotate-recovery", async () => {
   if (currentAuth?.authenticationMethod !== "passkey") throw new Error("A normal Passkey session is required");
-  const result = await controlPlane.methods.rotateRecoveryCodes({ idempotencyKey: idempotencyKey() });
+  const result = await controlPlane.methods.rotateRecoveryCodes({ idempotencyKey: idempotencyKey(), body: {} });
   showRecoveryCodes(result.data, "Recovery codes rotated");
   setStatus("Old recovery codes were invalidated. Save the ten replacement codes now.");
 });
@@ -638,11 +639,11 @@ bind("load-passkeys", async () => {
 
 bind("load-sessions", async () => {
   await loadSessions();
-  setStatus("Browser session list refreshed. Revoke actions remain disabled pending the item-revision contract.");
+  setStatus("Browser session list refreshed with current item revisions.");
 });
 
 bind("logout", async () => {
-  await controlPlane.methods.logout({ idempotencyKey: idempotencyKey() });
+  await controlPlane.methods.logout({ idempotencyKey: idempotencyKey(), body: {} });
   setAuth(undefined);
   clearRecoveryCodes();
   setStatus("Signed out; the session cookie and in-memory CSRF value were cleared.");

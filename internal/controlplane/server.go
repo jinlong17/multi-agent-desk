@@ -7,15 +7,19 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync/atomic"
 	"time"
 
+	"github.com/jinlong17/multi-agent-desk/internal/controlplane/webassets"
 	"github.com/jinlong17/multi-agent-desk/internal/transport"
 )
 
 var BuildVersion = "devel"
 var BuildCommit = "unknown"
+
+var embeddedWebAssetName = regexp.MustCompile(`^index-[A-Za-z0-9_-]{8,}\.(?:js|css)$`)
 
 type Server struct {
 	config          Config
@@ -28,6 +32,8 @@ type Server struct {
 	recoveryLimiter *RecoveryLimiter
 	preAuthLimiter  *RequestLimiter
 	ceremonyLimiter *RequestLimiter
+	serverBootEpoch string
+	Now             func() time.Time
 }
 
 func NewServer(config Config, store *Store) (*Server, error) {
@@ -41,11 +47,17 @@ func NewServer(config Config, store *Store) (*Server, error) {
 	if err := webauthnService.Ceremonies.InvalidateAll(context.Background()); err != nil {
 		return nil, err
 	}
+	bootEpoch, err := transport.NewUUIDv7()
+	if err != nil {
+		return nil, fmt.Errorf("create server boot epoch: %w", err)
+	}
 	server := &Server{
 		config: config, store: store, recoveryLimiter: &RecoveryLimiter{},
 		preAuthLimiter:  &RequestLimiter{PerSource: 30, Global: 300},
 		ceremonyLimiter: &RequestLimiter{PerSource: 30, Global: 300},
 		webauthn:        webauthnService,
+		serverBootEpoch: bootEpoch,
+		Now:             time.Now,
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /v1/healthz", server.health)
@@ -53,16 +65,87 @@ func NewServer(config Config, store *Store) (*Server, error) {
 	mux.HandleFunc("GET /v1/version", server.version)
 	server.bootstrap = &BootstrapService{Config: config, Store: store, WebAuthn: webauthnService}
 	server.auth = &AuthService{Config: config, Store: store, WebAuthn: webauthnService}
+	webauthnService.Now = server.now
+	webauthnService.Ceremonies.Now = server.now
+	server.bootstrap.Now = server.now
+	server.auth.Now = server.now
 	server.mountP2(mux)
-	mux.HandleFunc("/", func(writer http.ResponseWriter, _ *http.Request) {
-		safeError(writer, http.StatusNotFound, "not_found", "endpoint not found", writer.Header().Get("X-Request-ID"))
-	})
+	mux.HandleFunc("/v1", server.apiNotFound)
+	mux.HandleFunc("/v1/", server.apiNotFound)
+	mux.HandleFunc("/", server.serveWebAsset)
 	server.http = &http.Server{Addr: config.Listen, Handler: server.middleware(mux), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 32 << 10}
 	server.ready.Store(true)
 	return server, nil
 }
 
+func (s *Server) apiNotFound(writer http.ResponseWriter, _ *http.Request) {
+	safeError(writer, http.StatusNotFound, "not_found", "endpoint not found", writer.Header().Get("X-Request-ID"))
+}
+
+func (s *Server) serveWebAsset(writer http.ResponseWriter, request *http.Request) {
+	writer.Header().Set("Content-Security-Policy", "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; object-src 'none'; connect-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; form-action 'self'; manifest-src 'none'; worker-src 'none'")
+	writer.Header().Set("X-Frame-Options", "DENY")
+	writer.Header().Set("Referrer-Policy", "no-referrer")
+	if request.Method != http.MethodGet && request.Method != http.MethodHead ||
+		request.URL.ForceQuery || request.URL.RawQuery != "" || request.URL.RawPath != "" || request.URL.EscapedPath() != request.URL.Path {
+		s.writeWebNotFound(writer, request)
+		return
+	}
+
+	assetPath := ""
+	contentType := ""
+	switch request.URL.Path {
+	case "/", "/index.html":
+		assetPath = "index.html"
+		contentType = "text/html; charset=utf-8"
+	default:
+		if !strings.HasPrefix(request.URL.Path, "/assets/") {
+			s.writeWebNotFound(writer, request)
+			return
+		}
+		name := strings.TrimPrefix(request.URL.Path, "/assets/")
+		if name == "" || strings.Contains(name, "/") || strings.Contains(name, "\\") || strings.HasPrefix(name, ".") || !embeddedWebAssetName.MatchString(name) {
+			s.writeWebNotFound(writer, request)
+			return
+		}
+		assetPath = "assets/" + name
+		switch {
+		case strings.HasSuffix(name, ".js"):
+			contentType = "text/javascript; charset=utf-8"
+		case strings.HasSuffix(name, ".css"):
+			contentType = "text/css; charset=utf-8"
+		default:
+			s.writeWebNotFound(writer, request)
+			return
+		}
+	}
+
+	contents, err := webassets.Files.ReadFile(assetPath)
+	if err != nil {
+		s.writeWebNotFound(writer, request)
+		return
+	}
+	writer.Header().Set("Content-Type", contentType)
+	writer.Header().Set("Content-Length", fmt.Sprintf("%d", len(contents)))
+	writer.WriteHeader(http.StatusOK)
+	if request.Method != http.MethodHead {
+		_, _ = writer.Write(contents)
+	}
+}
+
+func (s *Server) writeWebNotFound(writer http.ResponseWriter, request *http.Request) {
+	safeError(writer, http.StatusNotFound, "not_found", "endpoint not found", writer.Header().Get("X-Request-ID"))
+}
+
+func (s *Server) now() time.Time {
+	if s != nil && s.Now != nil {
+		return normalizeServerTime(s.Now())
+	}
+	return normalizeServerTime(time.Now())
+}
+
 func (s *Server) Run(ctx context.Context) error {
+	defer s.bootstrap.clearEphemeral()
 	if ctx.Err() != nil {
 		s.ready.Store(false)
 		return nil
@@ -180,8 +263,12 @@ func writeJSON(writer http.ResponseWriter, status int, value any) {
 	}
 }
 func safeError(writer http.ResponseWriter, status int, code, message, requestID string) {
+	safeErrorDetails(writer, status, code, message, requestID, []any{})
+}
+
+func safeErrorDetails(writer http.ResponseWriter, status int, code, message, requestID string, details any) {
 	if len(message) > 256 {
 		message = message[:256]
 	}
-	writeJSON(writer, status, map[string]any{"apiVersion": "v1", "error": map[string]any{"code": code, "message": message, "requestId": requestID, "details": []any{}}})
+	writeJSON(writer, status, map[string]any{"apiVersion": "v1", "error": map[string]any{"code": code, "message": message, "requestId": requestID, "details": details}})
 }

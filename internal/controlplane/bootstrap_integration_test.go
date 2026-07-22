@@ -329,15 +329,13 @@ func TestDaemonAnchoredBootstrapRestartFreshStartCommitAndActivate(t *testing.T)
 	}
 
 	restarted.auth.Now = func() time.Time { return now.Add(3 * time.Second) }
-	rotationScope := sha256.Sum256([]byte("bootstrap-integration-recovery-rotation"))
-	rotated, err := restarted.auth.RotateRecoveryCodes(ctx, storedUV, rotationScope)
+	rotated, err := restarted.auth.RotateRecoveryCodes(ctx, storedUV)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer rotated.ZeroPlaintext()
-	if _, err := restarted.auth.RotateRecoveryCodes(ctx, storedUV, rotationScope); err != ErrOneTimeResultUnavailable {
-		t.Fatalf("recovery one-time replay err=%v", err)
-	}
+	// Replay is owned by the HTTP AuthIdempotencyOperation gate in v0.9;
+	// direct service calls deliberately have no parallel marker table.
 
 	restarted.auth.Now = func() time.Time { return now.Add(4 * time.Second) }
 	limiter := &RecoveryLimiter{Now: restarted.auth.Now}

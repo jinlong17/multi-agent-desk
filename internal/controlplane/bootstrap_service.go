@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
+	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -30,8 +31,11 @@ type BootstrapService struct {
 }
 
 type bootstrapEphemeral struct {
-	private []byte
-	claimed bool
+	private   []byte
+	claimed   bool
+	armed     bool
+	expiresAt time.Time
+	timer     *time.Timer
 }
 
 type BootstrapCommitResult struct {
@@ -43,17 +47,34 @@ type BootstrapCommitResult struct {
 
 func (s *BootstrapService) now() time.Time {
 	if s.Now != nil {
-		return s.Now().UTC()
+		return normalizeServerTime(s.Now())
 	}
-	return time.Now().UTC()
+	return normalizeServerTime(time.Now())
 }
 
 func (s *BootstrapService) Begin(ctx context.Context, token string, request generatedapi.BootstrapOptionsRequestV1) (generatedapi.BootstrapAnchorChallengeV1, error) {
+	return s.begin(ctx, nil, token, request)
+}
+
+func (s *BootstrapService) BeginTx(ctx context.Context, conn *sql.Conn, token string, request generatedapi.BootstrapOptionsRequestV1) (generatedapi.BootstrapAnchorChallengeV1, error) {
+	if conn == nil {
+		return generatedapi.BootstrapAnchorChallengeV1{}, fmt.Errorf("bootstrap transaction is required")
+	}
+	return s.begin(ctx, conn, token, request)
+}
+
+func (s *BootstrapService) begin(ctx context.Context, conn *sql.Conn, token string, request generatedapi.BootstrapOptionsRequestV1) (generatedapi.BootstrapAnchorChallengeV1, error) {
 	if s == nil || s.Store == nil || s.WebAuthn == nil {
 		return generatedapi.BootstrapAnchorChallengeV1{}, fmt.Errorf("bootstrap service is unavailable")
 	}
 	now := s.now()
-	tokenDigest, err := s.Store.ValidateBootstrapToken(ctx, token, now)
+	var tokenDigest [sha256.Size]byte
+	var err error
+	if conn == nil {
+		tokenDigest, err = s.Store.ValidateBootstrapToken(ctx, token, now)
+	} else {
+		tokenDigest, err = validateBootstrapToken(ctx, conn, token, now)
+	}
 	if err != nil {
 		return generatedapi.BootstrapAnchorChallengeV1{}, err
 	}
@@ -70,7 +91,7 @@ func (s *BootstrapService) Begin(ctx context.Context, token string, request gene
 		return generatedapi.BootstrapAnchorChallengeV1{}, err
 	}
 	user := StoredUser{ID: userID, Handle: userHandle, DisplayName: request.DisplayName, Revision: 1, CreatedAt: now, UpdatedAt: now}
-	options, ceremony, err := s.WebAuthn.BeginRegistration(ctx, ceremonyBootstrapRegistration, user, "")
+	options, ceremony, err := s.WebAuthn.BeginRegistration(ctx, ceremonyBootstrapRegistration, user, "", 0)
 	if err != nil {
 		return generatedapi.BootstrapAnchorChallengeV1{}, err
 	}
@@ -98,43 +119,82 @@ func (s *BootstrapService) Begin(ctx context.Context, token string, request gene
 	zeroBytes(challenge)
 	ceremony.TokenDigest = tokenDigest
 	ceremony.BootstrapChallenge = &result
-	if err := s.WebAuthn.Ceremonies.put(ctx, ceremony); err != nil {
-		zeroBytes(ephemeralPrivate)
-		return generatedapi.BootstrapAnchorChallengeV1{}, err
+	var putErr error
+	if conn == nil {
+		putErr = s.WebAuthn.Ceremonies.put(ctx, ceremony)
+	} else {
+		putErr = s.WebAuthn.Ceremonies.putTx(ctx, conn, ceremony)
 	}
-	s.rememberEphemeral(ceremony.ID, ephemeralPrivate)
+	if putErr != nil {
+		zeroBytes(ephemeralPrivate)
+		return generatedapi.BootstrapAnchorChallengeV1{}, putErr
+	}
+	if conn == nil {
+		s.rememberEphemeral(ceremony.ID, ephemeralPrivate, ceremony.ExpiresAt)
+	} else {
+		s.rememberEphemeralDeferred(ceremony.ID, ephemeralPrivate, ceremony.ExpiresAt)
+	}
 	zeroBytes(ephemeralPrivate)
 	return result, nil
 }
 
 func (s *BootstrapService) Verify(ctx context.Context, token string, request generatedapi.BootstrapVerifyRequestV1) (BootstrapCommitResult, error) {
+	return s.verify(ctx, nil, token, request)
+}
+
+func (s *BootstrapService) VerifyTx(ctx context.Context, conn *sql.Conn, token string, request generatedapi.BootstrapVerifyRequestV1) (BootstrapCommitResult, error) {
+	if conn == nil {
+		return BootstrapCommitResult{}, fmt.Errorf("bootstrap transaction is required")
+	}
+	return s.verify(ctx, conn, token, request)
+}
+
+func (s *BootstrapService) verify(ctx context.Context, conn *sql.Conn, token string, request generatedapi.BootstrapVerifyRequestV1) (BootstrapCommitResult, error) {
 	now := s.now()
-	tokenDigest, err := s.Store.ValidateBootstrapToken(ctx, token, now)
+	var tokenDigest [sha256.Size]byte
+	var err error
+	if conn == nil {
+		tokenDigest, err = s.Store.ValidateBootstrapToken(ctx, token, now)
+	} else {
+		tokenDigest, err = validateBootstrapToken(ctx, conn, token, now)
+	}
 	if err != nil {
 		return BootstrapCommitResult{}, err
 	}
-	ceremony, err := s.WebAuthn.Ceremonies.Load(ctx, request.CeremonyId, ceremonyBootstrapRegistration, now)
+	if conn == nil {
+		defer s.forgetEphemeral(request.CeremonyId)
+	}
+	var ceremony *webAuthnCeremony
+	if conn == nil {
+		ceremony, err = s.WebAuthn.Ceremonies.Load(ctx, request.CeremonyId, ceremonyBootstrapRegistration, now)
+	} else {
+		ceremony, err = s.WebAuthn.Ceremonies.loadTx(ctx, conn, request.CeremonyId, ceremonyBootstrapRegistration, now)
+	}
 	if err != nil {
 		return BootstrapCommitResult{}, err
 	}
 	if ceremony.BootstrapChallenge == nil || subtle.ConstantTimeCompare(tokenDigest[:], ceremony.TokenDigest[:]) != 1 {
-		s.forgetEphemeral(request.CeremonyId)
-		s.WebAuthn.Ceremonies.consumeFailure(request.CeremonyId, ceremonyBootstrapRegistration)
-		return BootstrapCommitResult{}, fmt.Errorf("bootstrap challenge is unavailable")
+		failure := fmt.Errorf("bootstrap challenge is unavailable")
+		if conn == nil {
+			s.WebAuthn.Ceremonies.consumeFailure(request.CeremonyId, ceremonyBootstrapRegistration)
+		}
+		return BootstrapCommitResult{}, failure
 	}
 	ephemeralPrivate, found := s.claimEphemeral(request.CeremonyId)
 	if !found {
-		s.WebAuthn.Ceremonies.consumeFailure(request.CeremonyId, ceremonyBootstrapRegistration)
-		return BootstrapCommitResult{}, fmt.Errorf("webauthn_challenge_replayed")
+		failure := fmt.Errorf("webauthn_challenge_replayed")
+		if conn == nil {
+			s.WebAuthn.Ceremonies.consumeFailure(request.CeremonyId, ceremonyBootstrapRegistration)
+		}
+		return BootstrapCommitResult{}, failure
 	}
 	if ephemeralPrivate == nil {
 		return BootstrapCommitResult{}, fmt.Errorf("webauthn_challenge_replayed")
 	}
 	defer zeroBytes(ephemeralPrivate)
-	defer s.forgetEphemeral(request.CeremonyId)
 	committed := false
 	defer func() {
-		if !committed {
+		if conn == nil && !committed {
 			s.WebAuthn.Ceremonies.consumeFailure(request.CeremonyId, ceremonyBootstrapRegistration)
 		}
 	}()
@@ -173,12 +233,11 @@ func (s *BootstrapService) Verify(ctx context.Context, token string, request gen
 	if err != nil {
 		return BootstrapCommitResult{}, err
 	}
-	session, err := NewBrowserSessionCreate(ceremony.User.ID, "passkey", passkeyID, now)
+	session, err := NewBrowserSessionCreate(ceremony.User.ID, "passkey", passkeyID, s.Config.PublicOrigin, now)
 	if err != nil {
 		recovery.ZeroPlaintext()
 		return BootstrapCommitResult{}, err
 	}
-	session.RawCSRF = deriveSessionCSRF(session.RawToken, session.ID)
 	signingProofDigest := sha256.Sum256(signingProof)
 	exchangeProofDigest := sha256.Sum256(exchangeProof)
 	receipt := generatedapi.BootstrapCommitReceiptV1{
@@ -217,27 +276,95 @@ func (s *BootstrapService) Verify(ctx context.Context, token string, request gen
 		RecoveryBatchID: recovery.BatchID, RecoveryCodes: recovery.Hashes, BrowserSession: session,
 		ReceiptJSON: receiptJSON, ReceiptDigest: receiptDigest[:], At: now,
 	}
-	if err := s.Store.CommitBootstrap(ctx, commit); err != nil {
+	var commitErr error
+	if conn == nil {
+		commitErr = s.Store.CommitBootstrap(ctx, commit)
+	} else {
+		commitErr = commitBootstrapTx(ctx, conn, commit)
+	}
+	if commitErr != nil {
 		recovery.ZeroPlaintext()
 		zeroBytes(session.RawToken)
 		zeroBytes(session.RawCSRF)
-		return BootstrapCommitResult{}, err
+		return BootstrapCommitResult{}, commitErr
 	}
 	committed = true
 	current := currentAuthDTO(session, session.RawCSRF)
 	return BootstrapCommitResult{Receipt: receipt, RecoveryCodes: recovery, Session: session, CurrentAuth: current}, nil
 }
 
-func (s *BootstrapService) rememberEphemeral(ceremonyID string, private []byte) {
+func (s *BootstrapService) rememberEphemeral(ceremonyID string, private []byte, expiresAt time.Time) {
+	s.rememberEphemeralWithArm(ceremonyID, private, expiresAt, true)
+}
+
+func (s *BootstrapService) rememberEphemeralDeferred(ceremonyID string, private []byte, expiresAt time.Time) {
+	s.rememberEphemeralWithArm(ceremonyID, private, expiresAt, false)
+}
+
+func (s *BootstrapService) rememberEphemeralWithArm(ceremonyID string, private []byte, expiresAt time.Time, arm bool) {
 	s.ephemeralMu.Lock()
 	defer s.ephemeralMu.Unlock()
+	s.sweepEphemeralLocked(s.now())
 	if s.ephemeral == nil {
 		s.ephemeral = make(map[string]*bootstrapEphemeral)
 	}
 	if previous := s.ephemeral[ceremonyID]; previous != nil {
+		s.stopEphemeralTimerLocked(previous)
 		zeroBytes(previous.private)
 	}
-	s.ephemeral[ceremonyID] = &bootstrapEphemeral{private: append([]byte(nil), private...)}
+	value := &bootstrapEphemeral{private: append([]byte(nil), private...), expiresAt: expiresAt.UTC()}
+	s.ephemeral[ceremonyID] = value
+	if arm {
+		s.armEphemeralLocked(ceremonyID, value)
+	}
+}
+
+func (s *BootstrapService) armEphemeral(ceremonyID string) {
+	if s == nil {
+		return
+	}
+	s.ephemeralMu.Lock()
+	defer s.ephemeralMu.Unlock()
+	value := s.ephemeral[ceremonyID]
+	if value == nil || value.claimed || value.armed {
+		return
+	}
+	s.armEphemeralLocked(ceremonyID, value)
+}
+
+func (s *BootstrapService) armEphemeralLocked(ceremonyID string, value *bootstrapEphemeral) {
+	if value == nil || value.claimed || value.armed {
+		return
+	}
+	delay := value.expiresAt.Sub(s.now())
+	if delay < 0 {
+		delay = 0
+	}
+	value.armed = true
+	value.timer = time.AfterFunc(delay, func() {
+		s.expireEphemeral(ceremonyID, value)
+	})
+
+}
+
+func (s *BootstrapService) expireEphemeral(ceremonyID string, expected *bootstrapEphemeral) {
+	s.ephemeralMu.Lock()
+	defer s.ephemeralMu.Unlock()
+	value := s.ephemeral[ceremonyID]
+	if value == nil || value != expected || value.claimed {
+		return
+	}
+	value.timer = nil
+	zeroBytes(value.private)
+	delete(s.ephemeral, ceremonyID)
+}
+
+func (s *BootstrapService) stopEphemeralTimerLocked(value *bootstrapEphemeral) {
+	if value == nil || value.timer == nil {
+		return
+	}
+	value.timer.Stop()
+	value.timer = nil
 }
 
 // claimEphemeral returns (nil, false) after a restart/missing ceremony and
@@ -246,6 +373,7 @@ func (s *BootstrapService) rememberEphemeral(ceremonyID string, private []byte) 
 func (s *BootstrapService) claimEphemeral(ceremonyID string) ([]byte, bool) {
 	s.ephemeralMu.Lock()
 	defer s.ephemeralMu.Unlock()
+	s.sweepEphemeralLocked(s.now())
 	value := s.ephemeral[ceremonyID]
 	if value == nil {
 		return nil, false
@@ -254,14 +382,53 @@ func (s *BootstrapService) claimEphemeral(ceremonyID string) ([]byte, bool) {
 		return nil, true
 	}
 	value.claimed = true
+	s.stopEphemeralTimerLocked(value)
 	return append([]byte(nil), value.private...), true
+}
+
+func (s *BootstrapService) sweepEphemeralLocked(now time.Time) {
+	for ceremonyID, value := range s.ephemeral {
+		if value == nil || value.armed && (value.expiresAt.IsZero() || !value.expiresAt.After(now.UTC())) {
+			if value != nil {
+				s.stopEphemeralTimerLocked(value)
+				zeroBytes(value.private)
+			}
+			delete(s.ephemeral, ceremonyID)
+		}
+	}
 }
 
 func (s *BootstrapService) forgetEphemeral(ceremonyID string) {
 	s.ephemeralMu.Lock()
 	defer s.ephemeralMu.Unlock()
 	if value := s.ephemeral[ceremonyID]; value != nil {
+		s.stopEphemeralTimerLocked(value)
 		zeroBytes(value.private)
+		delete(s.ephemeral, ceremonyID)
+	}
+}
+
+func (s *BootstrapService) hasEphemeral(ceremonyID string) bool {
+	if s == nil {
+		return false
+	}
+	s.ephemeralMu.Lock()
+	defer s.ephemeralMu.Unlock()
+	s.sweepEphemeralLocked(s.now())
+	return s.ephemeral[ceremonyID] != nil
+}
+
+func (s *BootstrapService) clearEphemeral() {
+	if s == nil {
+		return
+	}
+	s.ephemeralMu.Lock()
+	defer s.ephemeralMu.Unlock()
+	for ceremonyID, value := range s.ephemeral {
+		if value != nil {
+			s.stopEphemeralTimerLocked(value)
+			zeroBytes(value.private)
+		}
 		delete(s.ephemeral, ceremonyID)
 	}
 }
@@ -277,7 +444,7 @@ type bootstrapAnchorMaterial struct {
 
 func validateBootstrapAnchor(anchor generatedapi.BootstrapAnchorV1) (bootstrapAnchorMaterial, error) {
 	var result bootstrapAnchorMaterial
-	if anchor.Kind != generatedapi.BootstrapAnchorV1KindDaemon || anchor.StorageMode != generatedapi.BootstrapAnchorV1StorageModePortableVaultV1 || !anchor.Platform.Valid() || anchor.Name == "" || len(anchor.Name) > 128 || anchor.Architecture == "" || len(anchor.Architecture) > 32 || anchor.ClientVersion == "" || len(anchor.ClientVersion) > 64 {
+	if anchor.Kind != generatedapi.BootstrapAnchorV1KindDaemon || anchor.StorageMode != generatedapi.BootstrapAnchorV1StorageModePortableVaultV1 || !anchor.Platform.Valid() || !jsonSchemaStringLength(anchor.Name, 1, 128) || !jsonSchemaStringLength(anchor.Architecture, 1, 32) || !jsonSchemaStringLength(anchor.ClientVersion, 1, 64) {
 		return result, fmt.Errorf("bootstrap anchor metadata is invalid")
 	}
 	if _, err := transport.ParseUUIDv7(anchor.DeviceId); err != nil {
@@ -306,7 +473,7 @@ func validateBootstrapAnchor(anchor generatedapi.BootstrapAnchorV1) (bootstrapAn
 		return result, fmt.Errorf("bootstrap anchor key digest is invalid")
 	}
 	assertion := anchor.KeyEnvelopeAssertion
-	if assertion.FormatVersion != generatedapi.BootstrapKeyEnvelopeAssertionV1FormatVersionN1 || assertion.KeyRevision != generatedapi.BootstrapKeyEnvelopeAssertionV1KeyRevisionN1 || assertion.RecordRevision < 1 || assertion.Status != generatedapi.BootstrapKeyEnvelopeAssertionV1StatusPending || assertion.SealedAt.IsZero() || assertion.SealedAt.Location() != time.UTC {
+	if assertion.FormatVersion != generatedapi.BootstrapKeyEnvelopeAssertionV1FormatVersionN1 || assertion.KeyRevision != generatedapi.BootstrapKeyEnvelopeAssertionV1KeyRevisionN1 || assertion.RecordRevision < 1 || assertion.RecordRevision > 9007199254740991 || assertion.Status != generatedapi.BootstrapKeyEnvelopeAssertionV1StatusPending || assertion.SealedAt.IsZero() || assertion.SealedAt.Location() != time.UTC {
 		return result, fmt.Errorf("bootstrap key-envelope assertion is invalid")
 	}
 	assertionJSON, err := transport.BootstrapKeyEnvelopeAssertionJCSV1(int(assertion.FormatVersion), int(assertion.KeyRevision), assertion.RecordRevision, assertion.SealedAt, string(assertion.Status))
@@ -315,7 +482,7 @@ func validateBootstrapAnchor(anchor generatedapi.BootstrapAnchorV1) (bootstrapAn
 	}
 	assertionDigest := sha256.Sum256(assertionJSON)
 	result.storageAssertionDigest = assertionDigest[:]
-	if len(anchor.Capabilities) == 0 || len(anchor.Capabilities) > 32 {
+	if len(anchor.Capabilities) == 0 || len(anchor.Capabilities) > 12 {
 		return result, fmt.Errorf("bootstrap capabilities are invalid")
 	}
 	capabilities := append(generatedapi.DeviceCapabilityListV1(nil), anchor.Capabilities...)
@@ -346,7 +513,7 @@ func currentAuthDTO(session BrowserSessionCreate, rawCSRF []byte) generatedapi.C
 }
 
 func currentAuthFromStored(session BrowserSession, rawCSRF []byte) generatedapi.CurrentAuth {
-	return currentAuthDTO(BrowserSessionCreate{ID: session.ID, UserID: session.UserID, AuthenticationMethod: session.AuthenticationMethod, AuthenticationPasskeyID: session.AuthenticationPasskeyID, AuthenticatedAt: session.AuthenticatedAt, RecentUVAt: session.RecentUVAt, ExpiresAt: session.ExpiresAt, IdleExpiresAt: session.IdleExpiresAt}, rawCSRF)
+	return currentAuthDTO(BrowserSessionCreate{ID: session.ID, UserID: session.UserID, CSRFGeneration: session.CSRFGeneration, AuthenticationMethod: session.AuthenticationMethod, AuthenticationPasskeyID: session.AuthenticationPasskeyID, AuthenticatedAt: session.AuthenticatedAt, LastSeenAt: session.LastSeenAt, RecentUVAt: session.RecentUVAt, ExpiresAt: session.ExpiresAt, IdleExpiresAt: session.IdleExpiresAt}, rawCSRF)
 }
 
 func normalAuthCapabilities() []generatedapi.AuthCapabilityV1 {
