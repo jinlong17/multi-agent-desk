@@ -210,19 +210,20 @@ for Phase 4a.
   Ship receipt, and dashboard reconciliation are part of the operator-authorized
   completion sequence. Release/tag/deployment remains a Phase 6 gate.
 
-## Plan v0.7 contract amendment
+## Plan v0.8 contract amendment
 
-The P0 contract remains independently verified. Plan v0.7 retains every v0.6
-contract and every v0.5 architectural boundary, including Feature Review v5's
-five closed wire-definition findings, and closes Feature Review v6's sole P5
-cross-document outcome-union contradiction. P1 implementation is paused at
-a safe checkpoint while the complete Phase 4a OpenAPI and generated clients are
-reconciled to this amendment. P1 may expose runtime behavior only for
-`healthz`, `readyz`, and `version`; every P2+ operation must exist as a complete
-OpenAPI/generator contract but remain unmounted or fail closed until its own
-verified build phase.
+The P0 and P1 contracts remain independently verified. Plan v0.8 retains every
+v0.7 contract and architectural boundary, including the closed P3-P5 wire
+definitions, and revises only the P2 browser/authentication contract plus the
+Phase 4a browser acceptance matrix. P1 remains historically verified at exact
+implementation SHA `6bbad01f17db7a40f0dc43bc45a41738f302640b` and is not
+reopened; P2 owns the reviewed OpenAPI/generated-client delta required by this
+amendment. The safe P2 implementation checkpoint is exact SHA
+`fc2a38e9fb3802015c687f37c751bc3d807c7d78`; it is evidence, not a verified
+P2 result, and must be reconciled to v0.8 before returning to
+`READY_FOR_VERIFY`.
 
-The v0.7 amendment retains these additional exit requirements without expanding
+The v0.8 amendment retains these additional exit requirements without expanding
 the Phase 4a product boundary:
 
 1. P2 binds every remote identity to one immutable canonical HTTPS server
@@ -257,7 +258,7 @@ the Phase 4a product boundary:
    capability elevation, command polling, recovery-output privacy, and logout
    key retention. P6 may be reviewed as P6A/P6B without scope expansion.
 
-For complete P1 generation, v0.7 keeps these shapes closed and
+The already-verified P1 generation keeps these v0.7 shapes closed and
 non-overlapping: P5 list offers do not claim, claim alone allocates attempt/
 lease, and ack alone validates the locally durable reserved receipt and commits
 the contiguous server delivery cursor; every claim/ack/result/reconcile/query
@@ -268,6 +269,59 @@ attestation, and detached signatures live in
 WebAuthn creation/request/credential shapes are fully enumerated with empty v1
 extension results. Profile conflict mutations/fields/digests are closed and
 distinguish omitted, null, and value. P4's migration is uniformly 0010.
+
+Plan v0.8 additionally freezes the following P2 decisions:
+
+1. **macOS-first support.** macOS arm64 is the stable v0.1 product platform.
+   P2 real-browser acceptance is current Chrome and Safari on macOS arm64;
+   Safari must execute a real Touch ID platform-Passkey ceremony. The receipt
+   freezes exact OS/browser builds and the final P2 implementation SHA
+   immediately before execution. Windows remains Experimental with repository
+   compile/build and native DACL tests but no Windows 11 Edge/Firefox real-
+   browser gate. Ubuntu/Linux retains repository compile/build checks only.
+   Windows stable browser/product acceptance is deferred to project release
+   Phase 6 or a later Windows stable-support lifecycle unit.
+2. **Restart-safe CSRF.** A browser session stores only a CSRF digest and a
+   monotonic generation. The raw 32-byte pseudorandom value is
+   HMAC-SHA-256 under the raw HttpOnly session token over a domain-separated
+   frame containing v1, canonical server origin, session ID, and generation.
+   `/auth/current` reconstructs it from the presented cookie after restart;
+   constant-time derived-value and digest checks protect every mutation. The
+   Web retains it only in memory. Privilege change rotates the whole session;
+   any same-session rotation increments the generation by CAS.
+3. **Executable idempotency.** Every P2 POST/DELETE mutation requires
+   `Idempotency-Key`; P2 GETs do not. Ceremony-begin operations replay the same
+   public options only within the same server boot, then return
+   `ceremony_restart_required`. A mutation that creates a session or returns
+   recovery plaintext atomically stores only a non-secret completion receipt;
+   the first transaction winner alone receives the new cookie/CSRF/plaintext.
+   Concurrent, restarted, or lost-response replay returns
+   `one_time_result_unavailable` with a public status and recovery action. It
+   never persists or replays a session token, Set-Cookie secret, raw CSRF,
+   Recovery Code, WebAuthn challenge, or proof. Logout/revoke/delete may replay
+   their public body and a non-secret clear-cookie directive.
+4. **Item-authoritative sessions.** There is no browser-session collection
+   revision. Each listed session carries an item `revision` used by the path
+   session's `If-Match` and a separate `activityRevision`. A coalesced
+   authenticated touch at most once per five minutes increments only
+   `activityRevision`, updates `lastSeenAt`, and extends idle expiry to the
+   earlier of absolute expiry and now plus 30 minutes. Revoke/delete increments
+   the target item revision exactly once. A losing concurrent touch reloads and
+   continues; a stale revoke returns `session_revision_conflict`, after which
+   Web refreshes and requires a new explicit confirmation. Passkey listing
+   likewise exposes only each passkey's credential revision and no misleading
+   maximum collection revision.
+5. **Provider isolation.** Phase 4a remains Provider-neutral. Claude product
+   acceptance is not a P2 gate. The v0.1 Claude boundary remains macOS existing-
+   subscription interactive PTY only, with no API key, `print`/`-p`, dollar
+   budget, usage-credit probe/spend, or Linux/Windows Claude acceptance.
+
+The project-wide `docs/IMPLEMENTATION_PLAN.md` still contains older Windows-
+stable and Linux/Claude release wording. Because that document is owned by
+`project-system`, this `control-plane` planning revision does not edit it. A
+separate project-system documentation action must reconcile only those support
+statements before Phase 6/release claims; it does not block P2 after independent
+v0.8 review.
 
 ## Acceptance criteria
 
@@ -292,9 +346,23 @@ distinguish omitted, null, and value. P4's migration is uniformly 0010.
       production config rejects insecure or mutable RP-ID/origin settings.
 - [ ] Auth sessions use `Secure`, `HttpOnly`, and appropriate `SameSite` cookies,
       with exact name `__Host-mad_session`, `Path=/`, and no `Domain`,
-      issue/rotate a memory-only 32-byte CSRF value whose digest is stored, and
-      enforce the frozen pre-auth/authenticated/Device Origin/Fetch-Metadata/
-      JSON/cookie/CSRF matrix.
+      reconstruct the memory-only 32-byte CSRF value from the raw session token,
+      canonical origin, session ID, and stored generation after restart while
+      storing only its digest, and enforce the frozen pre-auth/authenticated/
+      Device Origin/Fetch-Metadata/JSON/cookie/CSRF matrix.
+- [ ] Every P2 POST/DELETE operation enforces the exact v0.8 idempotency matrix:
+      ceremony replay is same-boot only; public mutations replay only nonsecret
+      receipts/clear-cookie actions; and only the first transaction winner may
+      receive a session cookie, raw CSRF, or Recovery Codes. Lost-response and
+      restart paths return stable public next actions without persisting secrets.
+- [ ] Browser and Passkey lists expose item-authoritative revisions only;
+      browser activity uses a separate coalesced `activityRevision`, never
+      invalidates a state `If-Match`, and stale revoke forces Web refetch plus
+      a new explicit confirmation.
+- [ ] P2 real-browser receipts pass on current Chrome and Safari on macOS arm64,
+      with real Safari Touch ID/platform Passkey. Windows and Ubuntu pass their
+      retained compile/build gates and native Windows DACL coverage without a
+      real-browser or Claude acceptance requirement.
 - [ ] Recovery uses exactly ten `MAD-RC1-` codes of 20 random bytes with strict
       Base32 parsing, 16-byte salts/frozen Argon2id, atomic one-time consume and
       recent-UV rotation; Passkey list/delete preserves the last key, and
@@ -419,4 +487,4 @@ distinguish omitted, null, and value. P4's migration is uniformly 0010.
 
 ## Handoff
 
-Next role: `feature-review v7` for plan v0.7.
+Next role: independent `feature-review v8` for plan v0.8.

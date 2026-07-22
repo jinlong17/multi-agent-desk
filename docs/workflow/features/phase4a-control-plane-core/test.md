@@ -226,8 +226,9 @@ failure matrix, race tests, and secret scan pass.
   need no CSRF. Missing/wrong Origin, fetch headers, content type, cookie, CSRF,
   and cross-class credential use fail before side effects.
 - `GET /auth/current` and successful normal auth/UV/recovery-transition responses
-  deliver a 32-byte no-store CSRF token; only its SHA-256 digest is stored.
-  Frontend memory-only storage/injection passes, and login, UV/privilege change,
+  deliver the 32-byte no-store CSRF token reconstructed by the v0.8 HMAC
+  contract; only its SHA-256 digest and generation are stored. Frontend
+  memory-only storage/injection passes, and login, privilege/session change,
   recovery->normal, logout/expiry rotate or invalidate it.
 - Recovery generation creates exactly ten independent 20-byte codes formatted
   `MAD-RC1-` + eight four-character Base32 groups. Parser accepts only exact
@@ -258,10 +259,15 @@ failure matrix, race tests, and secret scan pass.
 
 ### P2 acceptance
 
-End-to-end bootstrap + login + logout + recovery + replacement Passkey passes
-in supported browsers against HTTPS test origin only after the 0008/envelope/
-mapping/Daemon-actor gate above passes. Pure Web initial anchor is rejected.
-DB/log secret scans and auth concurrency/rate-limit tests pass.
+End-to-end bootstrap + registration + login + recovery + replacement Passkey +
+delete + logout passes in current Chrome and Safari on macOS arm64 against the
+same HTTPS test origin only after the 0008/envelope/mapping/Daemon-actor gate
+above passes. Safari uses a real Touch ID-backed platform Passkey; neither
+WebKit emulation nor protocol fixtures substitute for that receipt. Windows and
+Ubuntu retain their P2 compile/build gates, plus native Windows private-path/
+DACL tests, but have no Phase 4a browser or Claude product-acceptance gate. Pure
+Web initial anchor is rejected. DB/log/artifact secret scans and auth restart,
+concurrency, idempotency, rate-limit, and session-revision tests pass.
 
 ## P3 — Device identity, enrollment, presence, revocation
 
@@ -281,8 +287,10 @@ DB/log secret scans and auth concurrency/rate-limit tests pass.
 
 ### Web storage and Desktop boundary
 
-- Chrome/Edge/Firefox native-path tests generate, persist across process
-  restart, use, and reject export of Ed25519/X25519 keys.
+- Chrome on macOS native-path tests generate, persist across process restart,
+  use, and reject export of Ed25519/X25519 keys. Edge/Firefox fixtures may
+  remain as non-gating compatibility coverage but are not real-browser
+  acceptance receipts.
 - Safari/WebKit fixture/browser tests select `software_wrapped` only after
   native X25519 failure and prove AES wrapping key non-exportability, bounded
   raw-key lifetime, ciphertext tamper rejection, and user-visible downgrade.
@@ -587,9 +595,13 @@ Provider plaintext, or generic secret input.
 - Automated axe has zero serious/critical findings; semantic headings,
   landmarks, labels, descriptions, live regions, error association, status not
   conveyed by color alone, and screen-reader names are manually checked.
-- Current Chrome, Edge, Firefox, and Safari run auth/metadata flows. Key-storage
-  behavior must match runtime probe, not user-agent guesses. PWA offline shell
-  never presents stale data as current or queues a security mutation invisibly.
+- Current Chrome and Safari on macOS arm64 run the stable auth/metadata flows.
+  Safari supplies real Touch ID/platform-Passkey and wrapped-X25519 evidence.
+  Key-storage behavior must match runtime probe, not user-agent guesses. PWA
+  offline shell never presents stale data as current or queues a security
+  mutation invisibly. Windows and Ubuntu remain compile/build CI rows only;
+  Windows 11 Edge/Firefox real-browser acceptance is deferred to project
+  release Phase 6 or a later Windows stable-support milestone.
 - CSP, Trusted Types where supported, no unreviewed third-party scripts, SRI/
   dependency lock, XSS payload encoding, open redirect, clickjacking,
   autocomplete, cache, and browser-storage inspection gates pass.
@@ -632,7 +644,7 @@ Provider plaintext, or generic secret input.
   scan, migration/restart/concurrency/failure, documentation/link, and project
   structural gates against the final phase diff.
 
-## Plan v0.7 mandatory regression matrix
+## Plan v0.8 mandatory regression matrix
 
 These tests supersede conflicting pre-v0.6 expectations and are required in
 addition to the phase suites above.
@@ -650,7 +662,7 @@ addition to the phase suites above.
   Attempts against bootstrap/auth/enrollment/metadata/sync/command operations
   create no row, token, cookie, identity, audit success, or side effect.
 
-### P2 v0.7 identity, migration, and Passkey gates
+### P2 v0.8 identity, migration, and Passkey gates
 
 - Canonical-origin goldens cover IDNA/case/default port and reject HTTP,
   userinfo, path/query/fragment, wildcard, production IP, percent-host,
@@ -684,10 +696,77 @@ addition to the phase suites above.
 - Passkey deletion revokes all credential-derived sessions; deleting the
   current credential clears the cookie and cannot return CurrentAuth. Last-key
   and concurrent-delete guards have one winner.
-- A P2 receipt freezes exact Chrome+Safari/macOS-arm64 and Edge+Firefox/
-  Windows-11-x64 versions/OS builds before execution. Real registration/login/
-  logout/recovery/delete runs on those same binaries; Safari Passkey evidence is
-  real/manual and cannot be substituted by WebKit emulation or protocol fixture.
+- Deterministic CSRF vectors byte-match the exact
+  `HMAC-SHA-256(rawSessionToken, frame("multidesk-browser-csrf-v1", "1",
+  canonicalOrigin, sessionID, decimalGeneration))` construction across Go and
+  TypeScript. Changing token, origin, session ID, generation, frame order, or
+  encoding changes the value. Database and backup scans find only digest plus
+  generation, never the raw token or raw CSRF value.
+- Restart with a valid HttpOnly cookie makes `GET /auth/current` reconstruct the
+  same raw CSRF value, compare its digest in constant time, and return it only
+  with `Cache-Control:no-store`. Digest/generation corruption fails closed as
+  `session_integrity_invalid`; logout, expiry, revoke, credential-counter
+  regression, recovery transition, and privilege/session rotation make the old
+  value unusable. Same-session generation rotation uses one CAS winner.
+- An endpoint-table regression enumerates every P2 route. All POST and DELETE
+  routes require `Idempotency-Key`; GET routes reject mutation and do not create
+  idempotency state. Scope is exact method plus canonical path and the request
+  digest includes the canonical strict JSON body and authenticated actor class.
+  Same key/same request has one transactional winner; concurrent callers see
+  the committed public receipt or bounded `idempotency_in_progress`. Same key
+  with any different scope, actor, or body rejects with no side effect.
+- Ceremony-begin replay may return only the same public options in the same
+  process boot. After restart it returns `ceremony_restart_required`; a fresh
+  key begins a new ceremony. Ceremony finish remains single-consume and never
+  replays session cookie, raw CSRF, recovery plaintext, challenge, or ephemeral
+  proof material.
+- Session/cookie/CSRF creation, recovery consume/replacement, and recovery-code
+  rotation commit the security transition and public receipt atomically. Only
+  the winning first response receives one-time secret material. Concurrent,
+  restarted, or lost-response replay returns `one_time_result_unavailable`
+  with the persisted nonsecret `AuthOperationReceiptV1` and an exact next
+  action (`GET /auth/current`, fresh login, another recovery code, or a new
+  recent-UV rotation). Replayed logout/delete may repeat their public body and
+  nonsecret clear-cookie header. DB/log/audit/error/trace/artifact scans contain
+  no raw session, CSRF, recovery, ceremony, or bootstrap secret.
+- Browser-session rows begin with item `revision=1` and
+  `activityRevision=1`. List DTOs expose each item's revisions and never a
+  collection/max revision. `If-Match` on delete targets only the path item's
+  state revision; revoke has one CAS winner and increments that state revision.
+  Passkey list/delete follows the same item-authoritative rule and never emits a
+  collection/max credential revision.
+- Authenticated activity coalesces touch writes to at most one per five-minute
+  half-open window. A winning touch increments only `activityRevision`, sets
+  `lastSeenAt`, and computes `idleExpiresAt=min(absoluteExpiresAt, now+30m)`;
+  it does not invalidate an item state `If-Match`. Exact 5-minute, idle, and
+  absolute boundaries, concurrent touch loser reload/continue, process restart,
+  revoke-vs-touch, and stale Web revoke all pass. The Web refetches and requires
+  reconfirmation after `session_revision_conflict`.
+- A P2 receipt freezes exact final commit, macOS arm64 build, Chrome version,
+  Safari version, RP ID, and canonical HTTPS origin before execution. Real
+  registration/login/recovery/replacement/delete/logout runs on those binaries;
+  Safari evidence includes a real Touch ID-backed platform Passkey and cannot
+  be substituted by WebKit emulation or protocol fixtures. A browser or OS
+  upgrade invalidates that row and requires a new receipt.
+- Windows keeps cross-compile/build and native current-logon owner+SYSTEM DACL
+  positive/negative gates; Ubuntu keeps repository compile/build gates. Neither
+  platform needs real browser or Claude product acceptance in Phase 4a.
+- A scope scan proves P2 adds no P3 enrollment/presence implementation and no
+  Claude API-key, `-p`/print, dollar-budget, Usage Credits, Linux, or Windows
+  acceptance requirement. Any Claude macOS manual smoke uses only the existing
+  subscription through an interactive PTY and remains outside Phase 4a product
+  acceptance.
+- Rollback/restore tests treat the P2 auth/session/passkey/recovery/idempotency
+  schema as one verified snapshot: checksum/integrity/FK and private-permission
+  checks precede atomic restore, and no partial rollback attempts to recover or
+  recreate one-time secrets.
+- A checkpoint reconciliation scan against
+  `fc2a38e9fb3802015c687f37c751bc3d807c7d78` fails until OpenAPI, generated
+  Go/TypeScript, runtime client, server migration/store/services, and Web tests
+  all implement the v0.8 receipt/errors, canonical-origin/generation CSRF,
+  secret-nonreplay idempotency, per-item list DTOs, coalesced idle touch, and
+  explicit revoke conflict flow. It also proves verified P0/P1 bytes and every
+  unimplemented P3+ route remain outside the P2 write set.
 
 ### P3 v0.7 device-auth and enrollment gates
 
@@ -852,7 +931,7 @@ addition to the phase suites above.
   ten seconds for local commits, and leaves a receipt that the matching restart
   proof path can resolve without duplicate execution.
 
-### P6 v0.7 Web/runtime gates
+### P6 v0.8 Web/runtime gates
 
 - Enrollment list tests cover state/kind/subject filters, stable cursor, exact
   `EnrollmentSummaryV1`, expiry, redaction, and unknown filter rejection.
@@ -873,11 +952,14 @@ addition to the phase suites above.
   recovery/health/version, and non-GET request is network-only, absent from
   Cache Storage/background sync, and excluded from SPA fallback. Only
   content-hashed static assets may be served offline.
-- Exact frozen Chrome/Safari macOS-arm64 and Edge/Firefox Windows-11-x64 rows
-  run auth, metadata, enrollment, command polling, logout, and cache inspection;
-  Safari runs real Passkey and wrapped-X25519. Version/OS receipts accompany
-  results. The macOS Tauri app is launched and visually/navigationally smoke-
-  tested; compile/cargo-check alone fails the row.
+- Exact frozen Chrome/Safari macOS-arm64 rows run auth, metadata, enrollment,
+  command polling, logout, and cache inspection; Safari runs real Touch ID
+  platform Passkey and wrapped-X25519. Version/OS/final-commit receipts
+  accompany results. The macOS Tauri app is launched and visually/
+  navigationally smoke-tested; compile/cargo-check alone fails the macOS row.
+  Windows and Ubuntu keep compile/build CI, with Windows browser acceptance
+  deferred to project release Phase 6 or a later explicit Windows stable-
+  support plan.
 - Online UI uses lifecycle active + current boot epoch + <=60-second lastSeen;
   capability elevation shows the local pin source and explicit confirmation.
   Command polling stops on terminal/expiry/logout/session expiry/revoke/API

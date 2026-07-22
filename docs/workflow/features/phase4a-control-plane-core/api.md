@@ -79,14 +79,11 @@ the same-origin instance and is the only Web import point.
 - Mutations require `Idempotency-Key` (16..128 visible ASCII characters).
   Update/delete additionally require `If-Match: "rev-<positive integer>"`.
 - Idempotency scope is principal + API version + method + canonical path + key.
-  The server stores request digest and result for 24 hours. Same key/body returns
-  the original result; same key/different body returns
-  `idempotency_key_reused`.
-- One-time plaintext responses are the explicit exception: successful
-  bootstrap recovery-code issuance and recovery-code rotation persist only a
-  redacted success marker. Exact replay returns `one_time_result_unavailable`
-  while preserving committed state; plaintext is never cached. After normal
-  Passkey authentication/recent UV, the user can rotate to a fresh batch.
+  The server stores request digest and a replay policy/result for 24 hours. Same
+  key/different request returns `idempotency_key_reused`. Ordinary public
+  results replay exactly. P2 ceremony/session/one-time responses follow the
+  stricter v0.8 table below and never persist/replay a secret Set-Cookie, raw
+  CSRF, Recovery Code, WebAuthn challenge private state, or proof.
 - List `limit` defaults to 50 and is 1..100. `cursor` is an opaque Base64url
   endpoint/filter/sort-bound token. Unknown, cross-endpoint, or tampered cursors
   return `invalid_cursor`. Responses are stable under `(sortField, id)`.
@@ -1488,11 +1485,12 @@ The request cannot pass server-supplied binary paths, secretRefs, workspace
 paths, raw Provider settings, terminal input, Approval decisions, or capability
 snapshots.
 
-## Plan v0.7 normative contract replacements
+## Plan v0.8 normative contract replacements
 
-This section supersedes conflicting pre-v0.6 schemas or bounds above. The complete
-OpenAPI and both generated languages must express these replacements before P1
-verification, although only health/readiness/version are mounted in P1.
+This section retains the v0.7 P3-P6 schemas and supersedes conflicting P2
+schemas/bounds above. P0/P1 remain independently verified; the complete OpenAPI
+and both generated languages must express the P2 v0.8 delta before P2
+verification, while every P3-P6 operation/schema remains unchanged.
 
 ### Canonical origin, cookie, and WebAuthn wire
 
@@ -1621,6 +1619,177 @@ authenticated with that passkey. Passkey deletion returns
 `PasskeyDeleteResultV1 {passkeyId,revokedSessionCount,currentSessionRevoked}`;
 when currentSessionRevoked is true it clears the cookie and returns no
 `CurrentAuth`.
+
+### P2 v0.8 CSRF construction
+
+`browser_sessions` stores exactly `csrf_generation INTEGER NOT NULL CHECK
+(csrf_generation>=1)` and `csrf_digest BLOB(32)` for CSRF material. It never
+stores `csrfRaw`. Given the canonical raw 32-byte value decoded from
+`__Host-mad_session`, the only valid construction is:
+
+```text
+csrfRaw = HMAC-SHA-256(rawSessionToken,
+  frame("multidesk-browser-csrf-v1", "1", CanonicalServerOriginV1,
+        browserSessionId, decimalCsrfGeneration))
+csrfDigest = SHA-256(csrfRaw)
+```
+
+`GET /v1/auth/current` reconstructs `csrfRaw`, constant-time compares its
+digest with the row, returns Base64url(`csrfRaw`) under `Cache-Control:no-store`,
+and never sets a cookie. Authenticated mutations decode exactly 32 bytes and
+constant-time compare both the submitted raw value with the derived value and
+its digest with the stored digest before any touch or product mutation.
+Mismatch is `session_integrity_invalid`; the server revokes the session by
+state-revision CAS and returns no raw value. Session creation or full rotation
+uses generation 1. Same-session rotation, if invoked, atomically increments the
+generation and state revision and writes the digest derived from the already
+authenticated raw cookie; callers cannot submit a replacement digest.
+
+### P2 v0.8 endpoint idempotency and replay
+
+The exact P2 endpoint matrix is:
+
+| Endpoint | Key | Durable replay class | First successful Set-Cookie / one-time output | Exact/concurrent/lost-response replay |
+|---|---|---|---|---|
+| `GET /bootstrap/status` | no | read | none | current public state |
+| `POST /bootstrap/options` | yes | restart-local ceremony | none | same public options in same boot; after restart `ceremony_restart_required` |
+| `POST /bootstrap/verify` | yes | commit-once secret-nonreplayable | secret session cookie + raw CSRF + ten Recovery Codes | `one_time_result_unavailable` + public bootstrap receipt; no Set-Cookie/codes; fresh Passkey login then rotate codes |
+| `GET /bootstrap/ceremonies/{id}` | no | public receipt/status read | none | current public challenge in same boot or committed receipt |
+| `GET /auth/current` | no | read/touch | raw reconstructed CSRF only | current auth or stable auth error; never Set-Cookie |
+| `POST /auth/passkeys/options` | yes | restart-local ceremony | none | same public options in same boot; after restart `ceremony_restart_required` |
+| `POST /auth/passkeys/verify` | yes | commit-once secret-nonreplayable | secret session cookie + raw CSRF | `one_time_result_unavailable`; no Set-Cookie; perform fresh Passkey login |
+| `POST /auth/passkeys/registration/options` | yes | session-bound restart-local ceremony | none | same public options while original session/boot live; otherwise `ceremony_restart_required` |
+| `POST /auth/passkeys/registration/verify` | yes | commit-once secret-nonreplayable | rotated secret session cookie + raw CSRF | `one_time_result_unavailable`; no Set-Cookie; perform fresh Passkey login |
+| `GET /auth/passkeys` | no | read/touch | none | current per-item list |
+| `DELETE /auth/passkeys/{id}` | yes | public replayable mutation | clear cookie only when current session was revoked | identical public delete result; repeat clear-cookie when recorded; never restore auth |
+| `POST /auth/uv/options` | yes | session-bound restart-local ceremony | none | same public options while original session/boot live; otherwise `ceremony_restart_required` |
+| `POST /auth/uv/verify` | yes | commit-once secret-nonreplayable | rotated secret session cookie + raw CSRF | `one_time_result_unavailable`; no Set-Cookie; perform fresh Passkey login |
+| `POST /auth/recovery/verify` | yes | commit-once secret-nonreplayable | restricted secret session cookie + raw CSRF | `one_time_result_unavailable`; no Set-Cookie; use another unconsumed code |
+| `POST /auth/recovery-codes/rotate` | yes | commit-once secret-nonreplayable | ten Recovery Codes | `one_time_result_unavailable`; no codes; with a live recent-UV session perform a new rotation |
+| `POST /auth/logout` | yes | public replayable mutation | clear cookie | identical public result + clear-cookie even though session is now revoked |
+| `GET /auth/sessions` | no | read/touch | none | current per-item list |
+| `DELETE /auth/sessions/{id}` | yes | public replayable mutation | clear cookie only for self-revoke | identical public revoke result and recorded clear-cookie action |
+
+Every keyed P2 operation uses:
+
+```text
+scopeDigest = SHA-256(frame(
+  "multidesk-auth-idempotency-scope-v1", "1", serverOrigin,
+  principalClass, principalDigestRaw, method, canonicalPath, idempotencyKey))
+
+requestDigest = SHA-256(frame(
+  "multidesk-auth-idempotency-request-v1", "1", method, canonicalPath,
+  contentSHA256Raw, canonicalIfMatchOrEmpty))
+```
+
+`principalClass` is `bootstrap_token`, `preauth_browser`, or
+`browser_session`. Its digest is respectively the existing bootstrap-token
+digest, `SHA-256(frame("multidesk-preauth-browser-v1","1",serverOrigin))`,
+or the presented session-token digest. The last scope permits exact replay of
+logout/self-revoke after that session becomes revoked without restoring
+authority. Idempotency is evaluated only after structural security/rate-limit
+checks; product state and the operation row commit in one `BEGIN IMMEDIATE`
+transaction.
+
+The P2 migration adds strict `auth_idempotency_operations` columns:
+`scope_digest`, `request_digest`, UUIDv7 `operation_id`, closed `operation`,
+`state=in_progress|committed`, `server_boot_epoch`,
+`public_receipt_json` (<=16 KiB, no secrets),
+`cookie_action=none|clear|secret_issued`, `created_at`, `committed_at?`, and
+`expires_at`; the scope digest is primary key. Ceremony-begin rows additionally
+bind `ceremony_id` and their public options digest. The ceremony row and
+operation row commit together. A same-request same-boot replay returns the
+persisted public options only while the live ceremony exists. Restart deletes
+P2 ceremony rows, marks their unfinished/restart-local operations unusable,
+and returns `ceremony_restart_required`; a fresh Idempotency-Key creates a new
+ceremony. It never revives a response without its WebAuthn SessionData or
+bootstrap ephemeral private key.
+
+After a commit-once secret response, only the transaction winner is allowed to
+emit raw secret output. The durable replay body is:
+
+```text
+AuthOperationReceiptV1 {
+  operationId: UUIDv7
+  operation: bootstrap_verify | passkey_login_verify |
+             passkey_registration_verify | uv_verify | recovery_verify |
+             recovery_codes_rotate | logout | passkey_delete | session_delete
+  state: committed
+  committedAt: time
+  resourceId?: UUIDv7
+  cookieOutcome: none | cleared | issued_not_replayable
+  csrfOutcome: none | issued_not_replayable
+  recoveryCodesOutcome: none | issued_not_replayable
+  nextAction: none | get_auth_current | fresh_passkey_login |
+              use_another_recovery_code | rotate_recovery_codes
+}
+```
+
+For a secret-nonreplayable operation, replay is HTTP 409
+`one_time_result_unavailable` with exactly
+`details.receipt: AuthOperationReceiptV1`; it has no secret Set-Cookie. An
+ordinary public replay returns the original success body and repeats only a
+recorded clear-cookie header. Same scope/different request is 409
+`idempotency_key_reused`. A bounded loser that observes `in_progress` returns
+409 `idempotency_in_progress` with `Retry-After: 1`; it never runs the mutation.
+No failure, retry, restart, backup, or receipt/status API can return the original
+session token, raw CSRF, recovery plaintext, challenge, proof, or credential
+body.
+
+### P2 v0.8 Passkey and browser-session revision DTOs
+
+Passkey list has no collection revision:
+
+```text
+PasskeyListResultV1 { passkeys: PasskeyV1[1..64] }
+```
+
+Each `PasskeyV1.credentialRevision` is the exact `If-Match` target for that
+passkey path. `max(credentialRevision)` is never a collection precondition.
+
+Browser session wire is item-authoritative:
+
+```text
+BrowserSessionV1 {
+  id: UUIDv7
+  authenticationMethod: passkey | recovery
+  current: boolean
+  createdAt: time
+  lastSeenAt: time
+  expiresAt: time
+  idleExpiresAt: time
+  revision: integer>=1
+  activityRevision: integer>=1
+}
+BrowserSessionListResultV1 { sessions: BrowserSessionV1[1..128] }
+
+BrowserSessionRevokeResultV1 {
+  sessionId: UUIDv7
+  revokedAt: time
+  revision: integer>=2
+  currentSessionRevoked: boolean
+}
+```
+
+There is no list/collection revision. `If-Match` on
+`DELETE /auth/sessions/{sessionId}` targets the path item's `revision`, not the
+current caller's revision and not any list maximum. Create sets
+`revision=activityRevision=1`, `lastSeenAt=authenticatedAt`, and
+`idleExpiresAt=min(expiresAt,authenticatedAt+30m)`. After full auth checks, a
+request touches only when `now-lastSeenAt >= 5m`; touch CAS updates
+`lastSeenAt=now`, `idleExpiresAt=min(expiresAt,now+30m)`, and
+`activityRevision+1`, leaving `revision` unchanged. Concurrent touch losers
+reload and proceed if `now < expiresAt && now < idleExpiresAt`. No request or
+restart extends idle expiry without such an authenticated touch.
+
+Revoke/delete/logout/counter-regression/Passkey deletion/session replacement
+sets `revoked_at` and increments the affected session `revision` once in the
+same transaction and audit receipt. Exact idempotent replay does not increment
+again. A stale explicit delete returns HTTP 412
+`session_revision_conflict` with only `{sessionId,expectedRevision,
+currentRevision}`; Web must refetch and obtain new explicit confirmation rather
+than automatically retry. Self-revoke and Passkey deletion clear the exact host
+cookie when the current session is among the revoked rows.
 
 ### Signed Device-auth contract
 
@@ -2184,6 +2353,7 @@ conflict                         resource_exhausted
 rate_limited                     request_too_large
 unsupported_api_version          schema_incompatible
 idempotency_key_required         idempotency_key_reused
+idempotency_in_progress          ceremony_restart_required
 if_match_required                sync_conflict
 sync_history_missing             sync_base_digest_mismatch
 sync_next_digest_mismatch        sync_patch_mismatch
@@ -2201,6 +2371,7 @@ recovery_invalid_or_rate_limited recovery_consumed
 one_time_result_unavailable      recent_uv_required
 last_passkey_required            recovery_batch_replaced
 csrf_invalid                     session_expired
+session_integrity_invalid        session_revision_conflict
 device_not_enrolled              device_revoked
 device_key_changed               key_digest_mismatch
 device_key_envelope_corrupt      device_key_envelope_conflict

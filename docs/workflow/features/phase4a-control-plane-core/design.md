@@ -505,17 +505,18 @@ and can never remove the last active Passkey.
 Normal browser sessions use a random 256-bit server-side token, store only its
 SHA-256 digest, rotate on authentication/privilege change, expire after 12
 hours absolute and 30 minutes idle, and use a `Secure`, `HttpOnly`,
-`SameSite=Strict`, `Path=/` cookie. A session also creates a random 32-byte CSRF
-value and stores only SHA-256 of it. `GET /auth/current` and successful normal
-authentication responses return the raw CSRF value in `Cache-Control:no-store`
-JSON; the Web client holds it in memory only and sends `X-CSRF-Token`.
-Login, recovery-to-normal transition, and any privilege/session rotation issue
-a new CSRF value. Exact Origin, same-origin Fetch Metadata, JSON content type,
-cookie, and CSRF checks follow the endpoint matrix in `api.md`. Pre-auth browser
-mutations have no CSRF/session yet, but still require exact Origin, same-origin
-Fetch Metadata, JSON, and strict rate limits. Signed Device APIs never use CSRF.
-Cookies, CSRF values, challenges, and recovery plaintext never enter
-logs/audit payloads.
+`SameSite=Strict`, `Path=/` cookie. The raw CSRF value is the 32-byte HMAC output
+defined by the normative P2 v0.8 construction below; the database stores only
+its SHA-256 digest and monotonic generation. `GET /auth/current` and successful
+normal authentication responses return the raw CSRF value in
+`Cache-Control:no-store` JSON; the Web client holds it in memory only and sends
+`X-CSRF-Token`. Login, recovery-to-normal transition, and any privilege/session
+rotation issue a new session/token and CSRF value. Exact Origin, same-origin
+Fetch Metadata, JSON content type, cookie, and CSRF checks follow the endpoint
+matrix in `api.md`. Pre-auth browser mutations have no CSRF/session yet, but
+still require exact Origin, same-origin Fetch Metadata, JSON, and strict rate
+limits. Signed Device APIs never use CSRF. Cookies, CSRF values, challenges,
+and recovery plaintext never enter logs/audit payloads.
 
 ## Device authentication and Phase 4a transport
 
@@ -887,21 +888,22 @@ at-least-once transport with a durable idempotency/reconciliation boundary,
 never distributed exactly-once or a claim that ambiguous Provider effects are
 at-most-once.
 
-## Plan v0.7 decision-complete amendments
+## Plan v0.8 decision-complete amendments
 
-These rules replace conflicting pre-v0.6 wording. They do not reopen verified P0
-or authorize P1 runtime behavior beyond health/readiness/version.
+These rules retain the reviewed v0.7 P3-P6 contracts and replace conflicting
+P2 wording. They do not reopen independently verified P0 or P1. P1 remains
+verified at exact SHA `6bbad01f17db7a40f0dc43bc45a41738f302640b`;
+the P2 writer owns the v0.8 OpenAPI/generated-client/auth-storage delta before
+P2 can return to `READY_FOR_VERIFY`.
 
 ### P1 contract reconciliation boundary
 
-P1 checks in the complete Phase 4a OpenAPI, generated Go strict server/client/
-models, generated TypeScript types, and the exhaustive first-party runtime
-client for every P1-P6 operation. Before P1 verification, those artifacts must
-be regenerated from v0.7 and byte-verified twice. Only `healthz`, `readyz`, and
-`version` are mounted as product handlers in P1. Bootstrap, auth, enrollment,
-metadata, sync, and command routes are contract-only and must return the common
-unavailable response if accidentally reached; no P2+ row, token, cookie,
-identity, or mutation is created.
+P1 checked in the complete v0.7 Phase 4a OpenAPI, generated Go strict server/
+client/models, generated TypeScript types, and exhaustive first-party runtime
+client. That historical receipt remains valid. P2 now updates only the P2
+schemas/operations required below, regenerates both languages twice, and proves
+that every P3-P6 operation remains byte-semantically unchanged. This is a P2
+contract delta, not a retroactive P1 failure.
 
 ### P2 server-origin, migration, and WebAuthn boundary
 
@@ -944,13 +946,152 @@ if that includes the current session the response clears the host cookie and
 cannot return an authenticated continuation. The last active Passkey remains
 undeletable.
 
-Real-browser P2 acceptance is not a floating “current browser” claim. At P2
-build start one receipt freezes exact browser version plus OS build for Chrome
-and Safari on macOS arm64 and Edge and Firefox on Windows 11 x64. The same
-frozen binaries run registration, login, counter fixtures where injectable,
-logout, recovery replacement, and passkey deletion. Safari's platform Passkey
-ceremony is manual/real-browser evidence; protocol fixtures or WebKit emulation
-cannot replace it. Any browser upgrade invalidates that row and requires rerun.
+Real-browser P2 acceptance is macOS-first and is not a floating “current
+browser” claim. Immediately before execution, one receipt per browser freezes
+the final P2 implementation SHA, server build SHA, canonical origin/RP ID,
+`sw_vers` product/build values, `arm64`, browser product/build version,
+executable identity, and start time. Current Chrome and Safari on that same
+macOS arm64 host run real registration, login, logout, recovery replacement,
+and Passkey deletion. Safari additionally requires a real Touch ID platform
+Passkey with `authenticatorAttachment=platform`, user verification, and a
+manual operator confirmation; WebKit emulation or protocol fixtures cannot
+replace it. Counter edge cases remain deterministic fixtures where browsers do
+not expose injection. A browser/OS upgrade invalidates only that browser row
+and requires rerun on the same final implementation SHA.
+
+Windows is Experimental for v0.1. Windows CI retains Go/TypeScript/Rust compile,
+build, generated-contract, and native current-logon DACL tests, but Windows 11
+Edge/Firefox real-browser acceptance is not a P2 or Phase 4a release gate.
+Ubuntu/Linux retains repository compile/build checks only. Windows stable
+browser/product acceptance moves to project release Phase 6 or a later
+dedicated Windows stable-support lifecycle unit. Phase 4a remains Provider-
+neutral: Claude is not
+tested here, and its separate product boundary is macOS existing-subscription
+interactive PTY only—no API key, `print`/`-p`, dollar budget, usage credits, or
+Linux/Windows Claude acceptance.
+
+### P2 CSRF raw/digest/restart contract
+
+The session cookie remains exactly `__Host-mad_session`. A browser-session row
+stores `csrf_generation INTEGER >= 1` and `csrf_digest BLOB(32)` but never the
+raw CSRF value. Given the 32-byte raw cookie token presented by the browser,
+the only v1 construction is:
+
+```text
+csrfRaw = HMAC-SHA-256(
+  key = rawSessionToken,
+  message = frame("multidesk-browser-csrf-v1", "1", serverOrigin,
+                  browserSessionId, decimalCsrfGeneration))
+csrfDigest = SHA-256(csrfRaw)
+```
+
+`serverOrigin` is the byte-identical canonical origin frozen above. The HMAC
+output is the 32-byte pseudorandom CSRF token returned in no-store JSON and held
+only in page memory. `GET /v1/auth/current` reconstructs it from the presented
+HttpOnly cookie after process restart, then constant-time compares the derived
+value with the submitted value where present and its SHA-256 with the stored
+digest. A digest/construction mismatch returns `session_integrity_invalid`,
+revokes that session by state-revision CAS, and returns no CSRF value. A raw
+cookie, raw CSRF, HMAC key/material, or derived value is never logged or stored.
+
+Session creation starts `csrf_generation=1` and computes the digest before the
+same transaction inserts the session. Login, recovery-to-normal registration,
+recent-UV privilege change, and any authentication-method change rotate the
+entire session token/session ID and begin generation 1. If a same-session CSRF
+rotation is needed, one transaction increments `csrf_generation`, recomputes
+the digest from the presented raw cookie, and increments the item state
+revision; a CAS loser reloads and returns the current generation. No request
+may overwrite a digest using a caller-supplied raw CSRF value. This supersedes
+the checkpoint's session-ID-only HMAC and its unused random-then-overwritten
+CSRF allocation.
+
+### P2 idempotency, cookies, and one-time results
+
+Every P2 POST/DELETE operation requires `Idempotency-Key`; P2 GET operations do
+not. The exact endpoint behavior is frozen in `api.md`. The server stores an
+`auth_idempotency_operations` row keyed by the domain-separated principal/
+operation/path/key scope and a canonical request digest. It records
+`in_progress|committed`, one UUIDv7 operation ID, server boot epoch, public
+non-secret receipt/status, cookie action `none|clear|secret_issued`, and 24-hour
+expiry. The row and product mutation/ceremony commit atomically. Same key with a
+different request is `idempotency_key_reused`; a concurrent in-progress loser
+waits only for the bounded DB/request deadline and otherwise receives
+`idempotency_in_progress` plus `Retry-After` without running the operation.
+
+Ceremony-begin operations persist and replay byte-identical public options only
+while their ceremony and `serverBootEpoch` are live. Because all P2 WebAuthn
+ceremonies and bootstrap X25519 private material are restart-local, restart
+invalidates them. Exact old-key replay then returns
+`ceremony_restart_required`; the client begins again with a fresh key. It never
+reconstructs a challenge from an idempotency response alone.
+
+Session-issuing and recovery-plaintext operations are commit-once,
+secret-nonreplayable. The unique transaction winner may return a new secret
+Set-Cookie, raw CSRF, and/or Recovery Codes in its first response. Durable state
+stores only token/CSRF/code digests and a public `AuthOperationReceiptV1`.
+Concurrent losers, a retry after commit, or a crash/lost response after commit
+receive `one_time_result_unavailable` plus that receipt and exact `nextAction`;
+they never receive the cookie, raw CSRF, or codes. If the cookie arrived,
+`GET /v1/auth/current` reconstructs CSRF. If it did not, the client performs a
+fresh Passkey login; bootstrap completion is confirmed by the public bootstrap
+receipt and the new Passkey can log in before rotating Recovery Codes. A lost
+recovery-login response consumes that one code; the user must use another live
+code. The system never stores a Set-Cookie header to make impossible replay
+promises.
+
+Logout, Passkey delete, and browser-session delete store/replay their public
+result and may repeat the non-secret clear-cookie directive. Replay lookup for
+an operation that revoked its authenticating session is allowed only by the
+exact presented cookie-token digest + method/path/key/request digest; it never
+restores authority. Public receipt replay is not authentication and exposes no
+credential, challenge, proof, token, CSRF, or recovery value.
+
+### P2 browser-session item revision and idle touch
+
+Browser sessions are item-authoritative. There is no collection revision and
+no maximum-row-revision surrogate. The DB row has independent
+`revision` (security/state CAS), `activity_revision`, `last_seen_at`, absolute
+`expires_at`, and `idle_expires_at`. Creation sets both revisions to 1,
+`last_seen_at=authenticated_at`, and
+`idle_expires_at=min(expires_at,authenticated_at+30m)`. Every listed item
+returns both revisions and both expiry/activity timestamps. `If-Match` on
+`DELETE /v1/auth/sessions/{sessionId}` targets only that path session's
+`revision`.
+
+After cookie, Origin/Fetch-Metadata, and CSRF checks succeed, each authenticated
+request performs an activity touch. A touch writes at most once per five-minute
+window: if `now-last_seen_at >= 5m`, it atomically sets
+`last_seen_at=now`, `idle_expires_at=min(expires_at,now+30m)`, and increments
+only `activity_revision`; otherwise it is a no-op. Validity is half-open
+`now < expires_at && now < idle_expires_at`. Concurrent touch has one CAS
+winner; a loser reloads and continues when the row is still valid. Touch never
+changes `revision`, so normal activity cannot invalidate an operator's revoke
+precondition. Restart reads the same durable clocks/revisions and cannot extend
+idle expiry without a new authenticated request.
+
+Logout, explicit delete, Passkey deletion, counter-regression revocation, and
+global replacement revoke each affected live session atomically, set
+`revoked_at`, and increment its state `revision` exactly once; replay returns
+the stored receipt and does not increment again. A stale explicit delete
+returns `session_revision_conflict` with only target ID plus expected/current
+revision. Web refetches the session list and requires a new explicit user
+confirmation; it never auto-revokes a changed target. The P6 revoke UI remains
+disabled until these per-item DTOs/transactions are implemented and P2 is
+independently verified. Passkey listing also removes its collection `revision`;
+delete continues to target the selected passkey's `credentialRevision`.
+
+### P2 checkpoint reconciliation required before verification
+
+The exact `fc2a38e9fb3802015c687f37c751bc3d807c7d78` checkpoint must, within
+P2 only: update the OpenAPI/Go/TypeScript/runtime client for the new receipt,
+error, session-item, and no-collection-revision shapes; amend the unverified P2
+server migration/storage; replace the provisional CSRF derivation; implement
+atomic auth idempotency and secret-nonreplay; wire coalesced idle touch and
+per-item revoke CAS; enable the Web revoke flow only after the contract exists;
+and add the macOS receipt harness. It must preserve the verified P0/P1 behavior,
+the 0008/envelope/bootstrap evidence already implemented, and every P3+ route
+as unimplemented. Only then may the writer rerun the full P2 gate and set
+`READY_FOR_VERIFY`.
 
 ### P3 remote identity, device auth, and enrollment boundary
 
@@ -1217,12 +1358,13 @@ local/session storage, crash report, or test artifact may contain it. Clipboard
 or printed/downloaded copies are described as user-controlled and not remotely
 erasable.
 
-The real acceptance matrix freezes exact browser/OS builds in receipts:
-Chrome+Safari on macOS arm64 and Edge+Firefox on Windows 11 x64, including a
-real Safari Passkey/storage run. Desktop evidence launches the macOS Tauri shell
-and verifies visible shared-UI rendering and navigation; `cargo check` alone is
-not a render receipt. Any matrix row not executed is a release blocker, not a
-structural pass.
+The stable real-browser acceptance matrix is Chrome+Safari on macOS arm64,
+including the P2 real Safari Touch ID platform-Passkey receipt and the later
+Safari storage path. Desktop evidence launches the macOS Tauri shell and
+verifies visible shared-UI rendering and navigation; `cargo check` alone is not
+a render receipt. Windows browser rows are Experimental/non-blocking and are
+deferred to project release Phase 6 or a later Windows stable-support unit;
+Windows and Ubuntu repository compile/build checks remain mandatory.
 
 Registry metadata was checked on 2026-07-21 for the exact candidate pins:
 React 19.2.8, React Router 7.18.1, TanStack Query 5.101.4,
@@ -1249,8 +1391,8 @@ Implement server lifecycle/config, forward server migrations, health/version,
 OpenAPI authority, deterministic generated Go server/client plus TS types,
 first-party exhaustive typed runtime client, middleware bounds, UUIDv7/cursor/
 idempotency primitives, and exact drift/tool-license gates. No user or Device
-becomes active yet. The full contract must be reconciled to plan v0.7 before P1
-verification; runtime remains health/readiness/version only.
+becomes active yet. The historical full contract was reconciled to plan v0.7
+and independently verified; runtime remains health/readiness/version only.
 
 ### P2 — Bootstrap, Passkey, recovery, and browser session
 
@@ -1259,8 +1401,11 @@ table, exact envelope create/open/CAS API, pending-to-active bootstrap lifecycle
 and the prepare/import/prove/verify/activate Daemon + Web actor flow. Then
 implement atomic Daemon-anchor bootstrap, WebAuthn registration/login, one-shot
 server-side SessionData, local pre-user token rotate, exact recovery/Passkey/UV/
-session lifecycle, cookie/CSRF endpoint matrix, and auth/current DTO. Pure Web
-bootstrap fails; P2 cannot verify on a mock envelope assertion.
+session lifecycle, the v0.8 restart-safe CSRF and auth-idempotency receipt
+contract, item-authoritative session revisions/coalesced idle touch, cookie/
+CSRF endpoint matrix, and auth/current DTO. Pure Web bootstrap fails; P2 cannot
+verify on a mock envelope assertion. P2 real-browser evidence is current Chrome
+and Safari on macOS arm64, with real Safari Touch ID/platform Passkey.
 
 ### P3 — Remote Device identity, enrollment, presence, and revocation
 
@@ -1317,6 +1462,15 @@ the scope and final exit do not change.
 - Device migrations preserve existing local rows/IDs. A rollback may stop using
   remote mappings/keys but must not delete or reinterpret them. Vault envelopes
   remain readable by the introducing/newer binary.
+- P2 auth rollback first disables new bootstrap/auth mutations but leaves
+  session validation, revocation, receipt/status reads, and clear-cookie replay
+  active. The v0.8 backup/restore unit is the whole server DB plus matching
+  binary/config; auth-idempotency, CSRF generation/digest, per-item state and
+  activity revisions, recovery hashes, and receipts must come from the same
+  snapshot. A prior binary may be used only with its verified pre-v0.8 backup;
+  it may not reinterpret or delete v0.8 rows. Raw cookie/CSRF/recovery values
+  cannot be recovered from backup by design; lost one-time responses follow the
+  public receipt and fresh-login/rotation recovery paths above.
 - Sync disablement leaves local Device state authoritative and retains outbox
   entries. It does not apply server state destructively or mark queued changes
   acknowledged.
