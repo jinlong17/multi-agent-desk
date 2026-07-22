@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
+import { X509Certificate, createHash } from "node:crypto";
 import {
   chmodSync, linkSync, mkdtempSync, mkdirSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync,
 } from "node:fs";
+import { Agent as HTTPSAgent, createServer as createHTTPSServer, get as httpsGet } from "node:https";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -18,6 +20,7 @@ import {
   validateManifest,
   validateReceipt,
   validateRowIsolation,
+  validateVersionTLSSocket,
   writeExclusiveJSON,
 } from "./p2-browser-receipt.mjs";
 
@@ -25,6 +28,55 @@ const sha = "a".repeat(40);
 const digest = (character) => character.repeat(64);
 const fingerprint = (octet) => Array.from({ length: 32 }, () => octet).join(":");
 const cliBinary = "/private/tmp/mad/bin/multidesk";
+// Publicly committed, throwaway localhost-only fixture. It is not a product
+// credential and is never written to a receipt or printed by the test.
+const testTLSPrivateKey = `-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC9Xrp8wr0HEQZD
+uVaUMjTA6L+gzgp+14DcrBgRKR6LIZ8uqMMO+0EJMgxeLZJ6qFY4/hhC0aGCmP1a
+cbm0cVUmt7pKlA53YqUUQ/5Y2KNcsEQxqnhtEa1N05R4z/nvtCiK36dTr58cZBsA
+gDhPTjvMUPKqpTw3VC68WdMAlYH52M8ceq2vPSdORxt/7r4VX97umAsGWfMu55u2
+DnX6ijpDABq+eq4z1+O1vl9ZmNISTzaTx0GIOK30gXA/FyIxvjzfCKBM/IRKGUuf
+OFa+VD7aY1nR98iZjx/OwNaKuOHmwi9HB9Q99sbqoSwzLx1Dc9JX+i420PYGZFBC
+yY/Ho7+LAgMBAAECggEAP6T4tDmW4iscmeJOcNw20qbm0Jqu+FZhXskQBaR2OXiB
+UWMyu3RCNV72vSg/1K2C3QC5Eqv1xji43Y7fRP/aCHszRyFfg0xKAvefIikdLmen
+Y7HRa4bHYiK8AaaUb7Vy8smcKQobRaV3VcHCKxU2D8Mc67FA/a9zTaY6vjWBS4C3
+gba00pmTXAbg6TUNmz84ev1zd8dNVubDuybnOORXnk/EVmoRW6/N1JP/q10aDfOK
+MGzXoV0sufJv6jix03YntdA7iAqEYkPF6aGkJlJ6fLxVzjEhbvhDsLii9uK7XDqa
+8gTzDvezumc/jKjMOQdiEYTaVrSJ4F5aTeudLP/6UQKBgQD30fTzY/OWEsXEKfLd
+KZq6ULgB+94p0Se2axK/NK78gU2RUvw9qYYVWtYGJXr8edoZ8hESndExpTFvqJNg
+yq0hGW0QC1mi4V5T0vXTSe9W0ofA+/hG/X3f557PIgX97L7lU1N9NAPyIS96VKZu
+DOrQdh14mcQ5RrnEW8v6rMXSzQKBgQDDnuB+g+5yRj3lUSBFbhLJDRq/XMk6Do1C
+ma8vrIA66cGRpYhYQHqnUmbel57aL5RgBSSTB9LI3dy1GlrL+jWi65Fdz54iLz41
+Z5zwqUsGZev6h5S40OJVQPjXjXP8a2FfPMP4teh6ngisXHkBwkpNWWDoJ19ATmmj
+Tp5tR1hLtwKBgDl4KRPgU/azd8Vb7QQ4x7b5TRK4s/aCmHEHN5u7vfC0k6Zl1jT+
+gSemnwdh3bl7EIb/ydHFY2Pd6S75quPBXJDWcqJL34eUN+m8fGF5PdWmkPDB/fuI
+gY5RClUCkN0n78UCo9PfIiMeawI1azsOJ84b9g2nqweVTTMqDo2dT2rpAoGBAMBL
+onTbbf8pa1jLycRWcuLuHdf09t46RcQtXNepY5gGB0EMDp5qK+flCbhQJVhnoxxM
+kepyq1LHPVlNoemXeThBBvHH0LPb6vQGeXDdiiGs+S6aLqkKtSKHLtZ9d4GvcNV0
+31PSRcibJv2AHXeMLQwiCy/K3EhTjGZ7NyNHGdW7AoGAcJy6jFqdm2Z1caUotijY
+WPZ2RpuTlyYnrvCNVu97t1XGNYNpG4X0MKg0zX8fSJ55EQuR5OssbYwbdf+F4e3O
+JZalCK0gXGwnHc0BRkqGudvLhYbTm3n++boiqVwgoLZhrnJH1EXGhLdqMji/+UfV
+/YL3t/tTzS7Mu4+US/NqgvA=
+-----END PRIVATE KEY-----`;
+const testTLSCertificate = `-----BEGIN CERTIFICATE-----
+MIIC8DCCAdgCCQC9RH23xlD85zANBgkqhkiG9w0BAQsFADA6MRIwEAYDVQQDDAls
+b2NhbGhvc3QxJDAiBgNVBAoMG011bHRpQWdlbnREZXNrIHRlc3QgZml4dHVyZTAe
+Fw0yNjA3MjIyMTQzMjJaFw0zNjA3MTkyMTQzMjJaMDoxEjAQBgNVBAMMCWxvY2Fs
+aG9zdDEkMCIGA1UECgwbTXVsdGlBZ2VudERlc2sgdGVzdCBmaXh0dXJlMIIBIjAN
+BgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvV66fMK9BxEGQ7lWlDI0wOi/oM4K
+fteA3KwYESkeiyGfLqjDDvtBCTIMXi2SeqhWOP4YQtGhgpj9WnG5tHFVJre6SpQO
+d2KlFEP+WNijXLBEMap4bRGtTdOUeM/577Qoit+nU6+fHGQbAIA4T047zFDyqqU8
+N1QuvFnTAJWB+djPHHqtrz0nTkcbf+6+FV/e7pgLBlnzLuebtg51+oo6QwAavnqu
+M9fjtb5fWZjSEk82k8dBiDit9IFwPxciMb483wigTPyEShlLnzhWvlQ+2mNZ0ffI
+mY8fzsDWirjh5sIvRwfUPfbG6qEsMy8dQ3PSV/ouNtD2BmRQQsmPx6O/iwIDAQAB
+MA0GCSqGSIb3DQEBCwUAA4IBAQCgNORK1kzN2tCyxGwLDhFGwOOQX4JjPXGPlOuy
+DdVN22rhJ8/4/MmYeorW1bA38yU1HWQULQ/U9V8wWPrQ8b0SV8mLRu/9q6bpdF7T
+q8dFQ0w9jlgZxWqbAgGMAGWd7InXVZAt5qfpHuha1YX9yFpsW6RlMa/CPbWrm/vF
+3TpCmat2XWqDjmFjed+ZfBI/IIAdF7VGxSf/KveBdgV77vlPjpFUcH5Fz5uX6MU1
+o6M0jSdqDgI2ktarURqSN8ViOQ+qoF3UayeM5qgFDRQLp1G+XKkS+wlCZd1rvaZ3
+kEm9UYQia80mw2anQDv00/byzJ335AoVHJ3RQ7VDGj1ES+j9
+-----END CERTIFICATE-----`;
+const testTLSLeafSHA256 = new X509Certificate(testTLSCertificate).fingerprint256.replaceAll(":", "").toLowerCase();
 const row = (browser, prefix) => ({
   browser,
   origin: browser === "chrome" ? "https://chrome.localhost:8443" : "https://safari.localhost:9443",
@@ -39,6 +91,88 @@ const row = (browser, prefix) => ({
   deviceRoot: `/private/tmp/mad/${prefix}/device`,
   browserBundle: browser === "chrome" ? "/Applications/Google Chrome.app" : "/Applications/Safari.app",
   browserExecutable: browser === "chrome" ? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" : "/Applications/Safari.app/Contents/MacOS/Safari",
+});
+
+test("version TLS socket validation fails closed for every missing or mismatched boundary", () => {
+  const raw = Buffer.from("throwaway peer certificate bytes");
+  const expected = createHash("sha256").update(raw).digest("hex");
+  const valid = { authorized: true, remoteAddress: "127.0.0.1", getPeerCertificate: () => ({ raw }) };
+  assert.equal(validateVersionTLSSocket(valid, expected), valid);
+  assert.throws(() => validateVersionTLSSocket(undefined, expected), /missing its TLS socket/u);
+  assert.throws(() => validateVersionTLSSocket({ ...valid, authorized: false }, expected), /not authorized/u);
+  assert.throws(() => validateVersionTLSSocket({ ...valid, remoteAddress: "192.0.2.1" }, expected), /not a direct loopback/u);
+  assert.throws(() => validateVersionTLSSocket({ ...valid, getPeerCertificate: () => ({}) }, expected), /raw bytes are missing/u);
+  assert.throws(() => validateVersionTLSSocket(valid, "0".repeat(64)), /differs from the manifest certificate/u);
+});
+
+test("Node 24 delayed keep-alive response retains the early validated TLS socket after response.socket is cleared", async (t) => {
+  const server = createHTTPSServer({ key: testTLSPrivateKey, cert: testTLSCertificate }, (_request, response) => {
+    response.writeHead(200, { "Content-Type": "application/json", Connection: "keep-alive" });
+    response.write('{"apiVersion":"v1","data":');
+    setTimeout(() => response.end('{"version":"test","commit":"fixture"}}'), 40);
+  });
+  server.keepAliveTimeout = 1_000;
+  await new Promise((accept, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", accept);
+  });
+  const address = server.address();
+  assert.equal(typeof address, "object");
+  const agent = new HTTPSAgent({ keepAlive: true, maxSockets: 1 });
+  try {
+    await t.test("authorized loopback leaf remains provable from the socket captured in the response callback", async () => {
+      let earlySocket;
+      const body = await new Promise((accept, reject) => {
+        const request = httpsGet({
+          hostname: "127.0.0.1",
+          port: address.port,
+          path: "/v1/version",
+          servername: "localhost",
+          ca: testTLSCertificate,
+          rejectUnauthorized: true,
+          agent,
+        }, (response) => {
+          earlySocket = validateVersionTLSSocket(response.socket, testTLSLeafSHA256);
+          const chunks = [];
+          response.on("data", (chunk) => chunks.push(chunk));
+          response.on("end", () => {
+            try {
+              assert.equal(response.socket, null);
+              assert.equal(validateVersionTLSSocket(earlySocket, testTLSLeafSHA256), earlySocket);
+              accept(Buffer.concat(chunks).toString("utf8"));
+            } catch (error) {
+              reject(error);
+            }
+          });
+        });
+        request.on("error", reject);
+      });
+      assert.equal(JSON.parse(body).data.commit, "fixture");
+    });
+
+    await t.test("unknown CA rejects the handshake before the response callback", async () => {
+      let responseCallbackObserved = false;
+      await assert.rejects(new Promise((accept, reject) => {
+        const request = httpsGet({
+          hostname: "127.0.0.1",
+          port: address.port,
+          path: "/v1/version",
+          servername: "localhost",
+          rejectUnauthorized: true,
+        }, (response) => {
+          responseCallbackObserved = true;
+          response.resume();
+          accept();
+        });
+        request.on("error", reject);
+      }), /self-signed certificate|unable to verify the first certificate/u);
+      assert.equal(responseCallbackObserved, false);
+    });
+  } finally {
+    agent.destroy();
+    server.closeAllConnections();
+    await new Promise((accept) => server.close(accept));
+  }
 });
 
 test("browser receipt manifest freezes exact rows, CLI, and independent state", () => {

@@ -330,9 +330,25 @@ function loopback(address) {
   return normalized === "::1" || isIP(normalized) === 4 && normalized.startsWith("127.");
 }
 
+export function validateVersionTLSSocket(socket, expectedLeafSHA256) {
+  exactSHA256(expectedLeafSHA256, "expected TLS leaf SHA-256");
+  if (!socket) throw new Error("version endpoint response is missing its TLS socket");
+  if (socket.authorized !== true) throw new Error("version endpoint TLS socket is not authorized");
+  if (!loopback(socket.remoteAddress)) throw new Error("version endpoint TLS socket is not a direct loopback connection");
+  if (typeof socket.getPeerCertificate !== "function") throw new Error("version endpoint TLS peer certificate raw bytes are missing");
+  const peer = socket.getPeerCertificate();
+  if (!peer || !Buffer.isBuffer(peer.raw) || peer.raw.length === 0) {
+    throw new Error("version endpoint TLS peer certificate raw bytes are missing");
+  }
+  const peerFingerprint = createHash("sha256").update(peer.raw).digest("hex");
+  if (peerFingerprint !== expectedLeafSHA256) throw new Error("served TLS leaf differs from the manifest certificate");
+  return socket;
+}
+
 async function probeVersion(row, expectedCommit, leaf) {
   const url = new URL("/v1/version", row.origin);
   const ca = readFileSync(row.temporaryCA);
+  const expectedLeafSHA256 = leaf.fingerprint256.replaceAll(":", "").toLowerCase();
   return new Promise((accept, reject) => {
     const request = httpsGet({
       hostname: url.hostname,
@@ -346,19 +362,27 @@ async function probeVersion(row, expectedCommit, leaf) {
       minVersion: "TLSv1.2",
       timeout: 5_000,
     }, (response) => {
+      const socket = response.socket;
+      try {
+        validateVersionTLSSocket(socket, expectedLeafSHA256);
+      } catch (error) {
+        response.destroy();
+        reject(error);
+        return;
+      }
       const chunks = [];
       response.on("data", (chunk) => chunks.push(chunk));
       response.on("end", () => {
         try {
           if (response.statusCode !== 200 || response.headers["content-type"] !== "application/json") throw new Error("version endpoint did not return exact JSON 200");
-          const socket = response.socket;
-          if (!socket.authorized || !loopback(socket.remoteAddress)) throw new Error("version endpoint was not an authorized direct loopback TLS connection");
-          const peer = socket.getPeerCertificate();
-          const peerFingerprint = peer?.raw ? createHash("sha256").update(peer.raw).digest("hex") : "";
-          if (peerFingerprint !== leaf.fingerprint256.replaceAll(":", "").toLowerCase()) throw new Error("served TLS leaf differs from the manifest certificate");
           const payload = JSON.parse(Buffer.concat(chunks).toString("utf8"));
-          if (payload?.data?.commit !== expectedCommit) throw new Error("/v1/version commit differs from frozen implementation SHA");
-          accept({ version: payload?.data?.version, commit: payload.data.commit, directLoopbackTLS: true });
+          if (typeof payload !== "object" || payload === null || Array.isArray(payload) ||
+              typeof payload.data !== "object" || payload.data === null || Array.isArray(payload.data)) {
+            throw new Error("/v1/version body is not the expected JSON envelope");
+          }
+          nonEmptyString(payload.data.version, "/v1/version data.version");
+          if (payload.data.commit !== expectedCommit) throw new Error("/v1/version commit differs from frozen implementation SHA");
+          accept({ version: payload.data.version, commit: payload.data.commit, directLoopbackTLS: true });
         } catch (error) {
           reject(error);
         }
