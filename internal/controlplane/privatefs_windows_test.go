@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"sync"
 	"testing"
 	"time"
 
@@ -114,6 +115,113 @@ func TestWindowsServerStoreRejectsUnsafeSidecarBeforeSQLiteOpen(t *testing.T) {
 	}
 	if afterNames := controlPlaneWindowsDirectoryNames(t, directory); !slices.Equal(afterNames, beforeNames) {
 		t.Fatalf("directory changed before=%v after=%v", beforeNames, afterNames)
+	}
+}
+
+func TestWindowsServerObservedUnsafeSidecarMayDisappearBeforeVerification(t *testing.T) {
+	directory := privateTestDirectory(t)
+	sidecar := filepath.Join(directory, "server.sqlite-journal")
+	if err := os.WriteFile(sidecar, []byte("ephemeral"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := protectPrivateFile(sidecar); err != nil {
+		t.Fatal(err)
+	}
+	if err := makeTestFileUnsafe(sidecar); err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyPrivateFile(sidecar); err == nil {
+		t.Fatal("unsafe sidecar fixture was accepted")
+	}
+	if _, err := os.Lstat(sidecar); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(sidecar); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+	present, err := waitForPrivateDatabaseSidecar(ctx, sidecar, time.Second)
+	if err != nil {
+		t.Fatalf("vanished observed sidecar was rejected: %v", err)
+	}
+	if present {
+		t.Fatal("vanished sidecar was marked preexisting")
+	}
+}
+
+func TestWindowsServerSidecarWaitsForConcurrentExactProtection(t *testing.T) {
+	directory := privateTestDirectory(t)
+	sidecar := filepath.Join(directory, "server.sqlite-wal")
+	if err := os.WriteFile(sidecar, []byte("ephemeral"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := protectPrivateFile(sidecar); err != nil {
+		t.Fatal(err)
+	}
+	if err := makeTestFileUnsafe(sidecar); err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyPrivateFile(sidecar); err == nil {
+		t.Fatal("unsafe sidecar fixture was accepted")
+	}
+
+	observedUnsafe := make(chan struct{})
+	protectResult := make(chan error, 1)
+	var observedOnce sync.Once
+	go func() {
+		<-observedUnsafe
+		protectResult <- protectPrivateFile(sidecar)
+	}()
+	present, waitErr := waitForPrivateDatabaseSidecarWithVerifier(context.Background(), sidecar, time.Second, func(path string) error {
+		err := verifyPrivateFile(path)
+		if err != nil {
+			observedOnce.Do(func() { close(observedUnsafe) })
+		}
+		return err
+	})
+	observedOnce.Do(func() { close(observedUnsafe) })
+	if protectErr := <-protectResult; protectErr != nil {
+		t.Fatalf("protect sidecar after observed unsafe state: %v", protectErr)
+	}
+	if waitErr != nil {
+		t.Fatalf("wait for exact sidecar protection: %v", waitErr)
+	}
+	if !present {
+		t.Fatal("exact sidecar was not marked preexisting")
+	}
+	if err := verifyPrivateFile(sidecar); err != nil {
+		t.Fatalf("protected sidecar is not exact: %v", err)
+	}
+}
+
+func TestWindowsServerObservedSidecarMayDisappearDuringPostOpenProtection(t *testing.T) {
+	directory := privateTestDirectory(t)
+	for _, test := range []struct {
+		name      string
+		operation func(string) error
+	}{
+		{name: "verify-preexisting", operation: verifyObservedPrivateDatabaseSidecar},
+		{name: "protect-new", operation: protectObservedPrivateDatabaseSidecar},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			sidecar := filepath.Join(directory, test.name+".sqlite-shm")
+			if err := os.WriteFile(sidecar, []byte("ephemeral"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			if err := protectPrivateFile(sidecar); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := os.Lstat(sidecar); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Remove(sidecar); err != nil {
+				t.Fatal(err)
+			}
+			if err := test.operation(sidecar); err != nil {
+				t.Fatalf("vanished observed sidecar was rejected: %v", err)
+			}
+		})
 	}
 }
 

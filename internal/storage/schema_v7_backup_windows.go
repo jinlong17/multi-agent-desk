@@ -102,6 +102,44 @@ func prepareExistingDevicePrivateFile(ctx context.Context, path string, timeout 
 	return waitForDeviceWindowsPath(ctx, path, false, timeout)
 }
 
+// prepareExistingDevicePrivateSidecar is called only after the SQLite sidecar
+// has been observed with Lstat. Unlike stable database files, sidecars may be
+// removed by another SQLite connection while their exact DACL is being
+// checked. A vanished sidecar is therefore not pre-existing; a sidecar that
+// remains present must still converge to the exact private Windows boundary.
+func prepareExistingDevicePrivateSidecar(ctx context.Context, path string, timeout time.Duration) (bool, error) {
+	return waitForDevicePrivateSidecar(ctx, path, timeout, verifyDevicePrivateFile)
+}
+
+func waitForDevicePrivateSidecar(ctx context.Context, path string, timeout time.Duration, verify func(string) error) (bool, error) {
+	if timeout <= 0 {
+		return false, domain.NewError(domain.CodeInvalidArgument, "private Windows sidecar wait is invalid")
+	}
+	deadline := time.NewTimer(timeout)
+	defer deadline.Stop()
+	ticker := time.NewTicker(5 * time.Millisecond)
+	defer ticker.Stop()
+	var lastErr error
+	for {
+		lastErr = verify(path)
+		if lastErr == nil {
+			return true, nil
+		}
+		if _, err := os.Lstat(path); os.IsNotExist(err) {
+			return false, nil
+		} else if err != nil {
+			return false, domain.WrapError(domain.CodeConflict, "database sidecar cannot be inspected", err)
+		}
+		select {
+		case <-ctx.Done():
+			return false, domain.WrapError(domain.CodePermissionDenied, "private Windows sidecar did not become safe", ctx.Err())
+		case <-deadline.C:
+			return false, lastErr
+		case <-ticker.C:
+		}
+	}
+}
+
 func waitForDeviceWindowsPath(ctx context.Context, path string, wantDirectory bool, timeout time.Duration) error {
 	if timeout <= 0 {
 		return domain.NewError(domain.CodeInvalidArgument, "private Windows path wait is invalid")

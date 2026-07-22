@@ -158,14 +158,23 @@ func TestOpenConcurrentFirstCreationHasNoPermissionWindowFailure(t *testing.T) {
 		}()
 	}
 	close(start)
-	successes := 0
-	var opened []*Store
-	var failures []error
+	var received []struct {
+		store *Store
+		err   error
+	}
 	for range 2 {
 		result := <-results
+		received = append(received, result)
+		if result.store != nil {
+			store := result.store
+			t.Cleanup(func() { _ = store.Close() })
+		}
+	}
+	successes := 0
+	var failures []error
+	for _, result := range received {
 		if result.store != nil {
 			successes++
-			opened = append(opened, result.store)
 		}
 		if domain.CodeOf(result.err) == domain.CodePermissionDenied {
 			t.Fatalf("concurrent first Open observed permission transition: %v", result.err)
@@ -176,14 +185,6 @@ func TestOpenConcurrentFirstCreationHasNoPermissionWindowFailure(t *testing.T) {
 	}
 	if successes == 0 {
 		t.Fatalf("both concurrent first Open calls failed: %v", failures)
-	}
-	// Keep every successful connection alive until both Open calls finish. A
-	// Close removes SQLite WAL/SHM sidecars and is teardown, not part of the
-	// concurrent-open permission transition this regression exercises.
-	for _, store := range opened {
-		if err := store.Close(); err != nil {
-			t.Fatal(err)
-		}
 	}
 }
 

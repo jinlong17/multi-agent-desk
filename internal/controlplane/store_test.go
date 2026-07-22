@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -138,32 +137,38 @@ func TestStoreRestartPreservesFoundationDataWithoutMigrationReplay(t *testing.T)
 func TestStoreConcurrentMigrationHasOneCompleteLedger(t *testing.T) {
 	path := filepath.Join(privateTestDirectory(t), "server.sqlite")
 	start := make(chan struct{})
-	results := make(chan error, 2)
-	var storesMu sync.Mutex
+	results := make(chan struct {
+		store *Store
+		err   error
+	}, 2)
 	var stores []*Store
-	t.Cleanup(func() {
-		storesMu.Lock()
-		defer storesMu.Unlock()
-		for _, store := range stores {
-			_ = store.Close()
-		}
-	})
 	for range 2 {
 		go func() {
 			<-start
 			store, err := OpenStore(context.Background(), StoreOptions{Path: path, BusyTimeout: 3 * time.Second})
-			if store != nil {
-				storesMu.Lock()
-				stores = append(stores, store)
-				storesMu.Unlock()
-			}
-			results <- err
+			results <- struct {
+				store *Store
+				err   error
+			}{store: store, err: err}
 		}()
 	}
 	close(start)
-	busyFailures := 0
+	received := make([]struct {
+		store *Store
+		err   error
+	}, 0, 2)
 	for range 2 {
-		if err := <-results; err != nil {
+		result := <-results
+		received = append(received, result)
+		if result.store != nil {
+			stores = append(stores, result.store)
+			store := result.store
+			t.Cleanup(func() { _ = store.Close() })
+		}
+	}
+	busyFailures := 0
+	for _, result := range received {
+		if err := result.err; err != nil {
 			if !strings.Contains(strings.ToLower(err.Error()), "locked") && !strings.Contains(strings.ToLower(err.Error()), "busy") {
 				t.Fatal(err)
 			}

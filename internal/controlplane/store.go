@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -141,7 +142,7 @@ func OpenStore(ctx context.Context, options StoreOptions) (*Store, error) {
 	if err := verifyPrivateFile(options.Path); err != nil {
 		return nil, err
 	}
-	preexistingSidecars, err := verifyPrivateDatabaseSidecars(options.Path)
+	preexistingSidecars, err := verifyPrivateDatabaseSidecars(ctx, options.Path, options.BusyTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -379,7 +380,7 @@ func (s *Store) Backup(ctx context.Context, directory string) (string, error) {
 	return path, nil
 }
 
-func verifyPrivateDatabaseSidecars(databasePath string) (map[string]bool, error) {
+func verifyPrivateDatabaseSidecars(ctx context.Context, databasePath string, timeout time.Duration) (map[string]bool, error) {
 	result := make(map[string]bool, 3)
 	for _, suffix := range []string{"-journal", "-shm", "-wal"} {
 		path := databasePath + suffix
@@ -388,12 +389,81 @@ func verifyPrivateDatabaseSidecars(databasePath string) (map[string]bool, error)
 		} else if err != nil {
 			return nil, fmt.Errorf("inspect database sidecar: %w", err)
 		}
-		if err := verifyPrivateFile(path); err != nil {
+		present, err := waitForPrivateDatabaseSidecar(ctx, path, timeout)
+		if err != nil {
 			return nil, err
 		}
-		result[path] = true
+		if present {
+			result[path] = true
+		}
 	}
 	return result, nil
+}
+
+// waitForPrivateDatabaseSidecar is intentionally narrower than
+// waitForPrivateFile: its caller has already observed an ephemeral SQLite
+// sidecar. Windows may expose that sidecar before a concurrent opener applies
+// the exact DACL, so allow a bounded convergence window. If SQLite removes the
+// observed sidecar meanwhile, it is no longer pre-existing. Stable database
+// files and directories continue to use their fail-closed paths.
+func waitForPrivateDatabaseSidecar(ctx context.Context, path string, timeout time.Duration) (bool, error) {
+	return waitForPrivateDatabaseSidecarWithVerifier(ctx, path, timeout, verifyPrivateFile)
+}
+
+func waitForPrivateDatabaseSidecarWithVerifier(ctx context.Context, path string, timeout time.Duration, verify func(string) error) (bool, error) {
+	if timeout <= 0 {
+		return false, fmt.Errorf("database sidecar wait timeout must be positive")
+	}
+	deadline := time.NewTimer(timeout)
+	defer deadline.Stop()
+	ticker := time.NewTicker(5 * time.Millisecond)
+	defer ticker.Stop()
+	var lastErr error
+	for {
+		if err := verify(path); err == nil {
+			return true, nil
+		} else {
+			lastErr = err
+		}
+		if _, err := os.Lstat(path); errors.Is(err, os.ErrNotExist) {
+			return false, nil
+		} else if err != nil {
+			return false, fmt.Errorf("inspect database sidecar: %w", err)
+		}
+		if runtime.GOOS != "windows" {
+			return false, lastErr
+		}
+		select {
+		case <-ctx.Done():
+			return false, fmt.Errorf("wait for concurrently created private database sidecar: %w", ctx.Err())
+		case <-deadline.C:
+			return false, lastErr
+		case <-ticker.C:
+		}
+	}
+}
+
+func verifyObservedPrivateDatabaseSidecar(path string) error {
+	if err := verifyPrivateFile(path); err != nil {
+		return observedPrivateDatabaseSidecarResult(path, err)
+	}
+	return nil
+}
+
+func protectObservedPrivateDatabaseSidecar(path string) error {
+	if err := protectPrivateFile(path); err != nil {
+		return observedPrivateDatabaseSidecarResult(path, err)
+	}
+	return nil
+}
+
+func observedPrivateDatabaseSidecarResult(path string, operationErr error) error {
+	if _, err := os.Lstat(path); errors.Is(err, os.ErrNotExist) {
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("inspect database sidecar: %w", err)
+	}
+	return operationErr
 }
 
 func (s *Store) protectDatabaseFiles(preexistingSidecars map[string]bool) error {
@@ -411,10 +481,10 @@ func (s *Store) protectDatabaseFiles(preexistingSidecars map[string]bool) error 
 			return fmt.Errorf("inspect database sidecar: %w", err)
 		}
 		if preexistingSidecars[path] {
-			if err := verifyPrivateFile(path); err != nil {
+			if err := verifyObservedPrivateDatabaseSidecar(path); err != nil {
 				return fmt.Errorf("verify database sidecar: %w", err)
 			}
-		} else if err := protectPrivateFile(path); err != nil {
+		} else if err := protectObservedPrivateDatabaseSidecar(path); err != nil {
 			return fmt.Errorf("protect database sidecar: %w", err)
 		}
 	}

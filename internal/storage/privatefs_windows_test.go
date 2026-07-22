@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"sync"
 	"testing"
 	"time"
 
@@ -156,6 +157,131 @@ func TestWindowsDeviceStoreRejectsUnsafeSidecarBeforeSQLiteOpen(t *testing.T) {
 	}
 	if afterNames := windowsDirectoryNames(t, root); !slices.Equal(afterNames, beforeNames) {
 		t.Fatalf("directory changed before=%v after=%v", beforeNames, afterNames)
+	}
+}
+
+func TestWindowsDeviceObservedUnsafeSidecarMayDisappearBeforePreparation(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "device-private")
+	if err := os.MkdirAll(root, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := protectDevicePrivateDirectory(root); err != nil {
+		t.Fatal(err)
+	}
+	sidecar := filepath.Join(root, "device.db-journal")
+	if err := os.WriteFile(sidecar, []byte("ephemeral"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := protectDevicePrivateFile(sidecar); err != nil {
+		t.Fatal(err)
+	}
+	if err := makeDeviceWindowsPathUnprotected(sidecar); err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyDevicePrivateFile(sidecar); err == nil {
+		t.Fatal("unsafe sidecar fixture was accepted")
+	}
+	if _, err := os.Lstat(sidecar); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(sidecar); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+	present, err := prepareExistingDevicePrivateSidecar(ctx, sidecar, time.Second)
+	if err != nil {
+		t.Fatalf("vanished observed sidecar was rejected: %v", err)
+	}
+	if present {
+		t.Fatal("vanished sidecar was marked preexisting")
+	}
+}
+
+func TestWindowsDeviceSidecarWaitsForConcurrentExactProtection(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "device-private")
+	if err := os.MkdirAll(root, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := protectDevicePrivateDirectory(root); err != nil {
+		t.Fatal(err)
+	}
+	sidecar := filepath.Join(root, "device.db-shm")
+	if err := os.WriteFile(sidecar, []byte("ephemeral"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := protectDevicePrivateFile(sidecar); err != nil {
+		t.Fatal(err)
+	}
+	if err := makeDeviceWindowsPathUnprotected(sidecar); err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyDevicePrivateFile(sidecar); err == nil {
+		t.Fatal("unsafe sidecar fixture was accepted")
+	}
+
+	observedUnsafe := make(chan struct{})
+	protectResult := make(chan error, 1)
+	var observedOnce sync.Once
+	go func() {
+		<-observedUnsafe
+		protectResult <- protectDevicePrivateFile(sidecar)
+	}()
+	present, waitErr := waitForDevicePrivateSidecar(context.Background(), sidecar, time.Second, func(path string) error {
+		err := verifyDevicePrivateFile(path)
+		if err != nil {
+			observedOnce.Do(func() { close(observedUnsafe) })
+		}
+		return err
+	})
+	observedOnce.Do(func() { close(observedUnsafe) })
+	if protectErr := <-protectResult; protectErr != nil {
+		t.Fatalf("protect sidecar after observed unsafe state: %v", protectErr)
+	}
+	if waitErr != nil {
+		t.Fatalf("wait for exact sidecar protection: %v", waitErr)
+	}
+	if !present {
+		t.Fatal("exact sidecar was not marked preexisting")
+	}
+	if err := verifyDevicePrivateFile(sidecar); err != nil {
+		t.Fatalf("protected sidecar is not exact: %v", err)
+	}
+}
+
+func TestWindowsDeviceObservedSidecarMayDisappearDuringPostOpenProtection(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "device-private")
+	if err := os.MkdirAll(root, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := protectDevicePrivateDirectory(root); err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		name      string
+		operation func(string) error
+	}{
+		{name: "verify-preexisting", operation: verifyObservedDevicePrivateSidecar},
+		{name: "protect-new", operation: protectObservedDevicePrivateSidecar},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			sidecar := filepath.Join(root, test.name+".db-wal")
+			if err := os.WriteFile(sidecar, []byte("ephemeral"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			if err := protectDevicePrivateFile(sidecar); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := os.Lstat(sidecar); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Remove(sidecar); err != nil {
+				t.Fatal(err)
+			}
+			if err := test.operation(sidecar); err != nil {
+				t.Fatalf("vanished observed sidecar was rejected: %v", err)
+			}
+		})
 	}
 }
 

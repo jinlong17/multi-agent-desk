@@ -178,12 +178,38 @@ func prepareExistingDeviceSidecars(ctx context.Context, databasePath string, tim
 		} else if err != nil {
 			return nil, domain.WrapError(domain.CodeConflict, "database sidecar cannot be inspected", err)
 		}
-		if err := prepareExistingDevicePrivateFile(ctx, path, timeout); err != nil {
+		present, err := prepareExistingDevicePrivateSidecar(ctx, path, timeout)
+		if err != nil {
 			return nil, err
 		}
-		result[path] = true
+		if present {
+			result[path] = true
+		}
 	}
 	return result, nil
+}
+
+func verifyObservedDevicePrivateSidecar(path string) error {
+	if err := verifyDevicePrivateFile(path); err != nil {
+		return observedDeviceSidecarResult(path, err)
+	}
+	return nil
+}
+
+func protectObservedDevicePrivateSidecar(path string) error {
+	if err := protectDevicePrivateFile(path); err != nil {
+		return observedDeviceSidecarResult(path, err)
+	}
+	return nil
+}
+
+func observedDeviceSidecarResult(path string, operationErr error) error {
+	if _, err := os.Lstat(path); errors.Is(err, os.ErrNotExist) {
+		return nil
+	} else if err != nil {
+		return domain.WrapError(domain.CodeConflict, "database sidecar cannot be inspected", err)
+	}
+	return operationErr
 }
 
 func (s *Store) protectDeviceDatabaseFiles(preexistingSidecars map[string]bool) error {
@@ -204,10 +230,10 @@ func (s *Store) protectDeviceDatabaseFiles(preexistingSidecars map[string]bool) 
 			return domain.WrapError(domain.CodeConflict, "database sidecar cannot be inspected", err)
 		}
 		if preexistingSidecars[path] {
-			if err := verifyDevicePrivateFile(path); err != nil {
+			if err := verifyObservedDevicePrivateSidecar(path); err != nil {
 				return err
 			}
-		} else if err := protectDevicePrivateFile(path); err != nil {
+		} else if err := protectObservedDevicePrivateSidecar(path); err != nil {
 			return err
 		}
 	}

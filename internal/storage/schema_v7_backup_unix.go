@@ -74,6 +74,21 @@ func prepareExistingDevicePrivateFile(_ context.Context, path string, _ time.Dur
 	return protectDevicePrivateFile(path)
 }
 
+func prepareExistingDevicePrivateSidecar(_ context.Context, path string, _ time.Duration) (bool, error) {
+	// The caller already observed this SQLite sidecar. Preserve the historical
+	// Unix permission tightening, but allow SQLite teardown to win the race
+	// between that observation and the sidecar-specific protection attempt.
+	if err := protectDevicePrivateFile(path); err != nil {
+		if _, statErr := os.Lstat(path); errors.Is(statErr, os.ErrNotExist) {
+			return false, nil
+		} else if statErr != nil {
+			return false, domain.WrapError(domain.CodeConflict, "database sidecar cannot be inspected", statErr)
+		}
+		return false, err
+	}
+	return true, nil
+}
+
 func syncDirectory(path string) error {
 	directory, err := os.Open(path)
 	if err != nil {
