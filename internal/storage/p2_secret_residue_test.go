@@ -10,10 +10,7 @@ import (
 )
 
 func TestP2SecretCanariesAbsentFromClosedDeviceDatabaseAndSidecars(t *testing.T) {
-	root := t.TempDir()
-	if err := os.Chmod(root, 0o700); err != nil {
-		t.Fatal(err)
-	}
+	root := filepath.Join(t.TempDir(), "private")
 	path := filepath.Join(root, "device.db")
 	store, err := Open(context.Background(), path)
 	if err != nil {

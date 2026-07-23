@@ -12,10 +12,7 @@ import (
 )
 
 func TestP2SecretCanariesAbsentFromClosedDatabaseAndSidecars(t *testing.T) {
-	root := t.TempDir()
-	if err := os.Chmod(root, 0o700); err != nil {
-		t.Fatal(err)
-	}
+	root := privateTestDirectory(t)
 	path := filepath.Join(root, "server.sqlite")
 	store, err := OpenStore(context.Background(), StoreOptions{Path: path, BusyTimeout: time.Second})
 	if err != nil {
