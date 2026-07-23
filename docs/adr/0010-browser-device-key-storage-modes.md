@@ -45,8 +45,11 @@ The following controls are part of this decision, not optional hardening:
   labeled native, hardware-backed, or XSS-resistant.
 - The Control Plane never receives unwrapped device private material and does
   not act as a recovery escrow.
-- A pure Web Device cannot bootstrap the E2EE trust graph; an OS-Vault-backed,
-  already pinned Daemon/Desktop approves it.
+- A pure Web Device cannot bootstrap the E2EE trust graph. Phase 4a uses a
+  Daemon whose remote Ed25519/X25519 identity is sealed by the already-shipped
+  portable password-derived Vault v1 as the initial anchor; that path is not
+  OS-backed. OS Keychain/DPAPI/Secret Service wrapping and the Desktop product
+  key store remain Phase 5. An already pinned key-bearing Device approves Web.
 - Enrollment and local audit state bind browser family/version, probe version,
   key-suite version, key revision, and storage mode.
 - A mode, key-handle, or origin change creates a new device-key revision and
@@ -74,6 +77,11 @@ material.
 This ADR does not freeze the E2EE envelope, AAD, replay, attestation, recovery,
 or Credential Grant protocol. Those remain gated by
 `spike-e2ee-protocol-vectors` and its independent cryptographic review.
+
+Phase 4a pulls forward only the browser storage probe, Ed25519/X25519 key
+lifecycle, proof of possession, metadata enrollment, and revocation. Pairwise
+Roots, HPKE, WSS, terminal/Approval payloads, and Credential Grants are not a
+Phase 4a behavior claim.
 
 ## Evidence
 

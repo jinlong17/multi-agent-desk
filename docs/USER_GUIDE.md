@@ -212,7 +212,10 @@ Ceremony 必须在同一次流程完成：
 
 1. 创建首个单用户账号。
 2. 注册 Passkey，并保存一次性 Recovery Codes。
-3. 登记一台具有 OS Vault 的 Daemon/Desktop 为初始 Trust Anchor。
+3. 登记一台 Daemon 为初始 Trust Anchor；其远端 Device 私钥将使用已经交付的
+   portable password-derived Vault v1 加密保存。该路径不是 OS-backed；
+   OS Keychain/DPAPI/Secret Service wrapping 和 Desktop 产品密钥存储属于
+   Phase 5。纯 Web 不能单独完成 bootstrap。
 
 纯浏览器不能单独成为初始 E2EE 信任根。生产部署必须使用稳定域名/RP ID
 和 HTTPS；更换域名会使原 Passkey RP ID 失效。

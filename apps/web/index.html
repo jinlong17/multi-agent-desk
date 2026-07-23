@@ -3,10 +3,141 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MultiAgentDesk scaffold</title>
+    <meta name="color-scheme" content="light dark" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="multidesk-control-plane" content="/" />
+    <title>MultiAgentDesk Control Plane</title>
   </head>
   <body>
-    <main id="app">MultiAgentDesk scaffold — product UI is not implemented.</main>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <div>
+        <p class="eyebrow">MultiAgentDesk</p>
+        <h1>Control Plane setup</h1>
+        <p class="lede">Bootstrap a Daemon trust anchor, register Passkeys, and manage browser authentication without storing secrets in browser storage.</p>
+      </div>
+      <div class="state-stack" aria-label="Current state">
+        <span>Bootstrap <output id="bootstrap-state">Loading…</output></span>
+        <span>Authentication <output id="auth-state">Loading…</output></span>
+      </div>
+    </header>
+
+    <div class="announcements" aria-live="polite" aria-atomic="true">
+      <output id="status-live"></output>
+      <output id="error-live" class="error"></output>
+    </div>
+
+    <main id="main" class="layout">
+      <section class="card span-two" aria-labelledby="bootstrap-heading">
+        <div class="card-heading">
+          <div>
+            <p class="step">Bootstrap · Daemon anchored</p>
+            <h2 id="bootstrap-heading">Establish the first trust anchor</h2>
+          </div>
+          <button id="refresh-bootstrap" type="button" class="secondary">Refresh state</button>
+        </div>
+        <p class="callout">A browser cannot bootstrap by itself. Prepare a <code>portable_vault_v1</code> identity with the local Daemon, then import only its public descriptor.</p>
+
+        <div class="columns">
+          <fieldset>
+            <legend>1. Import Daemon descriptor</legend>
+            <label for="descriptor-file">Descriptor JSON file</label>
+            <input id="descriptor-file" type="file" accept="application/json,.json" />
+            <label for="descriptor-json">Or paste descriptor JSON</label>
+            <textarea id="descriptor-json" rows="7" spellcheck="false" autocomplete="off"></textarea>
+            <button id="load-descriptor" type="button">Validate descriptor</button>
+            <div id="anchor-summary" class="summary" aria-label="Validated anchor"></div>
+          </fieldset>
+
+          <fieldset>
+            <legend>2. Create challenge</legend>
+            <label for="bootstrap-display-name">First user display name</label>
+            <input id="bootstrap-display-name" type="text" maxlength="128" autocomplete="name" />
+            <label for="bootstrap-token">One-time bootstrap token</label>
+            <input id="bootstrap-token" type="password" maxlength="4096" autocomplete="off" autocapitalize="none" spellcheck="false" />
+            <div class="button-row">
+              <button id="begin-bootstrap" type="button">Create challenge</button>
+              <button id="download-challenge" type="button" class="secondary" disabled>Download for Daemon</button>
+            </div>
+            <div id="challenge-summary" class="summary" aria-label="In-memory challenge"></div>
+          </fieldset>
+        </div>
+
+        <fieldset>
+          <legend>3. Import Daemon proof and register the first Passkey</legend>
+          <div class="columns compact">
+            <div>
+              <label for="proof-file">Daemon proof JSON file</label>
+              <input id="proof-file" type="file" accept="application/json,.json" />
+              <label for="proof-json">Or paste proof JSON</label>
+              <textarea id="proof-json" rows="5" spellcheck="false" autocomplete="off"></textarea>
+            </div>
+            <div>
+              <label for="bootstrap-token-verify">Current bootstrap token</label>
+              <input id="bootstrap-token-verify" type="password" maxlength="4096" autocomplete="off" autocapitalize="none" spellcheck="false" />
+              <p class="hint">The proof must match the exact in-memory ceremony, origin, and Daemon identity. Passkey verification consumes the ceremony even on failure.</p>
+              <button id="finish-bootstrap" type="button">Verify proof and create Passkey</button>
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="receipt-block">
+          <div id="receipt-summary" class="summary" aria-label="Bootstrap receipt"></div>
+          <button id="download-receipt" type="button" class="secondary" disabled>Download receipt for Daemon activation</button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="signin-heading">
+        <p class="step">Authentication</p>
+        <h2 id="signin-heading">Sign in</h2>
+        <button id="passkey-login" type="button">Sign in with Passkey</button>
+        <div class="divider"><span>or recover</span></div>
+        <label for="recovery-code">One recovery code</label>
+        <input id="recovery-code" type="password" autocomplete="off" autocapitalize="characters" spellcheck="false" />
+        <button id="recovery-login" type="button" class="secondary">Start restricted recovery</button>
+        <p class="hint">Recovery can only register a replacement Passkey. It cannot list metadata, rotate codes, or revoke devices or sessions.</p>
+      </section>
+
+      <section id="authenticated-panel" class="card" aria-labelledby="security-heading" hidden>
+        <p class="step">Authenticated</p>
+        <h2 id="security-heading">Security controls</h2>
+        <div id="recovery-session-panel" hidden>
+          <p class="callout warning">This 15-minute recovery session is restricted. Register a replacement Passkey to rotate into a normal session and revoke older browser sessions.</p>
+          <button id="register-replacement-passkey" type="button">Register replacement Passkey</button>
+        </div>
+        <div id="normal-session-panel" hidden>
+          <div class="button-grid">
+            <button id="register-passkey" type="button">Add Passkey</button>
+            <button id="uv-step-up" type="button" class="secondary">Verify user presence</button>
+            <button id="rotate-recovery" type="button" class="secondary">Rotate recovery codes</button>
+            <button id="load-passkeys" type="button" class="secondary">Refresh Passkeys</button>
+            <button id="load-sessions" type="button" class="secondary">Refresh sessions</button>
+          </div>
+          <h3>Passkeys</h3>
+          <ul id="passkey-list" class="resource-list"></ul>
+          <h3>Browser sessions</h3>
+          <p class="hint">The per-item revoke and conflict-reconfirmation flow is implemented and tested. The control remains disabled until P2 is independently verified; P6 will enable it.</p>
+          <ul id="session-list" class="resource-list"></ul>
+        </div>
+        <button id="logout" type="button" class="danger secondary">Sign out</button>
+      </section>
+
+      <section id="recovery-result" class="card secret-card span-two" tabindex="-1" hidden aria-labelledby="recovery-heading">
+        <h3 id="recovery-heading">Save these recovery codes now</h3>
+        <p>Each code works once. Plaintext is shown only in this response and kept only in page memory.</p>
+        <ol id="recovery-list" class="code-grid"></ol>
+        <div class="button-row">
+          <button id="copy-recovery" type="button">Copy codes</button>
+          <button id="download-recovery" type="button" class="secondary">Download JSON</button>
+        </div>
+        <label class="check-row"><input id="recovery-saved" type="checkbox" /> I saved the codes in a protected location.</label>
+        <button id="clear-recovery" type="button" class="danger secondary">Clear plaintext from this page</button>
+      </section>
+    </main>
+
+    <footer>
+      <p>Secrets, CSRF values, challenges, receipts, and recovery codes are never written to localStorage, sessionStorage, or IndexedDB by this page.</p>
+    </footer>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

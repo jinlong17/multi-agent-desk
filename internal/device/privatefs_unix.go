@@ -18,8 +18,8 @@ func createPrivateDirectory(path string) error {
 }
 
 // ProtectPrivateDirectory applies and verifies the platform-private directory
-// boundary. Unix uses owner-only mode bits; Windows supplies the current-logon
-// DACL in the platform implementation.
+// boundary. Unix uses owner-only mode bits; Windows supplies the exact current
+// user plus LocalSystem DACL in the platform implementation.
 func ProtectPrivateDirectory(path string) error {
 	if err := os.Chmod(path, 0o700); err != nil {
 		return domain.WrapError(domain.CodePermissionDenied, "private directory permissions could not be restricted", err)
@@ -35,6 +35,13 @@ func VerifyPrivateFile(path string) error { return verifyPrivateFile(path) }
 // the platform-specific private-file boundary.
 func WritePrivateFileAtomic(path string, data []byte) error {
 	return writePrivateFileAtomic(path, data)
+}
+
+// ReplacePrivateFileAtomic replaces an existing private file through a
+// same-directory private temporary file. The destination must already satisfy
+// the platform-private boundary.
+func ReplacePrivateFileAtomic(path string, data []byte) error {
+	return replacePrivateFileAtomic(path, data)
 }
 
 func verifyPrivateDirectory(path string) error {
@@ -80,6 +87,44 @@ func writePrivateFileAtomic(path string, data []byte) error {
 	}
 	if err := os.Rename(temporary, path); err != nil {
 		return domain.WrapError(domain.CodeConflict, "private file could not be committed", err)
+	}
+	ok = true
+	return verifyPrivateFile(path)
+}
+
+func replacePrivateFileAtomic(path string, data []byte) error {
+	if err := verifyPrivateDirectory(filepath.Dir(path)); err != nil {
+		return err
+	}
+	if err := verifyPrivateFile(path); err != nil {
+		return err
+	}
+	temporary := path + ".replace"
+	file, err := os.OpenFile(temporary, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		return domain.WrapError(domain.CodeConflict, "private replacement file could not be created", err)
+	}
+	ok := false
+	defer func() {
+		_ = file.Close()
+		if !ok {
+			_ = os.Remove(temporary)
+		}
+	}()
+	if _, err := file.Write(data); err != nil {
+		return domain.WrapError(domain.CodeConflict, "private replacement file could not be written", err)
+	}
+	if err := file.Sync(); err != nil {
+		return domain.WrapError(domain.CodeConflict, "private replacement file could not be synchronized", err)
+	}
+	if err := file.Close(); err != nil {
+		return domain.WrapError(domain.CodeConflict, "private replacement file could not be closed", err)
+	}
+	if err := verifyPrivateFile(temporary); err != nil {
+		return err
+	}
+	if err := os.Rename(temporary, path); err != nil {
+		return domain.WrapError(domain.CodeConflict, "private replacement file could not be committed", err)
 	}
 	ok = true
 	return verifyPrivateFile(path)

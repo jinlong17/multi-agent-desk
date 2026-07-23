@@ -1,9 +1,12 @@
 import {
   createHash,
+  createHmac,
   createPrivateKey,
   createPublicKey,
+  diffieHellman,
   hkdfSync,
   sign,
+  timingSafeEqual,
   verify,
 } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -63,6 +66,63 @@ function plainDigest(value) {
   return new Uint8Array(createHash("sha256").update(value).digest());
 }
 
+function base32Fingerprint(pinDigest) {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let bits = 0;
+  let value = 0;
+  let encoded = "";
+  for (const byte of pinDigest.slice(0, 15)) {
+    value = (value << 8) | byte;
+    bits += 8;
+    while (bits >= 5) {
+      encoded += alphabet[(value >>> (bits - 5)) & 31];
+      bits -= 5;
+    }
+  }
+  if (bits !== 0) encoded += alphabet[(value << (5 - bits)) & 31];
+  return encoded.match(/.{4}/g).join("-");
+}
+
+function decodeBase32Fingerprint(display) {
+  if (display.length === 29) {
+    for (const offset of [4, 9, 14, 19, 24]) {
+      if (display[offset] !== "-") throw new Error("invalid fingerprint grouping");
+    }
+    display = display.replaceAll("-", "");
+  } else if (display.length !== 24) {
+    throw new Error("invalid fingerprint length");
+  }
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let bits = 0;
+  let value = 0;
+  const decoded = [];
+  for (const character of display.toUpperCase()) {
+    const digit = alphabet.indexOf(character);
+    if (digit < 0) throw new Error("invalid fingerprint encoding");
+    value = (value << 5) | digit;
+    bits += 5;
+    if (bits >= 8) {
+      decoded.push((value >>> (bits - 8)) & 0xff);
+      bits -= 8;
+    }
+  }
+  if (bits !== 0 || decoded.length !== 15) {
+    throw new Error("invalid fingerprint encoding");
+  }
+  return new Uint8Array(decoded);
+}
+
+function fingerprintMatches(display, pinDigest) {
+  try {
+    return timingSafeEqual(
+      Buffer.from(decodeBase32Fingerprint(display)),
+      Buffer.from(pinDigest.slice(0, 15)),
+    );
+  } catch {
+    return false;
+  }
+}
+
 function ed25519KeyPair(seed) {
   const prefix = Buffer.from("302e020100300506032b657004220420", "hex");
   const privateKey = createPrivateKey({
@@ -77,6 +137,280 @@ function ed25519KeyPair(seed) {
     publicKey,
     publicRaw: new Uint8Array(publicDer.subarray(publicDer.length - 32)),
   };
+}
+
+function x25519KeyPair(rawPrivate) {
+  const privatePrefix = Buffer.from("302e020100300506032b656e04220420", "hex");
+  const privateKey = createPrivateKey({
+    key: Buffer.concat([privatePrefix, Buffer.from(rawPrivate)]),
+    format: "der",
+    type: "pkcs8",
+  });
+  const publicKey = createPublicKey(privateKey);
+  const publicDer = publicKey.export({ format: "der", type: "spki" });
+  return {
+    privateKey,
+    publicKey,
+    publicRaw: new Uint8Array(publicDer.subarray(publicDer.length - 32)),
+  };
+}
+
+function x25519PublicKey(rawPublic) {
+  const publicPrefix = Buffer.from("302a300506032b656e032100", "hex");
+  return createPublicKey({
+    key: Buffer.concat([publicPrefix, Buffer.from(rawPublic)]),
+    format: "der",
+    type: "spki",
+  });
+}
+
+const attestationMembers = [
+  "approverDeviceId",
+  "attestationId",
+  "capabilities",
+  "expiresAt",
+  "issuedAt",
+  "subjectDeviceId",
+  "subjectExchangeKeyDigest",
+  "subjectSigningKeyDigest",
+  "type",
+  "version",
+];
+
+const uuidV7Pattern = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const capabilityPattern = /^mad\.v[1-9][0-9]*\.[a-z][a-z0-9]*(?:\.[a-z][a-z0-9_]*)+$/;
+const utcTimePattern = /^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.([0-9]{1,6}))?Z$/;
+
+function parseStrictUTCRFC3339(value) {
+  const match = utcTimePattern.exec(value);
+  if (match === null) return null;
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText, fraction = ""] = match;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const second = Number(secondText);
+  if (
+    month < 1 || month > 12 ||
+    day < 1 || day > 31 ||
+    hour > 23 || minute > 59 || second > 59
+  ) return null;
+
+  const instant = new Date(0);
+  instant.setUTCFullYear(year, month - 1, day);
+  instant.setUTCHours(hour, minute, second, 0);
+  if (
+    instant.getUTCFullYear() !== year ||
+    instant.getUTCMonth() !== month - 1 ||
+    instant.getUTCDate() !== day ||
+    instant.getUTCHours() !== hour ||
+    instant.getUTCMinutes() !== minute ||
+    instant.getUTCSeconds() !== second
+  ) return null;
+
+  return BigInt(instant.getTime()) * 1000n + BigInt(fraction.padEnd(6, "0"));
+}
+
+function constantTimeEqual(expected, candidate) {
+  const expectedBytes = Buffer.from(expected);
+  const candidateBytes = Buffer.from(candidate);
+  return (
+    expectedBytes.length === candidateBytes.length &&
+    timingSafeEqual(expectedBytes, candidateBytes)
+  );
+}
+
+function hasUnpairedSurrogateEscape(raw) {
+  for (let index = 0; index + 5 < raw.length; index += 1) {
+    if (raw[index] !== "\\" || raw[index + 1] !== "u") continue;
+    let precedingSlashes = 0;
+    for (let prior = index - 1; prior >= 0 && raw[prior] === "\\"; prior -= 1) {
+      precedingSlashes += 1;
+    }
+    if (precedingSlashes % 2 === 1) continue;
+    const code = Number.parseInt(raw.slice(index + 2, index + 6), 16);
+    if (!Number.isInteger(code)) continue;
+    if (code >= 0xdc00 && code <= 0xdfff) return true;
+    if (code < 0xd800 || code > 0xdbff) continue;
+    if (raw.slice(index + 6, index + 8) !== "\\u") return true;
+    const low = Number.parseInt(raw.slice(index + 8, index + 12), 16);
+    if (!Number.isInteger(low) || low < 0xdc00 || low > 0xdfff) return true;
+    index += 6;
+  }
+  return false;
+}
+
+function parseAttestationJSON(raw) {
+  if (hasUnpairedSurrogateEscape(raw)) throw new Error("non-I-JSON surrogate");
+  const memberMatches = [...raw.matchAll(/"(?:\\.|[^"\\])*"\s*:/g)].map(
+    ([match]) => JSON.parse(match.slice(0, match.lastIndexOf(":"))),
+  );
+  const seen = new Set();
+  for (const member of memberMatches) {
+    if (!attestationMembers.includes(member) || seen.has(member)) {
+      throw new Error("unknown or duplicate attestation member");
+    }
+    seen.add(member);
+  }
+  if (seen.size !== attestationMembers.length) throw new Error("incomplete attestation");
+  return JSON.parse(raw);
+}
+
+function canonicalAttestationFromRaw(raw) {
+  const value = parseAttestationJSON(raw);
+  if (Object.keys(value).some((key) => !attestationMembers.includes(key))) {
+    throw new Error("unknown attestation member");
+  }
+  if (value.version !== 1 || !Number.isSafeInteger(value.version)) {
+    throw new Error("invalid attestation version");
+  }
+  if (value.type !== "device_attestation") throw new Error("invalid attestation type");
+  for (const name of ["approverDeviceId", "attestationId", "subjectDeviceId"]) {
+    if (!uuidV7Pattern.test(value[name])) throw new Error("invalid attestation UUIDv7");
+  }
+  const issuedAt = parseStrictUTCRFC3339(value.issuedAt);
+  const expiresAt = parseStrictUTCRFC3339(value.expiresAt);
+  if (
+    issuedAt === null ||
+    expiresAt === null ||
+    expiresAt <= issuedAt ||
+    expiresAt - issuedAt > 10n * 60n * 1_000_000n
+  ) {
+    throw new Error("invalid attestation lifetime");
+  }
+  if (!Array.isArray(value.capabilities) || value.capabilities.length === 0) {
+    throw new Error("invalid capabilities");
+  }
+  if (value.capabilities.some((item) => typeof item !== "string")) {
+    throw new Error("invalid capability type");
+  }
+  const sortedCapabilities = [...value.capabilities].sort();
+  if (
+    sortedCapabilities.some((item, index) => item !== value.capabilities[index]) ||
+    new Set(value.capabilities).size !== value.capabilities.length
+  ) {
+    throw new Error("capabilities not canonical");
+  }
+  if (value.capabilities.some((item) => !capabilityPattern.test(item))) {
+    throw new Error("invalid capability");
+  }
+  for (const name of attestationMembers) {
+    if (!(name in value)) throw new Error("missing attestation member");
+    if (
+      name !== "capabilities" &&
+      name !== "version" &&
+      typeof value[name] !== "string"
+    ) {
+      throw new Error("invalid attestation member type");
+    }
+  }
+  for (const name of ["subjectExchangeKeyDigest", "subjectSigningKeyDigest"]) {
+    const decoded = Buffer.from(value[name], "base64url");
+    if (decoded.length !== 32 || decoded.toString("base64url") !== value[name]) {
+      throw new Error("invalid key digest");
+    }
+  }
+  return canonical(value);
+}
+
+function attestationKeyDigestsMatch(attestation, signingPublicKey, exchangePublicKey) {
+  try {
+    return (
+      timingSafeEqual(
+        Buffer.from(attestation.subjectSigningKeyDigest, "base64url"),
+        Buffer.from(plainDigest(signingPublicKey)),
+      ) &&
+      timingSafeEqual(
+        Buffer.from(attestation.subjectExchangeKeyDigest, "base64url"),
+        Buffer.from(plainDigest(exchangePublicKey)),
+      )
+    );
+  } catch {
+    return false;
+  }
+}
+
+function popContext(fields) {
+  return framed(
+    "multidesk-x25519-pop-context-v1",
+    fields.apiVersion,
+    fields.purpose,
+    fields.ceremonyId,
+    fields.subjectDeviceId,
+    fields.subjectSigningPublicKey,
+    fields.subjectExchangePublicKey,
+    fields.storageMode,
+    fields.storageAssertionDigest,
+    fields.serverEphemeralPublicKey,
+    fields.challenge,
+    fields.expiresAt,
+  );
+}
+
+function popProofs(subjectExchangePrivate, subjectSigningPrivate, fields) {
+  const context = popContext(fields);
+  const sharedSecret = new Uint8Array(
+    diffieHellman({
+      privateKey: subjectExchangePrivate,
+      publicKey: x25519PublicKey(fields.serverEphemeralPublicKey),
+    }),
+  );
+  if (sharedSecret.every((byte) => byte === 0)) throw new Error("all-zero shared secret");
+  const salt = digest(
+    "multidesk-x25519-pop-salt-v1",
+    fields.ceremonyId,
+    fields.challenge,
+  );
+  const popKey = new Uint8Array(hkdfSync("sha256", sharedSecret, salt, context, 32));
+  const exchangeProof = new Uint8Array(
+    createHmac("sha256", popKey)
+      .update(framed("multidesk-x25519-pop-proof-v1", context))
+      .digest(),
+  );
+  const signingProof = new Uint8Array(
+    sign(
+      null,
+      framed("multidesk-ed25519-pop-proof-v1", context),
+      subjectSigningPrivate,
+    ),
+  );
+  return { context, sharedSecret, popKey, exchangeProof, signingProof };
+}
+
+function verifyPop(serverPrivate, subjectSigningPublic, fields, exchangeProof, signingProof) {
+  try {
+    const context = popContext(fields);
+    const sharedSecret = new Uint8Array(
+      diffieHellman({
+        privateKey: serverPrivate,
+        publicKey: x25519PublicKey(fields.subjectExchangePublicKey),
+      }),
+    );
+    if (sharedSecret.every((byte) => byte === 0)) return false;
+    const salt = digest(
+      "multidesk-x25519-pop-salt-v1",
+      fields.ceremonyId,
+      fields.challenge,
+    );
+    const popKey = new Uint8Array(hkdfSync("sha256", sharedSecret, salt, context, 32));
+    const expectedExchangeProof = new Uint8Array(
+      createHmac("sha256", popKey)
+        .update(framed("multidesk-x25519-pop-proof-v1", context))
+        .digest(),
+    );
+    return (
+      constantTimeEqual(expectedExchangeProof, exchangeProof) &&
+      verify(
+        null,
+        framed("multidesk-ed25519-pop-proof-v1", context),
+        subjectSigningPublic,
+        signingProof,
+      )
+    );
+  } catch {
+    return false;
+  }
 }
 
 function deriveTraffic(
@@ -184,6 +518,19 @@ async function run(input) {
     await suite.kem.serializePublicKey(peerBKeys.publicKey),
   );
 
+  const targetPrivateRaw = new Uint8Array(
+    await suite.kem.serializePrivateKey(targetKeys.privateKey),
+  );
+  const subjectExchange = x25519KeyPair(targetPrivateRaw);
+  if (!Buffer.from(subjectExchange.publicRaw).equals(Buffer.from(targetPublicRaw))) {
+    throw new Error("subject X25519 public key mismatch");
+  }
+  const serverPop = x25519KeyPair(hex(input.seeds.serverPopX25519Private));
+  const restartPop = x25519KeyPair(hex(input.seeds.restartPopX25519Private));
+
+  const subjectSigningDigest = plainDigest(subject.publicRaw);
+  const subjectExchangeDigest = plainDigest(targetPublicRaw);
+
   const attestation = {
     approverDeviceId: input.attestation.approverDeviceId,
     attestationId: input.attestation.attestationId,
@@ -191,12 +538,13 @@ async function run(input) {
     expiresAt: input.attestation.expiresAt,
     issuedAt: input.attestation.issuedAt,
     subjectDeviceId: input.attestation.subjectDeviceId,
-    subjectExchangeKey: b64url(targetPublicRaw),
-    subjectSigningKey: b64url(subject.publicRaw),
+    subjectExchangeKeyDigest: b64url(subjectExchangeDigest),
+    subjectSigningKeyDigest: b64url(subjectSigningDigest),
     type: "device_attestation",
     version: 1,
   };
-  const attestationCanonical = canonical(attestation);
+  const attestationRaw = JSON.stringify(attestation);
+  const attestationCanonical = canonicalAttestationFromRaw(attestationRaw);
   const attestationMessage = framed(
     "multidesk-device-attestation-v1",
     encoder.encode(attestationCanonical),
@@ -207,12 +555,281 @@ async function run(input) {
   const attestationMutation = attestationMessage.slice();
   attestationMutation[attestationMutation.length - 2] ^= 1;
 
+  const attestationChangeRejected = (change) => {
+    const candidate = structuredClone(attestation);
+    change(candidate);
+    try {
+      const candidateCanonical = canonicalAttestationFromRaw(JSON.stringify(candidate));
+      return !verify(
+        null,
+        framed("multidesk-device-attestation-v1", encoder.encode(candidateCanonical)),
+        approver.publicKey,
+        attestationSignature,
+      );
+    } catch {
+      return true;
+    }
+  };
+  const exchangeDigestMutationRejected = attestationChangeRejected((value) => {
+    value.subjectExchangeKeyDigest = b64url(new Uint8Array(32));
+  });
+  const signingDigestMutationRejected = attestationChangeRejected((value) => {
+    value.subjectSigningKeyDigest = b64url(new Uint8Array(32));
+  });
+  const capabilityMutationRejected = attestationChangeRejected((value) => {
+    value.capabilities[0] = "mad.v1.device.revoke";
+    value.capabilities.sort();
+  });
+  const attestationExpiryMutationRejected = attestationChangeRejected((value) => {
+    value.expiresAt = "2026-07-15T00:00:01Z";
+  });
+  const attestationIdMutationRejected = attestationChangeRejected((value) => {
+    value.attestationId = input.keyPop.ceremonyId;
+  });
+  const rejectsAttestationRaw = (raw) => {
+    try {
+      canonicalAttestationFromRaw(raw);
+      return false;
+    } catch {
+      return true;
+    }
+  };
+  const duplicateMemberRejected = rejectsAttestationRaw(
+    `${attestationRaw.slice(0, -1)},"version":1}`,
+  );
+  const unknownMemberRejected = rejectsAttestationRaw(
+    `${attestationRaw.slice(0, -1)},"unknown":true}`,
+  );
+  const floatRejected = rejectsAttestationRaw(
+    attestationRaw.replace('"version":1', '"version":1.5'),
+  );
+  const arbitraryMapRejected = rejectsAttestationRaw(
+    attestationRaw.replace(
+      '"capabilities":[',
+      '"capabilities":{"value":[',
+    ).replace('],"expiresAt"', ']},"expiresAt"'),
+  );
+  const escapedCanonical = canonicalAttestationFromRaw(
+    attestationRaw.replace("device_attestation", "device\\u005fattestation"),
+  );
+  const unsafeIntegerRejected = rejectsAttestationRaw(
+    attestationRaw.replace('"version":1', '"version":9007199254740992'),
+  );
+  const negativeIntegerRejected = rejectsAttestationRaw(
+    attestationRaw.replace('"version":1', '"version":-1'),
+  );
+  const invalidCapabilityRejected = rejectsAttestationRaw(
+    attestationRaw.replace("mad.v1.metadata.read", "MAD.invalid"),
+  );
+  const invalidIdRejected = rejectsAttestationRaw(
+    attestationRaw.replace(
+      input.attestation.attestationId,
+      "018f47d2-7c11-6d3f-a9b8-1f6d83de1003",
+    ),
+  );
+  const invalidLifetimeRejected = rejectsAttestationRaw(
+    attestationRaw.replace(
+      input.attestation.expiresAt,
+      "2026-07-14T16:10:00.0000001Z",
+    ),
+  );
+  const invalidCalendarDateRejected = rejectsAttestationRaw(
+    attestationRaw
+      .replace(input.attestation.issuedAt, "2026-02-30T16:00:00Z")
+      .replace(input.attestation.expiresAt, "2026-02-30T16:10:00Z"),
+  );
+  const invalidHour24Rejected = rejectsAttestationRaw(
+    attestationRaw
+      .replace(input.attestation.issuedAt, "2026-07-14T24:00:00Z")
+      .replace(input.attestation.expiresAt, "2026-07-14T24:10:00Z"),
+  );
+  const leapDayBoundaryAccepted = !rejectsAttestationRaw(
+    attestationRaw
+      .replace(input.attestation.issuedAt, "2024-02-29T23:59:59.999999Z")
+      .replace(input.attestation.expiresAt, "2024-03-01T00:00:00Z"),
+  );
+  const unicodeSurrogateRejected = rejectsAttestationRaw(
+    attestationRaw.replace("device_attestation", "\\ud800"),
+  );
+  const reorderedCanonical = canonicalAttestationFromRaw(
+    JSON.stringify(Object.fromEntries(Object.entries(attestation).reverse())),
+  );
+  const subjectKeyDigestsMatch = attestationKeyDigestsMatch(
+    attestation,
+    subject.publicRaw,
+    targetPublicRaw,
+  );
+  const mutatedSigningPublic = subject.publicRaw.slice();
+  mutatedSigningPublic[0] ^= 1;
+  const mutatedExchangePublic = targetPublicRaw.slice();
+  mutatedExchangePublic[0] ^= 1;
+  const signingKeyDigestMismatchRejected = !attestationKeyDigestsMatch(
+    attestation,
+    mutatedSigningPublic,
+    targetPublicRaw,
+  );
+  const exchangeKeyDigestMismatchRejected = !attestationKeyDigestsMatch(
+    attestation,
+    subject.publicRaw,
+    mutatedExchangePublic,
+  );
+
   const pinDigest = digest(
     "multidesk-device-pin-v1",
     input.attestation.subjectDeviceId,
     subject.publicRaw,
     targetPublicRaw,
   );
+  const fingerprint = base32Fingerprint(pinDigest);
+  const lowercaseAccepted = fingerprintMatches(fingerprint.toLowerCase(), pinDigest);
+  const unhyphenatedAccepted = fingerprintMatches(
+    fingerprint.replaceAll("-", ""),
+    pinDigest,
+  );
+  const alteredFingerprint = `${fingerprint[0] === "A" ? "B" : "A"}${fingerprint.slice(1)}`;
+  const alteredGroupRejected = !fingerprintMatches(alteredFingerprint, pinDigest);
+  const compactFingerprint = fingerprint.replaceAll("-", "");
+  const length23Rejected = !fingerprintMatches(compactFingerprint.slice(0, 23), pinDigest);
+  const length25Rejected = !fingerprintMatches(`${compactFingerprint}A`, pinDigest);
+  const invalidBase32Rejected = !fingerprintMatches(
+    "0000-0000-0000-0000-0000-0000",
+    pinDigest,
+  );
+  const pinHex = Buffer.from(pinDigest).toString("hex");
+  const oldFullHexDisplayRejected = !fingerprintMatches(
+    pinHex.match(/.{8}/g).join("-"),
+    pinDigest,
+  );
+  const truncatedAsFullDigestRejected = pinDigest.slice(0, 15).length !== 32;
+
+  const keyEnvelopeAssertionCanonical = canonical(input.keyPop.keyEnvelopeAssertion);
+  const storageAssertionDigest = plainDigest(
+    encoder.encode(keyEnvelopeAssertionCanonical),
+  );
+  const popFieldsValue = {
+    apiVersion: input.keyPop.apiVersion,
+    purpose: input.keyPop.purpose,
+    ceremonyId: input.keyPop.ceremonyId,
+    subjectDeviceId: input.keyPop.subjectDeviceId,
+    subjectSigningPublicKey: subject.publicRaw,
+    subjectExchangePublicKey: targetPublicRaw,
+    storageMode: input.keyPop.storageMode,
+    storageAssertionDigest,
+    serverEphemeralPublicKey: serverPop.publicRaw,
+    challenge: hex(input.keyPop.challengeHex),
+    expiresAt: input.keyPop.expiresAt,
+  };
+  const keyPop = popProofs(
+    subjectExchange.privateKey,
+    subject.privateKey,
+    popFieldsValue,
+  );
+  const popVerifies = verifyPop(
+    serverPop.privateKey,
+    subject.publicKey,
+    popFieldsValue,
+    keyPop.exchangeProof,
+    keyPop.signingProof,
+  );
+  const mutatedExchangeProof = keyPop.exchangeProof.slice();
+  mutatedExchangeProof[0] ^= 1;
+  const exchangeProofContentMutationRejected = !verifyPop(
+    serverPop.privateKey,
+    subject.publicKey,
+    popFieldsValue,
+    mutatedExchangeProof,
+    keyPop.signingProof,
+  );
+  const exchangeProofShortRejected = !verifyPop(
+    serverPop.privateKey,
+    subject.publicKey,
+    popFieldsValue,
+    keyPop.exchangeProof.slice(0, -1),
+    keyPop.signingProof,
+  );
+  const exchangeProofLongRejected = !verifyPop(
+    serverPop.privateKey,
+    subject.publicKey,
+    popFieldsValue,
+    new Uint8Array([...keyPop.exchangeProof, 0]),
+    keyPop.signingProof,
+  );
+  const mutatePop = (change) => {
+    const candidate = structuredClone(popFieldsValue);
+    change(candidate);
+    return !verifyPop(
+      serverPop.privateKey,
+      subject.publicKey,
+      candidate,
+      keyPop.exchangeProof,
+      keyPop.signingProof,
+    );
+  };
+  const storageModeMutationRejected = mutatePop((value) => {
+    value.storageMode = "native";
+  });
+  const storageAssertionMutationRejected = mutatePop((value) => {
+    value.storageAssertionDigest[0] ^= 1;
+  });
+  const purposeMutationRejected = mutatePop((value) => {
+    value.purpose = "bootstrap";
+  });
+  const ceremonyMutationRejected = mutatePop((value) => {
+    value.ceremonyId = input.attestation.attestationId;
+  });
+  const deviceMutationRejected = mutatePop((value) => {
+    value.subjectDeviceId = input.attestation.approverDeviceId;
+  });
+  const signingKeyMutationRejected = mutatePop((value) => {
+    value.subjectSigningPublicKey[0] ^= 1;
+  });
+  const exchangeKeyMutationRejected = mutatePop((value) => {
+    value.subjectExchangePublicKey[0] ^= 1;
+  });
+  const challengeMutationRejected = mutatePop((value) => {
+    value.challenge[0] ^= 1;
+  });
+  const popExpiryMutationRejected = mutatePop((value) => {
+    value.expiresAt = "2026-07-14T16:09:59Z";
+  });
+  const serverEphemeralMutationRejected = mutatePop((value) => {
+    value.serverEphemeralPublicKey = restartPop.publicRaw;
+  });
+  let allZeroSharedSecretRejected = false;
+  try {
+    diffieHellman({
+      privateKey: serverPop.privateKey,
+      publicKey: x25519PublicKey(new Uint8Array(32)),
+    });
+  } catch {
+    allZeroSharedSecretRejected = true;
+  }
+  const restartFields = structuredClone(popFieldsValue);
+  restartFields.serverEphemeralPublicKey = restartPop.publicRaw;
+  const restartInvalidated = !verifyPop(
+    restartPop.privateKey,
+    subject.publicKey,
+    restartFields,
+    keyPop.exchangeProof,
+    keyPop.signingProof,
+  );
+  let consumed = false;
+  const verifyOnce = () => {
+    if (
+      consumed ||
+      !verifyPop(
+        serverPop.privateKey,
+        subject.publicKey,
+        popFieldsValue,
+        keyPop.exchangeProof,
+        keyPop.signingProof,
+      )
+    ) return false;
+    consumed = true;
+    return true;
+  };
+  const firstConsumeAccepted = verifyOnce();
+  const replayRejected = !verifyOnce();
 
   const sourceExchangeDigest = plainDigest(sourcePublicRaw);
   const targetExchangeDigest = plainDigest(targetPublicRaw);
@@ -522,25 +1139,77 @@ async function run(input) {
     Buffer.from(rotationPlaintext),
   );
 
-  const pinHex = Buffer.from(pinDigest).toString("hex");
   return {
     attestation: {
       approverPublicKey: b64url(approver.publicRaw),
+      arbitraryMapRejected,
       canonical: attestationCanonical,
+      capabilityMutationRejected,
+      exchangeDigestMutationRejected,
+      exchangeKeyDigestMismatchRejected,
+      duplicateMemberRejected,
+      escapingCanonical: escapedCanonical === attestationCanonical,
+      expiryMutationRejected: attestationExpiryMutationRejected,
+      floatRejected,
+      idMutationRejected: attestationIdMutationRejected,
+      invalidCapabilityRejected,
+      invalidCalendarDateRejected,
+      invalidHour24Rejected,
+      invalidIDRejected: invalidIdRejected,
+      invalidLifetimeRejected,
+      leapDayBoundaryAccepted,
       mutationRejected: !verify(
         null,
         attestationMutation,
         approver.publicKey,
         attestationSignature,
       ),
+      negativeIntegerRejected,
+      orderIndependent: reorderedCanonical === attestationCanonical,
       signature: b64url(attestationSignature),
+      signingDigestMutationRejected,
+      signingKeyDigestMismatchRejected,
+      subjectExchangeKeyDigest: b64url(subjectExchangeDigest),
+      subjectExchangePublicKey: b64url(targetPublicRaw),
+      subjectSigningKeyDigest: b64url(subjectSigningDigest),
       subjectSigningPublicKey: b64url(subject.publicRaw),
+      subjectKeyDigestsMatch,
+      unicodeSurrogateRejected,
+      unknownMemberRejected,
+      unsafeIntegerRejected,
       verifies: verify(
         null,
         attestationMessage,
         approver.publicKey,
         attestationSignature,
       ),
+    },
+    keyPop: {
+      allZeroSharedSecretRejected,
+      ceremonyMutationRejected,
+      challengeMutationRejected,
+      context: b64url(keyPop.context),
+      deviceMutationRejected,
+      exchangeKeyMutationRejected,
+      exchangeProof: b64url(keyPop.exchangeProof),
+      exchangeProofContentMutationRejected,
+      exchangeProofLongRejected,
+      exchangeProofShortRejected,
+      expiryMutationRejected: popExpiryMutationRejected,
+      firstConsumeAccepted,
+      popKey: b64url(keyPop.popKey),
+      purposeMutationRejected,
+      replayRejected,
+      restartInvalidated,
+      serverEphemeralMutationRejected,
+      serverEphemeralPublicKey: b64url(serverPop.publicRaw),
+      signingKeyMutationRejected,
+      signingProof: b64url(keyPop.signingProof),
+      sharedSecret: b64url(keyPop.sharedSecret),
+      storageAssertionDigest: b64url(storageAssertionDigest),
+      storageAssertionMutationRejected,
+      storageModeMutationRejected,
+      verifies: popVerifies,
     },
     keyWrap: {
       aad: new TextDecoder().decode(wrapAAD),
@@ -577,8 +1246,16 @@ async function run(input) {
       trafficKey: b64url(traffic1.key),
     },
     pin: {
+      alteredGroupRejected,
       digest: b64url(pinDigest),
-      fingerprint: pinHex.match(/.{8}/g).join("-"),
+      fingerprint,
+      invalidBase32Rejected,
+      length23Rejected,
+      length25Rejected,
+      lowercaseAccepted,
+      oldFullHexDisplayRejected,
+      truncatedAsFullDigestRejected,
+      unhyphenatedAccepted,
     },
     rotation: {
       aad: new TextDecoder().decode(rotationAAD),
@@ -594,4 +1271,4 @@ async function run(input) {
 
 const path = process.argv[2] ?? "../vectors.json";
 const input = JSON.parse(await readFile(path, "utf8"));
-process.stdout.write(`${JSON.stringify(await run(input))}\n`);
+process.stdout.write(`${canonical(await run(input))}\n`);

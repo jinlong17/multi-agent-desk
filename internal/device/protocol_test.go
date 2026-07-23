@@ -7,7 +7,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"net"
-	"os"
 	"path/filepath"
 	"slices"
 	"testing"
@@ -85,10 +84,7 @@ func TestAuthenticatedHandshakeBindsBothKeysAndCapabilities(t *testing.T) {
 	}
 }
 
-func TestBootstrapAndAuthenticatedUnixDaemon(t *testing.T) {
-	if os.Getenv("GOOS") == "windows" {
-		t.Skip("native Unix endpoint")
-	}
+func TestBootstrapAndAuthenticatedPlatformDaemon(t *testing.T) {
 	parent := t.TempDir()
 	root := filepath.Join(parent, "device")
 	result, err := Bootstrap(context.Background(), root, "test-device", time.Now().UTC())

@@ -128,3 +128,23 @@ P1 tests prove:
 
 Native three-platform runtime evidence remains required by the subsequent
 phase verifiers and final Phase 1 exit gate.
+
+## Phase 4a P0 remote-identity contract (not yet implemented)
+
+Phase 4a does not rewrite the prefixed local primary keys above. Every network
+resource uses canonical UUIDv7 and a future device-side
+`controlplane_id_mappings(entity_type, local_id, server_id, ...)` table binds
+the two identities with uniqueness in both directions.
+
+The future separate `remote_device_identities` row stores public Ed25519/X25519
+keys, both full SHA-256 key digests, the full domain-separated 32-byte pin
+digest, key/record revision, lifecycle, and a portable-Vault-v1 encrypted
+`DeviceKeyEnvelopeV1`. The six-group Base32 fingerprint is derived from only
+the first 15 pin-digest bytes for display and is never a stored key identifier.
+`DeviceAttestationV1` signs both full key digests in a restricted RFC 8785
+object; raw keys remain separately validated inputs.
+
+This is P0 contract authority, not schema/runtime evidence. Migration `0008`
+and atomic envelope/mapping/CAS behavior belong to Phase 4a P2 after P0/P1 are
+independently verified. WSS/Pairwise Root/HPKE state remains Phase 4b, and
+Credential Grant plus OS key-store wrapping remains Phase 5.

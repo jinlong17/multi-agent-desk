@@ -3,9 +3,16 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "dependencies": {
+    "@multi-agent-desk/protocol": "workspace:*"
+  },
   "scripts": {
-    "check": "tsc --noEmit",
-    "build": "tsc --noEmit && vite build"
+    "check": "tsc --noEmit && pnpm test",
+    "test": "node --test test/*.test.mjs",
+    "build:dist": "tsc --noEmit && vite build",
+    "embed:generate": "node ../../scripts/web/embed-assets.mjs generate",
+    "embed:verify": "node ../../scripts/web/embed-assets.mjs verify",
+    "build": "pnpm build:dist && pnpm embed:verify"
   },
   "devDependencies": {
     "typescript": "^5.9.0",

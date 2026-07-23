@@ -1,7 +1,7 @@
 # MultiAgentDesk threat model
 
-- Status: Phase 0 model with evidence-backed decisions plus verified Phase 1 Device Kernel and exact Phase 2 Codex `0.144.2` implementation evidence; later remote, Desktop, release, and non-Codex mitigations remain open
-- Date: 2026-07-16
+- Status: Phase 0 model with evidence-backed decisions, verified Phase 1/2 implementation evidence, and Phase 4a P0 pin/attestation/PoP contract vectors; later Control Plane runtime, realtime, Desktop, release, and non-Codex mitigations remain open
+- Date: 2026-07-21
 - Owner module: `security`
 - Baseline: [Implementation Plan v0.2](IMPLEMENTATION_PLAN.md),
   [security invariants](../CLAUDE.md), and [ADR index](adr/README.md)
@@ -91,15 +91,18 @@ Unknown, planned, pending, partial, and deferred evidence never count as pass.
 6. Realtime E2EE roots are random and pairwise per Host↔Peer; no Peer receives
    a group root that can derive another Peer's traffic keys, and cryptographic
    possession never replaces capability or ControllerLease checks.
+7. Device pins retain the full domain-separated 32-byte SHA-256 digest. The
+   six-group Base32 fingerprint is a 120-bit human display only. Attestations
+   sign both full key digests, and enrollment proves possession of both keys.
 
 ## 6. Threats, required mitigations, and evidence
 
 | ID | Asset/boundary and attacker scenario | Impact | Required mitigation | Evidence state | Residual risk |
 |---|---|---|---|---|---|
-| T-01 | Compromised Control Plane substitutes a Device key | credential/session decryption by attacker or unauthorized grants | local pin match; key change is a new device; attestation only from directly pinned approver; fingerprint ceremony | verified design evidence: ADR 0011 and `spike-e2ee-protocol-vectors`; production enforcement planned | user may approve a malicious fingerprint; compromised pinned approver can attest a bad key |
-| T-02 | Relay replays/reorders/tampers with enrollment, grant, command, or terminal envelopes | duplicated grant, stale control, forged state, content corruption | pairwise root; authenticated source/target/purpose/audience/epoch/message ID; JCS AAD; nonce recomputation; durable replay window | verified design evidence and negative vectors in `spike-e2ee-protocol-vectors`; production persistence planned | availability attacks and bounded state loss remain possible |
+| T-01 | Compromised Control Plane substitutes a Device key | credential/session decryption by attacker or unauthorized grants | store the full domain-separated pin digest; compare only the 120-bit six-group Base32 display; restricted-JCS attestation carries both full key digests and is signed only by a directly pinned approver; key change is a new device | verified design evidence: ADR 0011 and cross-language `spike-e2ee-protocol-vectors`; Phase 4a production enforcement planned | user may approve a malicious fingerprint; 120-bit human comparison is fallible; compromised pinned approver can attest a bad key |
+| T-02 | Relay replays/reorders/tampers with enrollment, grant, command, or terminal envelopes | duplicated enrollment/grant, stale control, forged state, content corruption | Phase 4a enrollment uses per-ceremony ephemeral X25519/HKDF/HMAC plus Ed25519 over purpose/IDs/both keys/storage mode+assertion/challenge/expiry and one-shot consume; later protected payloads use pairwise roots, JCS AAD, nonce recomputation, and durable replay | enrollment PoP/all-zero/field-mutation/restart/replay plus prior Pairwise E2EE negatives have verified cross-language design evidence; production persistence planned | server can force ceremony restart/availability failure; bounded state loss remains possible |
 | T-03 | Control Plane DB/log/queue captures Provider credential or terminal plaintext | broad remote secret/content disclosure | data-classification allowlist, ciphertext-only protected payloads, redaction tests, no plaintext trace | planned | metadata, traffic patterns, device/account/session identifiers remain exposed |
-| T-04 | Vault or Device DB is copied, permissions are weak, or unlock material leaks | offline credential/key theft | OS key store or password-derived wrapping, authenticated encryption, restrictive permissions, explicit locked state | verified implementation evidence for Phase 2 portable Argon2id/AES-GCM Vault v1 and private files on macOS/Linux/Windows tests; OS key-store wrapping remains later | host root/admin, unlocked-process compromise, weak user password, and memory disclosure remain |
+| T-04 | Vault or Device DB is copied, permissions are weak, or unlock material leaks | offline credential/key theft | portable password-derived wrapping or later OS key store, authenticated encryption, restrictive permissions, explicit locked state | verified implementation evidence for Phase 2 portable Argon2id/AES-GCM Vault v1; Phase 4a initial Daemon remote identity is contractually bound to that path; OS key-store wrapping remains Phase 5 | host root/admin, unlocked-process compromise, weak user password, and memory disclosure remain |
 | T-05 | Daemon crash or concurrent refresh writes an older credential over a newer one | account lockout, stale token reuse, credential corruption | single materialization writer, monotonic `credentialRevision` CAS, digest validation, transactional recovery, quarantine ambiguous leases | verified implementation evidence for exact Codex `0.144.2` single-writer lease/CAS/recovery and Linux live use; Claude remains governed by ADR 0016 target-local login | Provider-side mutation can remain ambiguous and require re-login; multi-writer Codex refresh and Claude setup-token grant are unsupported |
 | T-06 | Materialized auth home, temp file, process env, crash dump, or backup exposes plaintext | local credential theft | per-session least-privilege directory, minimal env, cleanup after process exit, quarantine on uncertain recovery, secret-safe diagnostics | verified implementation evidence for exact private Codex enrollment/materialization, bounded credential-free proxy inheritance, auth-only Vault import, cleanup, and empty live daemon log; Claude production cleanup remains later | **Provider-readable plaintext/authenticated state exists at runtime; host root/admin, Provider compromise, backup, or crash tooling can copy/use it** |
 | T-07 | Unauthorized local process connects to IPC, impersonates a pipe endpoint, or steals a ControllerLease | session observation/input/resize/stop/kill by attacker | 0600 Unix socket; protected current-logon Named Pipe with Network deny, remote rejection, and first-instance fail-closed ownership; mutual peer authentication; request capability checks; expiring lease with owner identity; bounds and audit events | Windows transport verified by ADR 0013 and `spike-windows-named-pipe-ipc`; protocol authorization and Unix/Windows production enforcement planned for Phase 1 | same-logon malware and root/admin can race availability or act with the user's local authority |
@@ -159,8 +162,11 @@ contexts, Fake Session, sleep/resume, packaging, or Tauri sidecar acceptance.
   Provider process.
 - A compromised Control Plane can observe metadata/traffic patterns, deny or
   delay service, and attempt key substitution/replay; ADR 0011 and the shared
-  vectors verify the candidate rejection behavior, while production
-  enforcement remains unimplemented.
+  vectors verify the pin/attestation/enrollment-PoP and later pairwise rejection
+  behavior, while production enforcement remains unimplemented.
+- Phase 4a is metadata HTTPS REST only. Its PoP and attestation vectors do not
+  imply that WSS, HPKE, terminal/Approval, or Credential Grant exists before
+  Phase 4b/5.
 - XSS in an active approved Web Device can use keys and decrypted content even
   when private key material is non-exportable.
 - Human fingerprint/grant/account confirmation can be mistaken or coerced.

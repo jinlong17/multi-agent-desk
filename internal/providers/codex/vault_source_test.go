@@ -2,7 +2,6 @@ package codex
 
 import (
 	"context"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -59,9 +58,7 @@ func TestVaultCredentialSourceMaterializesAndAtomicallyCommitsRefresh(t *testing
 		t.Fatal(err)
 	}
 	refreshed := []byte(`{"tokens":{"access":"refreshed"}}`)
-	if err := os.WriteFile(filepath.Join(handle.AuthHomePath(), "auth.json"), refreshed, 0o600); err != nil {
-		t.Fatal(err)
-	}
+	overwriteExistingPrivateFile(t, filepath.Join(handle.AuthHomePath(), "auth.json"), refreshed)
 	commit, err := handle.ObserveAndCommit(ctx)
 	if err != nil || !commit.Changed || commit.Revision != 3 {
 		t.Fatalf("refresh commit=%+v err=%v", commit, err)

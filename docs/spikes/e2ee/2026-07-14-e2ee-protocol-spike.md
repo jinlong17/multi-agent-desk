@@ -14,6 +14,9 @@ Revision history:
   because one peer could derive another peer's traffic keys.
 - Candidate 2 at `8859530` replaces the group root with a distinct random
   Host↔Peer root and adds cross-peer plus nonce/sequence negative vectors.
+- Phase 4a P0 (2026-07-21) preserves Candidate 2 and extends the same independent
+  harness with the full pin digest/six-group fingerprint, typed restricted-JCS
+  `DeviceAttestationV1`, and exact enrollment X25519/HKDF/HMAC/Ed25519 PoP.
 
 ## Verdict
 
@@ -42,6 +45,12 @@ Supported when:
   replay, cross-peer open/forge, nonce/sequence mismatch, and
   old-key-after-rotation cases fail; and
 - Linux, macOS, and Windows runners return the same result hash.
+
+The Phase 4a P0 extension additionally requires both implementations to reject
+attestation schema/JCS violations; changes to either full key digest,
+capabilities, IDs, or expiry; all-zero X25519; and any PoP purpose/ID/key/
+`storageMode`/`storageAssertionDigest`/challenge/expiry/server-ephemeral
+mutation, replay, or restart.
 
 Falsified when any implementation or platform diverges, any negative case is
 accepted, or the security review finds a protocol-level flaw.
@@ -121,9 +130,34 @@ Local macOS result:
   "schemaVersion": 1,
   "result": "pass",
   "implementations": ["go", "typescript"],
-  "resultSha256": "082033265c774aad70fccf89e1a682a5f411ca14c1e675eca346184dff8da2a5"
+  "resultSha256": "55bff1decd0b3419df4d43e32fe933e397a9167253c89f7a7d71552c178520f5"
 }
 ```
+
+The earlier Candidate 2 cross-platform receipt remains historical evidence for
+`082033265c774aad70fccf89e1a682a5f411ca14c1e675eca346184dff8da2a5`.
+The P0 hash above is the current local contract result and requires a fresh
+cross-platform CI receipt before it can be described as cross-platform evidence.
+
+### Phase 4a P0 dependency readiness record
+
+P0 adds no product dependency or lockfile entry. It records the exact inputs
+that P1 must lock and license-scan before any import or generated artifact:
+
+| Input | Provenance and integrity | License/toolchain finding |
+|---|---|---|
+| `github.com/go-webauthn/webauthn v0.17.4` | [immutable verified release](https://github.com/go-webauthn/webauthn/releases/tag/v0.17.4), commit `bc5e90d68ad5afd2a8aeef1a7af80f493c14526b`, Go sum `h1:KFTSz3R2RYDiUn/0cDi3XTJgFenSG74eKTTHlqWhlxk=` | BSD-3-Clause; module declares Go 1.25 and toolchain 1.26.3 |
+| `github.com/oapi-codegen/oapi-codegen/v2 v2.8.0` | [immutable release](https://github.com/oapi-codegen/oapi-codegen/releases/tag/v2.8.0), commit `de2d8b2b0afb287198554eb305bb0d2687d26a85`, Go sum `h1:s4hxMxuqtR8jPzXkBTtFwY/SBuj3gEAYikmbBSdtLMM=` | Apache-2.0; module declares Go 1.25 and pins `kin-openapi v0.142.0`; release validates the specification before generation |
+| `github.com/getkin/kin-openapi v0.142.0` | [tagged source](https://github.com/getkin/kin-openapi/tree/v0.142.0), commit `1223a0f215d2cf9beb2d9eb9ea2649d001c21388`, Go sum `h1:izj0vBdFprMhitfzaX8sTqztsEQyvwhssBoB6n8NO7w=` | MIT; module declares Go 1.25; tool graph must be included in the P1 license scan |
+| `github.com/google/uuid v1.6.0` | [tagged source](https://github.com/google/uuid/tree/v1.6.0), commit `0f11ee6918f41a04c201eceeadf612a377bc7fbc`, Go sum `h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=` | BSD-3-Clause; direct P1 UUIDv7 dependency |
+| `openapi-typescript 7.13.0` | [npm registry manifest](https://registry.npmjs.org/openapi-typescript/7.13.0), integrity `sha512-EFP392gcqXS7ntPvbhBzbF8TyBA+baIYEm791Hy5YkjDYKTnk/Tn5OQeKm5BIZvJihpp8Zzr4hzx0Irde1LNGQ==` | MIT; types only, no runtime client |
+
+The repository pins Go 1.26.5, Node 24, and pnpm 10.23.0, which satisfy these
+declared minimums. P0's current resolved repository license scan must pass, but
+the proposed dependencies are deliberately not added here; P1 must add exact
+locks and scan the complete resulting runtime and tool graphs before enabling
+generation. `openapi-fetch` is intentionally absent and remains prohibited by
+the approved first-party runtime-client decision.
 
 Revised cross-platform GitHub run
 [`29375956127`](https://github.com/jinlong17/multi-agent-desk/actions/runs/29375956127)
