@@ -46,8 +46,11 @@ token, challenge, proof, or receipt between rows.
    (`127.0.0.1` or `[::1]`); the frozen rows in this procedure use
    `127.0.0.1:8443` and `127.0.0.1:9443`. Set the exact origins/RP IDs above,
    set `developmentAllowLocalhost:true`, and use distinct databases.
-   Each database parent must be `0700`; each database and every existing
-   `-wal`, `-shm`, or `-journal` sidecar must be `0600`.
+   Each database parent must be `0700`; each database, exact
+   `<databasePath>.process.lock`, and every existing `-wal`, `-shm`, or
+   `-journal` sidecar must be `0600`. The running server creates and retains
+   that exact empty process-lock file; do not pre-create a wildcard or alternate
+   lock path.
 5. Initialize two distinct Device roots and finish writing each daemon identity,
    server config, cursor key, TLS leaf/certificate key, and temporary CA before
    starting either process. Cross a full wall-clock second after the last of
@@ -62,9 +65,13 @@ token, challenge, proof, or receipt between rows.
    Terminal TTY. Terminal session recording and operator-side screen capture
    must be disabled. Record all six writer/reader PIDs in the manifest. A
    regular-file sink, `tee`, diagnostic collector, or undeclared FIFO holder
-   invalidates the row. The writers must keep only their declared SQLite main
-   database/sidecars open for writable regular-file FDs; any other writable
-   regular FD invalidates the row.
+   invalidates the row. The server may keep only its declared SQLite main
+   database/sidecars and exact process-lock file open for writable regular-file
+   FDs; the Daemon may keep only its declared Device database/sidecars. Any
+   other writable regular FD invalidates the row. The process lock must be one
+   private, single-link, empty vnode held only by the declared server through
+   one numeric O_RDWR FD with an exclusive whole-file `flock`; the Daemon must
+   not hold it.
 
    The machine check is deliberately bounded: it proves the declared
    server/Daemon/`cat` FD graph routes each stream through one FIFO to a live
@@ -91,6 +98,7 @@ Create an owner-only JSON manifest outside the repository with exactly:
       "serverBinary": "/absolute/private/acceptance/bin/multidesk-server",
       "serverConfig": "/absolute/private/acceptance/chrome/server.json",
       "databasePath": "/absolute/private/acceptance/chrome/server.sqlite",
+      "serverProcessLockPath": "/absolute/private/acceptance/chrome/server.sqlite.process.lock",
       "cursorKeyPath": "/absolute/private/acceptance/chrome/cursor.key",
       "tlsLeafCertificate": "/absolute/private/acceptance/chrome/leaf.pem",
       "tlsLeafPrivateKey": "/absolute/private/acceptance/chrome/leaf.key",
@@ -121,6 +129,7 @@ Create an owner-only JSON manifest outside the repository with exactly:
       "serverBinary": "/absolute/private/acceptance/bin/multidesk-server",
       "serverConfig": "/absolute/private/acceptance/safari/server.json",
       "databasePath": "/absolute/private/acceptance/safari/server.sqlite",
+      "serverProcessLockPath": "/absolute/private/acceptance/safari/server.sqlite.process.lock",
       "cursorKeyPath": "/absolute/private/acceptance/safari/cursor.key",
       "tlsLeafCertificate": "/absolute/private/acceptance/safari/leaf.pem",
       "tlsLeafPrivateKey": "/absolute/private/acceptance/safari/leaf.key",
@@ -165,7 +174,7 @@ SHA, certificates chain to only the supplied CA for the exact host, and a
 direct loopback TLS request to each `/v1/version` returns that SHA. It also
 requires `/usr/bin/security verify-cert` to confirm the leaf is trusted by the
 active macOS system trust evaluation without a CA override. Private manifest,
-config, database, cursor key, leaf key, Device root, context, and journey files
+config, database, exact process lock, cursor key, leaf key, Device root, context, and journey files
 must be owned by the current user with exact `0600`/`0700` modes. It records
 hashes and path digests, never private-key/cursor contents or auth material.
 Every manifest, context, journey, transfer, scan, and final-receipt JSON input
@@ -177,7 +186,14 @@ paths. The browser bundle/executable fields may use Apple's `/Applications`
 system alias; the collector resolves both first and then binds the executable
 inside the resolved signed bundle. Cross-row private-state path aliases, hard links, nested/overlapping Device roots, isolated files under
 the other row's Device root, repeated public `device_id` values, copied daemon
-identity keys, copied cursor keys, and copied TLS private keys are rejected.
+identity keys, copied cursor keys, copied TLS private keys, alternate process
+lock paths, and cross-row process-lock reuse are rejected. The collector binds
+the exact lock vnode, numeric server FD, O_RDWR access, and unique global
+holder. macOS `lsof` lock status is used when it exposes `W`; because the
+system `lsof` may leave BSD `flock` status blank, that case passes only when a
+second process's nonblocking shared `flock` is rejected, proving the existing
+exclusive whole-file lock. The normalized proof is persisted in the frozen
+context and rechecked during scan/finalize.
 Only the public `device_id` is retained from each protected daemon identity.
 
 ## Execute each real journey
@@ -241,8 +257,8 @@ node scripts/acceptance/p2-browser-receipt.mjs scan \
   --out /absolute/private/acceptance/machine-secret-scan.json
 ```
 
-The scan is fail-closed over six complete target classes: server database and
-sidecars/backups, Device database/runtime, remaining runtime residue, declared
+The scan is fail-closed over six complete target classes: the server database
+and only its exact SQLite sidecars, Device database/runtime, remaining runtime residue, declared
 log FIFOs, transfers, and evidence. It applies detectors for bootstrap tokens,
 session cookies, CSRF values, recovery codes, WebAuthn ceremony material, and
 bootstrap proofs; verifies both SQLite databases logically and by raw bytes;
@@ -252,6 +268,17 @@ digest. Any unreadable, unstable, replaced, aliased,
 hard-linked, overlapping, unsupported, unexpected, or nonzero-finding target
 invalidates the complete row. Fix the storage/logging defect and rerun that row
 from bootstrap; deleting/redacting a finding does not rescue the run.
+Every non-excluded child directory is itself a stable non-content inventory
+entry bound by path digest, vnode, private mode, and timestamps. Declared scan
+roots and the four known runtime subroots retain their separate root contracts;
+their names or absolute paths are never stored in the receipt. Directory
+addition, removal, rename, permission drift, symlink substitution, or mutation
+during either snapshot invalidates the row.
+The exact server process lock is classified as `runtime_residue`, receives the
+same stable metadata/content read and all six detectors, and is not counted as
+a server backup. Any unknown `server.sqlite.*`, `.bak`, `.backup`, alternate
+lock, or backup-directory artifact remains unexpected runtime residue and
+fails closed; no `*.lock` or database-prefix wildcard is accepted.
 The protected acceptance suite executes one complete success path with real
 logical SQLite assertions, injects a distinct detector canary into each of the
 six target classes, and independently observes only sanitized per-target and

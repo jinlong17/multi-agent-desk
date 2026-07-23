@@ -27,7 +27,7 @@ const rowAuthority = Object.freeze({
 });
 const manifestKeys = ["schemaVersion", "implementationSha", "cliBinary", "rows"];
 const rowKeys = [
-  "browser", "origin", "rpId", "serverBinary", "serverConfig", "databasePath", "cursorKeyPath",
+  "browser", "origin", "rpId", "serverBinary", "serverConfig", "databasePath", "serverProcessLockPath", "cursorKeyPath",
   "tlsLeafCertificate", "tlsLeafPrivateKey", "temporaryCA", "deviceRoot", "browserBundle", "browserExecutable",
   "runtimeRoot", "deviceDatabasePath", "transferRoot", "logRoot", "evidenceRoot", "serverPid", "daemonPid",
   "serverStdoutFifo", "serverStderrFifo", "daemonStdoutFifo", "daemonStderrFifo",
@@ -42,7 +42,7 @@ const journeyKeys = [
 ];
 const safariJourneyKeys = [...journeyKeys, "authenticatorAttachment", "userVerificationObserved", "touchIdOperatorConfirmed"];
 const isolatedPathKeys = [
-  "serverConfig", "databasePath", "cursorKeyPath", "tlsLeafCertificate", "tlsLeafPrivateKey", "deviceRoot",
+  "serverConfig", "databasePath", "serverProcessLockPath", "cursorKeyPath", "tlsLeafCertificate", "tlsLeafPrivateKey", "deviceRoot",
   "runtimeRoot", "deviceDatabasePath", "transferRoot", "logRoot", "evidenceRoot", "serverStdoutFifo",
   "serverStderrFifo", "daemonStdoutFifo", "daemonStderrFifo",
 ];
@@ -68,19 +68,22 @@ const contextTLSKeys = [
 const contextProcessKeys = ["server", "daemon"];
 const consoleReaderKeys = ["serverStdout", "serverStderr", "daemonStdout", "daemonStderr"];
 const processKeys = ["pid", "uid", "state", "startTime", "executable", "executableSha256", "argvDigest", "image", "database", "inputs", "stdout", "stderr"];
+const serverProcessKeys = [...processKeys, "processLock"];
 const readerProcessKeys = ["pid", "uid", "state", "startTime", "executable", "argvDigest", "stdin", "stdoutKind", "stderrKind", "terminalPathDigest"];
 const processFDKeys = ["pathDigest", "kind", "device", "inode", "uid", "mode", "regularFile"];
 const processImageKeys = ["pathDigest", "device", "inode", "sha256"];
 const processDatabaseKeys = ["pathDigest", "device", "inode"];
 const processInputKeys = ["role", "pathDigest", "device", "inode", "ctimeNs"];
+const processLockKeys = ["pathDigest", "device", "inode", "uid", "mode", "linkCount", "size", "fd", "access", "lockStatus", "regularFile", "holderCount"];
 const scanKeys = [
   "schemaVersion", "status", "policy", "startedAt", "finishedAt", "implementationSha", "manifestSha256",
   "frozenContextSha256", "receiptToolSha256", "rows",
 ];
 const scanRowKeys = [
   "browser", "targetClasses", "secretClasses", "databaseAssertions", "logEvidence", "transferEvidence",
-  "postSnapshotSha256",
+  "processLockEvidence", "postSnapshotSha256",
 ];
+const processLockEvidenceKeys = ["boundToDeclaredServer", "exclusiveWholeFileLock", "ownerOnly", "singleLink", "empty", "holderCount", "inventorySha256"];
 const targetEvidenceKeys = [
   "class", "pathCount", "regularFileCount", "bytesScanned", "readErrorCount", "unstableFileCount",
   "matchCount", "unexpectedPathCount", "inventorySha256",
@@ -198,10 +201,13 @@ export function validateManifest(input) {
     const authority = rowAuthority[row.browser];
     if (row.origin !== authority.origin || row.rpId !== authority.rpId) throw new Error(`${row.browser} origin/RP ID differs from frozen P2 authority`);
     for (const key of [
-      "serverBinary", "serverConfig", "databasePath", "cursorKeyPath", "tlsLeafCertificate", "tlsLeafPrivateKey",
+      "serverBinary", "serverConfig", "databasePath", "serverProcessLockPath", "cursorKeyPath", "tlsLeafCertificate", "tlsLeafPrivateKey",
       "temporaryCA", "deviceRoot", "browserBundle", "browserExecutable", "runtimeRoot", "deviceDatabasePath",
       "transferRoot", "logRoot", "evidenceRoot",
     ]) canonicalAbsolutePath(row[key], `${row.browser}.${key}`);
+    if (row.serverProcessLockPath !== `${row.databasePath}.process.lock`) {
+      throw new Error(`${row.browser}.serverProcessLockPath must equal databasePath + '.process.lock' exactly`);
+    }
     for (const key of ["serverBinary", "serverConfig", "deviceRoot"]) {
       if (/\s/u.test(row[key])) throw new Error(`${row.browser}.${key} must not contain whitespace because argv is bound exactly`);
     }
@@ -226,7 +232,7 @@ export function validateManifest(input) {
         }
       }
     }
-    if (["databasePath", "serverConfig", "cursorKeyPath", "tlsLeafCertificate", "tlsLeafPrivateKey"].some((key) => !pathContains(row.runtimeRoot, row[key]))) {
+    if (["databasePath", "serverProcessLockPath", "serverConfig", "cursorKeyPath", "tlsLeafCertificate", "tlsLeafPrivateKey"].some((key) => !pathContains(row.runtimeRoot, row[key]))) {
       throw new Error(`${row.browser} server state and keys must be contained by its runtimeRoot`);
     }
     for (const key of fifoKeys) {
@@ -234,7 +240,7 @@ export function validateManifest(input) {
     }
     return row;
   });
-  const isolated = ["serverConfig", "databasePath", "cursorKeyPath", "tlsLeafCertificate", "tlsLeafPrivateKey", "deviceRoot"];
+  const isolated = ["serverConfig", "databasePath", "serverProcessLockPath", "cursorKeyPath", "tlsLeafCertificate", "tlsLeafPrivateKey", "deviceRoot"];
   for (const key of isolated) {
     if (rows[0][key] === rows[1][key]) throw new Error(`Chrome and Safari must use independent ${key}`);
   }
@@ -440,7 +446,7 @@ export async function validateRowIsolation(rows) {
   for (const row of rows) {
     const paths = {};
     for (const [key, kind, allowAlias = false] of [
-      ["serverBinary", "file"], ["serverConfig", "file"], ["databasePath", "file"], ["cursorKeyPath", "file"],
+      ["serverBinary", "file"], ["serverConfig", "file"], ["databasePath", "file"], ["serverProcessLockPath", "file"], ["cursorKeyPath", "file"],
       ["tlsLeafCertificate", "file"], ["tlsLeafPrivateKey", "file"], ["temporaryCA", "file"],
       ["deviceRoot", "directory"], ["deviceDatabasePath", "file"], ["runtimeRoot", "directory"],
       ["transferRoot", "directory"], ["logRoot", "directory"], ["evidenceRoot", "directory"],
@@ -467,7 +473,7 @@ export async function validateRowIsolation(rows) {
   if (pathContains(chromePaths.runtimeRoot, safariPaths.runtimeRoot) || pathContains(safariPaths.runtimeRoot, chromePaths.runtimeRoot)) {
     throw new Error("Chrome and Safari runtime roots must not overlap or nest");
   }
-  for (const key of ["serverConfig", "databasePath", "cursorKeyPath", "tlsLeafCertificate", "tlsLeafPrivateKey"]) {
+  for (const key of ["serverConfig", "databasePath", "serverProcessLockPath", "cursorKeyPath", "tlsLeafCertificate", "tlsLeafPrivateKey"]) {
     if (pathContains(safariPaths.deviceRoot, chromePaths[key]) || pathContains(chromePaths.deviceRoot, safariPaths[key])) {
       throw new Error(`${key} must not be placed under the other browser row's Device root`);
     }
@@ -632,6 +638,7 @@ async function cliBuildIdentity(path, expectedCommit) {
 function verifyPrivateRuntimeStorage(row) {
   assertPrivatePath(dirname(row.databasePath), "directory", `${row.browser} database parent`);
   assertPrivatePath(row.databasePath, "file", `${row.browser} database`);
+  assertPrivatePath(row.serverProcessLockPath, "file", `${row.browser} server process lock`);
   for (const suffix of ["-wal", "-shm", "-journal"]) {
     const sidecar = `${row.databasePath}${suffix}`;
     if (existsSync(sidecar)) assertPrivatePath(sidecar, "file", `${row.browser} database sidecar ${suffix}`);
@@ -678,6 +685,7 @@ function parseLsofRecords(output, pid, label) {
       if (current) result.push(current);
       current = { fd: value };
     } else if (current && field === "a") current.access = value;
+    else if (current && field === "l") current.lockStatus = value;
     else if (current && field === "t") current.kind = value;
     else if (current && field === "D") current.device = BigInt(value).toString();
     else if (current && field === "i") current.inode = BigInt(value).toString();
@@ -716,7 +724,7 @@ function liveProcessInspector(pid, label) {
   if (!commandLine || /[\r\n'"\\]/u.test(commandLine)) throw new Error(`${label} process argv is unavailable or ambiguously quoted`);
   const argv = commandLine.split(/[ \t]+/u);
   const openFiles = parseLsofRecords(
-    command("/usr/sbin/lsof", ["-n", "-a", "-p", String(pid), "-FnaDift"], `inspect ${label} open files`),
+    command("/usr/sbin/lsof", ["-n", "-a", "-p", String(pid), "-FnaDiftl"], `inspect ${label} open files`),
     pid,
     label,
   );
@@ -749,6 +757,7 @@ function parseGlobalLsofRecords(output, label) {
       if (!pid) throw new Error(`${label} global lsof record has no process`);
       current = { fd: value };
     } else if (current && field === "a") current.access = value;
+    else if (current && field === "l") current.lockStatus = value;
     else if (current && field === "t") current.kind = value;
     else if (current && field === "D") current.device = BigInt(value).toString();
     else if (current && field === "i") current.inode = BigInt(value).toString();
@@ -774,6 +783,83 @@ export function liveFIFOHolderInspector(path, label = "FIFO") {
     })
     .map((record) => record.pid);
   return [...new Set(pids)].sort((left, right) => left - right);
+}
+
+export function liveProcessLockHolderInspector(path, label = "server process lock") {
+  const info = lstatSync(path, { bigint: true });
+  if (!info.isFile() || info.isSymbolicLink()) throw new Error(`${label} holder target is not a regular file`);
+  const targetPath = realpathSync.native(path);
+  const output = command("/usr/sbin/lsof", ["-n", "-FpcfnaDitl"], `inspect ${label} holders globally`);
+  return parseGlobalLsofRecords(output, label)
+    .filter((record) => {
+      if (!/^\d+$/u.test(record.fd) || record.kind !== "REG" || record.device !== info.dev.toString() ||
+          record.inode !== info.ino.toString() || typeof record.path !== "string") return false;
+      try {
+        return realpathSync.native(record.path) === targetPath;
+      } catch {
+        return false;
+      }
+    })
+    .map(({ pid, fd, access, lockStatus }) => ({ pid, fd, access, lockStatus }))
+    .sort((left, right) => left.pid - right.pid || Number(left.fd) - Number(right.fd));
+}
+
+export function liveExclusiveProcessLockProbe(path, label = "server process lock") {
+  const script = [
+    "import fcntl, os, sys",
+    "fd = os.open(sys.argv[1], os.O_RDWR)",
+    "try:",
+    "    fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)",
+    "except BlockingIOError:",
+    "    sys.exit(73)",
+    "except Exception:",
+    "    sys.exit(74)",
+    "else:",
+    "    fcntl.flock(fd, fcntl.LOCK_UN)",
+    "    sys.exit(0)",
+  ].join("\n");
+  const result = spawnSync("/usr/bin/python3", ["-c", script, path], { cwd: repoRoot, encoding: "utf8", shell: false, timeout: 5_000 });
+  if (result.error || ![0, 73].includes(result.status)) {
+    throw new Error(`${label} exclusive-lock contention probe failed closed`);
+  }
+  return result.status === 73;
+}
+
+async function processLockBinding(path, inspected, pid, holderInspector, lockProbeInspector, label) {
+  const info = lstatSync(path, { bigint: true });
+  if (!info.isFile() || info.isSymbolicLink() || info.nlink !== 1n || info.size !== 0n ||
+      (info.mode & 0o777n) !== 0o600n || typeof process.getuid !== "function" || info.uid !== BigInt(process.getuid())) {
+    throw new Error(`${label} must be an owner-only 0600 single-link empty regular file`);
+  }
+  const targetPath = realpathSync.native(path);
+  const matching = (inspected.openFiles ?? []).filter((record) => /^\d+$/u.test(record.fd) && record.kind === "REG" &&
+    record.device === info.dev.toString() && record.inode === info.ino.toString() && typeof record.path === "string" &&
+    !/\s\(deleted\)$/u.test(record.path) && realpathSync.native(record.path) === targetPath);
+  if (matching.length !== 1 || matching[0].access !== "u" || !["W", " "].includes(matching[0].lockStatus)) {
+    throw new Error(`${label} must be the declared server's unique numeric O_RDWR FD with a whole-file write lock`);
+  }
+  if (matching[0].lockStatus !== "W" && await lockProbeInspector(path, label) !== true) {
+    throw new Error(`${label} has no provable exclusive whole-file flock`);
+  }
+  const holders = await holderInspector(path, label);
+  if (!Array.isArray(holders) || holders.length !== 1 || holders[0].pid !== pid || holders[0].fd !== matching[0].fd ||
+      holders[0].access !== "u" || holders[0].lockStatus !== matching[0].lockStatus) {
+    throw new Error(`${label} must have exactly one global holder bound to the declared server PID and FD`);
+  }
+  return {
+    pathDigest: sha256Text(targetPath),
+    device: info.dev.toString(),
+    inode: info.ino.toString(),
+    uid: Number(info.uid),
+    mode: "0600",
+    linkCount: 1,
+    size: 0,
+    fd: matching[0].fd,
+    access: "read_write",
+    lockStatus: "whole_file_write",
+    regularFile: true,
+    holderCount: 1,
+  };
 }
 
 function fifoBinding(path, fd, label, expectedAccess) {
@@ -806,18 +892,20 @@ function immutableProcessInput(path, role, startedAt, label) {
 export async function validateProcessBindings(row, paths, cliPath, options = {}) {
   const inspector = options.processInspector ?? liveProcessInspector;
   const holderInspector = options.fifoHolderInspector ?? liveFIFOHolderInspector;
+  const lockHolderInspector = options.processLockHolderInspector ?? liveProcessLockHolderInspector;
+  const lockProbeInspector = options.processLockProbeInspector ?? liveExclusiveProcessLockProbe;
   const declarations = [
     ["server", row.serverPid, paths.serverBinary, paths.databasePath, [paths.serverBinary, "--config", paths.serverConfig], [
       ["server_config", paths.serverConfig], ["cursor_key", paths.cursorKeyPath], ["tls_leaf_certificate", paths.tlsLeafCertificate],
       ["tls_leaf_private_key", paths.tlsLeafPrivateKey], ["temporary_ca", paths.temporaryCA],
-    ], "serverStdoutFifo", "serverStderrFifo"],
+    ], "serverStdoutFifo", "serverStderrFifo", true],
     ["daemon", row.daemonPid, cliPath, paths.deviceDatabasePath, [cliPath, "daemon", "serve", "--root", paths.deviceRoot], [
       ["daemon_identity", resolve(paths.deviceRoot, "daemon.identity.json")],
-    ], "daemonStdoutFifo", "daemonStderrFifo"],
+    ], "daemonStdoutFifo", "daemonStderrFifo", false],
   ];
   const result = {};
   const seenFIFOIdentities = new Set();
-  for (const [name, pid, expectedExecutable, expectedDatabase, expectedArgv, declaredInputs, stdoutKey, stderrKey] of declarations) {
+  for (const [name, pid, expectedExecutable, expectedDatabase, expectedArgv, declaredInputs, stdoutKey, stderrKey, expectsProcessLock] of declarations) {
     const inspected = await inspector(pid, `${row.browser} ${name}`);
     if (inspected.pid !== undefined && inspected.pid !== pid) throw new Error(`${row.browser} ${name} PID changed during inspection`);
     if (!Number.isSafeInteger(inspected.uid) || typeof process.getuid !== "function" || inspected.uid !== process.getuid() || typeof inspected.state !== "string" || !/^[A-Z]+[+<ENs]*$/u.test(inspected.state) || inspected.state.startsWith("Z")) {
@@ -848,9 +936,17 @@ export async function validateProcessBindings(row, paths, cliPath, options = {})
     const inputs = declaredInputs.map(([role, path]) => immutableProcessInput(path, role, startTime, `${row.browser} ${name} ${role}`));
     const writableRegularFiles = (inspected.openFiles ?? []).filter((item) => /^\d+$/u.test(item.fd) && item.kind === "REG" && ["w", "u"].includes(item.access));
     const writableAllowlist = new Set([expectedDatabase, `${expectedDatabase}-wal`, `${expectedDatabase}-shm`, `${expectedDatabase}-journal`]);
+    if (expectsProcessLock) writableAllowlist.add(paths.serverProcessLockPath);
     if (writableRegularFiles.some((item) => /\s\(deleted\)$/u.test(item.path) || !writableAllowlist.has(item.path))) {
       throw new Error(`${row.browser} ${name} has an undeclared writable regular-file FD`);
     }
+    const lockInfo = lstatSync(paths.serverProcessLockPath, { bigint: true });
+    const matchingLockFiles = (inspected.openFiles ?? []).filter((item) => /^\d+$/u.test(item.fd) && item.kind === "REG" &&
+      item.device === lockInfo.dev.toString() && item.inode === lockInfo.ino.toString());
+    if (!expectsProcessLock && matchingLockFiles.length !== 0) throw new Error(`${row.browser} daemon must not hold the server process lock`);
+    const processLock = expectsProcessLock ? await processLockBinding(
+      paths.serverProcessLockPath, inspected, pid, lockHolderInspector, lockProbeInspector, `${row.browser} server process lock`,
+    ) : undefined;
     const stdout = fifoBinding(paths[stdoutKey], inspected.fds.get("1"), `${row.browser} ${name} stdout`, "w");
     const stderr = fifoBinding(paths[stderrKey], inspected.fds.get("2"), `${row.browser} ${name} stderr`, "w");
     for (const binding of [stdout, stderr]) {
@@ -880,6 +976,7 @@ export async function validateProcessBindings(row, paths, cliPath, options = {})
       inputs,
       stdout,
       stderr,
+      ...(processLock ? { processLock } : {}),
     };
   }
   const readerDeclarations = [
@@ -947,7 +1044,7 @@ async function collectContext(manifest, frozenAt = new Date().toISOString()) {
   for (const row of manifest.rows) {
     const paths = resolvedRows.get(row.browser);
     for (const [key, kind] of [
-      ["serverConfig", "file"], ["databasePath", "file"], ["cursorKeyPath", "file"], ["tlsLeafPrivateKey", "file"],
+      ["serverConfig", "file"], ["databasePath", "file"], ["serverProcessLockPath", "file"], ["cursorKeyPath", "file"], ["tlsLeafPrivateKey", "file"],
       ["deviceRoot", "directory"], ["deviceDatabasePath", "file"], ["runtimeRoot", "directory"],
       ["transferRoot", "directory"], ["logRoot", "directory"], ["evidenceRoot", "directory"],
       ["serverStdoutFifo", "fifo"], ["serverStderrFifo", "fifo"], ["daemonStdoutFifo", "fifo"], ["daemonStderrFifo", "fifo"],
@@ -1098,7 +1195,7 @@ export function validateFrozenContext(input) {
 
     const processes = exactObject(row.processes, contextProcessKeys, `${browser}.processes`);
     for (const name of contextProcessKeys) {
-      const processRecord = exactObject(processes[name], processKeys, `${browser}.processes.${name}`);
+      const processRecord = exactObject(processes[name], name === "server" ? serverProcessKeys : processKeys, `${browser}.processes.${name}`);
       if (!Number.isSafeInteger(processRecord.pid) || processRecord.pid < 2) throw new Error(`${browser}.${name}.pid is invalid`);
       if (!Number.isSafeInteger(processRecord.uid) || processRecord.uid < 0 || typeof processRecord.state !== "string" || !/^[A-Z]+[+<ENs]*$/u.test(processRecord.state) || processRecord.state.startsWith("Z")) throw new Error(`${browser}.${name} process owner or state is invalid`);
       canonicalTimestamp(processRecord.startTime, `${browser}.${name}.startTime`);
@@ -1127,6 +1224,15 @@ export function validateFrozenContext(input) {
         if (binding.kind !== "fifo" || !/^[0-9]+$/u.test(binding.device) || !/^[0-9]+$/u.test(binding.inode) ||
             !Number.isSafeInteger(binding.uid) || binding.uid < 0 || binding.mode !== "0600" || binding.regularFile !== false) {
           throw new Error(`${browser}.${name}.${stream} is not an owner-only FIFO binding`);
+        }
+      }
+      if (name === "server") {
+        const lock = exactObject(processRecord.processLock, processLockKeys, `${browser}.server.processLock`);
+        exactSHA256(lock.pathDigest, `${browser}.server.processLock.pathDigest`);
+        if (!/^[0-9]+$/u.test(lock.device) || !/^[0-9]+$/u.test(lock.inode) || !Number.isSafeInteger(lock.uid) || lock.uid < 0 ||
+            lock.mode !== "0600" || lock.linkCount !== 1 || lock.size !== 0 || !/^\d+$/u.test(lock.fd) || lock.access !== "read_write" ||
+            lock.lockStatus !== "whole_file_write" || lock.regularFile !== true || lock.holderCount !== 1) {
+          throw new Error(`${browser}.server.processLock is not an exclusive owner-only empty lock binding`);
         }
       }
     }
@@ -1300,31 +1406,60 @@ function walkPrivateTree(root, label, options = {}) {
   const excludedRoots = (options.excludeRoots ?? []).map((path) => canonicalRealPath(path, "directory", `${label} exclusion`));
   const excludedFiles = new Set((options.excludeFiles ?? []).filter((path) => existsSync(path)).map((path) => canonicalRealPath(path, "file", `${label} excluded file`)));
   const entries = [];
-  const visit = (directory) => {
-    const directoryInfo = lstatSync(directory, { bigint: true });
-    if (!directoryInfo.isDirectory() || directoryInfo.isSymbolicLink()) throw new Error(`${label} contains a non-directory traversal boundary`);
-    privateMode(directoryInfo, "directory", `${label} directory`);
-    for (const name of readdirSync(directory).sort()) {
-      const path = resolve(directory, name);
-      const info = lstatSync(path, { bigint: true });
-      if (info.isSymbolicLink()) throw new Error(`${label} contains a symbolic link`);
-      if (info.isDirectory()) {
-        const real = realpathSync.native(path);
-        if (!excludedRoots.includes(real)) visit(real);
-      } else if (info.isFile()) {
-        const real = realpathSync.native(path);
-        if (!excludedFiles.has(real)) entries.push(stableReadFile(real, `${label} file`, options.fileHooks));
-      } else if (info.isFIFO() && options.allowFifos === true) {
-        privateMode(info, "file", `${label} FIFO`);
-        if (info.nlink !== 1n) throw new Error(`${label} contains a hard-linked FIFO`);
-        entries.push({
-          path, pathDigest: sha256Text(realpathSync.native(path)), kind: "fifo", size: 0,
-          device: info.dev.toString(), inode: info.ino.toString(), mode: "0600", mtimeNs: info.mtimeNs.toString(), ctimeNs: info.ctimeNs.toString(),
-          sha256: sha256Text(""), contents: Buffer.alloc(0),
-        });
-      } else {
-        throw new Error(`${label} contains an unsupported filesystem object`);
+  const visit = (directory, includeInInventory = false) => {
+    const before = lstatSync(directory, { bigint: true });
+    if (!before.isDirectory() || before.isSymbolicLink()) throw new Error(`${label} contains a non-directory traversal boundary`);
+    privateMode(before, "directory", `${label} directory`);
+    let descriptor;
+    try {
+      descriptor = openSync(directory, fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW ?? 0) | (fsConstants.O_DIRECTORY ?? 0));
+      const opened = fstatSync(descriptor, { bigint: true });
+      if (!opened.isDirectory() || opened.dev !== before.dev || opened.ino !== before.ino) throw new Error(`${label} directory was replaced before scanning`);
+      for (const name of readdirSync(directory).sort()) {
+        const path = resolve(directory, name);
+        const info = lstatSync(path, { bigint: true });
+        if (info.isSymbolicLink()) throw new Error(`${label} contains a symbolic link`);
+        if (info.isDirectory()) {
+          const real = realpathSync.native(path);
+          if (!excludedRoots.includes(real)) visit(real, true);
+        } else if (info.isFile()) {
+          const real = realpathSync.native(path);
+          if (!excludedFiles.has(real)) entries.push(stableReadFile(real, `${label} file`, options.fileHooks));
+        } else if (info.isFIFO() && options.allowFifos === true) {
+          privateMode(info, "file", `${label} FIFO`);
+          if (info.nlink !== 1n) throw new Error(`${label} contains a hard-linked FIFO`);
+          entries.push({
+            path, pathDigest: sha256Text(realpathSync.native(path)), kind: "fifo", size: 0,
+            device: info.dev.toString(), inode: info.ino.toString(), mode: "0600", mtimeNs: info.mtimeNs.toString(), ctimeNs: info.ctimeNs.toString(),
+            sha256: sha256Text(""), contents: Buffer.alloc(0),
+          });
+        } else {
+          throw new Error(`${label} contains an unsupported filesystem object`);
+        }
       }
+      options.directoryHooks?.afterRead?.(directory);
+      const afterFD = fstatSync(descriptor, { bigint: true });
+      const afterPath = lstatSync(directory, { bigint: true });
+      for (const key of ["dev", "ino", "uid", "gid", "mode", "nlink", "size", "mtimeNs", "ctimeNs"]) {
+        if (afterFD[key] !== before[key] || afterPath[key] !== before[key]) throw new Error(`${label} directory was unstable while scanning`);
+      }
+      if (includeInInventory) {
+        entries.push({
+          path: directory,
+          pathDigest: sha256Text(realpathSync.native(directory)),
+          kind: "directory",
+          size: 0,
+          device: before.dev.toString(),
+          inode: before.ino.toString(),
+          mode: (before.mode & 0o777n).toString(8).padStart(4, "0"),
+          mtimeNs: before.mtimeNs.toString(),
+          ctimeNs: before.ctimeNs.toString(),
+          sha256: sha256Text(""),
+          contents: Buffer.alloc(0),
+        });
+      }
+    } finally {
+      if (descriptor !== undefined) closeSync(descriptor);
     }
   };
   visit(rootReal);
@@ -1332,21 +1467,9 @@ function walkPrivateTree(root, label, options = {}) {
 }
 
 function existingServerDatabaseFiles(row) {
-  const paths = [row.databasePath, ...["-wal", "-shm", "-journal"].map((suffix) => `${row.databasePath}${suffix}`).filter(existsSync)];
-  const parent = dirname(row.databasePath);
-  const base = basename(row.databasePath);
-  for (const name of readdirSync(parent).sort()) {
-    const path = resolve(parent, name);
-    if (path === row.databasePath || paths.includes(path)) continue;
-    if (name.startsWith(`${base}.`) || name.startsWith(`${base}-`) || name.endsWith(".backup") || name.endsWith(".bak")) {
-      const info = lstatSync(path);
-      if (info.isDirectory()) paths.push(...walkPrivateTree(path, `${row.browser} server backup`).filter((entry) => entry.kind === "file").map((entry) => entry.path));
-      else paths.push(path);
-    }
-  }
-  const backups = resolve(parent, "backups");
-  if (existsSync(backups)) paths.push(...walkPrivateTree(backups, `${row.browser} server backups`).filter((entry) => entry.kind === "file").map((entry) => entry.path));
-  return [...new Set(paths)].sort();
+  return [row.databasePath, ...["-wal", "-shm", "-journal"]
+    .map((suffix) => `${row.databasePath}${suffix}`)
+    .filter(existsSync)].sort();
 }
 
 function scanEntries(className, entries, unexpectedPathCount = 0) {
@@ -1745,13 +1868,19 @@ export function validateMachineScanReceipt(input, context) {
     for (const key of databaseAssertionKeys.filter((key) => key !== "sqliteIntegrityCheckPassed")) {
       if (!Number.isSafeInteger(database[key]) || database[key] < 0) throw new Error(`${browser} database assertion ${key} is not a nonnegative integer`);
     }
-    if (database.sqliteIntegrityCheckPassed !== true || database.serverLogicalQueryCount < 1 || database.deviceLogicalQueryCount < 1 || database.serverViolationCount !== 0 || database.deviceViolationCount !== 0 || database.activeCeremonyCount !== 0 || database.rawByteMatchCount !== 0) throw new Error(`${browser} logical database assertions did not pass`);
+    if (database.sqliteIntegrityCheckPassed !== true || database.serverLogicalQueryCount < 1 || database.deviceLogicalQueryCount < 1 || database.serverViolationCount !== 0 || database.deviceViolationCount !== 0 || database.activeCeremonyCount !== 0 || database.serverBackupCount !== 0 || database.rawByteMatchCount !== 0) throw new Error(`${browser} logical database assertions did not pass`);
     const logs = exactObject(row.logEvidence, logEvidenceKeys, `${browser} log evidence`);
     if (logs.mode !== "fifo_to_live_tty" || logs.processCount !== 6 || logs.fdBindingCount !== 8 || logs.fifoCount !== 4 || logs.regularSinkCount !== 0 || logs.declaredRootRegularSinkCount !== 0 || logs.unexpectedPathCount !== 0) throw new Error(`${browser} declared-process/root log-sink proof is incomplete`);
     exactSHA256(logs.inventorySha256, `${browser} log inventory digest`);
     const transfers = exactObject(row.transferEvidence, transferEvidenceKeys, `${browser} transfer evidence`);
     if (transfers.publicDescriptorCount !== 1 || transfers.publicReceiptCount !== 1 || transfers.transientChallengeCount !== 0 || transfers.transientProofCount !== 0 || transfers.recoveryArtifactCount !== 0 || transfers.unexpectedFileCount !== 0) throw new Error(`${browser} transfer cleanup is incomplete`);
     exactSHA256(transfers.inventorySha256, `${browser} transfer inventory digest`);
+    const processLock = exactObject(row.processLockEvidence, processLockEvidenceKeys, `${browser} process lock evidence`);
+    if (processLock.boundToDeclaredServer !== true || processLock.exclusiveWholeFileLock !== true || processLock.ownerOnly !== true ||
+        processLock.singleLink !== true || processLock.empty !== true || processLock.holderCount !== 1) {
+      throw new Error(`${browser} server process lock evidence is incomplete`);
+    }
+    exactSHA256(processLock.inventorySha256, `${browser} process lock inventory digest`);
     exactSHA256(row.postSnapshotSha256, `${browser} post snapshot digest`);
   });
   rejectSecretMarkers(scan, "machine scan receipt");
@@ -1773,21 +1902,22 @@ export async function scanEnvironment(manifest, context, options = {}) {
 
     const serverFiles = existingServerDatabaseFiles(row);
     const serverEntries = serverFiles.map((path) => stableReadFile(path, `${row.browser} server database artifact`, options.scanFileHooks));
-    const deviceEntries = walkPrivateTree(row.deviceRoot, `${row.browser} Device database/runtime`, { fileHooks: options.scanFileHooks });
-    const logEntries = walkPrivateTree(row.logRoot, `${row.browser} logs`, { allowFifos: true, fileHooks: options.scanFileHooks });
-    const transferEntries = walkPrivateTree(row.transferRoot, `${row.browser} transfers`, { fileHooks: options.scanFileHooks });
-    const evidenceEntries = walkPrivateTree(row.evidenceRoot, `${row.browser} evidence`, { fileHooks: options.scanFileHooks });
+    const deviceEntries = walkPrivateTree(row.deviceRoot, `${row.browser} Device database/runtime`, { fileHooks: options.scanFileHooks, directoryHooks: options.scanDirectoryHooks });
+    const logEntries = walkPrivateTree(row.logRoot, `${row.browser} logs`, { allowFifos: true, fileHooks: options.scanFileHooks, directoryHooks: options.scanDirectoryHooks });
+    const transferEntries = walkPrivateTree(row.transferRoot, `${row.browser} transfers`, { fileHooks: options.scanFileHooks, directoryHooks: options.scanDirectoryHooks });
+    const evidenceEntries = walkPrivateTree(row.evidenceRoot, `${row.browser} evidence`, { fileHooks: options.scanFileHooks, directoryHooks: options.scanDirectoryHooks });
     const runtimeEntries = walkPrivateTree(row.runtimeRoot, `${row.browser} runtime residue`, {
       excludeRoots: [row.deviceRoot, row.logRoot, row.transferRoot, row.evidenceRoot],
       excludeFiles: serverFiles,
       fileHooks: options.scanFileHooks,
+      directoryHooks: options.scanDirectoryHooks,
     });
     const transfers = classifyTransfer(transferEntries, row);
     const allowedRuntimeFiles = new Set([
-      paths.serverConfig, paths.cursorKeyPath, paths.tlsLeafCertificate, paths.tlsLeafPrivateKey,
+      paths.serverConfig, paths.serverProcessLockPath, paths.cursorKeyPath, paths.tlsLeafCertificate, paths.tlsLeafPrivateKey,
     ]);
     const unexpectedRuntime = runtimeEntries.filter((entry) => !allowedRuntimeFiles.has(entry.path)).length;
-    const unexpectedLogs = logEntries.filter((entry) => entry.kind === "file").length;
+    const unexpectedLogs = logEntries.filter((entry) => entry.kind !== "fifo").length;
     const unexpectedEvidence = evidenceUnexpectedCount(evidenceEntries, row.browser, manifest, validatedContext, startedAt);
     const scans = [
       scanEntries("server_database", serverEntries),
@@ -1819,15 +1949,34 @@ export async function scanEnvironment(manifest, context, options = {}) {
       recoveryArtifactCount: transfers.recoveryArtifactCount, unexpectedFileCount: transfers.unexpectedFileCount,
       inventorySha256: transfers.inventorySha256,
     };
+    const lockEntry = runtimeEntries.find((entry) => entry.path === paths.serverProcessLockPath);
+    const frozenServerLock = processEvidence.processes.server.processLock;
+    if (!lockEntry || lockEntry.kind !== "file" || lockEntry.pathDigest !== frozenServerLock.pathDigest ||
+        lockEntry.device !== frozenServerLock.device || lockEntry.inode !== frozenServerLock.inode || lockEntry.mode !== frozenServerLock.mode ||
+        lockEntry.size !== frozenServerLock.size) {
+      throw new Error(`${row.browser} runtime scan is not bound to the declared server process lock vnode`);
+    }
+    const processLockEvidence = {
+      boundToDeclaredServer: true,
+      exclusiveWholeFileLock: frozenServerLock.lockStatus === "whole_file_write",
+      ownerOnly: frozenServerLock.mode === "0600",
+      singleLink: frozenServerLock.linkCount === 1,
+      empty: lockEntry.size === 0,
+      holderCount: frozenServerLock.holderCount,
+      inventorySha256: canonicalJSONDigest({
+        pathDigest: lockEntry.pathDigest, kind: lockEntry.kind, size: lockEntry.size, device: lockEntry.device,
+        inode: lockEntry.inode, mode: lockEntry.mode, mtimeNs: lockEntry.mtimeNs, ctimeNs: lockEntry.ctimeNs,
+      }),
+    };
     const postSnapshotSha256 = canonicalJSONDigest(scans.map((scan) => scan.inventory));
     if (options.afterInitialSnapshot) await options.afterInitialSnapshot(row.browser);
     const secondSnapshot = [
       scanEntries("server_database", existingServerDatabaseFiles(row).map((path) => stableReadFile(path, `${row.browser} server database rescan`, options.scanFileHooks))).inventory,
-      scanEntries("device_database", walkPrivateTree(row.deviceRoot, `${row.browser} Device rescan`, { fileHooks: options.scanFileHooks })).inventory,
-      scanEntries("runtime_residue", walkPrivateTree(row.runtimeRoot, `${row.browser} runtime rescan`, { excludeRoots: [row.deviceRoot, row.logRoot, row.transferRoot, row.evidenceRoot], excludeFiles: existingServerDatabaseFiles(row), fileHooks: options.scanFileHooks })).inventory,
-      scanEntries("logs", walkPrivateTree(row.logRoot, `${row.browser} log rescan`, { allowFifos: true, fileHooks: options.scanFileHooks })).inventory,
-      scanEntries("transfers", walkPrivateTree(row.transferRoot, `${row.browser} transfer rescan`, { fileHooks: options.scanFileHooks })).inventory,
-      scanEntries("evidence", walkPrivateTree(row.evidenceRoot, `${row.browser} evidence rescan`, { fileHooks: options.scanFileHooks })).inventory,
+      scanEntries("device_database", walkPrivateTree(row.deviceRoot, `${row.browser} Device rescan`, { fileHooks: options.scanFileHooks, directoryHooks: options.scanDirectoryHooks })).inventory,
+      scanEntries("runtime_residue", walkPrivateTree(row.runtimeRoot, `${row.browser} runtime rescan`, { excludeRoots: [row.deviceRoot, row.logRoot, row.transferRoot, row.evidenceRoot], excludeFiles: existingServerDatabaseFiles(row), fileHooks: options.scanFileHooks, directoryHooks: options.scanDirectoryHooks })).inventory,
+      scanEntries("logs", walkPrivateTree(row.logRoot, `${row.browser} log rescan`, { allowFifos: true, fileHooks: options.scanFileHooks, directoryHooks: options.scanDirectoryHooks })).inventory,
+      scanEntries("transfers", walkPrivateTree(row.transferRoot, `${row.browser} transfer rescan`, { fileHooks: options.scanFileHooks, directoryHooks: options.scanDirectoryHooks })).inventory,
+      scanEntries("evidence", walkPrivateTree(row.evidenceRoot, `${row.browser} evidence rescan`, { fileHooks: options.scanFileHooks, directoryHooks: options.scanDirectoryHooks })).inventory,
     ];
     if (canonicalJSONDigest(secondSnapshot) !== postSnapshotSha256) throw new Error(`${row.browser} scan target changed during the machine scan`);
     rows.push({
@@ -1837,6 +1986,7 @@ export async function scanEnvironment(manifest, context, options = {}) {
       databaseAssertions: assertions,
       logEvidence,
       transferEvidence,
+      processLockEvidence,
       postSnapshotSha256,
     });
   }

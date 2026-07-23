@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { X509Certificate, createHash } from "node:crypto";
 import {
-  chmodSync, linkSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync,
+  chmodSync, existsSync, linkSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, statSync, symlinkSync, unlinkSync, writeFileSync,
 } from "node:fs";
 import { Agent as HTTPSAgent, createServer as createHTTPSServer, get as httpsGet } from "node:https";
 import { tmpdir } from "node:os";
@@ -26,6 +26,8 @@ import {
   validateManifest,
   validateProcessBindings,
   liveFIFOHolderInspector,
+  liveExclusiveProcessLockProbe,
+  liveProcessLockHolderInspector,
   validateReceiptOutputPath,
   validateReceipt,
   validateRowIsolation,
@@ -96,6 +98,7 @@ const row = (browser, prefix) => ({
   serverBinary: "/private/tmp/mad/bin/multidesk-server",
   serverConfig: `/private/tmp/mad/${prefix}/server.json`,
   databasePath: `/private/tmp/mad/${prefix}/server.sqlite`,
+  serverProcessLockPath: `/private/tmp/mad/${prefix}/server.sqlite.process.lock`,
   cursorKeyPath: `/private/tmp/mad/${prefix}/cursor.key`,
   tlsLeafCertificate: `/private/tmp/mad/${prefix}/leaf.pem`,
   tlsLeafPrivateKey: `/private/tmp/mad/${prefix}/leaf.key`,
@@ -210,6 +213,10 @@ test("browser receipt manifest freezes exact rows, CLI, and independent state", 
   assert.throws(() => validateManifest({ schemaVersion: 2, implementationSha: sha, cliBinary, rows: [{ ...row("chrome", "chrome"), origin: "https://localhost:8443" }, row("safari", "safari")] }), /frozen P2 authority/u);
   assert.throws(() => validateManifest({ schemaVersion: 2, implementationSha: sha, cliBinary, rows: [{ ...row("chrome", "chrome"), extra: true }, row("safari", "safari")] }), /missing or unknown/u);
   assert.throws(() => validateManifest({ schemaVersion: 2, implementationSha: sha, rows: [row("chrome", "chrome"), row("safari", "safari")] }), /missing or unknown/u);
+  assert.throws(() => validateManifest({ schemaVersion: 2, implementationSha: sha, cliBinary, rows: [{ ...row("chrome", "chrome"), serverProcessLockPath: "/private/tmp/mad/chrome/*.lock" }, row("safari", "safari")] }), /must equal databasePath/u);
+  const missingLock = row("chrome", "chrome");
+  delete missingLock.serverProcessLockPath;
+  assert.throws(() => validateManifest({ schemaVersion: 2, implementationSha: sha, cliBinary, rows: [missingLock, row("safari", "safari")] }), /missing or unknown/u);
 });
 
 const frozenAt = "2030-01-01T00:00:00.000Z";
@@ -257,7 +264,7 @@ test("browser journey finalization rejects bypass, automation, future completion
 function contextRow(browser, marker) {
   const pathDigests = {};
   for (const [index, key] of [
-    "serverConfig", "databasePath", "cursorKeyPath", "tlsLeafCertificate", "tlsLeafPrivateKey", "deviceRoot",
+    "serverConfig", "databasePath", "serverProcessLockPath", "cursorKeyPath", "tlsLeafCertificate", "tlsLeafPrivateKey", "deviceRoot",
     "runtimeRoot", "deviceDatabasePath", "transferRoot", "logRoot", "evidenceRoot", "serverStdoutFifo",
     "serverStderrFifo", "daemonStdoutFifo", "daemonStderrFifo",
   ].entries()) pathDigests[key] = createHash("sha256").update(`${marker}-${index}`).digest("hex");
@@ -280,6 +287,13 @@ function contextRow(browser, marker) {
     })),
     stdout: fifo(`${name}-stdout`),
     stderr: fifo(`${name}-stderr`),
+    ...(name === "server" ? {
+      processLock: {
+        pathDigest: digest("8"), device: "1", inode: String(pid + 4000), uid: 501, mode: "0600",
+        linkCount: 1, size: 0, fd: "9", access: "read_write", lockStatus: "whole_file_write",
+        regularFile: true, holderCount: 1,
+      },
+    } : {}),
   });
   const reader = (pid, name) => ({
     pid,
@@ -389,6 +403,10 @@ function machineScan(context = frozenContext()) {
       publicDescriptorCount: 1, publicReceiptCount: 1, transientChallengeCount: 0, transientProofCount: 0,
       recoveryArtifactCount: 0, unexpectedFileCount: 0, inventorySha256: digest(browser === "chrome" ? "3" : "4"),
     },
+    processLockEvidence: {
+      boundToDeclaredServer: true, exclusiveWholeFileLock: true, ownerOnly: true, singleLink: true,
+      empty: true, holderCount: 1, inventorySha256: digest(browser === "chrome" ? "7" : "8"),
+    },
     postSnapshotSha256: digest(browser === "chrome" ? "5" : "6"),
   });
   return {
@@ -431,6 +449,13 @@ test("frozen context exact schema preserves every field and fails closed on drif
   const duplicateDevice = frozenContext();
   duplicateDevice.rows[1].deviceId = duplicateDevice.rows[0].deviceId;
   assert.throws(() => validateFrozenContext(duplicateDevice), /distinct valid public device IDs/u);
+
+  const missingProcessLock = frozenContext();
+  delete missingProcessLock.rows[0].processes.server.processLock;
+  assert.throws(() => validateFrozenContext(missingProcessLock), /missing or unknown/u);
+  const weakenedProcessLock = frozenContext();
+  weakenedProcessLock.rows[0].processes.server.processLock.lockStatus = "partial_write";
+  assert.throws(() => validateFrozenContext(weakenedProcessLock), /exclusive owner-only empty lock binding/u);
 });
 
 test("strict JSON and all six secret detectors fail closed without storing secret values in evidence", () => {
@@ -478,6 +503,16 @@ test("machine scan binding rejects findings, stale context, cross-row evidence, 
   const crossRow = structuredClone(scan);
   crossRow.rows.reverse();
   assert.throws(() => validateMachineScanReceipt(crossRow, context), /order\/browser mismatch/u);
+
+  const missingProcessLockEvidence = structuredClone(scan);
+  delete missingProcessLockEvidence.rows[0].processLockEvidence;
+  assert.throws(() => validateMachineScanReceipt(missingProcessLockEvidence, context), /missing or unknown/u);
+  const nonExclusiveLock = structuredClone(scan);
+  nonExclusiveLock.rows[0].processLockEvidence.exclusiveWholeFileLock = false;
+  assert.throws(() => validateMachineScanReceipt(nonExclusiveLock, context), /process lock evidence is incomplete/u);
+  const serverBackup = structuredClone(scan);
+  serverBackup.rows[0].databaseAssertions.serverBackupCount = 1;
+  assert.throws(() => validateMachineScanReceipt(serverBackup, context), /logical database assertions did not pass/u);
 
   const mutated = structuredClone(scan);
   mutated.rows[1].postSnapshotSha256 = digest("f");
@@ -698,13 +733,14 @@ function makeIsolationFixture() {
     const values = {
       serverConfig: join(base, "server.json"),
       databasePath: join(base, "server.sqlite"),
+      serverProcessLockPath: join(base, "server.sqlite.process.lock"),
       cursorKeyPath: join(base, "cursor.key"),
       tlsLeafCertificate: join(base, "leaf.pem"),
       tlsLeafPrivateKey: join(base, "leaf.key"),
       deviceDatabasePath: join(deviceRoot, "device.db"),
       browserExecutable: join(macOS, browser === "chrome" ? "Google Chrome" : "Safari"),
     };
-    for (const [key, path] of Object.entries(values)) writeFileSync(path, `${browser}-${key}`, { mode: 0o600 });
+    for (const [key, path] of Object.entries(values)) writeFileSync(path, key === "serverProcessLockPath" ? "" : `${browser}-${key}`, { mode: 0o600 });
     const fifoValues = {
       serverStdoutFifo: join(logRoot, "server.stdout.fifo"),
       serverStderrFifo: join(logRoot, "server.stderr.fifo"),
@@ -821,18 +857,19 @@ async function makeScanEnvironmentFixture() {
   const resolved = await validateRowIsolation(manifest.rows);
   const records = new Map();
   const holderMap = new Map();
+  const lockHolderMap = new Map();
   const fifoRecord = (path, access) => {
     const info = statSync(path, { bigint: true });
     return { kind: "FIFO", access, device: info.dev.toString(), inode: info.ino.toString(), path };
   };
-  const regularRecord = (path, fd, access = "r") => {
+  const regularRecord = (path, fd, access = "r", lockStatus) => {
     const info = statSync(path, { bigint: true });
-    return { fd, access, kind: "REG", device: info.dev.toString(), inode: info.ino.toString(), path };
+    return { fd, access, kind: "REG", device: info.dev.toString(), inode: info.ino.toString(), path, ...(lockStatus ? { lockStatus } : {}) };
   };
   const tty = { kind: "CHR", access: "u", device: "1", inode: "1", path: "/dev/ttys001" };
   for (const row of manifest.rows) {
     const paths = resolved.get(row.browser);
-    records.set(row.serverPid, { executable: paths.serverBinary, argv: [paths.serverBinary, "--config", paths.serverConfig], openFiles: [regularRecord(paths.serverBinary, "txt"), regularRecord(paths.databasePath, "7", "u")], fds: new Map([["1", fifoRecord(paths.serverStdoutFifo, "w")], ["2", fifoRecord(paths.serverStderrFifo, "w")]]) });
+    records.set(row.serverPid, { executable: paths.serverBinary, argv: [paths.serverBinary, "--config", paths.serverConfig], openFiles: [regularRecord(paths.serverBinary, "txt"), regularRecord(paths.databasePath, "7", "u"), regularRecord(paths.serverProcessLockPath, "9", "u", "W")], fds: new Map([["1", fifoRecord(paths.serverStdoutFifo, "w")], ["2", fifoRecord(paths.serverStderrFifo, "w")]]) });
     records.set(row.daemonPid, { executable: paths.serverBinary, argv: [paths.serverBinary, "daemon", "serve", "--root", paths.deviceRoot], openFiles: [regularRecord(paths.serverBinary, "txt"), regularRecord(paths.deviceDatabasePath, "8", "u")], fds: new Map([["1", fifoRecord(paths.daemonStdoutFifo, "w")], ["2", fifoRecord(paths.daemonStderrFifo, "w")]]) });
     for (const [pid, fifo] of [[row.serverStdoutReaderPid, paths.serverStdoutFifo], [row.serverStderrReaderPid, paths.serverStderrFifo], [row.daemonStdoutReaderPid, paths.daemonStdoutFifo], [row.daemonStderrReaderPid, paths.daemonStderrFifo]]) {
       records.set(pid, { executable: "/bin/cat", argv: ["/bin/cat"], fds: new Map([["0", fifoRecord(fifo, "r")], ["1", tty], ["2", tty]]) });
@@ -841,16 +878,18 @@ async function makeScanEnvironmentFixture() {
     holderMap.set(paths.serverStderrFifo, [row.serverPid, row.serverStderrReaderPid]);
     holderMap.set(paths.daemonStdoutFifo, [row.daemonPid, row.daemonStdoutReaderPid]);
     holderMap.set(paths.daemonStderrFifo, [row.daemonPid, row.daemonStderrReaderPid]);
+    lockHolderMap.set(paths.serverProcessLockPath, [{ pid: row.serverPid, fd: "9", access: "u", lockStatus: "W" }]);
   }
   const processInspector = async (pid) => ({ pid, uid: process.getuid(), state: "S+", startTime: frozenAt, ...records.get(pid) });
   const fifoHolderInspector = async (path) => [...holderMap.get(path)].sort((left, right) => left - right);
+  const processLockHolderInspector = async (path) => structuredClone(lockHolderMap.get(path));
   const context = frozenContext();
   context.manifestSha256 = canonicalDigest(manifest);
   context.receiptToolSha256 = createHash("sha256").update(readFileSync(join(import.meta.dirname, "p2-browser-receipt.mjs"))).digest("hex");
   context.cli = { path: manifest.cliBinary, sha256: createHash("sha256").update(readFileSync(manifest.cliBinary)).digest("hex"), vcsRevision: sha, vcsModified: false };
   for (const [index, row] of manifest.rows.entries()) {
     const paths = resolved.get(row.browser);
-    const proof = await validateProcessBindings(row, paths, manifest.cliBinary, { processInspector, fifoHolderInspector });
+    const proof = await validateProcessBindings(row, paths, manifest.cliBinary, { processInspector, fifoHolderInspector, processLockHolderInspector });
     const target = context.rows[index];
     target.deviceId = `device_${(row.browser === "chrome" ? "a" : "b").repeat(32)}`;
     target.isolationPathDigests = Object.fromEntries(Object.keys(target.isolationPathDigests).map((key) => [key, createHash("sha256").update(paths[key]).digest("hex")]));
@@ -869,8 +908,8 @@ async function makeScanEnvironmentFixture() {
     ]) writeFileSync(join(row.evidenceRoot, name), JSON.stringify(value), { mode: 0o600 });
   }
   return {
-    ...fixture, manifest, context, processInspector, fifoHolderInspector,
-    scanOptions: { processInspector, fifoHolderInspector, startedAt: "2030-01-01T00:11:00.000Z", finishedAt: "2030-01-01T00:12:00.000Z" },
+    ...fixture, manifest, context, processInspector, fifoHolderInspector, processLockHolderInspector,
+    scanOptions: { processInspector, fifoHolderInspector, processLockHolderInspector, startedAt: "2030-01-01T00:11:00.000Z", finishedAt: "2030-01-01T00:12:00.000Z" },
   };
 }
 
@@ -953,8 +992,36 @@ test("scanEnvironment reaches all six roots and fails closed on residue and file
       for (const row of scan.rows) {
         assert.deepEqual(row.targetClasses.map((entry) => entry.class), targetClasses);
         assert.ok(row.targetClasses.every((entry) => entry.pathCount > 0 && entry.matchCount === 0));
+        assert.equal(row.databaseAssertions.serverBackupCount, 0);
+        assert.deepEqual(row.processLockEvidence, {
+          boundToDeclaredServer: true, exclusiveWholeFileLock: true, ownerOnly: true, singleLink: true,
+          empty: true, holderCount: 1, inventorySha256: row.processLockEvidence.inventorySha256,
+        });
       }
     });
+
+    for (const name of ["server.sqlite.unknown", "server.sqlite.bak", "server.sqlite.backup"]) {
+      await t.test(`unknown server database artifact ${name} fails closed as runtime residue`, async () => {
+        const path = temporaryFile(chrome.runtimeRoot, name);
+        try {
+          await assert.rejects(scanEnvironment(fixture.manifest, fixture.context, fastOptions), /zero-finding scan/u);
+        } finally {
+          rmSync(path);
+        }
+      });
+    }
+
+    for (const name of ["server.sqlite.unknown", "server.sqlite.bak", "server.sqlite.backup", "alternate.process.lock", "backups"]) {
+      await t.test(`unknown empty runtime directory ${name} fails closed`, async () => {
+        const path = join(chrome.runtimeRoot, name);
+        mkdirSync(path, { mode: 0o700 });
+        try {
+          await assert.rejects(scanEnvironment(fixture.manifest, fixture.context, fastOptions), /zero-finding scan/u);
+        } finally {
+          rmSync(path, { recursive: true });
+        }
+      });
+    }
 
     const canaries = [
       ["server_database", "bootstrap_token", chrome.databasePath, "Bootstrap token (shown once; expires in 10 minutes): " + "A".repeat(43), true],
@@ -1021,6 +1088,25 @@ test("scanEnvironment reaches all six roots and fails closed on residue and file
       } finally { rmSync(path); }
     });
 
+    await t.test("directory mutation during stable traversal is detected", async () => {
+      const directory = join(chrome.deviceRoot, "stable-directory");
+      mkdirSync(directory, { mode: 0o700 });
+      let changed = false;
+      try {
+        await assert.rejects(scanEnvironment(fixture.manifest, fixture.context, {
+          ...fastOptions,
+          scanDirectoryHooks: { afterRead: (readPath) => {
+            if (!changed && readPath === directory) {
+              changed = true;
+              mkdirSync(join(directory, "late-child"), { mode: 0o700 });
+            }
+          } },
+        }), /directory was unstable while scanning/u);
+      } finally {
+        rmSync(directory, { recursive: true });
+      }
+    });
+
     await t.test("symbolic aliases and hard links reject inside scanned roots", async () => {
       const source = temporaryFile(chrome.evidenceRoot, "source.json");
       const alias = join(chrome.evidenceRoot, "alias.json");
@@ -1029,6 +1115,12 @@ test("scanEnvironment reaches all six roots and fails closed on residue and file
       const hardlink = join(chrome.evidenceRoot, "hardlink.json");
       linkSync(source, hardlink);
       try { await assert.rejects(scanEnvironment(fixture.manifest, fixture.context, fastOptions), /single-link regular file/u); } finally { rmSync(hardlink); rmSync(source); }
+      const directoryAlias = join(chrome.runtimeRoot, "directory-alias");
+      symlinkSync(chrome.deviceRoot, directoryAlias, "dir");
+      try { await assert.rejects(scanEnvironment(fixture.manifest, fixture.context, fastOptions), /symbolic link/u); } finally { unlinkSync(directoryAlias); }
+      const nonPrivateDirectory = join(chrome.runtimeRoot, "non-private-directory");
+      mkdirSync(nonPrivateDirectory, { mode: 0o755 });
+      try { await assert.rejects(scanEnvironment(fixture.manifest, fixture.context, fastOptions), /owner-only private storage/u); } finally { rmSync(nonPrivateDirectory, { recursive: true }); }
     });
 
     await t.test("unexpected regular log file rejects after complete scanning", async () => {
@@ -1054,6 +1146,37 @@ test("scanEnvironment reaches all six roots and fails closed on residue and file
           afterInitialSnapshot: async (browser) => { if (!changed && browser === "chrome") { changed = true; writeFileSync(path, `${original.toString("utf8")} `, { mode: 0o600 }); } },
         }), /scan target changed/u);
       } finally { writeFileSync(path, original, { mode: 0o600 }); }
+    });
+
+    await t.test("empty directory add, remove, and rename after a signed scan change the final inventory", async () => {
+      const freshOptions = { ...fastOptions, startedAt: "2030-01-01T00:13:00.000Z", finishedAt: "2030-01-01T00:14:00.000Z" };
+      const assertFinalRejects = (signed, fresh) => assert.throws(
+        () => finalizeReceipt(fixture.context, structuredClone(fixture.context), journey("chrome"), journey("safari"), signed, fresh, observedAt),
+        /changed after the signed scan/u,
+      );
+
+      const signedBeforeAdd = await scanEnvironment(fixture.manifest, fixture.context, fastOptions);
+      const added = join(chrome.deviceRoot, "added-empty-directory");
+      mkdirSync(added, { mode: 0o700 });
+      const freshAfterAdd = await scanEnvironment(fixture.manifest, fixture.context, freshOptions);
+      assertFinalRejects(signedBeforeAdd, freshAfterAdd);
+      rmSync(added, { recursive: true });
+
+      const removed = join(chrome.deviceRoot, "removed-empty-directory");
+      mkdirSync(removed, { mode: 0o700 });
+      const signedBeforeRemove = await scanEnvironment(fixture.manifest, fixture.context, fastOptions);
+      rmSync(removed, { recursive: true });
+      const freshAfterRemove = await scanEnvironment(fixture.manifest, fixture.context, freshOptions);
+      assertFinalRejects(signedBeforeRemove, freshAfterRemove);
+
+      const original = join(chrome.deviceRoot, "renamed-empty-directory");
+      const renamed = join(chrome.deviceRoot, "renamed-empty-directory-v2");
+      mkdirSync(original, { mode: 0o700 });
+      const signedBeforeRename = await scanEnvironment(fixture.manifest, fixture.context, fastOptions);
+      renameSync(original, renamed);
+      const freshAfterRename = await scanEnvironment(fixture.manifest, fixture.context, freshOptions);
+      assertFinalRejects(signedBeforeRename, freshAfterRename);
+      rmSync(renamed, { recursive: true });
     });
   } finally {
     fixture.cleanup();
@@ -1089,6 +1212,51 @@ test("macOS global lsof holder inventory finds real FIFO writer and cat without 
   }
 });
 
+test("macOS lsof reports the real server-style process lock as one O_RDWR whole-file writer", {
+  skip: process.platform !== "darwin" || !existsSync("/opt/homebrew/bin/go"),
+}, async () => {
+  const temporary = mkdtempSync(join(tmpdir(), "mad-p2-real-process-lock-"));
+  chmodSync(temporary, 0o700);
+  const root = realpathSync.native(temporary);
+  const source = join(root, "holder.go");
+  const binary = join(root, "holder");
+  const lock = join(root, "server.sqlite.process.lock");
+  writeFileSync(source, `package main
+import ("fmt"; "os"; "syscall")
+func main() {
+  file, err := os.OpenFile(os.Args[1], os.O_CREATE|os.O_RDWR, 0600); if err != nil { panic(err) }
+  if err = syscall.Flock(int(file.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil { panic(err) }
+  fmt.Println("ready")
+  buffer := make([]byte, 1); _, _ = os.Stdin.Read(buffer)
+}
+`, { mode: 0o600 });
+  const built = spawnSync("/opt/homebrew/bin/go", ["build", "-o", binary, source], { encoding: "utf8", timeout: 30_000 });
+  assert.equal(built.status, 0, built.stderr);
+  const child = spawn(binary, [lock], { stdio: ["pipe", "pipe", "pipe"] });
+  try {
+    await Promise.race([
+      new Promise((accept, reject) => {
+        child.stdout.once("data", (value) => value.toString("utf8").includes("ready") ? accept() : reject(new Error("lock helper did not become ready")));
+        child.once("error", reject);
+        child.once("exit", (code) => reject(new Error(`lock helper exited early with ${code}`)));
+      }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("lock helper readiness timed out")), 5_000)),
+    ]);
+    const holders = liveProcessLockHolderInspector(lock, "real process-lock regression");
+    assert.equal(holders.length, 1);
+    assert.equal(holders[0].pid, child.pid);
+    assert.match(holders[0].fd, /^\d+$/u);
+    assert.equal(holders[0].access, "u");
+    assert.ok(["W", " "].includes(holders[0].lockStatus));
+    assert.equal(liveExclusiveProcessLockProbe(lock, "real process-lock regression"), true);
+  } finally {
+    child.stdin.end();
+    if (child.exitCode === null) child.kill("SIGTERM");
+    if (child.exitCode === null) await Promise.race([new Promise((accept) => child.once("exit", accept)), new Promise((accept) => setTimeout(accept, 2_000))]);
+    rmSync(temporary, { recursive: true, force: true });
+  }
+});
+
 test("declared-process log proof binds each writer to one cat-to-TTY reader and rejects regular sinks or tee holders", async (t) => {
   const fixture = makeIsolationFixture();
   try {
@@ -1103,13 +1271,13 @@ test("declared-process log proof binds each writer to one cat-to-TTY reader and 
       const info = statSync(path, { bigint: true });
       return { fd: "txt", access: "r", kind: "REG", device: info.dev.toString(), inode: info.ino.toString(), path };
     };
-    const databaseRecord = (path, fd) => {
+    const databaseRecord = (path, fd, lockStatus) => {
       const info = statSync(path, { bigint: true });
-      return { fd, access: "u", kind: "REG", device: info.dev.toString(), inode: info.ino.toString(), path };
+      return { fd, access: "u", kind: "REG", device: info.dev.toString(), inode: info.ino.toString(), path, ...(lockStatus ? { lockStatus } : {}) };
     };
     const dyldImage = { fd: "txt", kind: "REG", device: "999", inode: "999", path: "/usr/lib/dyld" };
     const processRecords = new Map([
-      [row.serverPid, { executable: paths.serverBinary, argv: [paths.serverBinary, "--config", paths.serverConfig], openFiles: [dyldImage, imageRecord(paths.serverBinary), databaseRecord(paths.databasePath, "7")], fds: new Map([["1", fifoRecord(paths.serverStdoutFifo, "w")], ["2", fifoRecord(paths.serverStderrFifo, "w")]]) }],
+      [row.serverPid, { executable: paths.serverBinary, argv: [paths.serverBinary, "--config", paths.serverConfig], openFiles: [dyldImage, imageRecord(paths.serverBinary), databaseRecord(paths.databasePath, "7"), databaseRecord(paths.serverProcessLockPath, "9", "W")], fds: new Map([["1", fifoRecord(paths.serverStdoutFifo, "w")], ["2", fifoRecord(paths.serverStderrFifo, "w")]]) }],
       [row.daemonPid, { executable: paths.serverBinary, argv: [paths.serverBinary, "daemon", "serve", "--root", paths.deviceRoot], openFiles: [dyldImage, imageRecord(paths.serverBinary), databaseRecord(paths.deviceDatabasePath, "8")], fds: new Map([["1", fifoRecord(paths.daemonStdoutFifo, "w")], ["2", fifoRecord(paths.daemonStderrFifo, "w")]]) }],
       [row.serverStdoutReaderPid, { executable: "/bin/cat", argv: ["/bin/cat"], fds: new Map([["0", fifoRecord(paths.serverStdoutFifo, "r")], ["1", tty], ["2", tty]]) }],
       [row.serverStderrReaderPid, { executable: "/bin/cat", argv: ["/bin/cat"], fds: new Map([["0", fifoRecord(paths.serverStderrFifo, "r")], ["1", tty], ["2", tty]]) }],
@@ -1124,8 +1292,10 @@ test("declared-process log proof binds each writer to one cat-to-TTY reader and 
       [paths.daemonStderrFifo, [row.daemonPid, row.daemonStderrReaderPid]],
     ]);
     const holders = async (path) => [...writerReader.get(path)].sort((left, right) => left - right);
+    const lockHolders = async () => [{ pid: row.serverPid, fd: "9", access: "u", lockStatus: "W" }];
+    const bindingOptions = (extra = {}) => ({ processInspector: inspector, fifoHolderInspector: holders, processLockHolderInspector: lockHolders, ...extra });
 
-    const proof = await validateProcessBindings(row, paths, paths.serverBinary, { processInspector: inspector, fifoHolderInspector: holders });
+    const proof = await validateProcessBindings(row, paths, paths.serverBinary, bindingOptions());
     assert.equal(Object.keys(proof.consoleReaders).length, 4);
     assert.equal(proof.processes.server.stdout.regularFile, false);
     assert.equal(proof.processes.server.argvDigest, canonicalDigest([paths.serverBinary, "--config", paths.serverConfig]));
@@ -1134,7 +1304,7 @@ test("declared-process log proof binds each writer to one cat-to-TTY reader and 
       const original = processRecords.get(row.daemonPid).argv;
       processRecords.get(row.daemonPid).argv = [paths.serverBinary, "daemon", "serve", "--root", fixture.rows[1].deviceRoot];
       await assert.rejects(
-        validateProcessBindings(row, paths, paths.serverBinary, { processInspector: inspector, fifoHolderInspector: holders }),
+        validateProcessBindings(row, paths, paths.serverBinary, bindingOptions()),
         /argv differs/u,
       );
       processRecords.get(row.daemonPid).argv = original;
@@ -1144,14 +1314,14 @@ test("declared-process log proof binds each writer to one cat-to-TTY reader and 
       const original = processRecords.get(row.serverPid).argv;
       processRecords.get(row.serverPid).argv = [paths.serverBinary, "--config", `${paths.serverConfig} copied`];
       await assert.rejects(
-        validateProcessBindings(row, paths, paths.serverBinary, { processInspector: inspector, fifoHolderInspector: holders }),
+        validateProcessBindings(row, paths, paths.serverBinary, bindingOptions()),
         /argv differs/u,
       );
       processRecords.get(row.serverPid).argv = original;
       await assert.rejects(
-        validateProcessBindings(row, paths, paths.serverBinary, {
-          processInspector: async (pid) => ({ ...(await inspector(pid)), pid: pid + 1 }), fifoHolderInspector: holders,
-        }),
+        validateProcessBindings(row, paths, paths.serverBinary, bindingOptions({
+          processInspector: async (pid) => ({ ...(await inspector(pid)), pid: pid + 1 }),
+        })),
         /PID changed/u,
       );
     });
@@ -1161,31 +1331,73 @@ test("declared-process log proof binds each writer to one cat-to-TTY reader and 
       const exact = files.find((item) => item.fd === "txt" && item.path === paths.serverBinary);
       files.push({ ...exact });
       await assert.rejects(
-        validateProcessBindings(row, paths, paths.serverBinary, { processInspector: inspector, fifoHolderInspector: holders }),
+        validateProcessBindings(row, paths, paths.serverBinary, bindingOptions()),
         /running image vnode differs/u,
       );
       files.pop();
     });
 
+    await t.test("server process lock rejects missing FD, wrong access/status, duplicate or foreign holders, and daemon access", async () => {
+      const serverFiles = processRecords.get(row.serverPid).openFiles;
+      const lockRecord = serverFiles.find((item) => item.path === paths.serverProcessLockPath);
+      serverFiles.splice(serverFiles.indexOf(lockRecord), 1);
+      await assert.rejects(validateProcessBindings(row, paths, paths.serverBinary, bindingOptions()), /unique numeric O_RDWR FD/u);
+      serverFiles.push(lockRecord);
+
+      for (const [key, value] of [["access", "r"], ["lockStatus", "w"]]) {
+        const original = lockRecord[key];
+        lockRecord[key] = value;
+        await assert.rejects(validateProcessBindings(row, paths, paths.serverBinary, bindingOptions()), /unique numeric O_RDWR FD/u);
+        lockRecord[key] = original;
+      }
+
+      serverFiles.push({ ...lockRecord, fd: "10" });
+      await assert.rejects(validateProcessBindings(row, paths, paths.serverBinary, bindingOptions()), /unique numeric O_RDWR FD/u);
+      serverFiles.pop();
+      await assert.rejects(validateProcessBindings(row, paths, paths.serverBinary, bindingOptions({
+        processLockHolderInspector: async () => [
+          { pid: row.serverPid, fd: "9", access: "u", lockStatus: "W" },
+          { pid: 999, fd: "4", access: "u", lockStatus: "W" },
+        ],
+      })), /exactly one global holder/u);
+
+      const daemonFiles = processRecords.get(row.daemonPid).openFiles;
+      daemonFiles.push({ ...lockRecord, fd: "10" });
+      await assert.rejects(validateProcessBindings(row, paths, paths.serverBinary, bindingOptions()), /undeclared writable regular-file FD|must not hold/u);
+      daemonFiles.pop();
+    });
+
+    await t.test("server process lock must remain private, single-link, and empty", async () => {
+      writeFileSync(paths.serverProcessLockPath, "not empty", { mode: 0o600 });
+      await assert.rejects(validateProcessBindings(row, paths, paths.serverBinary, bindingOptions()), /single-link empty/u);
+      writeFileSync(paths.serverProcessLockPath, "", { mode: 0o600 });
+      chmodSync(paths.serverProcessLockPath, 0o640);
+      await assert.rejects(validateProcessBindings(row, paths, paths.serverBinary, bindingOptions()), /owner-only/u);
+      chmodSync(paths.serverProcessLockPath, 0o600);
+      const alias = join(fixture.root, "process-lock-hardlink");
+      linkSync(paths.serverProcessLockPath, alias);
+      await assert.rejects(validateProcessBindings(row, paths, paths.serverBinary, bindingOptions()), /single-link/u);
+      rmSync(alias);
+    });
+
     await t.test("post-start input replacement, reader argv drift, and hidden writable log FD fail closed", async () => {
       await assert.rejects(
-        validateProcessBindings(row, paths, paths.serverBinary, {
+        validateProcessBindings(row, paths, paths.serverBinary, bindingOptions({
           processInspector: async (pid) => ({ ...(await inspector(pid)), ...(pid === row.serverPid ? { startTime: "2020-01-01T00:00:00.000Z" } : {}) }),
-          fifoHolderInspector: holders,
-        }),
+        })),
         /immutable single-link snapshot created before process start/u,
       );
       const reader = processRecords.get(row.serverStdoutReaderPid);
       reader.argv = ["/bin/cat", paths.serverStdoutFifo];
-      await assert.rejects(validateProcessBindings(row, paths, paths.serverBinary, { processInspector: inspector, fifoHolderInspector: holders }), /reader argv must be exact/u);
+      await assert.rejects(validateProcessBindings(row, paths, paths.serverBinary, bindingOptions()), /reader argv must be exact/u);
       reader.argv = ["/bin/cat"];
       const originalAccess = reader.fds.get("1").access;
       reader.fds.get("1").access = "r";
-      await assert.rejects(validateProcessBindings(row, paths, paths.serverBinary, { processInspector: inspector, fifoHolderInspector: holders }), /directly to one Terminal TTY/u);
+      await assert.rejects(validateProcessBindings(row, paths, paths.serverBinary, bindingOptions()), /directly to one Terminal TTY/u);
       reader.fds.get("1").access = originalAccess;
       const files = processRecords.get(row.serverPid).openFiles;
       files.push({ fd: "9", access: "w", kind: "REG", device: "1", inode: "9999", path: join(fixture.root, "hidden.log") });
-      await assert.rejects(validateProcessBindings(row, paths, paths.serverBinary, { processInspector: inspector, fifoHolderInspector: holders }), /undeclared writable regular-file FD/u);
+      await assert.rejects(validateProcessBindings(row, paths, paths.serverBinary, bindingOptions()), /undeclared writable regular-file FD/u);
       files.pop();
     });
 
@@ -1195,7 +1407,7 @@ test("declared-process log proof binds each writer to one cat-to-TTY reader and 
       writeFileSync(paths.deviceDatabasePath, "clean replacement", { mode: 0o600 });
       assert.notEqual(openRecord.inode, statSync(paths.deviceDatabasePath, { bigint: true }).ino.toString());
       await assert.rejects(
-        validateProcessBindings(row, paths, paths.serverBinary, { processInspector: inspector, fifoHolderInspector: holders }),
+        validateProcessBindings(row, paths, paths.serverBinary, bindingOptions()),
         /open database vnode differs/u,
       );
     });
@@ -1204,7 +1416,7 @@ test("declared-process log proof binds each writer to one cat-to-TTY reader and 
       rmSync(paths.serverStdoutFifo);
       writeFileSync(paths.serverStdoutFifo, "retained log", { mode: 0o600 });
       await assert.rejects(
-        validateProcessBindings(row, paths, paths.serverBinary, { processInspector: inspector, fifoHolderInspector: holders }),
+        validateProcessBindings(row, paths, paths.serverBinary, bindingOptions()),
         /owner-only 0600 FIFO/u,
       );
     });
@@ -1213,7 +1425,7 @@ test("declared-process log proof binds each writer to one cat-to-TTY reader and 
       rmSync(paths.serverBinary);
       writeFileSync(paths.serverBinary, "replacement", { mode: 0o600 });
       await assert.rejects(
-        validateProcessBindings(row, paths, paths.serverBinary, { processInspector: inspector, fifoHolderInspector: holders }),
+        validateProcessBindings(row, paths, paths.serverBinary, bindingOptions()),
         /running image vnode differs/u,
       );
     });
@@ -1234,12 +1446,12 @@ test("declared-process log proof binds each writer to one cat-to-TTY reader and 
       const info = statSync(path, { bigint: true });
       return { fd: "txt", access: "r", kind: "REG", device: info.dev.toString(), inode: info.ino.toString(), path };
     };
-    const databaseRecord = (path, fd) => {
+    const databaseRecord = (path, fd, lockStatus) => {
       const info = statSync(path, { bigint: true });
-      return { fd, access: "u", kind: "REG", device: info.dev.toString(), inode: info.ino.toString(), path };
+      return { fd, access: "u", kind: "REG", device: info.dev.toString(), inode: info.ino.toString(), path, ...(lockStatus ? { lockStatus } : {}) };
     };
     const records = new Map([
-      [row.serverPid, { executable: paths.serverBinary, argv: [paths.serverBinary, "--config", paths.serverConfig], openFiles: [imageRecord(paths.serverBinary), databaseRecord(paths.databasePath, "7")], fds: new Map([["1", fifoRecord(paths.serverStdoutFifo, "w")], ["2", fifoRecord(paths.serverStderrFifo, "w")]]) }],
+      [row.serverPid, { executable: paths.serverBinary, argv: [paths.serverBinary, "--config", paths.serverConfig], openFiles: [imageRecord(paths.serverBinary), databaseRecord(paths.databasePath, "7"), databaseRecord(paths.serverProcessLockPath, "9", "W")], fds: new Map([["1", fifoRecord(paths.serverStdoutFifo, "w")], ["2", fifoRecord(paths.serverStderrFifo, "w")]]) }],
       [row.daemonPid, { executable: paths.serverBinary, argv: [paths.serverBinary, "daemon", "serve", "--root", paths.deviceRoot], openFiles: [imageRecord(paths.serverBinary), databaseRecord(paths.deviceDatabasePath, "8")], fds: new Map([["1", fifoRecord(paths.daemonStdoutFifo, "w")], ["2", fifoRecord(paths.daemonStderrFifo, "w")]]) }],
       [row.serverStdoutReaderPid, { executable: "/bin/cat", argv: ["/bin/cat"], fds: new Map([["0", fifoRecord(paths.serverStdoutFifo, "r")], ["1", tty], ["2", tty]]) }],
       [row.serverStderrReaderPid, { executable: "/bin/cat", argv: ["/bin/cat"], fds: new Map([["0", fifoRecord(paths.serverStderrFifo, "r")], ["1", tty], ["2", tty]]) }],
@@ -1250,6 +1462,7 @@ test("declared-process log proof binds each writer to one cat-to-TTY reader and 
       validateProcessBindings(row, paths, paths.serverBinary, {
         processInspector: async (pid) => ({ pid, uid: process.getuid(), state: "S+", startTime: frozenAt, ...records.get(pid) }),
         fifoHolderInspector: async () => [row.serverPid, row.serverStdoutReaderPid, 999].sort((left, right) => left - right),
+        processLockHolderInspector: async () => [{ pid: row.serverPid, fd: "9", access: "u", lockStatus: "W" }],
       }),
       /undeclared holder or tee/u,
     );

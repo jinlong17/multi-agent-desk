@@ -271,7 +271,8 @@ string reject. Parsed objects have a null prototype, duplicate keys reject, and
 `__proto__`, `constructor`, and `prototype` reject at every nesting depth.
 
 The manifest/context v2 binds implementation SHA, receipt-tool SHA, canonical
-manifest/context digests, isolated server/Device databases, runtime/transfer/
+manifest/context digests, isolated server/Device databases, exact
+`databasePath + ".process.lock"` paths, runtime/transfer/
 log/evidence roots, and each server/Daemon writer plus its stdout/stderr FIFO
 reader. Canonical-real-path, containment, non-overlap, unique inode/link, and
 full post-scan inventory checks reject alias, symlink, hardlink, replacement,
@@ -284,19 +285,40 @@ collector, or undeclared FIFO holder fails. PTY-master/Terminal/OS/operator
 capture remains outside this machine proof and is governed by the exact journey
 attestations below.
 
+Each server process-lock proof binds a private, single-link, empty regular-file
+vnode to exactly one numeric O_RDWR FD on the declared server PID and exactly
+one global holder. `lsof` whole-file `W` status is accepted directly; on macOS
+versions where `lsof` leaves BSD `flock` status blank, a second process must be
+unable to acquire a nonblocking shared whole-file `flock`. Missing/partial/
+shared locks, duplicate FDs or holders, path/vnode replacement, daemon access,
+cross-row reuse, and wildcard lock declarations reject. The normalized lock
+binding is frozen and revalidated by scan and finalize.
+
 All six target classes (`server_database`, `device_database`,
 `runtime_residue`, `logs`, `transfers`, `evidence`) receive full-tree stable
 reads and all six secret classes (bootstrap token, session cookie, CSRF,
 recovery code, WebAuthn ceremony, bootstrap proof) receive fixed detector-rule
 and synthetic-canary coverage. SQLite logical assertions, integrity/FK/schema
 ledgers, bootstrap/session/recovery/idempotency/receipt state, raw main/WAL/SHM/
-journal/backup scans, exact public transfer allowlists, and zero unexpected
+journal scans, exact public transfer allowlists, and zero unexpected
 files are mandatory. The receipt retains only counts/inventory/rule digests,
 never secret values or their digests. The OS Passkey store, browser profiles,
 operator recovery store, and generalized long-term-private-key content claim
 remain excluded, while every declared root still receives marker/metadata
 scans. A finding or scan error requires fixing the source and restarting the
 complete affected row.
+The exact process-lock file belongs to `runtime_residue`, is stably read and
+receives all six detectors, and never contributes to `serverBackupCount`.
+Only the main server database and exact existing `-wal`, `-shm`, and `-journal`
+sidecars are removed from runtime-residue classification. Fresh unknown
+`server.sqlite.*`, `.bak`, `.backup`, alternate-lock, and backup-directory
+artifacts therefore fail closed; no prefix or `*.lock` allowlist exists.
+Each non-excluded child directory contributes a stable metadata-only inventory
+entry containing only a path digest plus vnode/mode/timestamp fields. Known
+scan roots and excluded runtime subroots are not duplicated as child entries.
+No absolute path or cleartext directory name is persisted. Directory add,
+remove, rename, permission change, symlink substitution, and traversal-time
+mutation must change the inventory or reject immediately.
 
 The `scanEnvironment` integration matrix must pass one complete two-row scan
 with real logical SQLite assertions and nonempty coverage of all six target
@@ -310,6 +332,16 @@ allowlist rejection. Negatives cover unreadable/non-private files, mutation and
 replacement during stable read, symbolic aliases, hard links, unexpected
 regular logs, an empty required evidence root, and mutation between first and
 second snapshots.
+Process-lock negatives cover missing/mismatched manifest fields, nonempty or
+non-private/hard-linked locks, missing/duplicate/wrong-access FDs, partial or
+absent locks, extra global holders, daemon access, context/scan evidence drift,
+and a real macOS `lsof` plus contention-probe regression. Unknown
+`server.sqlite.*`, `.bak`, and `.backup` files are each exercised as rejected
+runtime residue.
+The same matrix exercises empty directory forms of those names plus an
+alternate-lock directory and a backup directory, a non-private directory,
+directory symlink, traversal-time mutation, and add/remove/rename between the
+signed scan and finalize.
 
 End-to-end bootstrap + registration + login + recovery + replacement Passkey +
 delete + logout passes in current Chrome and Safari on macOS arm64 against the
