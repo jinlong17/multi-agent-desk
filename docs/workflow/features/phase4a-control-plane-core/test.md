@@ -283,7 +283,11 @@ and share the FIFO holder inventory with only the declared writer. A
 regular-file sink on a declared process or declared log root, `tee`, diagnostic
 collector, or undeclared FIFO holder fails. PTY-master/Terminal/OS/operator
 capture remains outside this machine proof and is governed by the exact journey
-attestations below.
+attestations below. macOS `lsof -F` may omit `D` for FIFO FDs: only that absent
+FIFO device field is tolerated, while FIFO kind, expected access, canonical
+path, exact inode, owner/mode/link, holder, `/bin/cat` reader, and TTY checks
+remain mandatory. A present FIFO `D` must match exactly; regular-file,
+database, and process-lock device checks remain exact.
 
 Each server process-lock proof binds a private, single-link, empty regular-file
 vnode to exactly one numeric O_RDWR FD on the declared server PID and exactly
@@ -335,7 +339,10 @@ second snapshots.
 Process-lock negatives cover missing/mismatched manifest fields, nonempty or
 non-private/hard-linked locks, missing/duplicate/wrong-access FDs, partial or
 absent locks, extra global holders, daemon access, context/scan evidence drift,
-and a real macOS `lsof` plus contention-probe regression. Unknown
+and a real macOS `lsof` plus contention-probe regression. FIFO regressions
+exercise real macOS `lsof` omission of FIFO `D`, the positive absent-field
+binding, and rejection of a wrong-present device or missing inode/path/access.
+Unknown
 `server.sqlite.*`, `.bak`, and `.backup` files are each exercised as rejected
 runtime residue.
 The same matrix exercises empty directory forms of those names plus an

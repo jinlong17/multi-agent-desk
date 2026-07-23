@@ -717,7 +717,7 @@ function liveProcessSnapshot(pid, label) {
   return { pid, uid: Number(match[2]), state: match[3], startTime: new Date(match[4]).toISOString(), executable: match[5] };
 }
 
-function liveProcessInspector(pid, label) {
+export function liveProcessInspector(pid, label) {
   if (process.platform !== "darwin") throw new Error("live P2 process/FIFO inspection is available only on native macOS");
   const before = liveProcessSnapshot(pid, label);
   const commandLine = command("/bin/ps", ["-ww", "-p", String(pid), "-o", "command="], `inspect ${label} argv`);
@@ -867,7 +867,13 @@ function fifoBinding(path, fd, label, expectedAccess) {
   if (!info.isFIFO() || info.nlink !== 1n || (info.mode & 0o777n) !== 0o600n || typeof process.getuid !== "function" || info.uid !== BigInt(process.getuid())) {
     throw new Error(`${label} must be an owner-only 0600 FIFO with one link`);
   }
-  if (!fd || fd.kind !== "FIFO" || fd.access !== expectedAccess || fd.device !== info.dev.toString() || fd.inode !== info.ino.toString() || realpathSync.native(fd.path) !== realpathSync.native(path)) {
+  // macOS lsof -F can omit D for FIFO descriptors. A missing FIFO device is
+  // therefore not evidence of a different vnode; every other FIFO binding
+  // remains exact. If lsof does report D, it must still match exactly.
+  if (!fd || fd.kind !== "FIFO" || fd.access !== expectedAccess ||
+      (fd.device !== undefined && fd.device !== info.dev.toString()) ||
+      fd.inode !== info.ino.toString() || typeof fd.path !== "string" ||
+      realpathSync.native(fd.path) !== realpathSync.native(path)) {
     throw new Error(`${label} is not the declared process FD FIFO`);
   }
   return {

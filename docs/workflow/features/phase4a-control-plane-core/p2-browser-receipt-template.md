@@ -193,7 +193,13 @@ holder. macOS `lsof` lock status is used when it exposes `W`; because the
 system `lsof` may leave BSD `flock` status blank, that case passes only when a
 second process's nonblocking shared `flock` is rejected, proving the existing
 exclusive whole-file lock. The normalized proof is persisted in the frozen
-context and rechecked during scan/finalize.
+context and rechecked during scan/finalize. macOS `lsof -F` can omit the `D`
+device field for a FIFO FD. That omission is accepted only for a declared FIFO:
+its FIFO kind, expected read/write access, canonical path, exact inode, owner,
+`0600` mode, and single-link binding must still match; if `D` is present it
+must match the FIFO device exactly. This exception never applies to regular
+files, databases, or process locks, and does not relax FIFO holder, reader, or
+TTY checks.
 Only the public `device_id` is retained from each protected daemon identity.
 
 ## Execute each real journey

@@ -26,6 +26,7 @@ import {
   validateManifest,
   validateProcessBindings,
   liveFIFOHolderInspector,
+  liveProcessInspector,
   liveExclusiveProcessLockProbe,
   liveProcessLockHolderInspector,
   validateReceiptOutputPath,
@@ -1206,6 +1207,13 @@ test("macOS global lsof holder inventory finds real FIFO writer and cat without 
       await new Promise((accept) => setTimeout(accept, 100));
     }
     assert.deepEqual(holders, expected);
+    const inspected = liveProcessInspector(writer.pid, "real FIFO lsof device-field regression");
+    const stdout = inspected.fds.get("1");
+    assert.equal(stdout.kind, "FIFO");
+    assert.equal(stdout.access, "w");
+    assert.equal(stdout.inode, statSync(fifo, { bigint: true }).ino.toString());
+    assert.equal(realpathSync.native(stdout.path), fifo);
+    assert.equal(Object.hasOwn(stdout, "device"), false);
   } finally {
     await Promise.all([stop(reader), stop(writer)]);
     rmSync(temporary, { recursive: true, force: true });
@@ -1299,6 +1307,30 @@ test("declared-process log proof binds each writer to one cat-to-TTY reader and 
     assert.equal(Object.keys(proof.consoleReaders).length, 4);
     assert.equal(proof.processes.server.stdout.regularFile, false);
     assert.equal(proof.processes.server.argvDigest, canonicalDigest([paths.serverBinary, "--config", paths.serverConfig]));
+
+    await t.test("FIFO binding tolerates only an absent macOS lsof device field", async () => {
+      const stdout = processRecords.get(row.serverPid).fds.get("1");
+      const originalDevice = stdout.device;
+      delete stdout.device;
+      await assert.doesNotReject(validateProcessBindings(row, paths, paths.serverBinary, bindingOptions()));
+
+      stdout.device = (BigInt(originalDevice) + 1n).toString();
+      await assert.rejects(
+        validateProcessBindings(row, paths, paths.serverBinary, bindingOptions()),
+        /declared process FD FIFO/u,
+      );
+      stdout.device = originalDevice;
+
+      for (const key of ["inode", "path", "access"]) {
+        const original = stdout[key];
+        delete stdout[key];
+        await assert.rejects(
+          validateProcessBindings(row, paths, paths.serverBinary, bindingOptions()),
+          /declared process FD FIFO/u,
+        );
+        stdout[key] = original;
+      }
+    });
 
     await t.test("daemon root argv mismatch", async () => {
       const original = processRecords.get(row.daemonPid).argv;
