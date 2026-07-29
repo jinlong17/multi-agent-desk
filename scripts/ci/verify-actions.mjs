@@ -36,5 +36,7 @@ for (const command of ["npm run project:verify", "npm run ci:static", "npm run s
 }
 assert(governance.includes("fetch-depth: 0"), "DCO checkout must fetch full history");
 assert(governance.includes("--exclude-path scripts/ci/fixtures/links"), "HTTP link check must exclude intentional negative fixtures");
+assert(governance.includes("fail: false"), "external HTTP link failures must remain diagnostic");
+assert(governance.includes("node scripts/ci/check-local-links.mjs"), "local link validation must remain blocking");
 assert(ci.includes("libwebkit2gtk-4.1-dev") && ci.includes("libayatana-appindicator3-dev"), "Linux Tauri prerequisites incomplete");
 console.log(`verified Actions contracts: checks=${required.length}, actions=${uses.length}`);

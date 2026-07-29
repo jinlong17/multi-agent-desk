@@ -92,5 +92,8 @@ jobs:
             --exclude-path scripts/ci/fixtures/links
             --exclude-path apps/desktop/src-tauri/target
             './**/*.md'
-          fail: true
+          # External sites are diagnostic only: transient resets, rate limits,
+          # and regional filtering must not block code delivery. The preceding
+          # repository-local link and anchor validator remains mandatory.
+          fail: false
           failIfEmpty: true
