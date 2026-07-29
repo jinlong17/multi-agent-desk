@@ -9,11 +9,11 @@
 | Title | `As-built product documentation authority` |
 | Owner Module | `project-system` |
 | Impacted Modules | `core`, `provider`, `control-plane`, `web`, `desktop`, `security` |
-| Current Phase | `VERIFY P1 EVIDENCE INVENTORY` |
-| Status | `BLOCKED` |
-| Executor | `Codex as feature-verify` |
+| Current Phase | `BUILD P1 EVIDENCE INVENTORY REPAIR` |
+| Status | `READY_FOR_VERIFY` |
+| Executor | `Codex as feature-build` |
 | Updated | `2026-07-29 PDT` |
-| Suggested Next | `feature-build` |
+| Suggested Next | `feature-verify` |
 | Branch / Worktree | `codex/project-system/as-built-product-docs @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/as-built-product-docs` |
 | Plan Version | `v0.2` |
 | Provider Gate | `open — P2 positive Provider claims require a current immutable provider feature-verify or provider-spike receipt pinned in docs/reviews/as-built-product-docs/claim-ledger.md; stale/missing scope remains unknown and opens a separate provider spike` |
@@ -40,6 +40,8 @@
 | 2026-07-29 PDT | PLAN | `PATH=/Users/jinlong/.nvm/versions/node/v24.11.1/bin:$PATH /opt/homebrew/bin/pnpm run project:verify`; `... pnpm run ci:links`; `git diff --check` | passed: workflow `agents=10, skills=3, docs=17, edges=20, statuses=15`; dashboard verification passed; 308 Markdown files passed link validation; no whitespace errors. Initial rerun correctly rejected `NEEDS_REVIEW -> feature-plan`; after setting Suggested Next to `feature-review`, the legal-state rerun passed | this log; command output retained in task |
 | 2026-07-29 PDT | BUILD P1 | inventoried every approved product-facing source heading in the durable append-only claim ledger; bound 20 stable `CLM-###` claims to full-revision evidence, exact Provider receipts where valid, explicit gaps/conflicts, destination anchors, and day-31/day-91 downgrade rules | `docs/reviews/as-built-product-docs/claim-ledger.md`; no commit | P1 complete and `READY_FOR_VERIFY`; no `docs/PRODUCT.md`, README, specialist derived document, runtime, Provider evidence, security verdict, dashboard-state, push, or ship change | independent `feature-verify` must inspect P1 coverage, receipt scope/reachability, conflicts, and stale-data downshifts before P2 |
 | 2026-07-29 PDT | BUILD P1 | `PATH=/Users/jinlong/.nvm/versions/node/v24.11.1/bin:$PATH /opt/homebrew/bin/pnpm run ci:links`; `... pnpm run project:verify`; `git diff --check` | passed: 309 Markdown files passed local-link validation; workflow `agents=10, skills=3, docs=17, edges=20, statuses=15`; dashboard static verification passed; no whitespace errors. These are documentation/workflow structural results only. | this log; command output retained in task | independent `feature-verify` |
+| 2026-07-29 PDT | BUILD P1 REPAIR | Cleared the independent P1 verification blocker by appending `CLM-021` through `CLM-023` and their source/destination rows for User Guide `9.1` Control Plane deployment, `9.2` device pairing, and `9.3` Web/Desktop use; retained all prior claims and conflict history | `docs/reviews/as-built-product-docs/claim-ledger.md`; no commit | restored the last non-blocked status, `READY_FOR_VERIFY`; the three rows remain `planned`, preserve Passkey/pinning/E2EE boundaries, and introduce no P2/P3 or support claim | fresh independent `feature-verify` for P1 |
+| 2026-07-29 PDT | BUILD P1 REPAIR | `PATH=/Users/jinlong/.nvm/versions/node/v24.11.1/bin:$PATH /opt/homebrew/bin/pnpm run ci:links`; `... pnpm run project:verify`; `git diff --check` | passed: 310 Markdown files passed local-link validation; workflow `agents=10, skills=3, docs=17, edges=20, statuses=15`; dashboard static verification passed; no whitespace errors. These are structural results only. | this log; command output retained in task | fresh independent `feature-verify` for P1 |
 
 ## Risks and Blockers
 

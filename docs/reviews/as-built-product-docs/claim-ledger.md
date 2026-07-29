@@ -10,7 +10,7 @@ superseded `CLM-###`; rolling back prose must not remove this record.
 
 | Field | Value |
 |---|---|
-| Ledger revision | `1` |
+| Ledger revision | `2` |
 | Snapshot as of | `2026-07-29 PDT` |
 | Verified on | `2026-07-29 PDT` |
 | Verification baseline | `397194bfaea6983c4c0a54289d8bb1844711cfd6` |
@@ -407,6 +407,69 @@ tool/version/platform/capability, result, and fallback match the row.
 - **destination:** `docs/PRODUCT.md#current-capability-matrix`; `docs/PROVIDER_COMPATIBILITY.md#phase-2-codex-schema-clarification`.
 - **conflict:** `CON-002`.
 
+### CLM-021
+
+- **source:** `docs/USER_GUIDE.md#91-部署-control-plane`
+- **claim:** Control Plane deployment, including Docker/TLS/backup guidance,
+  Bootstrap Token ceremony, Passkey/recovery-code setup, and initial Trust
+  Anchor enrollment, is planned. No current image name, port, environment
+  variable, or production deployment procedure is established.
+- **class / scope:** `planned` — Phase 4a/Phase 6 Control Plane deployment;
+  no released server or browser-only E2EE-root claim.
+- **authority / evidence_ref / evidence_date / evidence_state:**
+  `docs/USER_GUIDE.md@397194bfaea6983c4c0a54289d8bb1844711cfd6`;
+  `docs/THREAT_MODEL.md@397194bfaea6983c4c0a54289d8bb1844711cfd6`; `2026-07-29`; `current`.
+- **provider_receipt:** not-applicable.
+- **fallback_or_gate:** no remote deployment instruction; retain Phase 4a,
+  security, and release gates. A Passkey does not make a browser the initial
+  E2EE trust root.
+- **reviewers:** independent security review before ship for changed Passkey,
+  bootstrap, enrollment, or trust-root wording.
+- **destination:** `docs/PRODUCT.md#current-capability-matrix`; `docs/PRODUCT.md#trust-and-data-boundaries`; `docs/USER_GUIDE.md#91-部署-control-plane`.
+- **conflict:** none.
+
+### CLM-022
+
+- **source:** `docs/USER_GUIDE.md#92-配对设备`
+- **claim:** Device pairing commands are not currently executable. The planned
+  ceremony requires out-of-band comparison of six fingerprint groups; a Control
+  Plane public-key entry is only an index, and a key change requires a new
+  Device and re-pairing.
+- **class / scope:** `planned` — remote Device pairing and pinning; no current
+  pairing/remote-control support claim.
+- **authority / evidence_ref / evidence_date / evidence_state:**
+  `docs/USER_GUIDE.md@397194bfaea6983c4c0a54289d8bb1844711cfd6`;
+  `docs/THREAT_MODEL.md@397194bfaea6983c4c0a54289d8bb1844711cfd6`; `2026-07-29`; `current`.
+- **provider_receipt:** not-applicable.
+- **fallback_or_gate:** local-only source-built workflow; Phase 4a and security
+  acceptance must establish the pairing flow before any positive claim.
+- **reviewers:** independent security review before ship for changed pinning,
+  fingerprint, or key-rotation wording.
+- **destination:** `docs/PRODUCT.md#trust-and-data-boundaries`; `docs/USER_GUIDE.md#92-配对设备`.
+- **conflict:** none.
+
+### CLM-023
+
+- **source:** `docs/USER_GUIDE.md#93-使用-web-或-desktop`
+- **claim:** Web/Desktop remote pages are planned. Passkey login grants only
+  metadata access until a separately approved Web Device completes enrollment;
+  only then may it receive a Session Key, decrypt terminal data, answer
+  approvals, or initiate a Credential Grant. Clearing site data requires a new
+  Device ID and re-pairing.
+- **class / scope:** `planned` — Phase 4b Web remote control and future Desktop
+  behavior; no shipped Web/Desktop terminal, approval, or credential-grant
+  claim.
+- **authority / evidence_ref / evidence_date / evidence_state:**
+  `docs/USER_GUIDE.md@397194bfaea6983c4c0a54289d8bb1844711cfd6`;
+  `docs/THREAT_MODEL.md@397194bfaea6983c4c0a54289d8bb1844711cfd6`; `2026-07-29`; `current`.
+- **provider_receipt:** not-applicable.
+- **fallback_or_gate:** metadata-only/unpaired client; Phase 4b E2EE and
+  security acceptance gates remain open.
+- **reviewers:** independent security review before ship for changed Web Device,
+  E2EE, key-storage, approval, or credential-grant wording.
+- **destination:** `docs/PRODUCT.md#current-capability-matrix`; `docs/PRODUCT.md#trust-and-data-boundaries`; `docs/USER_GUIDE.md#93-使用-web-或-desktop`.
+- **conflict:** none.
+
 ## Coverage map
 
 This map records every substantive source heading in the approved reconciliation
@@ -431,6 +494,9 @@ beyond the linked row's explicit limited authority.
 | `docs/USER_GUIDE.md#7-创建-runtime-profile开发者预览` | CLM-007, CLM-010 | `docs/PRODUCT.md#current-capability-matrix` |
 | `docs/USER_GUIDE.md#8-启动和控制-sessioncodex-开发者预览` | CLM-012 | `docs/PRODUCT.md#current-capability-matrix` |
 | `docs/USER_GUIDE.md#9-启用远程访问规划中phase-4a4b` | CLM-015 | `docs/PRODUCT.md#trust-and-data-boundaries` |
+| `docs/USER_GUIDE.md#91-部署-control-plane` | CLM-021 | `docs/PRODUCT.md#current-capability-matrix`, `#trust-and-data-boundaries` |
+| `docs/USER_GUIDE.md#92-配对设备` | CLM-022 | `docs/PRODUCT.md#trust-and-data-boundaries` |
+| `docs/USER_GUIDE.md#93-使用-web-或-desktop` | CLM-023 | `docs/PRODUCT.md#current-capability-matrix`, `#trust-and-data-boundaries` |
 | `docs/USER_GUIDE.md#10-把凭据授权给指定设备规划中phase-5` | CLM-015, CLM-018 | `docs/PRODUCT.md#trust-and-data-boundaries` |
 | `docs/USER_GUIDE.md#11-撤销设备或凭据` | CLM-015, CLM-018 | `docs/PRODUCT.md#trust-and-data-boundaries` |
 | `docs/USER_GUIDE.md#12-离线和断线行为` | CLM-015 | `docs/PRODUCT.md#current-capability-matrix` |
