@@ -9,11 +9,11 @@
 | Title | `Windows Codex usage-fixture deadline flake` |
 | Owner Module | `provider` |
 | Impacted Modules | `project-system` |
-| Current Phase | `BUG_FIX` |
-| Status | `READY_FOR_VERIFY` |
-| Executor | `Codex (GPT-5) as bug-fix` |
-| Updated | `2026-07-29 01:51 PDT` |
-| Suggested Next | `bug-verify` |
+| Current Phase | `BUG_VERIFY` |
+| Status | `BLOCKED` |
+| Executor | `Codex (GPT-5) as bug-verify` |
+| Updated | `2026-07-29 01:55 PDT` |
+| Suggested Next | `bug-fix` — eliminate the `MaxWait` data race, then obtain a native Windows CI run for the repaired SHA |
 | Branch / Worktree | `codex/provider/windows-codex-usage-fixture-deadline-flake` / `/Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/windows-codex-usage-fixture-deadline-flake` |
 | Provider Gate | `resolved — this is a test-fixture timing repair only; it changes no compatibility or support claim` |
 | Security Gate | `none` |
@@ -80,6 +80,8 @@ runtime tests, not a production Codex usage or account-isolation failure.
 | 2026-07-29 01:51 PDT | TARGETED REPEATS | `go test -count=100 -run '^(TestRuntimeManagerKeepsConcurrentAccountsAndUsageIsolated|TestRuntimeManagerBlockedApprovalWriteIsBoundedAndCannotReplay)$' ./internal/providers/codex`; `go test -race -count=20 -run '^(TestRuntimeManagerKeepsConcurrentAccountsAndUsageIsolated|TestRuntimeManagerBlockedApprovalWriteIsBoundedAndCannotReplay)$' ./internal/providers/codex` | PASS: 200 normal and 40 race executions; both the scheduler-tolerant usage path and explicit bounded blocked-write path passed | local command output |
 | 2026-07-29 01:51 PDT | PACKAGE AND WINDOWS COMPILE | `go test -count=1 ./internal/providers/codex`; `go vet ./internal/providers/codex`; `GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go test -c -o /tmp/windows-codex-usage-fixture-deadline-flake.test.exe ./internal/providers/codex` | PASS; full Codex provider package, vet, and Windows amd64 test compilation passed. Compile evidence is not native Windows execution evidence. | local command output; `/tmp/windows-codex-usage-fixture-deadline-flake.test.exe` |
 | 2026-07-29 01:51 PDT | STATIC CI CONTRACTS | With bundled Codex Node/Pnpm, `pnpm run ci:actions`; `pnpm run ci:codeowners` | PASS: Actions checks=7/actions=15; CODEOWNERS owner=`@jinlong17`. Aggregate `pnpm run ci:static` remains unavailable because its script invokes absent `npm`; direct underlying checks passed. | local command output |
+| 2026-07-29 01:55 PDT | BUG VERIFY — SCOPE AND NON-RACE CHECKS | Re-read clean `93e6a6c` and its parent diff; ran `go test -count=100 -run '^(TestRuntimeManagerKeepsConcurrentAccountsAndUsageIsolated|TestRuntimeManagerBlockedApprovalWriteIsBoundedAndCannotReplay)$' ./internal/providers/codex`, `go test -count=1 ./internal/providers/codex`, and `go vet ./internal/providers/codex` | PASS: focused repetitions, provider package, and vet. The diff changes only this log and `runtime_test.go`; production `NewClient`/fallback remain five seconds, while the blocked-write test retains an explicit 100 ms value. | local command output; `git diff 93e6a6c^ 93e6a6c`; `internal/providers/codex/protocol.go:91,412-416` |
+| 2026-07-29 01:55 PDT | BUG VERIFY — RACE AND WINDOWS LIMIT | Ran `go test -v -race -count=20 -run '^(TestRuntimeManagerKeepsConcurrentAccountsAndUsageIsolated|TestRuntimeManagerBlockedApprovalWriteIsBoundedAndCannotReplay)$' ./internal/providers/codex`; cross-compiled `GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go test -c -o /tmp/windows-codex-usage-fixture-deadline-flake-verify.test.exe ./internal/providers/codex`; inspected `.github/workflows/ci.yml` and read-only remote SHA status | BLOCKED: race detector reports `runtime_test.go:1119` writing `fixture.rpcClient.MaxWait` concurrently with `RuntimeManager.eventPump` reading it through `protocol.go:413`. Cross-compile emits a Windows PE executable only. CI would execute `go test -count=1 ./...` on `windows-latest`, but this SHA/branch is not on origin (GitHub check-runs returns 422), so no native Windows execution exists. | local race output; `/tmp/windows-codex-usage-fixture-deadline-flake-verify.test.exe`; `.github/workflows/ci.yml`; `gh api` 422 |
 
 ## Risks and Blockers
 
@@ -97,3 +99,4 @@ runtime tests, not a production Codex usage or account-isolation failure.
 |---|---|---|---|---|---|
 | 2026-07-29 01:44 PDT | Codex (GPT-5) as bug-diagnose | Classified Provider ownership (project-system CI impact), initialized this separate DRAFT bug unit, traced the reported Windows usage failure through the all-purpose fixture's 100 ms `MaxWait`, protocol deadline path, usage call sites, and Phase 2 history; preserved the old shipped bug unchanged | this file; `docs/reviews/windows-codex-usage-fixture-deadline-flake/2026-07-29-bug-diagnose.md` | `DRAFT -> DIAGNOSED`; minimum repair is test-only: general fixture deadline plus a local short override for blocked-write coverage | `bug-fix` |
 | 2026-07-29 01:51 PDT | Codex (GPT-5) as bug-fix | Replaced the common fixture's 100 ms `MaxWait` with a five-second scheduler-tolerant value, added a deterministic assertion that the two concurrent usage fixtures use it, and moved the 100 ms setting into the blocked-approval-write contract before its existing bounded-failure assertion | `internal/providers/codex/runtime_test.go`; this file | `DIAGNOSED -> READY_FOR_VERIFY`; focused normal/race repeats, full provider package, vet, Windows amd64 compile, and direct CI contracts pass; no production timeout, workflow, link checker, PR, commit, push, or support claim changed | `bug-verify`, including fresh native Windows execution evidence |
+| 2026-07-29 01:55 PDT | Codex (GPT-5) as bug-verify | Independently checked the exact clean SHA and test-only diff, repeated focused and package checks, inspected production/fixture timeout boundaries and native-Windows CI availability, and ran race coverage | `docs/reviews/windows-codex-usage-fixture-deadline-flake/2026-07-29-bug-verify.md`; this file | `READY_FOR_VERIFY -> BLOCKED`: the post-start test mutation of `Client.MaxWait` races the active event pump; exact SHA also has no native Windows run because it is not published remotely | `bug-fix` |
