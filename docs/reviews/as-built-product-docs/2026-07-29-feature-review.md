@@ -1,142 +1,138 @@
 # Feature review: As-built product documentation authority
 
 - Target: `as-built-product-docs`
-- Plan commit reviewed: `5e5670a3d4d5be9500a56a30f8d864311c321191`
+- Plan commit reviewed: `a14d39558b651cee41beeccc545969af511ad85a`
 - Date: `2026-07-29 PDT`
-- Owner classification: `project-system` (high confidence). The change governs
-  documentation authority, workflow evidence routing, and acceptance contracts;
-  Provider and Security remain impacted fact authorities, not co-owners.
-- Verdict: `REVISE`
+- Owner classification: `project-system` (high confidence). The feature owns
+  documentation authority, workflow evidence routing, and acceptance
+  contracts. Provider and Security remain affected evidence authorities; they
+  are not co-owners of this documentation build.
+- Verdict: `APPROVED`
 
 ## Conclusion
 
-The plan correctly selects `docs/PRODUCT.md` rather than creating a root-level
-duplicate, keeps `dev_log.md`, compatibility evidence, and security evidence
-above product prose, and explicitly refuses to turn target, CI, dashboard, or
-configuration evidence into product support. Its proposed Provider and trust
-boundaries are appropriately narrow.
+Plan v0.2 resolves all three findings from the preceding review without
+expanding product support or trust claims. The next build phase can implement
+the documentation artifact set without inventing ledger, freshness, Provider,
+or Security decisions.
 
-It is not yet executable without inventing decisions. The planned inventory is
-not a fixed review artifact with a measurable coverage set or freshness rule,
-and the phase table asks for Provider/Security reviews in phases that conflict
-with the documented workflow. Resolve the findings below, then re-enter
-`NEEDS_REVIEW`; no product documentation should be built from this revision.
+The plan is intentionally evidence-conservative: current Provider support may
+be published positively only with an upstream immutable receipt, while missing
+or expired evidence remains `unknown`, `planned`, or `unsupported`; substantive
+trust wording remains subject to independent Security review after final
+feature verification. Those open gates constrain the future prose but do not
+block this documentation plan from entering `feature-build`.
 
-## Ranked findings
+## Re-review of prior findings
 
-### 1. Gate producers, timing, and resolution are not executable
+### 1. Ledger authority, retention, and coverage — resolved
 
-`design.md` P2 makes Provider fact review a dependency, while P4 says that
-Provider evidence and Security review occur after P2/P3. `dev_log.md` repeats
-that contradiction. The plan also says P4 will "perform required reviews",
-but `feature-build` may not act as the independent `security-review` writer.
-The workflow permits the Security Gate review only after feature verification
-reaches `READY_TO_SHIP`; it must not be silently performed inside a build
-phase. "Owning provider reviewer" is likewise not a defined workflow verdict
-writer or evidence artifact.
+`api.md` fixes the durable ledger path as
+`docs/reviews/as-built-product-docs/claim-ledger.md`, its required header and
+row fields, stable `CLM-###` IDs, full-revision evidence references, source and
+destination anchors, and explicit conflict IDs. `design.md` defines the
+coverage universe as substantive product-facing support/trust statements in
+every named source surface, every future product capability-matrix row, and
+any newly changed out-of-universe product-facing support/trust statement.
 
-Required revision:
+The append-only/supersession rule, retained unresolved-conflict list, and
+no-deletion-on-prose-rollback rule make the ledger a durable review artifact,
+not a mutable runtime or dashboard authority. `test.md` supplies direct
+inspection acceptance for path, coverage, retention, source-to-destination
+mapping, and conflict handling. This is decision-complete and manually
+testable without requiring a new product registry or an invented automation
+schema.
 
-1. Define the provider fact-review producer, its immutable report/receipt
-   path, what it validates, and how an unproven claim opens a `provider-spike`.
-   State whether that review is a P1/P2 dependency or an input to later
-   verification; do not retain both orderings.
-2. Make P4 a documentation-build/verification-preparation phase only. Route
-   the independent security assessment through the existing
-   `READY_TO_SHIP -> security-review` transition, and name the resulting report
-   as the Security Gate evidence.
-3. Specify how the Provider Gate is resolved or remains open without allowing a
-   documentation build to self-accept either Provider or security risk.
+### 2. Provider and Security producer ordering — resolved
 
-Affected files: `docs/workflow/features/as-built-product-docs/design.md`,
-`api.md`, `test.md`, and `dev_log.md`.
+The plan now identifies only valid upstream Provider receipt producers:
 
-### 2. The claim inventory cannot prove coverage or reconciliation
+- an independent `feature-verify` report for the provider-owned feature that
+  proved the exact scope; or
+- a provider-spike evidence artifact together with its `GATE_RESOLVED` feature
+  log and compatibility-matrix row.
 
-The API permits an unspecified Markdown inventory and defers the storage/schema
-decision to feature review. P1 nevertheless accepts "no unbound substantive
-claim," while P3/P4 require every listed surface to reconcile to it. No path,
-versioning rule, initial coverage universe, or stable mapping from an inventory
-row to a source/destination assertion is required. A writer would have to
-invent all four choices, and a reviewer could not determine that a newly added
-or existing support statement was omitted.
+P1 records existing receipts and gaps. P2 may publish a positive Provider
+claim only after a matching current receipt is pinned in the ledger; otherwise
+the safe classes remain available and a separate provider-owned spike supplies
+any needed new evidence. Documentation planning, build, and verification do
+not establish or self-accept Provider behavior.
 
-Required revision:
+P4 is correctly limited to verification preparation. The independent
+`security-review` occurs only after `feature-verify` advances the completed
+feature to `READY_TO_SHIP`, consistent with the workflow state machine. This
+is the sole feature-level writer that can accept or return substantive trust
+wording before ship. The plan therefore does not create an undefined Provider
+review role or place a Security verdict inside a build phase.
 
-1. Choose and name a durable, reviewable artifact path (a Markdown ledger is
-   adequate; no machine-readable registry is required for this feature).
-2. Define the coverage universe: the complete listed source surfaces plus every
-   capability-matrix and newly changed product-facing support/trust statement.
-   Require a source heading/anchor and destination mapping for each row.
-3. Make P1 acceptance and P3/P4 tests trace the fixed ledger path, stable row
-   IDs, and a recorded unresolved-conflict list. State the preservation/rollback
-   rule for that ledger instead of allowing its deletion to remove the review
-   trail.
+### 3. Freshness vocabulary and downshift — resolved
 
-Affected files: `docs/reviews/as-built-product-docs/2026-07-29-feature-brief.md`,
-`docs/workflow/features/as-built-product-docs/design.md`, `api.md`, and
-`test.md`.
+The canonical class set is consistently `planned`, `preview`, `supported`,
+`experimental`, `unsupported`, and `unknown`; `preview` must include the
+literal `source-built` qualifier, and `stale` is an evidence state rather than
+a capability class. Snapshot and evidence references are pinned to dates and a
+full verification baseline revision.
 
-### 3. Freshness and vocabulary tests are asserted but undefined
+The plan makes freshness deterministic: a snapshot over 30 calendar days old,
+or a positive Provider receipt over 90 days old, out of scope, unreachable,
+or contradictory, downshifts the affected row and product-matrix statement to
+`unknown` with the prescribed stale/contradictory evidence state and refresh
+gate. `test.md` gives concrete day-31 and day-91 manual failure scenarios plus
+scope-mismatch and unreachable-revision cases. This prevents an aged snapshot
+or structural check from preserving an unsupported positive claim.
 
-The plan requires a dated snapshot, labels stale Provider evidence as a reason
-to open a spike, and says a simulated stale date must fail. It supplies no
-staleness policy: no observation-age/review trigger, source-revision binding,
-or prescribed downgrade when current external/provider evidence ages out.
-The class set is also inconsistent: the API/test contract uses `preview`, while
-the design defines `source-built preview` as a distinct label. This prevents a
-deterministic stale-evidence simulation and a unique matrix classification.
+## Execution constraints preserved for feature build
 
-Required revision:
-
-1. Define snapshot freshness and the provider-evidence revalidation trigger;
-   bind the snapshot to a ledger revision and exact evidence dates. Specify the
-   required downgrade/gate when that trigger fires.
-2. Select one canonical class vocabulary (for example `preview` with a required
-   `source-built` scope qualifier) and use it consistently in the brief,
-   design, API, dev log, and tests.
-3. Replace the prose-only stale simulation with an inspectable pass/fail
-   scenario using the selected trigger and expected ledger/matrix result.
-
-Affected files: `docs/reviews/as-built-product-docs/2026-07-29-feature-brief.md`,
-`docs/workflow/features/as-built-product-docs/design.md`, `api.md`, and
-`test.md`.
+1. P2 must not publish a positive substantive Provider/version/platform claim
+   without the ledger's matching current receipt tuple; a provider plan, CI,
+   branch, or configuration is not a substitute.
+2. Any unresolved Provider claim remains visibly bounded and may require a
+   separately tracked provider spike; the documentation feature must not mark
+   that upstream evidence as accepted.
+3. The build must preserve the threat-model boundaries that a Passkey is not
+   E2EE decryption authority and revocation cannot erase plaintext already
+   copied to a compromised target. Final acceptance of changed substantive
+   trust wording remains the later independent Security Gate.
+4. `npm run project:verify` and `npm run ci:links` are structural evidence
+   only; they do not establish product, platform, deployment, or release
+   readiness.
 
 ## Evidence and checks
 
-- Reviewed every artifact introduced by `5e5670a`: feature brief, design, API
-  contract, test plan, and feature state log.
-- Checked authority against `docs/IMPLEMENTATION_PLAN.md` section 18 and its
-  Phase 2 current-support boundary; the proposed canonical location and
-  evidence-first hierarchy are compatible with both.
-- Checked workflow state and verdict-writer constraints in
-  `docs/workflow/project/workflow.md` and `.agents/roles/feature-review.md`.
-- Checked current compatibility and threat-model surfaces. They already carry
-  bounded Provider/platform and residual-risk wording, so documentation must
-  preserve—not generalize—them.
-- `git diff --check 5e5670a^ 5e5670a` passed.
-- `node` is unavailable in the current shell; therefore `npm run
-  project:verify` and `npm run ci:links` could not be independently run. This
-  is a structural-check environment limitation, not product or plan evidence.
+- Read the revised feature brief, `design.md`, `api.md`, `test.md`, and
+  `dev_log.md`; compared `a14d395` with the earlier `REVISE` review and checked
+  the exact five changed planning artifacts.
+- Re-read `docs/IMPLEMENTATION_PLAN.md`, `AGENTS.md`, `CLAUDE.md`, the module
+  registry, workflow state machine, and feature-review role contract.
+- Checked current `docs/PROVIDER_COMPATIBILITY.md` and `docs/THREAT_MODEL.md`:
+  both retain narrow version/platform boundaries and residual-risk wording,
+  which the plan correctly requires future documentation to preserve rather
+  than broaden.
+- With Node `v24.11.1` on `PATH`, passed
+  `/opt/homebrew/bin/pnpm run project:verify` (workflow and dashboard checks)
+  and `/opt/homebrew/bin/pnpm run ci:links` (308 Markdown files).
+- `git diff --check a14d395^ a14d395` passed. The reviewed worktree was clean
+  before and after the checks; no product documentation, implementation,
+  dashboard judgment, remote, push, merge, or release action was performed.
 
 ## Decision
 
-`REVISE`. The planning owner must resolve findings 1-3 in the feature planning
-artifacts, update its state from `REVISE` to `NEEDS_REVIEW`, and request a new
-feature review. Provider evidence and Security Gate acceptance remain open;
-this review neither resolves them nor authorizes a build, push, merge, release,
-or risk acceptance.
+`APPROVED`. The approved plan defines an executable P1 evidence inventory,
+P2 canonical document, P3 reconciliation, and P4 verification-preparation
+sequence. Proceed with one `feature-build` phase only. Provider receipts and
+the Security Gate remain independently governed at their specified workflow
+boundaries.
 
 ## Handoff
 
 **Target**: `as-built-product-docs`
 **Completed**: `feature-review`
-**Verdict**: `REVISE`
-**Summary**: `Authority and evidence boundaries are strong, but the ledger, freshness policy, and Provider/Security gate sequencing remain undecided or contradictory, so the next build phase is not executable.`
-**Findings**: `1) bind Provider/Security reviews to valid workflow producers and order; 2) fix the claim-ledger path, coverage, and retention contract; 3) define freshness and one canonical vocabulary with testable stale handling.`
-**Evidence**: `5e5670a artifacts; implementation-plan section 18/Phase 2 boundary; workflow and role contracts; current compatibility/threat-model surfaces; git diff --check passed; Node-backed structural checks unavailable because node is absent.`
-**Blockers**: `feature-plan resolution of findings 1-3; a runnable supported Node is still needed before the planned structural checks can run.`
+**Verdict**: `APPROVED`
+**Summary**: `Plan v0.2 is decision-complete and testable: it fixes the durable claim ledger and coverage contract, requires valid upstream Provider evidence before positive claims, and routes Security acceptance only through the post-verification workflow gate.`
+**Findings**: `No blocking findings. Feature-build must retain the receipt, freshness-downshift, residual-risk, and structural-check-only constraints recorded above.`
+**Evidence**: `a14d395 revised artifacts; implementation-plan, module, workflow, and role contracts; current Provider Compatibility and Threat Model boundaries; project:verify and ci:links passed with Node v24.11.1; git diff --check passed.`
+**Blockers**: `none for feature-build; missing or stale future Provider receipts must remain unknown or open a separate provider-owned spike, and substantive trust wording remains subject to the later independent Security Gate.`
 
 ### Next Step
 
-Run `feature-plan` for `as-built-product-docs`.
+Run `feature-build` for `as-built-product-docs`.

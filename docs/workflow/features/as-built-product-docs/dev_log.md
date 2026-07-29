@@ -9,11 +9,11 @@
 | Title | `As-built product documentation authority` |
 | Owner Module | `project-system` |
 | Impacted Modules | `core`, `provider`, `control-plane`, `web`, `desktop`, `security` |
-| Current Phase | `PLAN` |
-| Status | `NEEDS_REVIEW` |
-| Executor | `Codex as feature-plan` |
+| Current Phase | `REVIEW` |
+| Status | `APPROVED` |
+| Executor | `Codex as feature-review` |
 | Updated | `2026-07-29 PDT` |
-| Suggested Next | `feature-review` |
+| Suggested Next | `feature-build` |
 | Branch / Worktree | `codex/project-system/as-built-product-docs @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/as-built-product-docs` |
 | Plan Version | `v0.2` |
 | Provider Gate | `open — P2 positive Provider claims require a current immutable provider feature-verify or provider-spike receipt pinned in docs/reviews/as-built-product-docs/claim-ledger.md; stale/missing scope remains unknown and opens a separate provider spike` |
@@ -60,3 +60,4 @@
 | 2026-07-29 PDT | Codex as feature-plan | Attempted required structural project and local-link checks; ran diff hygiene review | structural commands blocked by unavailable/runnable Node; documentation plan remains reviewable; no failed check was reclassified as a product failure | this log; no commit | provision a supported Node 24 runtime, rerun `project:verify` and `ci:links`, then run `feature-review` |
 | 2026-07-29 PDT | Codex as feature-review | Independently reviewed plan commit `5e5670a` for authority, evidence boundaries, trust/provider gates, workflow sequencing, and testability | `docs/reviews/as-built-product-docs/2026-07-29-feature-review.md`; `git diff --check 5e5670a^ 5e5670a` passed; current shell has no runnable `node`, so Node-backed structural checks remain unavailable | `REVISE`: P1 inventory location/coverage and freshness policy are undecided; P2/P4 place Provider and Security reviews in contradictory phases and do not bind gate resolution to the workflow | `feature-plan` must resolve the ranked findings, return to `NEEDS_REVIEW`, then request a new feature review |
 | 2026-07-29 PDT | Codex as feature-plan | Resolved feature-review findings 1-3 without changing product documentation or verdict reports: fixed an append-only claim-ledger contract, canonical classes/freshness downgrades, valid Provider evidence receipt producers, and post-verification Security Gate sequencing | feature brief; `docs/workflow/features/as-built-product-docs/{design,api,test,dev_log}.md`; no commit | `NEEDS_REVIEW`; Provider Gate remains open unless every positive Provider row later binds a current receipt, and Security Gate remains open until independent review after `READY_TO_SHIP` | rerun supported Node structural checks, then `feature-review` |
+| 2026-07-29 PDT | Codex as feature-review | Re-reviewed revised plan commit `a14d395` for prior ledger/retention/coverage, Provider/Security producer ordering, and freshness/vocabulary findings | `docs/reviews/as-built-product-docs/2026-07-29-feature-review.md`; Node `v24.11.1` with `/opt/homebrew/bin/pnpm run project:verify` and `ci:links` passed; `git diff --check a14d395^ a14d395` passed | `APPROVED`: P1 ledger, P2 Provider receipt precondition, P4 verification preparation, post-`READY_TO_SHIP` Security review, and deterministic stale-evidence downshifts are executable; no support/trust claim, gate acceptance, push, merge, or release action was performed | `feature-build` |
