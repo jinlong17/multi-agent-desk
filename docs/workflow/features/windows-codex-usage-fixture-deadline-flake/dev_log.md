@@ -13,7 +13,7 @@
 | Status | `BLOCKED` |
 | Executor | `Codex (GPT-5) as bug-verify` |
 | Updated | `2026-07-29 02:04 PDT` |
-| Suggested Next | `bug-fix` — after human-authorized publication of `c6dcf2e`, restore `READY_FOR_VERIFY` only with its native Windows CI result for a final verification |
+| Suggested Next | `bug-fix` |
 | Branch / Worktree | `codex/provider/windows-codex-usage-fixture-deadline-flake` / `/Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/windows-codex-usage-fixture-deadline-flake` |
 | Provider Gate | `resolved — this is a test-fixture timing repair only; it changes no compatibility or support claim` |
 | Security Gate | `none` |
