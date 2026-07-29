@@ -13,7 +13,7 @@
 | Status | `READY_FOR_VERIFY` |
 | Executor | `Codex (GPT-5) as bug-fix` |
 | Updated | `2026-07-29 02:17 PDT` |
-| Suggested Next | `bug-verify` — independently verify the remote Windows receipt and the exact PR head |
+| Suggested Next | `bug-verify` |
 | Branch / Worktree | `codex/provider/windows-codex-usage-fixture-deadline-flake` / `/Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/windows-codex-usage-fixture-deadline-flake` |
 | Provider Gate | `resolved — this is a test-fixture timing repair only; it changes no compatibility or support claim` |
 | Security Gate | `none` |
