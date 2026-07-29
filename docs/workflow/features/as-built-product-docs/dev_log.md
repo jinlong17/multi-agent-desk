@@ -9,11 +9,11 @@
 | Title | `As-built product documentation authority` |
 | Owner Module | `project-system` |
 | Impacted Modules | `core`, `provider`, `control-plane`, `web`, `desktop`, `security` |
-| Current Phase | `BUILD P2 CANONICAL PRODUCT DOCUMENT` |
-| Status | `READY_FOR_VERIFY` |
-| Executor | `Codex as feature-build` |
+| Current Phase | `VERIFY P2 CANONICAL PRODUCT DOCUMENT` |
+| Status | `VERIFIED` |
+| Executor | `Codex as feature-verify` |
 | Updated | `2026-07-29 PDT` |
-| Suggested Next | `feature-verify` |
+| Suggested Next | `feature-build` |
 | Branch / Worktree | `codex/project-system/as-built-product-docs @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/as-built-product-docs` |
 | Plan Version | `v0.2` |
 | Provider Gate | `open — P2 positive Provider claims require a current immutable provider feature-verify or provider-spike receipt pinned in docs/reviews/as-built-product-docs/claim-ledger.md; stale/missing scope remains unknown and opens a separate provider spike` |
@@ -69,3 +69,4 @@
 | 2026-07-29 PDT | Codex as feature-review | Re-reviewed revised plan commit `a14d395` for prior ledger/retention/coverage, Provider/Security producer ordering, and freshness/vocabulary findings | `docs/reviews/as-built-product-docs/2026-07-29-feature-review.md`; Node `v24.11.1` with `/opt/homebrew/bin/pnpm run project:verify` and `ci:links` passed; `git diff --check a14d395^ a14d395` passed | `APPROVED`: P1 ledger, P2 Provider receipt precondition, P4 verification preparation, post-`READY_TO_SHIP` Security review, and deterministic stale-evidence downshifts are executable; no support/trust claim, gate acceptance, push, merge, or release action was performed | `feature-build` |
 | 2026-07-29 PDT | Codex as feature-verify | Independently verified P1 build commit `a54d333` for ledger identity/vocabulary, exact reachable positive Provider receipts, conflicts, freshness rules, support-boundary preservation, structural checks, and complete source-heading coverage | `docs/reviews/as-built-product-docs/2026-07-29-feature-verify.md`; `ci:links` (309 files), `project:verify`, and `git diff --check a54d333^ a54d333` passed; three substantive User Guide 9.1/9.2/9.3 anchors are absent from the ledger coverage map | `BLOCKED`: full source-heading coverage is not established; Provider and Security Gates remain open and no P2/support/security/release acceptance is implied | `feature-build` must append traceable coverage for the three omitted headings and return P1 to `READY_FOR_VERIFY` |
 | 2026-07-29 PDT | Codex as feature-verify | Independently re-verified P1 repair commit `1165a13` for closure of F1, planned/no-support boundaries, existing claim/conflict/receipt preservation, and structural/link hygiene | `docs/reviews/as-built-product-docs/2026-07-29-feature-verify.md`; CLM-021/022/023 and all three User Guide 9.1/9.2/9.3 coverage-map anchors present; CLM-001..020 and CON-001..003 unchanged; exact positive Codex receipts remain reachable; `workflow:verify`, `ci:links` (310 files), and `git diff --check 1165a13^ 1165a13` passed | `VERIFIED`: P1 inventory is complete; Provider and Security Gates remain open and no P2/support/security/release acceptance is implied | `feature-build` for P2 canonical `docs/PRODUCT.md` |
+| 2026-07-29 PDT | Codex as feature-verify | Independently verified P2 build commit `5ce0b63` for canonical path/date/ledger binding, support/release and trust boundaries, exact positive Provider receipt scope, freshness, P3 isolation, and structural checks | `docs/reviews/as-built-product-docs/2026-07-29-feature-verify-p2.md`; `docs/PRODUCT.md` only; receipts reachable from baseline; `ci:links` (311 files), `workflow:verify`, `project:verify`, and `git diff --check 5ce0b63^ 5ce0b63` passed | `VERIFIED`: P2 is a bounded canonical snapshot; Provider and Security Gates remain open and P3 reconciliation is still required | `feature-build` for P3 derived-surface reconciliation |
