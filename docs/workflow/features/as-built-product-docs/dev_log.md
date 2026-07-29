@@ -9,11 +9,11 @@
 | Title | `As-built product documentation authority` |
 | Owner Module | `project-system` |
 | Impacted Modules | `core`, `provider`, `control-plane`, `web`, `desktop`, `security` |
-| Current Phase | `VERIFY P2 CANONICAL PRODUCT DOCUMENT` |
-| Status | `VERIFIED` |
-| Executor | `Codex as feature-verify` |
+| Current Phase | `BUILD P3 DERIVED-SURFACE RECONCILIATION` |
+| Status | `READY_FOR_VERIFY` |
+| Executor | `Codex as feature-build` |
 | Updated | `2026-07-29 PDT` |
-| Suggested Next | `feature-build` |
+| Suggested Next | `feature-verify` |
 | Branch / Worktree | `codex/project-system/as-built-product-docs @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/as-built-product-docs` |
 | Plan Version | `v0.2` |
 | Provider Gate | `open — P2 positive Provider claims require a current immutable provider feature-verify or provider-spike receipt pinned in docs/reviews/as-built-product-docs/claim-ledger.md; stale/missing scope remains unknown and opens a separate provider spike` |
@@ -24,8 +24,8 @@
 | Phase | Scope | Dependencies | Acceptance | Status |
 |---|---|---|---|---|
 | P1 evidence inventory | create the durable `docs/reviews/as-built-product-docs/claim-ledger.md`, with stable IDs, source/destination headings, full-revision evidence links, conflicts, and freshness bindings | feature-review approval; source evidence available | complete coverage universe is mapped; retained conflict list explicit; receipt gaps are marked; every row uses only planned/preview/supported/experimental/unsupported/unknown | `VERIFIED` |
-| P2 canonical `docs/PRODUCT.md` | create dated as-built authority, capability matrix, authority map, non-goals, and trust summary | P1; each positive Provider claim has a current immutable provider feature-verify or provider-spike receipt | all canonical statements match ledger and preserve exact boundaries; no root `PRODUCT.md`; no positive Provider row without a receipt | `READY_FOR_VERIFY` |
-| P3 derived-surface reconciliation | update README, user guide, and specialist docs from accepted claim ledger | P2; relevant module-owner fact checks | no contradictory product/support claim across listed surfaces | `PENDING` |
+| P2 canonical `docs/PRODUCT.md` | create dated as-built authority, capability matrix, authority map, non-goals, and trust summary | P1; each positive Provider claim has a current immutable provider feature-verify or provider-spike receipt | all canonical statements match ledger and preserve exact boundaries; no root `PRODUCT.md`; no positive Provider row without a receipt | `VERIFIED` |
+| P3 derived-surface reconciliation | update README, user guide, and specialist docs from accepted claim ledger | P2; relevant module-owner fact checks | no contradictory product/support claim across listed surfaces | `READY_FOR_VERIFY` |
 | P4 verification preparation | run structural checks and prepare ledger-to-surface/provider/trust trace material for independent verification | P2/P3; Provider receipts current for positive rows | no broken link, stale positive Provider row, unsupported upgrade, or trust-boundary loss; no review verdict performed in P4 | `PENDING` |
 
 ## Evidence Ledger
@@ -44,6 +44,8 @@
 | 2026-07-29 PDT | BUILD P1 REPAIR | `PATH=/Users/jinlong/.nvm/versions/node/v24.11.1/bin:$PATH /opt/homebrew/bin/pnpm run ci:links`; `... pnpm run project:verify`; `git diff --check` | passed: 310 Markdown files passed local-link validation; workflow `agents=10, skills=3, docs=17, edges=20, statuses=15`; dashboard static verification passed; no whitespace errors. These are structural results only. | this log; command output retained in task | fresh independent `feature-verify` for P1 |
 | 2026-07-29 PDT | BUILD P2 | Created the canonical dated `docs/PRODUCT.md` from the independently verified P1 ledger: source-built/release boundary, authority map, classed capability matrix, non-goals, trust/residual-risk boundary, and deterministic freshness downgrade are explicit | `docs/PRODUCT.md`; no commit | P2 is `READY_FOR_VERIFY`; only receipt-bound exact Codex `0.144.2` Linux rows are positive, while broad/missing Provider evidence remains `unknown`, `planned`, or `unsupported`; no P3 derived-surface, Provider evidence, security verdict, dashboard-state, push, or ship change | independent `feature-verify` for P2 |
 | 2026-07-29 PDT | BUILD P2 | `PATH=/Users/jinlong/.nvm/versions/node/v24.11.1/bin:$PATH /opt/homebrew/bin/pnpm run ci:links`; `... pnpm run project:verify`; `git diff --check` | passed: 311 Markdown files passed local-link validation; workflow `agents=10, skills=3, docs=17, edges=20, statuses=15`; dashboard static verification passed; no whitespace errors. These are structural results only. | this log; command output retained in task | independent `feature-verify` for P2 |
+| 2026-07-29 PDT | BUILD P3 | Reconciled README, User Guide, Architecture, and Provider Adapter as derived views of the verified `PRODUCT.md`/ledger authority; tightened the user-guide capability table and replaced specialist placeholders without changing runtime, plans, primary compatibility/threat evidence, or dashboard state | `README.md`; `docs/USER_GUIDE.md`; `docs/ARCHITECTURE.md`; `docs/PROVIDER_ADAPTER.md`; no commit | P3 is `READY_FOR_VERIFY`; exact Codex Linux `0.144.2` receipt-bound support remains narrow, other Provider/platform/trust scope remains planned/unknown/unsupported, and no P4/security/release action occurred | independent `feature-verify` for P3 |
+| 2026-07-29 PDT | BUILD P3 | `PATH=/Users/jinlong/.nvm/versions/node/v24.11.1/bin:$PATH /opt/homebrew/bin/pnpm run ci:links`; `... pnpm run project:verify`; `git diff --check` | passed: 312 Markdown files passed local-link validation; workflow `agents=10, skills=3, docs=17, edges=20, statuses=15`; dashboard static verification passed; no whitespace errors. These are structural results only. | this log; command output retained in task | independent `feature-verify` for P3 |
 
 ## Risks and Blockers
 
