@@ -14,10 +14,11 @@
   state authority. Independent review/verification/security reports and exact
   compatibility artifacts remain claim evidence; no prose document overrides
   them.
-- Provider and Security Gates are open. Provider owners must fact-check
-  substantive Provider scope; independent security review is required before
-  ship for substantive credential, cryptographic, trust, revocation, or
-  residual-risk wording.
+- Provider and Security Gates are open. A positive substantive Provider claim
+  needs the immutable provider evidence receipt defined below before P2;
+  independent `security-review` is required only after final feature
+  verification reaches `READY_TO_SHIP` and before ship for substantive
+  credential, cryptographic, trust, revocation, or residual-risk wording.
 
 ## Authority model
 
@@ -36,14 +37,14 @@ evidence controls the support wording. The documentation must downgrade to
 `unknown`, `planned`, `experimental`, or `unsupported` until the discrepancy
 is resolved; it must never choose the more optimistic claim.
 
-## Claim vocabulary
+## Claim vocabulary and freshness
 
 Every product-facing capability statement must use one of these meanings.
 
 | Label | Meaning | Required evidence/wording |
 |---|---|---|
-| `target` / `planned` | reviewed desired v0.1 behavior not yet proven as current product behavior | implementation-plan or approved feature-plan link; no runnable instruction |
-| `source-built preview` | runnable development path from source, not an installation/release promise | exact feature state and command scope; identify omissions |
+| `planned` | reviewed target v0.1 behavior not yet proven as current product behavior | implementation-plan or approved feature-plan link; no runnable instruction |
+| `preview` | runnable development path from source, not an installation/release promise | `scope` must include the literal qualifier `source-built`; identify omissions |
 | `supported` | exact behavior independently evidenced for a specified version, platform, and capability | exact evidence link, fallback, and date; no generalization |
 | `experimental` | intentionally non-stable behavior with stated limits | explicit platform/scope and non-stable label |
 | `unsupported` | intentionally not available or ruled out by evidence/policy | preserve reason and safe fallback where one exists |
@@ -51,6 +52,37 @@ Every product-facing capability statement must use one of these meanings.
 
 Phase labels, green CI, a build, a configured binary, a dashboard snapshot,
 and a feature branch are not standalone support labels.
+
+`target` is allowed only as a synonym in prose for the canonical ledger class
+`planned`; every ledger and capability-matrix row uses exactly one of
+`planned`, `preview`, `supported`, `experimental`, `unsupported`, or
+`unknown`. `stale` is evidence state, never a seventh capability class.
+
+The future ledger and product snapshot use these deterministic dates and
+bindings:
+
+- Ledger header: `Ledger revision`, `Snapshot as of`, `Verified on`, and the
+  full Git revision of the reconciliation baseline. Every evidence link is
+  recorded as `repo-relative-path@full-commit`, with its exact
+  `evidence_date`.
+- A current snapshot is fresh only when `Verified on - Snapshot as of <= 30`
+  calendar days and every evidence revision is reachable from the verification
+  baseline. At day 31, all rows represented as current (`preview`,
+  `supported`, or `experimental`) must change to `unknown` with
+  `evidence_state=stale` and `fallback_or_gate=snapshot refresh`; the product
+  matrix must use the same downgrade.
+- A Provider receipt is current only when the full receipt revision is
+  reachable from the verification baseline, its exact Provider/tool,
+  version, platform, and capability equal the ledger scope, and
+  `Verified on - evidence_date <= 90` calendar days. A changed scope,
+  unreachable receipt, contradiction, or age of 91 days is stale.
+- A stale or missing positive Provider receipt changes that ledger row to
+  `unknown`, sets `evidence_state=stale` or `missing`, opens the Provider Gate,
+  and names `provider evidence refresh` as the gate. If determining the new
+  result requires Provider behavior research, feature-plan creates a separate
+  provider-owned spike; it must complete its normal
+  `SPIKE_READY -> provider-spike -> ... -> GATE_RESOLVED` path before a fresh
+  positive claim can return.
 
 ## Future document shape
 
@@ -73,7 +105,19 @@ The canonical document may summarize evidence but must not copy raw Provider
 output, credentials, browser data, private account identifiers, or unredacted
 terminal content.
 
-## Reconciliation design
+## Claim ledger and reconciliation design
+
+The durable, reviewable ledger is exactly
+`docs/reviews/as-built-product-docs/claim-ledger.md`. It is an append-only
+review artifact after its initial P1 baseline: resolved rows may be superseded
+but are never deleted, and each supersession names the prior stable ID and
+reason. Reverting `docs/PRODUCT.md` or a derived-document change never removes
+the ledger or its unresolved-conflict history. Its header contains the
+freshness bindings above and an `Unresolved conflicts` table; an empty list is
+written explicitly as `none`.
+
+P1's complete coverage universe is the source heading/anchor of every
+substantive product-facing support or trust statement in:
 
 The future implementation inventories every substantive sentence in the
 following surfaces before editing it:
@@ -86,22 +130,64 @@ following surfaces before editing it:
 - `docs/PROVIDER_ADAPTER.md` and `docs/PROVIDER_COMPATIBILITY.md` — exact
   adapter/compatibility scope only;
 - `docs/THREAT_MODEL.md` — security authority and residual risk;
-- `docs/ROADMAP.md` — target order without current-support upgrades.
+- `docs/ROADMAP.md` — target order without current-support upgrades;
+- every capability-matrix row in the future `docs/PRODUCT.md`; and
+- every newly changed product-facing support or trust statement in a surface
+  outside this list.
 
-Each inventory entry records the claim, source text, class, evidence target,
-required reviewer, proposed state, and destination. The implementation must
-change a claim's evidence first when needed, then reconcile all derived text
-in the same build phase. A placeholder may remain only if it explicitly
-declares its limited scope and links to the canonical product document.
+Each row uses a stable `CLM-###` ID and records source path plus heading/anchor,
+normalized claim, class, scope, authority and full-revision evidence link,
+evidence date/state, provider receipt when applicable, required reviewer,
+destination heading/anchor, and conflict ID (or `none`). A source statement is
+covered only when it has a row and the row maps it to every canonical/derived
+destination assertion or records a bounded unresolved conflict. The
+implementation must change a claim's evidence first when needed, then
+reconcile all derived text in the same build phase. A placeholder may remain
+only if it explicitly declares its limited scope and links to the canonical
+product document.
+
+## Gate producers, ordering, and resolution
+
+Provider fact review is not a new documentation verdict role. Its valid
+producer is either (a) the independent `feature-verify` verdict for the
+provider-owned feature that proved the exact scope, at
+`docs/reviews/<provider-feature-slug>/<date>-feature-verify*.md`, or (b) a
+provider-spike's immutable evidence under
+`docs/spikes/<provider-area>/` plus its `GATE_RESOLVED` provider feature log
+and compatibility-matrix row. The ledger records the selected receipt at its
+full Git revision; this path-and-revision tuple is the immutable receipt for a
+Provider row. It validates exact Provider/tool version, platform, capability,
+result, evidence date, fallback, and gate wording. A Provider feature plan or
+spike decision, never this documentation build, establishes that receipt.
+
+P1 only inventories existing receipts and marks their gaps. P2 has the single
+ordering rule: it may publish a positive (`supported` or `experimental`)
+Provider claim only after the matching current receipt is recorded in the
+ledger. P2 may publish `unknown`, `planned`, or `unsupported` wording while a
+Provider Gate is open, but it cannot call this feature's Provider Gate
+resolved. An unproven or stale positive claim opens a separately tracked
+provider spike; after its decision updates the compatibility evidence, a new
+P1 ledger revision may bind it. P4/feature verification merely checks this
+contract and must block if a positive row lacks a current receipt; neither is
+allowed to accept Provider risk.
+
+The Security Gate remains open through P4. P4 prepares structural and
+traceability evidence only; it performs no security verdict. After the final
+documentation phase is independently verified and the feature reaches
+`READY_TO_SHIP`, the workflow's `security-review` writer independently issues
+`docs/reviews/as-built-product-docs/<date>-security-review.md`, updates this
+feature log, and either sets the Security Gate resolved (`ACCEPTED`) or returns
+`REVISE`/`BLOCKED`. The documentation builder and verifier cannot accept
+security risk.
 
 ## Phased implementation and rollback
 
 | Phase | Scope | Dependencies | Acceptance | Rollback |
 |---|---|---|---|---|
-| P1 evidence inventory | Build a dated claim ledger; resolve every current statement as target, preview, supported, experimental, unsupported, or unknown | approved plan; access to linked logs/reviews | no unbound substantive claim; conflict list names owner/gate | remove the new inventory artifact; do not rewrite evidence |
-| P2 canonical product document | Author `docs/PRODUCT.md` with authority map, snapshot, capability matrix, trust summary, and evidence links | P1; Provider fact review for Provider statements | all canonical claims match ledger; no root `PRODUCT.md` | revert document-only commit |
+| P1 evidence inventory | Build `docs/reviews/as-built-product-docs/claim-ledger.md` with baseline coverage, revision bindings, conflicts, and receipt gaps | approved plan; access to linked logs/reviews | every coverage-universe source heading has a stable row/mapping; unresolved list is explicit; no row lacks a class | retain append-only ledger; revert no primary evidence |
+| P2 canonical product document | Author `docs/PRODUCT.md` with authority map, snapshot, capability matrix, trust summary, and evidence links | P1; a current Provider receipt for each positive Provider claim | all canonical claims match ledger; no root `PRODUCT.md`; positive Provider claims have receipt tuples | revert document-only commit; retain ledger/history |
 | P3 derived document reconciliation | Update the README, user guide, and specialist documents from the accepted ledger | P2; relevant module-owner fact checks | all inbound views point to canonical authority and have no contradictory scope | revert the P3 documentation commit; restore prior text while retaining evidence ledger |
-| P4 independent documentation verification | Run structural checks; manually trace product, Provider, and trust claims; perform required reviews | P2/P3; Provider Gate evidence; Security Gate review | no broken local links, stale authority map, unsupported upgrade, or trust-boundary loss | fix via a new reviewed documentation phase; do not alter evidence retroactively |
+| P4 documentation verification preparation | Run structural checks and prepare exact ledger-to-surface/provider/trust traces for independent verification | P2/P3; Provider receipts current for positive rows | checks and trace packet are ready; no broken link, stale row, unsupported upgrade, or trust-boundary loss | fix through a new reviewed documentation phase; do not alter primary evidence retroactively |
 
 No production code, dashboard-state judgment, release status, or remote action
 is part of any phase. A broken claim is corrected by narrowing or removing the

@@ -35,9 +35,17 @@ it does not replace any product documentation yet.
   `docs/USER_GUIDE.md`, `docs/ARCHITECTURE.md`, `docs/DATA_MODEL.md`,
   `docs/PROVIDER_ADAPTER.md`, `docs/PROVIDER_COMPATIBILITY.md`,
   `docs/THREAT_MODEL.md`, and `docs/ROADMAP.md`.
-- Require provider-owner fact review for substantive Provider/version/platform
-  claims and independent security review for substantive credential, key,
-  encryption, revocation, or residual-risk claims.
+- Establish a durable claim ledger at
+  `docs/reviews/as-built-product-docs/claim-ledger.md`. It will bind the
+  complete reconciliation universe to exact evidence and destinations, rather
+  than leave an inventory format for the builder to choose.
+- Use only the canonical capability classes `planned`, `preview`, `supported`,
+  `experimental`, `unsupported`, and `unknown`; `preview` must carry the
+  `source-built` scope qualifier and `stale` is evidence state, not a class.
+- Require provider evidence receipts before P2 may publish a positive
+  substantive Provider/version/platform claim, and independent security review
+  after final feature verification for substantive credential, key, encryption,
+  revocation, or residual-risk wording.
 - Define deterministic structural and manual acceptance checks for the future
   documentation build.
 
@@ -85,10 +93,12 @@ target has copied plaintext.
 Provider and platform support statements are valid only when their wording is
 bounded by the exact version, platform, capability, evidence artifact, and
 fallback recorded in `docs/PROVIDER_COMPATIBILITY.md` and the linked feature
-evidence. A Provider owner must fact-check each substantive statement before
-the documentation feature can be accepted. A missing, stale, contradictory,
-or unreviewed row becomes `unknown`, `planned`, or explicitly unsupported; it
-does not become supported through documentation reconciliation.
+evidence. A positive claim requires a provider evidence receipt: either the
+provider-owned unit's independent `feature-verify` report or a completed
+`provider-spike` evidence-and-decision chain, each pinned by path and full Git
+revision in the claim ledger. A missing, stale, contradictory, or unreviewed
+row becomes `unknown`, `planned`, or explicitly unsupported; it does not
+become supported through documentation reconciliation.
 
 ## Dependencies and gates
 
@@ -97,8 +107,10 @@ does not become supported through documentation reconciliation.
 - Feature `dev_log.md` files and their independent review/verification reports
   remain the lifecycle and implementation evidence source.
 - `docs/PROVIDER_COMPATIBILITY.md` is the presentation index for exact
-  compatibility evidence, subject to provider-owner review for every rewritten
-  substantive claim.
+  compatibility evidence. P1 records its immutable provider evidence receipt
+  in the ledger; P2 is blocked from publishing a positive Provider claim until
+  that receipt is present and current. A missing or invalid receipt opens a
+  separate provider-owned spike rather than a documentation-side approval.
 - `docs/THREAT_MODEL.md`, relevant ADRs, and security-review reports supply
   security wording; the Security Gate is open and requires independent review
   before ship if the build changes substantive trust or credential claims.
@@ -113,12 +125,13 @@ does not become supported through documentation reconciliation.
 
 - [ ] `docs/PRODUCT.md` exists and identifies itself as the canonical as-built
   product document, with a dated status snapshot and evidence links.
-- [ ] The document distinguishes product target, current source-built preview,
+- [ ] The document distinguishes product target, current `preview` with the
+  required `source-built` scope qualifier,
   exact supported scope, planned work, experimental work, unsupported work,
   and unknown evidence without treating any one label as another.
 - [ ] Every substantive Provider/platform statement carries an exact evidence
-  pointer and has provider-owner fact review; unsupported and pending cases
-  retain their fallback or gate.
+  pointer, pinned provider evidence receipt, and current evidence date;
+  unsupported and pending cases retain their fallback or gate.
 - [ ] Every substantive credential/trust statement is reviewed by security,
   preserves the residual-risk boundary, and does not overstate revocation,
   Passkeys, encryption, or platform protection.
@@ -126,18 +139,24 @@ does not become supported through documentation reconciliation.
   compatibility, threat model, and roadmap are reconciled as derived views or
   expressly scoped specialist authorities; no contradictory current-support
   statement remains.
+- [ ] The snapshot is bound to a claim-ledger revision and reference date;
+  snapshot or Provider-evidence expiry visibly downgrades affected current
+  claims to `unknown` and opens the prescribed refresh gate.
 - [ ] Local links and `npm run project:verify` pass, with the check results
   recorded as documentation-structure evidence only.
 
 ## Risks and open questions
 
-- A single high-level snapshot can become stale quickly. The build must define
-  a dated snapshot policy and evidence-first update rule.
+- A single high-level snapshot can become stale quickly. The ledger therefore
+  has fixed revision, retention, source-revision, snapshot-age, and
+  Provider-revalidation rules; expired evidence is visibly downgraded rather
+  than silently retained.
 - Current documents may contain mutually inconsistent claims. The exact
   evidence wins; unresolved conflicts must be marked, not harmonized upward.
-- `docs/PRODUCT.md` may need a compact machine-checkable claim ledger. Feature
-  review must choose whether an in-document table is sufficient or a separate
-  checked registry is justified; this plan does not pre-approve a new schema.
+- The Markdown claim ledger is durable review evidence, not a runtime registry:
+  its stable IDs and resolved/unresolved history must survive document
+  rollback, and it must cover every named surface plus any capability-matrix or
+  newly changed product-facing support/trust statement.
 - Product text spanning Chinese and English must preserve semantic scope, not
   merely literal phrasing.
 
