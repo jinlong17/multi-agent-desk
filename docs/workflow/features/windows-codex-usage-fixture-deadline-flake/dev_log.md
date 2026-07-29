@@ -1,0 +1,94 @@
+# Bug log: Windows Codex usage-fixture deadline flake
+
+## Status Panel
+
+| Field | Value |
+|---|---|
+| Workflow | `BUGFIX` |
+| Target | `windows-codex-usage-fixture-deadline-flake` |
+| Title | `Windows Codex usage-fixture deadline flake` |
+| Owner Module | `provider` |
+| Impacted Modules | `project-system` |
+| Current Phase | `BUG_DIAGNOSE` |
+| Status | `DIAGNOSED` |
+| Executor | `Codex (GPT-5) as bug-diagnose` |
+| Updated | `2026-07-29 01:44 PDT` |
+| Suggested Next | `bug-fix` |
+| Branch / Worktree | `codex/provider/windows-codex-usage-fixture-deadline-flake` / `/Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/windows-codex-usage-fixture-deadline-flake` |
+| Provider Gate | `resolved — this is a test-fixture timing repair only; it changes no compatibility or support claim` |
+| Security Gate | `none` |
+
+## Reproduction
+
+| Field | Value |
+|---|---|
+| Environment / versions | `origin/main@aed5320dc048bbcd18275e5ce4c4f9666ec105a1`; reported GitHub Windows Codex usage-fixture failure. This diagnosis intentionally did not rerun CI or a local test command. |
+| Minimal reproduction | On a Windows runner, execute `go test -count=1 -run '^TestRuntimeManagerKeepsConcurrentAccountsAndUsageIsolated$' ./internal/providers/codex`; the test starts two fixture runtimes then calls `RuntimeManager.ReadUsage` for each. Its fixture imposes a separate 100 ms RPC wait. |
+| Expected behavior | A healthy in-memory fixture response may be scheduled normally and the test should assert account/credential/usage isolation, not fail because of an incidental sub-second test-harness deadline. |
+| Actual behavior | Under Windows scheduling delay, a usage RPC can exceed the fixture-only 100 ms wait and return `deadline_exceeded: codex protocol call timed out`, intermittently failing the isolation assertion path without demonstrating a product isolation defect. |
+
+## Root cause (bug-diagnose)
+
+The flake is a **test-fixture RPC-deadline defect** in the Provider-owned Codex
+runtime tests, not a production Codex usage or account-isolation failure.
+
+- `newFixtureRuntime` assigns `client.MaxWait = 100 * time.Millisecond`
+  (`internal/providers/codex/runtime_test.go:78-85`). Git history shows that
+  value originated with the Phase 2 Codex vertical-slice implementation
+  (`9f82fb6`, shipped as `250bf57`); it is not the five-second
+  context-placement bug already fixed and shipped under
+  `windows-codex-runtime-ci-flake`.
+- `TestRuntimeManagerKeepsConcurrentAccountsAndUsageIsolated` starts two
+  fixture runtimes and immediately makes three successful `ReadUsage` calls
+  (`runtime_test.go:517-589`); the truthful-usage table also makes one per
+  case (`:683-730`). The fixture server answers `account/usage/read` on its
+  goroutine only after decoding the request (`:127-149`).
+- `Client.Call` creates a timer from `Client.waitDuration()` and returns
+  `CodeDeadlineExceeded` with `codex protocol call timed out` when that timer
+  wins (`internal/providers/codex/protocol.go:237-265`). `waitDuration()` uses
+  the fixture override when present and otherwise uses the production default
+  of five seconds (`:412-416`).
+- Thus ordinary Windows runner scheduling can consume the fixture's 100 ms
+  response budget even though the enclosing test operation budget remains
+  five seconds. The failure is confined to `runtime_test.go`; no production
+  `RuntimeManager`, protocol default, provider capability, or support boundary
+  is implicated by this evidence.
+
+## Fix scope (smallest repair)
+
+- Change only `internal/providers/codex/runtime_test.go`.
+- Give the general runtime fixture a scheduler-tolerant response deadline
+  (the normal client five-second default is suitable), then set the short
+  deadline explicitly only in the blocked-write test that verifies a bounded
+  failure. That test currently requires the operation to finish within one
+  second (`runtime_test.go:1074-1117`), so its narrow timeout assertion remains
+  intentional rather than becoming global fixture behavior.
+- Add or adapt a deterministic regression that proves normal usage fixtures do
+  not inherit the short blocked-write deadline, while retaining a bounded
+  blocked-write assertion. Do not alter production protocol timeouts, usage
+  persistence, compatibility rows, or Windows support claims.
+
+## Evidence Ledger
+
+| Time | Phase | Command/evidence | Result | Artifact |
+|---|---|---|---|---|
+| 2026-07-29 01:44 PDT | INTAKE | Initialized the new bug log from `docs/workflow/templates/bug_log.md` on isolated branch/worktree `codex/provider/windows-codex-usage-fixture-deadline-flake` from `origin/main@aed5320` | `DRAFT` intake recorded; prior `windows-codex-runtime-ci-flake` was read-only and remains `SHIPPED` | this file |
+| 2026-07-29 01:44 PDT | STATIC REPRODUCTION TRACE | Inspected `internal/providers/codex/runtime_test.go:78-149,517-589,683-730,1074-1117`, `protocol.go:237-265,412-416`, and `runtime.go:954-1004`; checked `git log -S '100 * time.Millisecond'` | The fixture forces 100 ms for all calls; usage exercises consume it; the client converts expiry to the reported deadline error; production default is five seconds | source files; commits `9f82fb6`, `250bf57` |
+| 2026-07-29 01:44 PDT | BOUNDARY CHECK | Read existing `docs/workflow/features/windows-codex-runtime-ci-flake/dev_log.md` and diff of its shipped repair | The earlier bug fixed five-second context placement after fixture setup; this independent global fixture override remained and requires a new bug unit | prior shipped bug log; commit `a4c3f219` |
+| 2026-07-29 01:44 PDT | EXECUTION LIMIT | No CI, local test, push, PR, or implementation command run, per operator direction | Diagnosis rests on the reported Windows symptom plus direct source and history trace; native Windows regression remains required after the fix | operator instruction; this log |
+
+## Risks and Blockers
+
+- No diagnosis blocker remains. Native Windows evidence has not been refreshed
+  in this phase and must be obtained by `bug-verify` after a test-only repair.
+- Do not close, amend, or reinterpret the already `SHIPPED`
+  `windows-codex-runtime-ci-flake` unit; it addressed a different timeout.
+- The repair must preserve the blocked-write test's explicit bounded failure
+  assertion, so increasing the general fixture deadline cannot mask that
+  contract.
+
+## Work Log (append only)
+
+| Time | Executor | Action | Files/commit | Result | Next |
+|---|---|---|---|---|---|
+| 2026-07-29 01:44 PDT | Codex (GPT-5) as bug-diagnose | Classified Provider ownership (project-system CI impact), initialized this separate DRAFT bug unit, traced the reported Windows usage failure through the all-purpose fixture's 100 ms `MaxWait`, protocol deadline path, usage call sites, and Phase 2 history; preserved the old shipped bug unchanged | this file; `docs/reviews/windows-codex-usage-fixture-deadline-flake/2026-07-29-bug-diagnose.md` | `DRAFT -> DIAGNOSED`; minimum repair is test-only: general fixture deadline plus a local short override for blocked-write coverage | `bug-fix` |
