@@ -28,6 +28,7 @@ type fixtureRuntime struct {
 	responses       chan json.RawMessage
 	done            chan struct{}
 	client          net.Conn
+	rpcClient       *Client
 	server          net.Conn
 	failWrites      atomic.Bool
 	blockWrites     atomic.Bool
@@ -41,6 +42,11 @@ type fixtureRuntime struct {
 	doneOnce        sync.Once
 	writeOnce       sync.Once
 }
+
+const (
+	fixtureRuntimeMaxWait      = 5 * time.Second
+	fixtureBlockedWriteMaxWait = 100 * time.Millisecond
+)
 
 type fixtureWriter struct {
 	connection net.Conn
@@ -82,7 +88,8 @@ func newFixtureRuntime(t *testing.T) (*RuntimeProcess, *fixtureRuntime) {
 		done: make(chan struct{}), client: clientConn, server: serverConn, writeClosed: make(chan struct{})}
 	client := NewClient(clientConn, fixtureWriter{connection: clientConn, fail: &fixture.failWrites,
 		block: &fixture.blockWrites, closed: fixture.writeClosed, closeOnce: &fixture.writeOnce})
-	client.MaxWait = 100 * time.Millisecond
+	client.MaxWait = fixtureRuntimeMaxWait
+	fixture.rpcClient = client
 	go func() {
 		reader := NewFrameReader(serverConn)
 		for {
@@ -550,6 +557,11 @@ func TestRuntimeManagerKeepsConcurrentAccountsAndUsageIsolated(t *testing.T) {
 	if sessionA.AccountID == sessionB.AccountID || sessionA.CredentialInstanceID == sessionB.CredentialInstanceID ||
 		sessionA.ProviderSessionID == "" || sessionB.ProviderSessionID == "" || spawnCount.Load() != 2 || len(*fixtures) != 2 {
 		t.Fatalf("A/B Sessions=%+v/%+v spawn=%d fixtures=%d", sessionA, sessionB, spawnCount.Load(), len(*fixtures))
+	}
+	for index, fixture := range *fixtures {
+		if fixture.rpcClient.MaxWait != fixtureRuntimeMaxWait {
+			t.Fatalf("usage fixture %d MaxWait=%s want=%s", index, fixture.rpcClient.MaxWait, fixtureRuntimeMaxWait)
+		}
 	}
 	(*fixtures)[0].setUsageResult(`{"dailyUsageBuckets":[{"startDate":"2026-07-16","tokens":11}],"summary":{"lifetimeTokens":11}}`)
 	(*fixtures)[1].setUsageResult(`{"dailyUsageBuckets":[{"startDate":"2026-07-16","tokens":22}],"summary":{"lifetimeTokens":22}}`)
@@ -1104,6 +1116,7 @@ func TestRuntimeManagerBlockedApprovalWriteIsBoundedAndCannotReplay(t *testing.T
 		Revision: 1, Status: domain.ClientIdentityActive, Caps: []domain.Capability{domain.CapabilityApprovalRespond}, CreatedAt: now, UpdatedAt: now}); err != nil {
 		t.Fatal(err)
 	}
+	fixture.rpcClient.MaxWait = fixtureBlockedWriteMaxWait
 	fixture.blockWrites.Store(true)
 	dispatch := ApprovalDispatchRequest{SessionID: session.ID, ApprovalID: approval.ID,
 		ProviderApprovalID: approval.ProviderApprovalID, ResponderID: responderID, ResponseKey: "response-blocked",
