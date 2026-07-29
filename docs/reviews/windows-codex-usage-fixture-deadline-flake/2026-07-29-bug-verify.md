@@ -2,6 +2,46 @@
 
 **Verdict:** `BLOCKED`
 
+**Verified target:** clean `c6dcf2ec1f34cc65e53868aad43876956dfe5e49`
+
+## Second verification — race repair accepted locally
+
+This supersedes the earlier local-race finding below: `c6dcf2e` removes the
+post-start `fixture.rpcClient.MaxWait` assignment that raced with
+`RuntimeManager.eventPump`. Its commit changes only this bug log and
+`internal/providers/codex/runtime_test.go`.
+
+The general fixture passes `fixtureRuntimeMaxWait` (five seconds) through
+`prepareRuntimeManagerFixture` into `newFixtureRuntime`, where the client is
+constructed and configured before `Spawn` returns. The blocked-write test
+passes `fixtureBlockedWriteMaxWait` (100 ms) through the same construction
+path before it calls `RuntimeManager.Start`. `Start` schedules `eventPump`
+only later, after the fixture client has already been configured. The only
+remaining `client.MaxWait =` in this fixture is therefore construction-time.
+Production `NewClient` and `waitDuration` remain unchanged at five seconds.
+
+| Command or inspection | Result |
+|---|---|
+| `git diff-tree --no-commit-id --name-only -r c6dcf2e`; `git diff --check c6dcf2e^` | PASS — only `runtime_test.go` and the bug log changed; no whitespace errors. |
+| `go test -count=150 -run '^(TestRuntimeManagerKeepsConcurrentAccountsAndUsageIsolated|TestRuntimeManagerBlockedApprovalWriteIsBoundedAndCannotReplay)$' ./internal/providers/codex` | PASS — 300 focused normal executions. |
+| `go test -race -count=100 -run '^(TestRuntimeManagerKeepsConcurrentAccountsAndUsageIsolated|TestRuntimeManagerBlockedApprovalWriteIsBoundedAndCannotReplay)$' ./internal/providers/codex` | PASS — 200 focused race executions; no race report. |
+| `go test -count=1 ./internal/providers/codex`; `go vet ./internal/providers/codex` | PASS. |
+| `rg -n -C 3 'windows-latest|go test' .github/workflows/ci.yml`; `git ls-remote origin refs/heads/codex/provider/windows-codex-usage-fixture-deadline-flake` | CI is configured to run `go test -count=1 ./...` on `windows-latest`, but the exact branch/SHA is absent from `origin`; no native Windows result exists. |
+
+No cross-compilation was used as acceptance evidence. It can establish Windows
+buildability only; it cannot execute this race-sensitive fixture on Windows.
+No push, merge, production-code edit, or production-timeout edit was made by
+this verifier.
+
+## Remaining clearing condition
+
+Human-authorized publication of exact `c6dcf2e` (or a later documented repair
+SHA) must produce a passing native `windows-latest` `go test -count=1 ./...`
+result. The bug workflow then returns through `bug-fix` to `READY_FOR_VERIFY`
+for a final independent native-Windows verification.
+
+## Earlier verification record
+
 ## Scope verdict
 
 `93e6a6c` is clean and changes only the bug log and
