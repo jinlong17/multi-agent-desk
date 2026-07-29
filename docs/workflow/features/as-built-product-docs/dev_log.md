@@ -9,15 +9,15 @@
 | Title | `As-built product documentation authority` |
 | Owner Module | `project-system` |
 | Impacted Modules | `core`, `provider`, `control-plane`, `web`, `desktop`, `security` |
-| Current Phase | `VERIFY P4 VERIFICATION PREPARATION` |
-| Status | `READY_TO_SHIP` |
-| Executor | `Codex as feature-verify` |
+| Current Phase | `SECURITY REVIEW` |
+| Status | `ACCEPTED` |
+| Executor | `Codex as security-review` |
 | Updated | `2026-07-29 PDT` |
-| Suggested Next | `security-review` |
+| Suggested Next | `ship with explicit human authorization` |
 | Branch / Worktree | `codex/project-system/as-built-product-docs @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/as-built-product-docs` |
 | Plan Version | `v0.2` |
 | Provider Gate | `open — P2 positive Provider claims require a current immutable provider feature-verify or provider-spike receipt pinned in docs/reviews/as-built-product-docs/claim-ledger.md; stale/missing scope remains unknown and opens a separate provider spike` |
-| Security Gate | `open — after final feature-verify reaches READY_TO_SHIP, only independent security-review may accept or return substantive credential, key, E2EE, revocation, trust, or residual-risk wording` |
+| Security Gate | `resolved — independent security-review accepted the documentation trust/residual-risk wording only; this is not implementation, Provider, platform, deployment, release, or ship acceptance` |
 
 ## Phase Plan
 
@@ -76,3 +76,4 @@
 | 2026-07-29 PDT | Codex as feature-verify | Independently verified P2 build commit `5ce0b63` for canonical path/date/ledger binding, support/release and trust boundaries, exact positive Provider receipt scope, freshness, P3 isolation, and structural checks | `docs/reviews/as-built-product-docs/2026-07-29-feature-verify-p2.md`; `docs/PRODUCT.md` only; receipts reachable from baseline; `ci:links` (311 files), `workflow:verify`, `project:verify`, and `git diff --check 5ce0b63^ 5ce0b63` passed | `VERIFIED`: P2 is a bounded canonical snapshot; Provider and Security Gates remain open and P3 reconciliation is still required | `feature-build` for P3 derived-surface reconciliation |
 | 2026-07-29 PDT | Codex as feature-verify | Independently verified P3 build commit `6fd5dae` for every derived surface's product/ledger authority, exact receipt-bound Provider wording, selector local-branch versus remote-main boundary, trust/freshness retention, and P3-only lifecycle scope | `docs/reviews/as-built-product-docs/2026-07-29-feature-verify-p3.md`; exact five-file P3 diff; receipts reachable from baseline; `ci:links` (312 files), `workflow:verify`, `project:verify`, and `git diff --check 6fd5dae^ 6fd5dae` passed | `VERIFIED`: derived surfaces introduce no support or remote-main uplift; Provider/Security Gates remain open and no P4/security/ship action is implied | `feature-build` for P4 verification preparation |
 | 2026-07-29 PDT | Codex as feature-verify | Independently verified final P4 commit `beab73a` for all 23 claim traces/destinations, exact reachable positive Provider receipts, nonpositive classes, trust qualifications, freshness downgrades, P4 role boundary, and structural checks | `docs/reviews/as-built-product-docs/2026-07-29-feature-verify-p4.md`; CLM-001..023 trace and canonical headings present; receipts reachable from baseline; `ci:links` (314 files), `workflow:verify`, `project:verify`, and `git diff --check beab73a^ beab73a` passed | `READY_TO_SHIP`: documentation phases are verified, but the Security Gate remains open; no security acceptance, ship, push, merge, release, or deployment is implied | independent `security-review` for substantive credential, key, E2EE, enrollment, revocation, trust, and residual-risk wording |
+| 2026-07-29 PDT | Codex as security-review | Independently reviewed `d0459e0` for documentation trust boundaries, Provider claim integrity, credential/identity disclosure, residual-risk retention, and release wording; verified both positive Codex receipt objects/paths from the ledger baseline; reran local-link and project structural checks; scanned reviewed documentation for credential/private-key/JWT-like values | `docs/reviews/as-built-product-docs/2026-07-29-security-review.md`; `ci:links` (315 files) and `project:verify` passed as structural checks; no credential/private-key/JWT-like values found | `ACCEPTED`: documentation wording preserves Passkey/E2EE separation, local pinning, future-use-only revocation, no-remote-erasure risk, bounded Provider scope, and pre-release/source-built boundary. Security Gate resolved only for this wording; Provider Gate remains open; no product/release/ship acceptance. | `ship` only with explicit human authorization |
