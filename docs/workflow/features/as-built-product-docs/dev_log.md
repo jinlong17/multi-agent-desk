@@ -9,11 +9,11 @@
 | Title | `As-built product documentation authority` |
 | Owner Module | `project-system` |
 | Impacted Modules | `core`, `provider`, `control-plane`, `web`, `desktop`, `security` |
-| Current Phase | `REVIEW` |
-| Status | `APPROVED` |
-| Executor | `Codex as feature-review` |
+| Current Phase | `BUILD P1 EVIDENCE INVENTORY` |
+| Status | `READY_FOR_VERIFY` |
+| Executor | `Codex as feature-build` |
 | Updated | `2026-07-29 PDT` |
-| Suggested Next | `feature-build` |
+| Suggested Next | `feature-verify` |
 | Branch / Worktree | `codex/project-system/as-built-product-docs @ /Users/jinlong/Desktop/jinlong_project/agent-deck-worktrees/as-built-product-docs` |
 | Plan Version | `v0.2` |
 | Provider Gate | `open — P2 positive Provider claims require a current immutable provider feature-verify or provider-spike receipt pinned in docs/reviews/as-built-product-docs/claim-ledger.md; stale/missing scope remains unknown and opens a separate provider spike` |
@@ -23,7 +23,7 @@
 
 | Phase | Scope | Dependencies | Acceptance | Status |
 |---|---|---|---|---|
-| P1 evidence inventory | create the durable `docs/reviews/as-built-product-docs/claim-ledger.md`, with stable IDs, source/destination headings, full-revision evidence links, conflicts, and freshness bindings | feature-review approval; source evidence available | complete coverage universe is mapped; retained conflict list explicit; receipt gaps are marked; every row uses only planned/preview/supported/experimental/unsupported/unknown | `PENDING` |
+| P1 evidence inventory | create the durable `docs/reviews/as-built-product-docs/claim-ledger.md`, with stable IDs, source/destination headings, full-revision evidence links, conflicts, and freshness bindings | feature-review approval; source evidence available | complete coverage universe is mapped; retained conflict list explicit; receipt gaps are marked; every row uses only planned/preview/supported/experimental/unsupported/unknown | `READY_FOR_VERIFY` |
 | P2 canonical `docs/PRODUCT.md` | create dated as-built authority, capability matrix, authority map, non-goals, and trust summary | P1; each positive Provider claim has a current immutable provider feature-verify or provider-spike receipt | all canonical statements match ledger and preserve exact boundaries; no root `PRODUCT.md`; no positive Provider row without a receipt | `PENDING` |
 | P3 derived-surface reconciliation | update README, user guide, and specialist docs from accepted claim ledger | P2; relevant module-owner fact checks | no contradictory product/support claim across listed surfaces | `PENDING` |
 | P4 verification preparation | run structural checks and prepare ledger-to-surface/provider/trust trace material for independent verification | P2/P3; Provider receipts current for positive rows | no broken link, stale positive Provider row, unsupported upgrade, or trust-boundary loss; no review verdict performed in P4 | `PENDING` |
@@ -38,6 +38,8 @@
 | 2026-07-29 PDT | PLAN | `/opt/homebrew/bin/pnpm run project:verify`; `/opt/homebrew/bin/pnpm run ci:links` | blocked before verifier execution: pnpm 10.23.0 is present but its `env node` launcher cannot find a runnable Node; the discovered Cursor-bundled Node exits `137` in this environment | command output retained in task; this log |
 | 2026-07-29 PDT | PLAN | feature-review findings 1-3 resolved in plan artifacts | fixed ledger path/coverage/retention and canonical vocabulary; P2 receipt dependency and P4-to-security-review sequencing are now explicit; freshness policy binds snapshot/receipt dates and revisions with deterministic downgrade | feature brief; design.md; api.md; test.md; this log |
 | 2026-07-29 PDT | PLAN | `PATH=/Users/jinlong/.nvm/versions/node/v24.11.1/bin:$PATH /opt/homebrew/bin/pnpm run project:verify`; `... pnpm run ci:links`; `git diff --check` | passed: workflow `agents=10, skills=3, docs=17, edges=20, statuses=15`; dashboard verification passed; 308 Markdown files passed link validation; no whitespace errors. Initial rerun correctly rejected `NEEDS_REVIEW -> feature-plan`; after setting Suggested Next to `feature-review`, the legal-state rerun passed | this log; command output retained in task |
+| 2026-07-29 PDT | BUILD P1 | inventoried every approved product-facing source heading in the durable append-only claim ledger; bound 20 stable `CLM-###` claims to full-revision evidence, exact Provider receipts where valid, explicit gaps/conflicts, destination anchors, and day-31/day-91 downgrade rules | `docs/reviews/as-built-product-docs/claim-ledger.md`; no commit | P1 complete and `READY_FOR_VERIFY`; no `docs/PRODUCT.md`, README, specialist derived document, runtime, Provider evidence, security verdict, dashboard-state, push, or ship change | independent `feature-verify` must inspect P1 coverage, receipt scope/reachability, conflicts, and stale-data downshifts before P2 |
+| 2026-07-29 PDT | BUILD P1 | `PATH=/Users/jinlong/.nvm/versions/node/v24.11.1/bin:$PATH /opt/homebrew/bin/pnpm run ci:links`; `... pnpm run project:verify`; `git diff --check` | passed: 309 Markdown files passed local-link validation; workflow `agents=10, skills=3, docs=17, edges=20, statuses=15`; dashboard static verification passed; no whitespace errors. These are documentation/workflow structural results only. | this log; command output retained in task | independent `feature-verify` |
 
 ## Risks and Blockers
 
