@@ -28,8 +28,8 @@ type fixtureRuntime struct {
 	responses       chan json.RawMessage
 	done            chan struct{}
 	client          net.Conn
-	rpcClient       *Client
 	server          net.Conn
+	maxWait         time.Duration
 	failWrites      atomic.Bool
 	blockWrites     atomic.Bool
 	interruptReject atomic.Bool
@@ -81,15 +81,14 @@ func (w fixtureWriter) Close() error {
 	return w.connection.Close()
 }
 
-func newFixtureRuntime(t *testing.T) (*RuntimeProcess, *fixtureRuntime) {
+func newFixtureRuntime(t *testing.T, maxWait time.Duration) (*RuntimeProcess, *fixtureRuntime) {
 	t.Helper()
 	clientConn, serverConn := net.Pipe()
 	fixture := &fixtureRuntime{params: make(chan map[string]json.RawMessage, 16), responses: make(chan json.RawMessage, 16),
-		done: make(chan struct{}), client: clientConn, server: serverConn, writeClosed: make(chan struct{})}
+		done: make(chan struct{}), client: clientConn, server: serverConn, maxWait: maxWait, writeClosed: make(chan struct{})}
 	client := NewClient(clientConn, fixtureWriter{connection: clientConn, fail: &fixture.failWrites,
 		block: &fixture.blockWrites, closed: fixture.writeClosed, closeOnce: &fixture.writeOnce})
-	client.MaxWait = fixtureRuntimeMaxWait
-	fixture.rpcClient = client
+	client.MaxWait = maxWait
 	go func() {
 		reader := NewFrameReader(serverConn)
 		for {
@@ -212,7 +211,7 @@ func (f *fixtureRuntime) crash() {
 	})
 }
 
-func prepareRuntimeManagerFixture(t *testing.T) (*RuntimeManager, RuntimeStartRequest, *storage.Store, *atomic.Int64, *[]*fixtureRuntime) {
+func prepareRuntimeManagerFixture(t *testing.T, maxWait time.Duration) (*RuntimeManager, RuntimeStartRequest, *storage.Store, *atomic.Int64, *[]*fixtureRuntime) {
 	t.Helper()
 	ctx := context.Background()
 	store, credentialID, accountID := setupCodexCredential(t)
@@ -253,7 +252,7 @@ func prepareRuntimeManagerFixture(t *testing.T) (*RuntimeManager, RuntimeStartRe
 	var fixtureMu sync.Mutex
 	manager.Spawn = func(BinaryDescriptor, string) (*RuntimeProcess, error) {
 		spawnCount.Add(1)
-		process, fixture := newFixtureRuntime(t)
+		process, fixture := newFixtureRuntime(t, maxWait)
 		fixtureMu.Lock()
 		*fixtures = append(*fixtures, fixture)
 		fixtureMu.Unlock()
@@ -266,12 +265,17 @@ func prepareRuntimeManagerFixture(t *testing.T) (*RuntimeManager, RuntimeStartRe
 
 func runtimeManagerFixture(t *testing.T) (*RuntimeManager, RuntimeStartRequest, *storage.Store, *atomic.Int64, *[]*fixtureRuntime, context.Context) {
 	t.Helper()
-	return runtimeManagerFixtureAfterSetup(t, nil, 5*time.Second)
+	return runtimeManagerFixtureWithMaxWait(t, fixtureRuntimeMaxWait)
 }
 
-func runtimeManagerFixtureAfterSetup(t *testing.T, afterSetup func(), operationTimeout time.Duration) (*RuntimeManager, RuntimeStartRequest, *storage.Store, *atomic.Int64, *[]*fixtureRuntime, context.Context) {
+func runtimeManagerFixtureWithMaxWait(t *testing.T, maxWait time.Duration) (*RuntimeManager, RuntimeStartRequest, *storage.Store, *atomic.Int64, *[]*fixtureRuntime, context.Context) {
 	t.Helper()
-	manager, request, store, spawnCount, fixtures := prepareRuntimeManagerFixture(t)
+	return runtimeManagerFixtureAfterSetup(t, nil, maxWait, 5*time.Second)
+}
+
+func runtimeManagerFixtureAfterSetup(t *testing.T, afterSetup func(), maxWait, operationTimeout time.Duration) (*RuntimeManager, RuntimeStartRequest, *storage.Store, *atomic.Int64, *[]*fixtureRuntime, context.Context) {
+	t.Helper()
+	manager, request, store, spawnCount, fixtures := prepareRuntimeManagerFixture(t, maxWait)
 	if afterSetup != nil {
 		afterSetup()
 	}
@@ -285,7 +289,7 @@ func TestRuntimeManagerFixtureSetupDoesNotConsumeOperationBudget(t *testing.T) {
 	var setupFinished time.Time
 	_, _, _, _, _, ctx := runtimeManagerFixtureAfterSetup(t, func() {
 		setupFinished = time.Now()
-	}, operationTimeout)
+	}, fixtureRuntimeMaxWait, operationTimeout)
 	deadline, ok := ctx.Deadline()
 	if !ok || deadline.Before(setupFinished.Add(operationTimeout)) {
 		t.Fatalf("operation budget started before setup completed: setup_finished=%v deadline=%v", setupFinished, deadline)
@@ -559,8 +563,8 @@ func TestRuntimeManagerKeepsConcurrentAccountsAndUsageIsolated(t *testing.T) {
 		t.Fatalf("A/B Sessions=%+v/%+v spawn=%d fixtures=%d", sessionA, sessionB, spawnCount.Load(), len(*fixtures))
 	}
 	for index, fixture := range *fixtures {
-		if fixture.rpcClient.MaxWait != fixtureRuntimeMaxWait {
-			t.Fatalf("usage fixture %d MaxWait=%s want=%s", index, fixture.rpcClient.MaxWait, fixtureRuntimeMaxWait)
+		if fixture.maxWait != fixtureRuntimeMaxWait {
+			t.Fatalf("usage fixture %d MaxWait=%s want=%s", index, fixture.maxWait, fixtureRuntimeMaxWait)
 		}
 	}
 	(*fixtures)[0].setUsageResult(`{"dailyUsageBuckets":[{"startDate":"2026-07-16","tokens":11}],"summary":{"lifetimeTokens":11}}`)
@@ -1084,7 +1088,7 @@ func TestRuntimeManagerApprovalWriteFailureBecomesAmbiguous(t *testing.T) {
 }
 
 func TestRuntimeManagerBlockedApprovalWriteIsBoundedAndCannotReplay(t *testing.T) {
-	manager, request, store, _, fixtures, ctx := runtimeManagerFixture(t)
+	manager, request, store, _, fixtures, ctx := runtimeManagerFixtureWithMaxWait(t, fixtureBlockedWriteMaxWait)
 	session, err := manager.Start(ctx, request)
 	if err != nil {
 		t.Fatal(err)
@@ -1116,7 +1120,6 @@ func TestRuntimeManagerBlockedApprovalWriteIsBoundedAndCannotReplay(t *testing.T
 		Revision: 1, Status: domain.ClientIdentityActive, Caps: []domain.Capability{domain.CapabilityApprovalRespond}, CreatedAt: now, UpdatedAt: now}); err != nil {
 		t.Fatal(err)
 	}
-	fixture.rpcClient.MaxWait = fixtureBlockedWriteMaxWait
 	fixture.blockWrites.Store(true)
 	dispatch := ApprovalDispatchRequest{SessionID: session.ID, ApprovalID: approval.ID,
 		ProviderApprovalID: approval.ProviderApprovalID, ResponderID: responderID, ResponseKey: "response-blocked",
