@@ -47,4 +47,3 @@ None for P3.
 - Security Gate remains open and is not accepted by this verification.
 - P4 must prepare the final structural and traceability evidence before final
   feature verification; P3 does not perform P4 work.
-

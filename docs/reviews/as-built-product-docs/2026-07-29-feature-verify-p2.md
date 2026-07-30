@@ -52,4 +52,3 @@ None for P2.
 - Security Gate remains open and is not accepted by this documentation
   verification.
 - P3 must reconcile derived surfaces; P2 does not claim that reconciliation.
-

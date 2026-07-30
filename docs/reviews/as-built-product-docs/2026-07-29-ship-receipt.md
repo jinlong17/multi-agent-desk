@@ -4,6 +4,25 @@
 
 `BLOCKED`
 
+## Post-audit correction — 2026-07-30 PDT
+
+The DCO blocker recorded below was a false positive in the original Ship
+inspection. After the operator explicitly authorized a history repair, the
+repository-native verifier was rerun against the exact committed range:
+
+```text
+node scripts/ci/verify-dco.mjs --base aed5320dc048bbcd18275e5ce4c4f9666ec105a1 --head 24df30ec83927e7681246c7d0512c071554f1eb6
+verified DCO: commits=16 grandfathered=0
+```
+
+Direct inspection also confirms that each commit author matches its valid
+`Signed-off-by` trailer. No history rewrite is necessary or performed, so the
+existing feature, verification, and Security-review commit bindings remain
+stable. The three EOF blank-line findings were real and are repaired in the
+subsequent delivery-repair commit. This receipt remains the historical
+`BLOCKED` verdict for its original candidate; a fresh independent verification
+and Ship receipt supersede it.
+
 ## Authorized local scope
 
 The operator authorized a local Ship review for

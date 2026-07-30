@@ -45,4 +45,3 @@ None for P4.
 The Security Gate is open. Run independent `security-review` for
 `as-built-product-docs`; it alone may set `ACCEPTED`, `REVISE`, or `BLOCKED`.
 No `ship` step is authorized by this verification.
-
