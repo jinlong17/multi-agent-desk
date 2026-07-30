@@ -4,14 +4,13 @@ MultiAgentDesk is a terminal-first, self-hostable workspace for managing AI
 coding-agent profiles, sessions, usage, devices, and explicitly authorized
 credential grants across local machines and remote servers.
 
-The product is pre-release and is not yet a supported end-user application.
-Phase 0, the Phase 0.5 decision gates, the Phase 1 Device Kernel, and the
-locally `SHIPPED` Phase 2 Codex vertical slice are integrated on remote
-`main`. Phase 2's credentialed Linux exit, platform matrix, final verification,
-Security Review, and seven-check protected PR are complete. Packaging, release,
-and deployment are still gated. The reviewed
-architecture baseline is [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md),
-and the resumable current state is recorded in the feature `dev_log.md` files.
+The canonical [as-built product snapshot](docs/PRODUCT.md) is dated and
+evidence-bound. MultiAgentDesk is pre-release and `source-built` only; it is
+not a supported end-user application, installer, release, deployment, or broad
+platform promise. That snapshot preserves the exact Provider/platform matrix,
+open gates, and trust boundaries. The reviewed target remains
+[`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md), while resumable
+current lifecycle state remains in feature `dev_log.md` files.
 
 MultiAgentDesk is local-first and self-hostable. It does not automate account
 rotation, bypass quotas or rate limits, proxy Provider requests, scrape browser
@@ -19,11 +18,10 @@ cookies, or silently switch credentials during a Session.
 
 ## User documentation
 
-See the [pre-release user operations guide](docs/USER_GUIDE.md) for the current
-source-built Phase 1/2 developer preview plus the planned install-to-session,
-device-pairing, credential-grant, revocation, offline, and troubleshooting
-workflow. The guide distinguishes exact commands available in the current
-source tree from v0.1 product capabilities that remain gated.
+Start with the [canonical as-built product snapshot](docs/PRODUCT.md), then use
+the [pre-release user operations guide](docs/USER_GUIDE.md) for navigable
+source-built and planned workflows. The guide does not broaden the snapshot's
+exact Provider, platform, remote-control, release, or trust boundaries.
 
 ## Development system
 

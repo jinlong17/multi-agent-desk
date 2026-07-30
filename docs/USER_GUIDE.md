@@ -1,19 +1,22 @@
 # MultiAgentDesk 用户操作手册（预发布）
 
-> 当前状态（2026-07-20）：Phase 1 Device Kernel 与 Phase 2 Codex Vertical
-> Slice 已进入远端 `main`。Codex 显式多账号选择器的精确 Linux P2 已在功能
-> 分支完成独立验证，P3 平台边界与文档正在收口；它尚未 Ship、合并或发布。
-> 仓库可从源码构建开发者预览，但仍没有受支持的安装包、正式 Release、
-> Control Plane、Web 远程终端或 Desktop 成品。不要把开发者预览当成生产版本。
+> 本手册是操作性派生视图。当前能力、证据日期和精确 Provider/平台范围以
+> [`PRODUCT.md`](PRODUCT.md) 的 2026-07-29 PDT 快照及其 claim ledger 为准；
+> 具体功能生命周期以对应 `dev_log.md` 为准。
+>
+> 仓库只能从源码构建 `source-built` 开发者预览，仍没有受支持的安装包、正式
+> Release、Control Plane、Web 远程终端或 Desktop 成品。不要把开发者预览、CI、
+> 分支或开发看板当成生产支持证明。
 
 ## 1. 先判断你现在能做什么
 
 | 标记 | 含义 |
 |---|---|
-| **当前可执行** | 仓库开发工具，以及从源码构建的 Phase 1/2 本地开发者预览 |
-| **规划中** | 已写入 v0.1 实施计划，但对应产品代码尚不可用 |
-| **待验证** | 还需要对应 Phase、Provider Spike、安全审查或跨平台测试证明 |
-| **Experimental** | 计划提供预览，但不属于 v0.1 稳定承诺 |
+| `preview` | 仅 `source-built` 的开发者预览；不是安装包、Release 或通用平台支持 |
+| `supported` | 只适用于 `PRODUCT.md` 明示的精确版本、平台、能力与证据收据，不能外推 |
+| `planned` | 已写入 v0.1 目标，但当前产品路径尚不可用 |
+| `experimental` | 仅限明示的机制/平台证据，仍有功能或验收门禁 |
+| `unsupported` / `unknown` | 不提供，或缺少当前可复现的精确证据；不能用配置、CI 或二进制存在推断支持 |
 
 无需构建产品即可运行的入口是本地开发看板：
 
@@ -44,23 +47,24 @@ MultiAgentDesk 不会自动轮换账号、规避额度或限流、代理 Provide
 
 ## 3. 平台和阶段可用性
 
-下面是目标，不是当前支持声明。只有相应 Phase 的 `dev_log.md` 完成验证后，
-该行才能升级为可用能力。
+下面的表格从 [`PRODUCT.md`](PRODUCT.md#current-capability-matrix) 派生；它不
+替代 Provider compatibility matrix 或功能 `dev_log.md`。任何未写明的版本、
+平台或能力均不得从相邻行推断为支持。
 
 | 能力 | 目标平台 | 解锁阶段 | 当前状态 |
 |---|---|---|---|
-| CLI / Device Daemon | macOS、Windows、Linux | Phase 1 | 开发者预览；三平台基础已验证 |
-| Codex 真实 Session | Linux x86_64、CLI `0.144.2` | Phase 2 + Codex Spike | 已进入 `main` 的源码开发者预览 |
-| Codex 显式多账号选择器 | Linux amd64、CLI `0.144.2` | selector P1/P2/P3 | 功能分支 P2 已验证；P3/安全审查/Ship 尚未完成 |
-| Codex schema/handshake | macOS arm64、CLI `0.144.2` | Phase 2 | 已验证 smoke；非完整 Session 支持 |
-| macOS Codex 多账号选择器 | macOS arm64 | 后续身份验收 | `schema_compatible_identity_acceptance_pending`；不启动 |
-| Windows Codex | Windows amd64 | 后续平台验收 | `provider_platform_unsupported`；build/protocol only，真实运行不支持 |
-| Claude Code PTY Session | macOS、Windows、Linux | Phase 3 + Claude/ConPTY Spike | 待验证 |
-| Control Plane 元数据页面 | Linux 自托管 Server + 浏览器 | Phase 4a | 规划中 |
-| Web 远程终端、审批和控制权 | 现代桌面浏览器 | Phase 4b + E2EE/Browser Spike | 待验证 |
-| macOS Desktop | macOS | Phase 5 | 规划中 |
-| Windows Desktop | Windows | Phase 5/6 | Experimental |
-| 安装包、升级/卸载和 Release | 发布平台 | Phase 6 | 规划中 |
+| CLI / Device Daemon | macOS、Windows、Linux（目标） | Phase 1 | `preview`：仅 `source-built` 本地基础；不构成通用三平台发布支持 |
+| Codex 真实 Session | Linux x86_64、CLI `0.144.2` | Phase 2 + Codex Spike | `supported`：仅精确 Linux `0.144.2` 的预发布 `source-built` vertical slice |
+| Codex 显式多账号选择器 | Linux amd64、CLI `0.144.2` | selector evidence | `supported`：仅精确 Linux `0.144.2`、显式别名确认；无默认账号或跨平台回退 |
+| Codex schema/handshake | macOS arm64、CLI `0.144.2` | Phase 2 | `unknown`：只有 schema/empty-home smoke，不是身份验收或完整 Session 支持 |
+| macOS Codex 多账号选择器 | macOS arm64 | 后续身份验收 | `unsupported`：`schema_compatible_identity_acceptance_pending`；不启动选择器 Session/Home/进程 |
+| Windows Codex | Windows amd64 | 后续平台验收 | `unsupported`：`provider_platform_unsupported`；build/protocol 证据不等于真实运行 |
+| Claude Code PTY Session | macOS、Windows、Linux | Phase 3 + Claude/ConPTY Spike | `unknown`；稳定 managed subscription、quota dashboard、setup-token grant 与 long session 不受支持 |
+| Control Plane 元数据页面 | Linux 自托管 Server + 浏览器 | Phase 4a | `planned` |
+| Web 远程终端、审批和控制权 | 现代桌面浏览器 | Phase 4b + E2EE/Browser Spike | `planned`；未配对浏览器只能查看元数据 |
+| macOS Desktop | macOS | Phase 5 | `planned` |
+| Windows Desktop | Windows | Phase 5/6 | `planned`；仅部分机制为 `experimental`，不是 Desktop 产品支持 |
+| 安装包、升级/卸载和 Release | 发布平台 | Phase 6 | `planned` |
 
 ## 4. 安装前准备（规划中）
 
@@ -312,7 +316,8 @@ setup-token、Recovery Code、Vault 密码、认证文件正文或完整终端�
 6. Credential Grant、撤销、Provider 侧吊销提示和离线行为完成 E2E 验证。
 7. 没有未处理的 Critical/High 安全缺陷。
 
-项目当前真实进度以各功能的
-[`docs/workflow/features/<slug>/dev_log.md`](workflow/features/README.md) 和本地
-开发看板为准。完整架构、阶段与验收基线见
+产品能力、证据日期和过期降级规则以 [`PRODUCT.md`](PRODUCT.md) 与其 claim
+ledger 为准；项目当前真实生命周期以各功能的
+[`docs/workflow/features/<slug>/dev_log.md`](workflow/features/README.md) 为准。
+本地开发看板只展示仓库状态。完整目标架构、阶段与验收基线见
 [`docs/IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)。
