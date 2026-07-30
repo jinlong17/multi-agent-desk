@@ -144,20 +144,12 @@ func (m *CredentialMaterializationManager) Acquire(ctx context.Context, credenti
 	ownerID := fmt.Sprintf("%d-%x", os.Getpid(), m.now().UnixNano())
 	lock := lockRecord{CredentialInstanceID: credentialID, OwnerID: ownerID, CredentialRevision: credential.CredentialRevision, AcquiredAt: m.now(), ExpiresAt: m.now().Add(LeaseTTL)}
 	lockBytes, _ := json.Marshal(lock)
-	fd, err := os.OpenFile(lockPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
-	if err != nil {
-		if errors.Is(err, os.ErrExist) {
+	if err := writePrivate(lockPath, lockBytes); err != nil {
+		if credentialWriterLockContended(lockPath, err) {
 			return nil, domain.NewError(domain.CodeCredentialWriterConflict, "another canonical credential writer owns this CredentialInstance")
 		}
 		return nil, domain.WrapError(domain.CodeConflict, "credential writer lock could not be acquired", err)
 	}
-	if _, err := fd.Write(lockBytes); err != nil {
-		_ = fd.Close()
-		_ = os.Remove(lockPath)
-		return nil, domain.WrapError(domain.CodeConflict, "credential writer lock could not be written", err)
-	}
-	_ = fd.Close()
-	_ = os.Chmod(lockPath, 0o600)
 	h := &MaterializationHandle{manager: m, credentialID: credentialID, ownerID: ownerID, home: home, lockPath: lockPath, expectedRev: credential.CredentialRevision, acquiredAt: lock.AcquiredAt}
 	if err := m.prepareHome(ctx, h, credential); err != nil {
 		_ = os.Remove(lockPath)
@@ -169,15 +161,22 @@ func (m *CredentialMaterializationManager) Acquire(ctx context.Context, credenti
 func (m *CredentialMaterializationManager) prepareHome(ctx context.Context, h *MaterializationHandle, credential domain.CredentialInstance) error {
 	if info, err := os.Lstat(h.home); err == nil {
 		if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
-			_ = m.quarantinePath(h.home)
+			if quarantineErr := m.quarantinePath(h.home); quarantineErr != nil {
+				return quarantineErr
+			}
 			return domain.NewError(domain.CodeCredentialRecoveryRequired, "credential auth home is not a private directory")
 		}
-		if err := restrictPrivateDir(h.home); err != nil {
-			return err
+		if err := device.VerifyPrivateDirectory(h.home); err != nil {
+			if quarantineErr := m.quarantinePath(h.home); quarantineErr != nil {
+				return quarantineErr
+			}
+			return domain.NewError(domain.CodeCredentialRecoveryRequired, "credential auth home is not a private directory")
 		}
 		manifest, authDigest, err := validateHome(h.home, h.credentialID, credential.CredentialRevision)
 		if err != nil {
-			_ = m.quarantinePath(h.home)
+			if quarantineErr := m.quarantinePath(h.home); quarantineErr != nil {
+				return quarantineErr
+			}
 			return domain.WrapError(domain.CodeCredentialRecoveryRequired, "credential auth home requires official re-login", err)
 		}
 		h.authDigest = authDigest
@@ -214,6 +213,9 @@ func (m *CredentialMaterializationManager) prepareHome(ctx context.Context, h *M
 	}
 	if err := os.Rename(staging, h.home); err != nil {
 		return domain.WrapError(domain.CodeConflict, "credential auth home could not be committed", err)
+	}
+	if err := device.VerifyPrivateDirectory(h.home); err != nil {
+		return domain.WrapError(domain.CodeConflict, "credential auth home boundary was not preserved", err)
 	}
 	h.authDigest = validatedDigest
 	return nil
@@ -334,6 +336,9 @@ func (h *MaterializationHandle) Release(ctx context.Context) error {
 }
 
 func (h *MaterializationHandle) verifyLock() error {
+	if err := device.VerifyPrivateFile(h.lockPath); err != nil {
+		return domain.NewError(domain.CodeCredentialWriterConflict, "canonical credential writer lease is not private")
+	}
 	data, err := os.ReadFile(h.lockPath)
 	if err != nil {
 		return domain.NewError(domain.CodeCredentialWriterConflict, "canonical credential writer lease is unavailable")
@@ -362,19 +367,28 @@ func (m *CredentialMaterializationManager) Recover(ctx context.Context) error {
 		return domain.WrapError(domain.CodeConflict, "credential auth root could not be listed", err)
 	}
 	for _, entry := range entries {
-		if strings.HasPrefix(entry.Name(), ".staging-") || strings.HasSuffix(entry.Name(), ".writer.lock") {
-			_ = m.quarantinePath(filepath.Join(m.Root, entry.Name()))
+		if strings.HasPrefix(entry.Name(), ".staging-") ||
+			strings.HasSuffix(entry.Name(), ".writer.lock") ||
+			strings.HasSuffix(entry.Name(), ".writer.lock.new") ||
+			strings.HasSuffix(entry.Name(), ".writer.lock.replace") {
+			if err := m.quarantinePath(filepath.Join(m.Root, entry.Name())); err != nil {
+				return err
+			}
 			continue
 		}
 		if entry.Name() == "quarantine" {
 			continue
 		}
 		if !entry.IsDir() || domain.ValidateID(domain.ID(entry.Name())) != nil {
-			_ = m.quarantinePath(filepath.Join(m.Root, entry.Name()))
+			if err := m.quarantinePath(filepath.Join(m.Root, entry.Name())); err != nil {
+				return err
+			}
 			continue
 		}
 		if _, _, err := validateHome(filepath.Join(m.Root, entry.Name()), domain.ID(entry.Name()), 0); err != nil {
-			_ = m.quarantinePath(filepath.Join(m.Root, entry.Name()))
+			if err := m.quarantinePath(filepath.Join(m.Root, entry.Name())); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -397,15 +411,47 @@ func (m *CredentialMaterializationManager) quarantinePath(path string) error {
 	if err := os.MkdirAll(filepath.Join(m.Root, "quarantine"), 0o700); err != nil {
 		return err
 	}
+	if err := restrictPrivateDir(filepath.Join(m.Root, "quarantine")); err != nil {
+		return err
+	}
 	target := filepath.Join(m.Root, "quarantine", filepath.Base(path)+"-"+m.now().Format("20060102T150405.000000000Z"))
-	if err := os.Rename(path, target); err != nil && !errors.Is(err, os.ErrNotExist) {
+	if err := os.Rename(path, target); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
 		return domain.WrapError(domain.CodeQuarantined, "credential auth residue could not be quarantined", err)
+	}
+	return verifyQuarantinedPath(target)
+}
+
+func verifyQuarantinedPath(path string) error {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return domain.WrapError(domain.CodeQuarantined, "quarantined credential residue could not be inspected", err)
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		return domain.NewError(domain.CodeQuarantined, "quarantined credential residue is a symbolic link")
+	}
+	if info.IsDir() {
+		if err := device.ProtectPrivateDirectory(path); err != nil {
+			return domain.WrapError(domain.CodeQuarantined, "quarantined credential directory could not be restricted", err)
+		}
+		if err := device.VerifyPrivateDirectory(path); err != nil {
+			return domain.WrapError(domain.CodeQuarantined, "quarantined credential directory is not private", err)
+		}
+		return nil
+	}
+	if !info.Mode().IsRegular() {
+		return domain.NewError(domain.CodeQuarantined, "quarantined credential residue has an unsupported type")
+	}
+	if err := device.VerifyPrivateFile(path); err != nil {
+		return domain.WrapError(domain.CodeQuarantined, "quarantined credential file is not private", err)
 	}
 	return nil
 }
 
 func restrictPrivateDir(path string) error {
-	if err := os.Chmod(path, 0o700); err != nil {
+	if err := device.ProtectPrivateDirectory(path); err != nil {
 		return domain.WrapError(domain.CodeConflict, "credential auth directory permissions could not be restricted", err)
 	}
 	return nil
@@ -414,40 +460,17 @@ func restrictPrivateDir(path string) error {
 func writePrivate(path string, data []byte) error { return device.WritePrivateFileAtomic(path, data) }
 
 func writeLock(path string, data []byte) error {
-	file, err := os.OpenFile(path, os.O_WRONLY|os.O_TRUNC, 0o600)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	if _, err := file.Write(data); err != nil {
-		return err
-	}
-	if err := file.Sync(); err != nil {
-		return err
-	}
-	return os.Chmod(path, 0o600)
+	return device.ReplacePrivateFileAtomic(path, data)
 }
 
 func replacePrivate(path string, data []byte) error {
-	if err := restrictPrivateDir(filepath.Dir(path)); err != nil {
-		return err
-	}
-	temporary := path + ".replace"
-	if err := os.WriteFile(temporary, data, 0o600); err != nil {
-		return err
-	}
-	if err := os.Chmod(temporary, 0o600); err != nil {
-		_ = os.Remove(temporary)
-		return err
-	}
-	if err := os.Rename(temporary, path); err != nil {
-		_ = os.Remove(temporary)
-		return err
-	}
-	return nil
+	return device.ReplacePrivateFileAtomic(path, data)
 }
 
 func validateHome(home string, credentialID domain.ID, revision int64) (homeManifest, string, error) {
+	if err := device.VerifyPrivateDirectory(home); err != nil {
+		return homeManifest{}, "", errors.New("auth home is not private")
+	}
 	if err := filepath.WalkDir(home, func(path string, entry os.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
@@ -459,14 +482,21 @@ func validateHome(home string, credentialID domain.ID, revision int64) (homeMani
 		if err != nil || strings.Contains(relative, ".."+string(filepath.Separator)) || entry.Type()&os.ModeSymlink != 0 {
 			return errors.New("auth home contains an unsafe path")
 		}
-		if entry.IsDir() || relative == "auth.json" || relative == "manifest.json" {
+		if entry.IsDir() {
+			return device.VerifyPrivateDirectory(path)
+		}
+		if relative == "auth.json" || relative == "manifest.json" {
 			return nil
 		}
 		return errors.New("auth home contains an unexpected file")
 	}); err != nil {
 		return homeManifest{}, "", err
 	}
-	manifestData, err := os.ReadFile(filepath.Join(home, "manifest.json"))
+	manifestPath := filepath.Join(home, "manifest.json")
+	if err := device.VerifyPrivateFile(manifestPath); err != nil {
+		return homeManifest{}, "", errors.New("manifest is not private")
+	}
+	manifestData, err := os.ReadFile(manifestPath)
 	if err != nil || len(manifestData) > 4096 {
 		return homeManifest{}, "", errors.New("manifest unavailable")
 	}
@@ -482,6 +512,18 @@ func validateHome(home string, credentialID domain.ID, revision int64) (homeMani
 		return manifest, "", errors.New("auth digest mismatch")
 	}
 	return manifest, digest, nil
+}
+
+func credentialWriterLockContended(path string, cause error) bool {
+	if domain.CodeOf(cause) == domain.CodeAlreadyExists {
+		return true
+	}
+	for _, candidate := range []string{path, path + ".new", path + ".replace"} {
+		if _, err := os.Lstat(candidate); err == nil {
+			return true
+		}
+	}
+	return false
 }
 
 func validateAuthFile(path string) (string, int64, error) {

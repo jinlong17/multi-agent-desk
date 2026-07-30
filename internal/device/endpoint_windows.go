@@ -33,9 +33,7 @@ const (
 	securityIdentification     = 0x00010000
 	securityDescriptorRevision = 1
 	daclSecurityInformation    = 0x00000004
-	seFileObject               = 1
 	seKernelObject             = 6
-	protectedDACLInformation   = 0x80000000
 	errPipeBusy                = syscall.Errno(231)
 	errMoreData                = syscall.Errno(234)
 	errPipeConnected           = syscall.Errno(535)
@@ -59,8 +57,6 @@ var (
 	procConvertStringSecurityDescriptor   = advapi32.NewProc("ConvertStringSecurityDescriptorToSecurityDescriptorW")
 	procConvertSecurityDescriptorToString = advapi32.NewProc("ConvertSecurityDescriptorToStringSecurityDescriptorW")
 	procGetSecurityInfo                   = advapi32.NewProc("GetSecurityInfo")
-	procGetNamedSecurityInfo              = advapi32.NewProc("GetNamedSecurityInfoW")
-	procSetFileSecurity                   = advapi32.NewProc("SetFileSecurityW")
 )
 
 type windowsListener struct {

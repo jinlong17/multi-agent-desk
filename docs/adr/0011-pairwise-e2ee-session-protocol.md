@@ -32,6 +32,15 @@ the symmetric root.
 - A key change is a new revision/re-enrollment and cannot silently replace a
   local pin.
 - A pure browser cannot be the initial trust anchor.
+- The stored pin is the complete domain-separated 32-byte SHA-256 digest.
+  Humans compare only its first 15 bytes as six four-character uppercase
+  unpadded Base32 groups; this 120-bit display never replaces the full digest.
+- `DeviceAttestationV1` is a closed restricted-RFC-8785 object containing both
+  full subject key digests, canonical capabilities, IDs, and validity. Raw keys
+  travel outside the signed object and must hash to those digests.
+- The Phase 4a initial anchor is a Daemon remote identity sealed by portable
+  password-derived Vault v1, not an OS-backed or pure-Web anchor. OS wrapping
+  and Desktop product key storage remain Phase 5.
 
 ### Fixed v1 suite
 
@@ -46,6 +55,17 @@ the symmetric root.
 
 v1 has no cipher-suite negotiation or downgrade. A future suite requires a new
 protocol version and reviewed vectors.
+
+### Enrollment proof of possession
+
+Bootstrap/enrollment additionally use the protocol-vector
+`multidesk-x25519-pop-context-v1`: a per-ceremony ephemeral X25519 shared
+secret feeds HKDF-SHA-256, then HMAC-SHA-256 proves exchange-key possession and
+Ed25519 signs the same length-framed transcript. The transcript binds API
+version, purpose, ceremony/subject IDs, both subject public keys, `storageMode`,
+the restricted-JCS `storageAssertionDigest`, server ephemeral public key,
+32-byte challenge, and expiry. All-zero X25519, any field mutation, replay,
+expiry, consume, or server restart fails closed.
 
 ### Pairwise roots
 
@@ -120,6 +140,9 @@ erase already copied plaintext or keys.
   EKM injection.
 - Unknown versions, suites, critical fields, pins, epochs, or state ambiguity
   fail closed.
+- Phase 4a consumes only the pin/attestation/PoP vector contract over HTTPS
+  REST. Pairwise Roots, HPKE production code, WSS, terminal/Approval payloads,
+  and Credential Grants remain Phase 4b/5 obligations.
 
 ## Residual risk
 
@@ -141,4 +164,4 @@ copied data.
 - `docs/reviews/spike-e2ee-protocol-vectors/2026-07-14-security-review.md`
 - PR #7 vector run `29375956127`
 - Result SHA-256:
-  `082033265c774aad70fccf89e1a682a5f411ca14c1e675eca346184dff8da2a5`
+  `55bff1decd0b3419df4d43e32fe933e397a9167253c89f7a7d71552c178520f5`

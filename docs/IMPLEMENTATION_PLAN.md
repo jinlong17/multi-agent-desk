@@ -513,7 +513,12 @@ approvedAt
 revokedAt?
 ```
 
-Enrollment Approval 必须由已批准设备签名。接收方只接受“直接 pinned 的 approver”所签署的 attestation，并在首次敏感操作前把 subject key 固化到本地 PinnedKeyDirectory；Control Plane 不能自己生成有效 attestation。
+Enrollment Approval 必须由已批准设备签名。`DeviceAttestationV1` 使用受限
+RFC 8785 JCS 和长度帧域分离签名，包含 subject 两把公钥各自完整的 32-byte
+SHA-256 digest、规范化 Capability、ID 和有效期；原始公钥在签名对象外传输并
+重新计算 digest。接收方只接受“直接 pinned 的 approver”所签署的 attestation，
+并在首次敏感操作前把 subject key 固化到本地 PinnedKeyDirectory；Control Plane
+不能自己生成有效 attestation。
 
 ## 7. Provider Adapter
 
@@ -760,7 +765,11 @@ Control Plane 返回的公钥只用于索引。任何加密、签名验证或 Cr
 1. 新设备运行 `multidesk devices pair`。
 2. Server 创建 10 分钟有效的一次性 Enrollment ID。
 3. 新设备提交公钥、平台和随机挑战签名。
-4. 新旧两端同时显示指纹：`SHA-256(enrollmentId || signingPublicKey || exchangePublicKey)` 的前 120 bits，编码为六组四字符 Base32。
+4. 新旧两端计算并保存完整 `pinDigest = SHA-256(frame(
+   "multidesk-device-pin-v1", canonicalDeviceUUIDv7,
+   signingPublicKeyRaw, exchangePublicKeyRaw))`；人类界面只显示其前 120 bits，
+   以 RFC 4648 无 padding 大写 Base32 编码为六组四字符。截断值只用于人工
+   比较，不能替代完整 pin/key digest。
 5. 用户双向核对六组指纹；批准方把两把公钥写入本地 PinnedKeyDirectory，并签署 DeviceAttestation；新设备 pin 批准方公钥。
 6. 用户确认后，Server 保存签名 Attestation 并激活 Device。
 7. 公钥发生变化时必须重新执行指纹核对，并产生 `device_key_changed` 审计事件。
@@ -812,7 +821,11 @@ Web 客户端流程：
 2. 优先使用 WebCrypto 非可导出密钥；若目标浏览器不支持，则使用 libsodium-wasm 生成密钥，并由 IndexedDB 中非可导出的 AES-GCM wrapping key 加密私钥。
 3. 若浏览器连非可导出的 AES wrapping key 都无法可靠保存，则该浏览器只能查看元数据，不允许远程终端、审批或 Credential Grant。
 4. Web Device 必须经已有 Pinned Device 批准后才能收到只属于该 Host↔Web Device 的 Pairwise Root；新浏览器只完成 Passkey 登录时仍无解密权限。
-5. 纯 Web Device 不能成为初始 E2EE 信任根。Bootstrap Ceremony 必须同时登记一台具有 OS Vault 的 Daemon/Desktop 作为初始 Trust Anchor，由它批准首个 Web Device。
+5. 纯 Web Device 不能成为初始 E2EE 信任根。Phase 4a Bootstrap Ceremony
+   必须登记一台 Daemon 作为初始 Trust Anchor；其独立远端 Ed25519/X25519
+   私钥保存在 Phase 2 已交付的 portable password-derived Vault v1 中。该路径
+   不声称 OS-backed；OS Keychain/DPAPI/Secret Service wrapping 与 Desktop
+   产品密钥存储留在 Phase 5。初始 Daemon 之后批准首个 Web Device。
 6. 清除站点数据视为丢失设备私钥，必须创建新 Device ID 并重新配对。
 7. 撤销 Web Device 后关闭其 WSS、tombstone/轮换相关 Pairwise Root，并拒绝该 Device ID 的新连接。
 
@@ -1025,7 +1038,9 @@ sync_tombstones
 ### 16.1 用户登录
 
 - 首次 Server 启动生成一次性 Bootstrap Token，只输出一次并创建 10 分钟 Bootstrap Ceremony。
-- Ceremony 必须完成三件事：创建首个用户、注册 Passkey、登记一台具有 OS Vault 的 Daemon/Desktop 为初始 Trust Anchor。
+- Ceremony 必须完成三件事：创建首个用户、注册 Passkey、登记一台使用
+  portable password-derived Vault v1 remote-key envelope 的 Daemon 为初始
+  Trust Anchor；pure Web 和 Phase 4a Desktop fixture 都不能替代该 anchor。
 - 初始 Trust Anchor 与首个 Web Device 双向核对指纹并签署 DeviceAttestation；纯浏览器不能单独完成 E2EE Bootstrap。
 - 三项全部完成后 Token 哈希立即删除；未完成则整场 Ceremony 到期，不留下部分激活的信任根。
 - 用户生成一组一次性 Recovery Codes，Server 只保存哈希。
@@ -1252,6 +1267,10 @@ unsupported、处理结构化 Approval，并验证 frozen resume 成功或明确
 - Daemon/Web/Desktop Enrollment、Presence、Pinned Key 和撤销。
 - REST/OpenAPI、异步 Session Command、配置同步、inbox/outbox、tombstone。
 - Overview、Devices、Accounts、Profiles、Sessions、Usage 元数据页面。
+
+传输边界：Phase 4a 仅实现 HTTPS REST、签名的 Daemon push/pull/ack/heartbeat
+和有界 long-poll；不实现 WSS、Pairwise Root、HPKE 生产路径、远程 Terminal、
+Approval 或 Credential Grant。后者分别保持在 Phase 4b/5。
 
 出口：设备配对/换钥拒绝/撤销、同步冲突、tombstone 和异步命令集成测试通过；此阶段不承诺远程终端。
 

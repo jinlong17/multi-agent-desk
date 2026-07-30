@@ -7,17 +7,20 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/jinlong17/multi-agent-desk/internal/device"
 	"github.com/jinlong17/multi-agent-desk/internal/domain"
 	"github.com/jinlong17/multi-agent-desk/internal/storage"
 )
 
 type testCredentialSource struct {
 	content []byte
-	path    string
 }
+
+type invalidPathCredentialSource struct{}
 
 type testMutationSink struct{ store *storage.Store }
 
@@ -36,19 +39,59 @@ func (s testMutationSink) CommitCodexAuth(ctx context.Context, credential domain
 }
 
 func (s testCredentialSource) MaterializeCodexAuth(_ context.Context, _ domain.CredentialInstance, home string) (AuthFile, error) {
-	path := s.path
-	if path == "" {
-		path = "auth.json"
-	}
-	full := filepath.Join(home, path)
-	if err := os.MkdirAll(filepath.Dir(full), 0o700); err != nil {
+	if err := device.VerifyPrivateDirectory(home); err != nil {
 		return AuthFile{}, err
 	}
-	if err := os.WriteFile(full, s.content, 0o600); err != nil {
+	path := "auth.json"
+	full := filepath.Join(home, path)
+	if err := device.WritePrivateFileAtomic(full, s.content); err != nil {
 		return AuthFile{}, err
 	}
 	digest := sha256.Sum256(s.content)
 	return AuthFile{RelativePath: path, Digest: hex.EncodeToString(digest[:]), Size: int64(len(s.content))}, nil
+}
+
+func (invalidPathCredentialSource) MaterializeCodexAuth(_ context.Context, _ domain.CredentialInstance, home string) (AuthFile, error) {
+	if err := device.VerifyPrivateDirectory(home); err != nil {
+		return AuthFile{}, err
+	}
+	return AuthFile{RelativePath: "../auth.json", Digest: strings.Repeat("0", 64), Size: 2}, nil
+}
+
+func overwriteExistingPrivateFile(t *testing.T, path string, data []byte) {
+	t.Helper()
+	before, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := device.VerifyPrivateFile(path); err != nil {
+		t.Fatalf("pre-write private boundary: %v", err)
+	}
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_TRUNC, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := file.Write(data); err != nil {
+		_ = file.Close()
+		t.Fatal(err)
+	}
+	if err := file.Sync(); err != nil {
+		_ = file.Close()
+		t.Fatal(err)
+	}
+	if err := file.Close(); err != nil {
+		t.Fatal(err)
+	}
+	after, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !os.SameFile(before, after) {
+		t.Fatal("provider refresh replaced the auth file instead of truncating it in place")
+	}
+	if err := device.VerifyPrivateFile(path); err != nil {
+		t.Fatalf("post-write private boundary: %v", err)
+	}
 }
 
 type testVault struct{ unlocked bool }
@@ -99,6 +142,20 @@ func TestCredentialMaterializationSingleWriterCASAndPermissions(t *testing.T) {
 	if h.AuthHomePath() == "" {
 		t.Fatal("missing private auth home")
 	}
+	for _, directory := range []string{m.Root, filepath.Join(m.Root, "quarantine"), h.AuthHomePath()} {
+		if err := device.VerifyPrivateDirectory(directory); err != nil {
+			t.Fatalf("private directory %s: %v", directory, err)
+		}
+	}
+	for _, path := range []string{
+		filepath.Join(m.Root, string(credentialID)+".writer.lock"),
+		filepath.Join(h.AuthHomePath(), "auth.json"),
+		filepath.Join(h.AuthHomePath(), "manifest.json"),
+	} {
+		if err := device.VerifyPrivateFile(path); err != nil {
+			t.Fatalf("private file %s: %v", path, err)
+		}
+	}
 	if runtime.GOOS != "windows" {
 		if info, err := os.Stat(h.AuthHomePath()); err != nil || info.Mode().Perm() != 0o700 {
 			t.Fatalf("home mode=%o err=%v", info.Mode().Perm(), err)
@@ -115,9 +172,10 @@ func TestCredentialMaterializationSingleWriterCASAndPermissions(t *testing.T) {
 	if err != nil || state.CredentialRevision != 1 || state.OwnerID == "" {
 		t.Fatalf("lease=%+v err=%v", state, err)
 	}
-	if err := os.WriteFile(filepath.Join(h.AuthHomePath(), "auth.json"), []byte(`{"access_token":"rotated"}`), 0o600); err != nil {
-		t.Fatal(err)
+	if err := device.VerifyPrivateFile(filepath.Join(m.Root, string(credentialID)+".writer.lock")); err != nil {
+		t.Fatalf("refreshed lock boundary: %v", err)
 	}
+	overwriteExistingPrivateFile(t, filepath.Join(h.AuthHomePath(), "auth.json"), []byte(`{"access_token":"rotated"}`))
 	committed, err := h.ObserveAndCommit(ctx)
 	if err != nil || !committed.Changed || committed.Revision != 2 {
 		t.Fatalf("commit=%+v err=%v", committed, err)
@@ -133,7 +191,7 @@ func TestCredentialMaterializationRejectsRawPathAndRecoversCrashResidue(t *testi
 	store, credentialID, _ := setupCodexCredential(t)
 	defer store.Close()
 	root := filepath.Join(t.TempDir(), "codex-home")
-	bad := NewCredentialMaterializationManager(store, root, testVault{unlocked: true}, testCredentialSource{content: []byte(`{}`), path: "../auth.json"})
+	bad := NewCredentialMaterializationManager(store, root, testVault{unlocked: true}, invalidPathCredentialSource{})
 	if _, err := bad.Acquire(ctx, credentialID, ""); domain.CodeOf(err) != domain.CodeCredentialRecoveryRequired {
 		t.Fatalf("path traversal err=%v", err)
 	}
@@ -178,9 +236,7 @@ func TestCredentialMaterializationRefreshRequiresAtomicVaultSink(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(handle.AuthHomePath(), "auth.json"), []byte(`{"token":"changed"}`), 0o600); err != nil {
-		t.Fatal(err)
-	}
+	overwriteExistingPrivateFile(t, filepath.Join(handle.AuthHomePath(), "auth.json"), []byte(`{"token":"changed"}`))
 	if _, err := handle.ObserveAndCommit(ctx); domain.CodeOf(err) != domain.CodeCredentialRecoveryRequired {
 		t.Fatalf("metadata-only refresh was not rejected: %v", err)
 	}
@@ -192,15 +248,17 @@ func TestCredentialMaterializationRefreshRequiresAtomicVaultSink(t *testing.T) {
 
 func TestReadEnrollmentAuthAllowsOfficialRuntimeResidue(t *testing.T) {
 	home := t.TempDir()
-	if err := os.Chmod(home, 0o700); err != nil {
+	if err := device.ProtectPrivateDirectory(home); err != nil {
 		t.Fatal(err)
 	}
 	for _, name := range []string{"log", "tmp", ".tmp", "skills"} {
-		if err := os.Mkdir(filepath.Join(home, name), 0o770); err != nil {
+		path := filepath.Join(home, name)
+		if err := os.Mkdir(path, 0o770); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if err := os.Mkdir(filepath.Join(home, "tmp", "arg0"), 0o700); err != nil {
+	arg0 := filepath.Join(home, "tmp", "arg0")
+	if err := os.Mkdir(arg0, 0o700); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(home, "log", "codex-login.log"), []byte("runtime residue is ignored"), 0o600); err != nil {
@@ -212,9 +270,14 @@ func TestReadEnrollmentAuthAllowsOfficialRuntimeResidue(t *testing.T) {
 		}
 	}
 	want := []byte(`{"tokens":{"access":"synthetic"}}`)
-	if err := os.WriteFile(filepath.Join(home, "auth.json"), want, 0o600); err != nil {
+	authPath := filepath.Join(home, "auth.json")
+	if err := device.WritePrivateFileAtomic(authPath, []byte(`{}`)); err != nil {
 		t.Fatal(err)
 	}
+	if err := device.WritePrivateFileAtomic(authPath, []byte(`{"tokens":{"access":"replacement"}}`)); domain.CodeOf(err) != domain.CodeAlreadyExists {
+		t.Fatalf("create-only auth replacement code=%s err=%v", domain.CodeOf(err), err)
+	}
+	overwriteExistingPrivateFile(t, authPath, want)
 	got, err := ReadEnrollmentAuth(home)
 	if err != nil || string(got) != string(want) {
 		t.Fatalf("auth=%q err=%v", got, err)
@@ -227,17 +290,25 @@ func TestReadEnrollmentAuthRejectsMissingOrInvalidCredential(t *testing.T) {
 		setup func(*testing.T, string)
 	}{
 		{name: "missing auth", setup: func(t *testing.T, home string) {
-			if err := os.Mkdir(filepath.Join(home, "log"), 0o700); err != nil {
+			path := filepath.Join(home, "log")
+			if err := os.Mkdir(path, 0o700); err != nil {
+				t.Fatal(err)
+			}
+			if err := device.ProtectPrivateDirectory(path); err != nil {
 				t.Fatal(err)
 			}
 		}},
 		{name: "auth is a directory", setup: func(t *testing.T, home string) {
-			if err := os.Mkdir(filepath.Join(home, "auth.json"), 0o700); err != nil {
+			path := filepath.Join(home, "auth.json")
+			if err := os.Mkdir(path, 0o700); err != nil {
+				t.Fatal(err)
+			}
+			if err := device.ProtectPrivateDirectory(path); err != nil {
 				t.Fatal(err)
 			}
 		}},
 		{name: "invalid auth", setup: func(t *testing.T, home string) {
-			if err := os.WriteFile(filepath.Join(home, "auth.json"), []byte("not-json"), 0o600); err != nil {
+			if err := device.WritePrivateFileAtomic(filepath.Join(home, "auth.json"), []byte("not-json")); err != nil {
 				t.Fatal(err)
 			}
 		}},
@@ -245,7 +316,7 @@ func TestReadEnrollmentAuthRejectsMissingOrInvalidCredential(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			home := t.TempDir()
-			if err := os.Chmod(home, 0o700); err != nil {
+			if err := device.ProtectPrivateDirectory(home); err != nil {
 				t.Fatal(err)
 			}
 			test.setup(t, home)
@@ -258,7 +329,7 @@ func TestReadEnrollmentAuthRejectsMissingOrInvalidCredential(t *testing.T) {
 
 func writeEnrollmentAuthFixture(t *testing.T, home string) {
 	t.Helper()
-	if err := os.WriteFile(filepath.Join(home, "auth.json"), []byte(`{"token":"synthetic"}`), 0o600); err != nil {
+	if err := device.WritePrivateFileAtomic(filepath.Join(home, "auth.json"), []byte(`{"token":"synthetic"}`)); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -277,7 +348,7 @@ func TestCredentialMaterializationRejectsDuplicateJSONAndUnexpectedFiles(t *test
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(h.AuthHomePath(), "unexpected.txt"), []byte("residue"), 0o600); err != nil {
+	if err := device.WritePrivateFileAtomic(filepath.Join(h.AuthHomePath(), "unexpected.txt"), []byte("residue")); err != nil {
 		t.Fatal(err)
 	}
 	if err := h.Release(ctx); err != nil {
@@ -290,7 +361,7 @@ func TestCredentialMaterializationRejectsDuplicateJSONAndUnexpectedFiles(t *test
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(h2.AuthHomePath(), "unexpected.txt"), []byte("residue"), 0o600); err != nil {
+	if err := device.WritePrivateFileAtomic(filepath.Join(h2.AuthHomePath(), "unexpected.txt"), []byte("residue")); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.Remove(filepath.Join(root, string(credentialID)+".writer.lock")); err != nil {
@@ -300,4 +371,34 @@ func TestCredentialMaterializationRejectsDuplicateJSONAndUnexpectedFiles(t *test
 		t.Fatalf("unexpected file was not quarantined: %v", err)
 	}
 	_ = h2.Release(ctx)
+}
+
+func TestCredentialMaterializationMapsFixedLockCandidateAndRecoversResidue(t *testing.T) {
+	ctx := context.Background()
+	store, credentialID, _ := setupCodexCredential(t)
+	defer store.Close()
+	manager := NewCredentialMaterializationManager(store, filepath.Join(t.TempDir(), "codex-home"), testVault{unlocked: true}, testCredentialSource{content: []byte(`{"token":"synthetic"}`)})
+	if err := manager.ensureRoot(); err != nil {
+		t.Fatal(err)
+	}
+	lockPath := filepath.Join(manager.Root, string(credentialID)+".writer.lock")
+	if err := device.WritePrivateFileAtomic(lockPath+".new", []byte("crash residue")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := manager.Acquire(ctx, credentialID, ""); domain.CodeOf(err) != domain.CodeCredentialWriterConflict {
+		t.Fatalf("fixed lock candidate code=%s err=%v", domain.CodeOf(err), err)
+	}
+	if err := manager.Recover(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Lstat(lockPath + ".new"); !os.IsNotExist(err) {
+		t.Fatalf("lock candidate was not quarantined: %v", err)
+	}
+	handle, err := manager.Acquire(ctx, credentialID, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := handle.Release(ctx); err != nil {
+		t.Fatal(err)
+	}
 }

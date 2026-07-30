@@ -1,5 +1,6 @@
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+
+import { directInvocation, execFileNoShell, pnpmInvocation } from "../api/process-runner.mjs";
 
 const allowed = new Set(["0BSD", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "CC0-1.0", "ISC", "MIT", "MIT-0", "MPL-2.0", "Unicode-3.0", "Unlicense", "Zlib"]);
 const allowedExceptions = new Set(["LLVM-exception"]);
@@ -66,8 +67,8 @@ if (fixtureIndex >= 0) {
   ({ pnpm, cargo } = JSON.parse(readFileSync(process.argv[fixtureIndex + 1], "utf8")));
 } else {
   const commandOptions = { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 };
-  pnpm = JSON.parse(execFileSync("pnpm", ["licenses", "list", "--json"], commandOptions));
-  const metadata = JSON.parse(execFileSync("cargo", ["metadata", "--locked", "--format-version", "1", "--manifest-path", "apps/desktop/src-tauri/Cargo.toml"], commandOptions));
+  pnpm = JSON.parse(execFileNoShell(pnpmInvocation(["licenses", "list", "--json"]), commandOptions));
+  const metadata = JSON.parse(execFileNoShell(directInvocation("cargo", ["metadata", "--locked", "--format-version", "1", "--manifest-path", "apps/desktop/src-tauri/Cargo.toml"]), commandOptions));
   cargo = metadata.packages.map(pkg => ({ name: `${pkg.name}@${pkg.version}`, license: pkg.license }));
 }
 for (const expression of Object.keys(pnpm)) verifyExpression(expression, `pnpm group ${expression}`);

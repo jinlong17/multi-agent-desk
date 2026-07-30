@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	controlplanev1 "github.com/jinlong17/multi-agent-desk/internal/controlplane/api/generated"
 	"github.com/jinlong17/multi-agent-desk/internal/device"
 	"github.com/jinlong17/multi-agent-desk/internal/domain"
 	"github.com/jinlong17/multi-agent-desk/internal/providers/codex"
@@ -31,6 +32,7 @@ type SessionService struct {
 	Now                  func() time.Time
 	SelectorPreflight    func(context.Context) (SelectorPreflight, error)
 	SelectorPlatformGate func(codex.BinaryDescriptor) error
+	RemoteBootstrap      *RemoteBootstrapService
 	mu                   sync.Mutex
 }
 
@@ -299,7 +301,7 @@ func requiresIdempotency(method string) bool {
 	case "sessions.start", "session.start", "sessions.attach", "sessions.detach", "control.acquire",
 		"terminal.input", "terminal.resize", "session.input", "session.resize", "sessions.stop", "session.stop", "sessions.kill",
 		"sessions.resume", "session.resume", "accounts.create", "accounts.disable", "profiles.create", "profiles.edit", "profiles.delete", "auth.begin", "auth.complete", "auth.confirm", "auth.cancel", "auth.logout",
-		"approval.respond":
+		"approval.respond", "remote.bootstrap.prepare", "remote.bootstrap.activate":
 		return true
 	default:
 		return false
@@ -352,6 +354,43 @@ func (s *SessionService) dispatch(ctx context.Context, auth device.AuthContext, 
 	switch request.Method {
 	case "daemon.status":
 		return map[string]any{"status": "ok", "schema_version": 1}, nil
+	case "remote.bootstrap.prepare":
+		if s.RemoteBootstrap == nil {
+			return nil, domain.NewError(domain.CodeConflict, "remote bootstrap service is unavailable")
+		}
+		var body struct {
+			ServerOrigin              string `json:"server_origin"`
+			Name                      string `json:"name"`
+			AllowDevelopmentLocalhost bool   `json:"allow_development_localhost"`
+		}
+		if err := decodeBody(request.Body, &body); err != nil {
+			return nil, err
+		}
+		return s.RemoteBootstrap.Prepare(ctx, BootstrapPrepareInput{ServerOrigin: body.ServerOrigin, Name: body.Name, AllowDevelopmentLocalhost: body.AllowDevelopmentLocalhost})
+	case "remote.bootstrap.prove":
+		if s.RemoteBootstrap == nil {
+			return nil, domain.NewError(domain.CodeConflict, "remote bootstrap service is unavailable")
+		}
+		var body struct {
+			Imported  controlplanev1.BootstrapAnchorChallengeV1 `json:"imported"`
+			Refetched controlplanev1.BootstrapAnchorChallengeV1 `json:"refetched"`
+		}
+		if err := decodeBody(request.Body, &body); err != nil {
+			return nil, err
+		}
+		return s.RemoteBootstrap.Prove(ctx, body.Imported, body.Refetched)
+	case "remote.bootstrap.activate":
+		if s.RemoteBootstrap == nil {
+			return nil, domain.NewError(domain.CodeConflict, "remote bootstrap service is unavailable")
+		}
+		var body struct {
+			Imported  controlplanev1.BootstrapCommitReceiptV1 `json:"imported"`
+			Refetched controlplanev1.BootstrapCommitReceiptV1 `json:"refetched"`
+		}
+		if err := decodeBody(request.Body, &body); err != nil {
+			return nil, err
+		}
+		return s.RemoteBootstrap.Activate(ctx, body.Imported, body.Refetched)
 	case "vault.status":
 		if s.Vault == nil {
 			return map[string]any{"state": vault.StateLocked}, nil

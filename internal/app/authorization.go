@@ -37,7 +37,7 @@ func RequiredCapability(method string) (domain.Capability, error) {
 		return domain.CapabilityApprovalRespond, nil
 	case "sessions.attach", "sessions.detach":
 		return domain.CapabilitySessionObserve, nil
-	case "vault.initialize", "vault.unlock", "vault.lock":
+	case "vault.initialize", "vault.unlock", "vault.lock", "remote.bootstrap.prepare", "remote.bootstrap.prove", "remote.bootstrap.activate":
 		return domain.CapabilityVaultControl, nil
 	case "sessions.start", "session.start":
 		return domain.CapabilitySessionStart, nil

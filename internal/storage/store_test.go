@@ -97,7 +97,7 @@ func TestOpenConfiguresAndRestartsDeviceDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantPragmas := Pragmas{JournalMode: "wal", ForeignKeys: true, BusyTimeout: DefaultBusyTimeout}
+	wantPragmas := Pragmas{JournalMode: "wal", ForeignKeys: true, SecureDelete: true, BusyTimeout: DefaultBusyTimeout}
 	if pragmas != wantPragmas {
 		t.Fatalf("got %+v, want %+v", pragmas, wantPragmas)
 	}
@@ -105,15 +105,15 @@ func TestOpenConfiguresAndRestartsDeviceDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if version != 7 {
-		t.Fatalf("got schema version %d, want 7", version)
+	if version != 8 {
+		t.Fatalf("got schema version %d, want 8", version)
 	}
 	var migrationCount int
 	if err := store.db.QueryRowContext(ctx, "SELECT count(*) FROM schema_migrations").Scan(&migrationCount); err != nil {
 		t.Fatal(err)
 	}
-	if migrationCount != 7 {
-		t.Fatalf("got %d applied migrations, want 7", migrationCount)
+	if migrationCount != 8 {
+		t.Fatalf("got %d applied migrations, want 8", migrationCount)
 	}
 	if runtime.GOOS != "windows" {
 		info, err := os.Stat(path)
@@ -135,20 +135,68 @@ func TestOpenConfiguresAndRestartsDeviceDatabase(t *testing.T) {
 	if err := reopened.db.QueryRowContext(ctx, "SELECT count(*) FROM schema_migrations").Scan(&migrationCount); err != nil {
 		t.Fatal(err)
 	}
-	if migrationCount != 7 {
+	if migrationCount != 8 {
 		t.Fatalf("restart reapplied migrations: count=%d", migrationCount)
 	}
 }
 
-func TestOpenRejectsBroadDirectoryPermissions(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Windows file modes do not encode the Device root ACL")
+func TestOpenConcurrentFirstCreationHasNoPermissionWindowFailure(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "device-root", "device.db")
+	start := make(chan struct{})
+	results := make(chan struct {
+		store *Store
+		err   error
+	}, 2)
+	for range 2 {
+		go func() {
+			<-start
+			store, err := Open(context.Background(), path)
+			results <- struct {
+				store *Store
+				err   error
+			}{store: store, err: err}
+		}()
 	}
+	close(start)
+	var received []struct {
+		store *Store
+		err   error
+	}
+	for range 2 {
+		result := <-results
+		received = append(received, result)
+		if result.store != nil {
+			store := result.store
+			t.Cleanup(func() { _ = store.Close() })
+		}
+	}
+	successes := 0
+	var failures []error
+	for _, result := range received {
+		if result.store != nil {
+			successes++
+		}
+		if domain.CodeOf(result.err) == domain.CodePermissionDenied {
+			t.Fatalf("concurrent first Open observed permission transition: %v", result.err)
+		}
+		if result.err != nil {
+			failures = append(failures, result.err)
+		}
+	}
+	if successes == 0 {
+		t.Fatalf("both concurrent first Open calls failed: %v", failures)
+	}
+}
+
+func TestOpenRejectsBroadDirectoryPermissions(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "broad")
-	if err := os.Mkdir(dir, 0o755); err != nil {
+	if err := os.Mkdir(dir, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chmod(dir, 0o755); err != nil {
+	if err := protectDevicePrivateDirectory(dir); err != nil {
+		t.Fatal(err)
+	}
+	if err := makeExistingDeviceDirectoryUnsafeForTest(dir); err != nil {
 		t.Fatal(err)
 	}
 	_, err := Open(context.Background(), filepath.Join(dir, "device.db"))
@@ -208,6 +256,9 @@ func TestCodexMigrationPreservesLegacyFakeRows(t *testing.T) {
 	if err := os.Mkdir(deviceRoot, 0o700); err != nil {
 		t.Fatal(err)
 	}
+	if err := protectDevicePrivateDirectory(deviceRoot); err != nil {
+		t.Fatal(err)
+	}
 	path := filepath.Join(deviceRoot, "device.db")
 	raw, err := sql.Open("sqlite", "file:"+path)
 	if err != nil {
@@ -217,7 +268,7 @@ func TestCodexMigrationPreservesLegacyFakeRows(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(migrations) != 7 {
+	if len(migrations) != 8 {
 		t.Fatalf("migration count=%d", len(migrations))
 	}
 	if _, err := raw.ExecContext(ctx, "PRAGMA foreign_keys=ON"); err != nil {
@@ -268,12 +319,15 @@ func TestCodexMigrationPreservesLegacyFakeRows(t *testing.T) {
 	if err := raw.Close(); err != nil {
 		t.Fatal(err)
 	}
+	if err := protectDevicePrivateFile(path); err != nil {
+		t.Fatal(err)
+	}
 	store, err := Open(ctx, path)
 	if err != nil {
 		t.Fatalf("open upgraded store: %v (cause: %v)", err, errors.Unwrap(err))
 	}
 	defer store.Close()
-	if version, err := store.SchemaVersion(ctx); err != nil || version != 7 {
+	if version, err := store.SchemaVersion(ctx); err != nil || version != 8 {
 		t.Fatalf("upgraded schema=%d err=%v", version, err)
 	}
 	profile, err := store.RuntimeProfile(ctx, profileID)
@@ -295,6 +349,9 @@ func TestAccountsUsageMigrationPreservesPhase2CodexRowsAndVaultLinks(t *testing.
 	ctx := context.Background()
 	root := filepath.Join(t.TempDir(), "device")
 	if err := os.Mkdir(root, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := protectDevicePrivateDirectory(root); err != nil {
 		t.Fatal(err)
 	}
 	path := filepath.Join(root, "device.db")
@@ -367,6 +424,9 @@ func TestAccountsUsageMigrationPreservesPhase2CodexRowsAndVaultLinks(t *testing.
 	if err := raw.Close(); err != nil {
 		t.Fatal(err)
 	}
+	if err := protectDevicePrivateFile(path); err != nil {
+		t.Fatal(err)
+	}
 	store, err := Open(ctx, path)
 	if err != nil {
 		t.Fatalf("open Phase 2 upgrade: %v (cause: %v)", err, errors.Unwrap(err))
@@ -411,8 +471,8 @@ func TestMigrationFailureRollsBackDDLAndLedger(t *testing.T) {
 	ctx := context.Background()
 	contents := []byte("CREATE TABLE should_rollback(id INTEGER); THIS IS NOT SQL;")
 	migration := devicemigrations.Migration{
-		Version:  8,
-		Name:     "0008_invalid.sql",
+		Version:  9,
+		Name:     "0009_invalid.sql",
 		SQL:      string(contents),
 		Checksum: sha256.Sum256(contents),
 	}
@@ -427,7 +487,7 @@ func TestMigrationFailureRollsBackDDLAndLedger(t *testing.T) {
 		t.Fatal("failed migration left partial DDL")
 	}
 	var ledgerCount int
-	if err := store.db.QueryRowContext(ctx, "SELECT count(*) FROM schema_migrations WHERE version=8").Scan(&ledgerCount); err != nil {
+	if err := store.db.QueryRowContext(ctx, "SELECT count(*) FROM schema_migrations WHERE version=9").Scan(&ledgerCount); err != nil {
 		t.Fatal(err)
 	}
 	if ledgerCount != 0 {
@@ -437,7 +497,7 @@ func TestMigrationFailureRollsBackDDLAndLedger(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if version != 7 {
+	if version != 8 {
 		t.Fatalf("failed migration changed user_version to %d", version)
 	}
 }
@@ -446,6 +506,9 @@ func TestSelectorMigrationPreservesVersionSixEnrollment(t *testing.T) {
 	ctx := context.Background()
 	root := filepath.Join(t.TempDir(), "device")
 	if err := os.Mkdir(root, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := protectDevicePrivateDirectory(root); err != nil {
 		t.Fatal(err)
 	}
 	path := filepath.Join(root, "device.db")
@@ -517,12 +580,15 @@ func TestSelectorMigrationPreservesVersionSixEnrollment(t *testing.T) {
 	if err := raw.Close(); err != nil {
 		t.Fatal(err)
 	}
+	if err := protectDevicePrivateFile(path); err != nil {
+		t.Fatal(err)
+	}
 	store, err := Open(ctx, path)
 	if err != nil {
 		t.Fatalf("upgrade v6 to v7: %v", err)
 	}
 	defer store.Close()
-	if version, err := store.SchemaVersion(ctx); err != nil || version != 7 {
+	if version, err := store.SchemaVersion(ctx); err != nil || version != 8 {
 		t.Fatalf("version=%d err=%v", version, err)
 	}
 	enrollment, err := store.AuthEnrollment(ctx, enrollmentID)

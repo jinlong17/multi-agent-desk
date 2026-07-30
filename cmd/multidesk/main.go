@@ -65,6 +65,8 @@ func run(args []string, stdout, stderr *os.File) error {
 		return runRegistryProfiles(args[1:], stdout, stderr)
 	case "usage":
 		return runRegistryUsage(args[1:], stdout, stderr)
+	case "devices":
+		return runDevices(args[1:], stdout, stderr)
 	case "provider":
 		return runProvider(args[1:], stdout, stderr)
 	case "approvals":
@@ -160,6 +162,7 @@ func runServe(args []string, stderr *os.File) error {
 	defer manager.Close()
 	service := app.NewSessionService(store, manager)
 	service.Vault = vaultManager
+	service.RemoteBootstrap = &app.RemoteBootstrapService{Store: store, Vault: vaultManager, ClientVersion: "devel"}
 	service.CredentialHomeRoot = credentialHomeRoot
 	if err := service.RecoverPendingApprovals(ctx); err != nil {
 		return err

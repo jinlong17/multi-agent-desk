@@ -4,3 +4,6 @@ packages:
 
 onlyBuiltDependencies:
   - esbuild
+
+overrides:
+  'js-yaml@4.2.0>argparse': '-'
